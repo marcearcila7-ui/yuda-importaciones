@@ -49,6 +49,10 @@ export async function eliminarItem(sesion_id: string, item_id: string): Promise<
   await apiClient.delete(`/sesiones/${sesion_id}/items/${item_id}`)
 }
 
+export async function eliminarSesion(sesion_id: string): Promise<void> {
+  await apiClient.delete(`/sesiones/${sesion_id}`)
+}
+
 export async function exportarPackingExcel(sesion_id: string): Promise<Blob> {
   const { data } = await apiClient.get(`/sesiones/${sesion_id}/exportar/packing-excel`, {
     responseType: 'blob',

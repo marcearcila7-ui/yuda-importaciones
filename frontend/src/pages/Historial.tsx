@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { getHistorial } from '../api/admin'
+import { eliminarSesion } from '../api/packing'
+import { useAuthStore } from '../store/authStore'
 import type { SesionHistorial } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -14,6 +17,8 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 function Historial() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
+  const { usuario } = useAuthStore()
+  const esAdmin = usuario?.rol === 'admin'
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [cargando, setCargando] = useState(false)
   const [fechaDesde, setFechaDesde] = useState('')
@@ -31,6 +36,18 @@ function Historial() {
       setSesiones(data)
     } finally {
       setCargando(false)
+    }
+  }
+
+  const handleEliminar = async (s: SesionHistorial) => {
+    const ok = window.confirm(t('historial.confirmarEliminar', { cliente: s.nombre_cliente }))
+    if (!ok) return
+    try {
+      await eliminarSesion(s.id)
+      toast.success(t('historial.eliminada'))
+      buscar()
+    } catch {
+      toast.error(t('historial.errorEliminar'))
     }
   }
 
@@ -126,14 +143,26 @@ function Historial() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/dashboard', { state: { sesion_id: s.id } })}
-                      className="rounded-lg px-3 py-1 text-sm font-medium"
-                      style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
-                    >
-                      {t('historial.verDetalle')}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate('/dashboard', { state: { sesion_id: s.id } })}
+                        className="rounded-lg px-3 py-1 text-sm font-medium"
+                        style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                      >
+                        {t('historial.verDetalle')}
+                      </button>
+                      {esAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleEliminar(s)}
+                          className="rounded-lg px-3 py-1 text-sm font-medium"
+                          style={{ backgroundColor: '#FEE2E2', color: '#EF4444' }}
+                        >
+                          {t('historial.eliminar')}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

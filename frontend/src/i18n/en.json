@@ -116,7 +116,11 @@
     "sinResultados": "No quotations match the filters",
     "totalRmb": "Total ¥",
     "totalUsd": "Total USD",
-    "pedidos": "Orders"
+    "pedidos": "Orders",
+    "eliminar": "Delete",
+    "confirmarEliminar": "Delete the quotation for {{cliente}}? This action cannot be undone.",
+    "eliminada": "Quotation deleted",
+    "errorEliminar": "Could not delete the quotation"
   },
   "admin": {
     "titulo": "Administration",

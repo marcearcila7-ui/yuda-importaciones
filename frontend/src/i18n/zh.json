@@ -116,7 +116,11 @@
     "sinResultados": "没有符合筛选条件的报价",
     "totalRmb": "合计 ¥",
     "totalUsd": "合计 美元",
-    "pedidos": "订单"
+    "pedidos": "订单",
+    "eliminar": "删除",
+    "confirmarEliminar": "确定删除 {{cliente}} 的报价吗？此操作无法撤销。",
+    "eliminada": "报价已删除",
+    "errorEliminar": "无法删除报价"
   },
   "admin": {
     "titulo": "管理",

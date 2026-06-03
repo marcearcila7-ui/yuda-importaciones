@@ -116,7 +116,11 @@
     "sinResultados": "No hay cotizaciones que coincidan con los filtros",
     "totalRmb": "Total ¥",
     "totalUsd": "Total USD",
-    "pedidos": "Pedidos"
+    "pedidos": "Pedidos",
+    "eliminar": "Eliminar",
+    "confirmarEliminar": "¿Eliminar la cotización de {{cliente}}? Esta acción no se puede deshacer.",
+    "eliminada": "Cotización eliminada",
+    "errorEliminar": "No se pudo eliminar la cotización"
   },
   "admin": {
     "titulo": "Administración",
