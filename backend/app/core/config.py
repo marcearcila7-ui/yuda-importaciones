@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,20 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @field_validator(
+        "DATABASE_URL",
+        "SECRET_KEY",
+        "ANTHROPIC_API_KEY",
+        "CORS_ORIGINS",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_KEY",
+        mode="before",
+    )
+    @classmethod
+    def _limpiar_espacios(cls, v):
+        """Limpia espacios accidentales al pegar valores en variables de entorno"""
+        return v.strip() if isinstance(v, str) else v
 
     @property
     def cors_origins_list(self) -> list[str]:
