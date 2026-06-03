@@ -8,7 +8,7 @@
   },
   "login": {
     "bienvenida": "Bienvenida",
-    "credenciales": "Ingresá tus credenciales para continuar",
+    "credenciales": "Ingresa tus credenciales para continuar",
     "email": "Email",
     "contrasena": "Contraseña",
     "ingresar": "Ingresar",
@@ -21,7 +21,7 @@
     "nuevaCotizacion": "Nueva cotización",
     "nombreCliente": "Nombre del cliente",
     "tipoCambio": "Tipo de cambio (RMB/USD)",
-    "seleccionarCotizacion": "Seleccioná o creá una cotización para comenzar",
+    "seleccionarCotizacion": "Selecciona o crea una cotización para comenzar",
     "subirFoto": "Subir foto de etiqueta",
     "productos": "Productos de la cotización",
     "generarPedidos": "Generar pedidos",
@@ -38,7 +38,7 @@
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
-    "instruccion": "Tocá para subir una foto",
+    "instruccion": "Toca para subir una foto",
     "formatos": "JPG, PNG o WEBP · máx 10MB",
     "extraer": "Extraer datos",
     "analizando": "Analizando etiqueta...",
