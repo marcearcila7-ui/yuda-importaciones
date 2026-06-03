@@ -55,8 +55,12 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
       const enlace = document.createElement('a')
       enlace.href = url
       enlace.download = `${nombre_cliente}_Pedidos.zip`
+      enlace.target = '_blank'
+      enlace.rel = 'noopener'
+      document.body.appendChild(enlace)
       enlace.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(enlace)
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
     } catch {
       setError('No se pudo descargar el ZIP')
     } finally {

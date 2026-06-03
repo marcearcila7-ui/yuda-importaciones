@@ -118,8 +118,14 @@ function Dashboard() {
       const enlace = document.createElement('a')
       enlace.href = url
       enlace.download = `PackingList_${sesionActual.nombre_cliente}.xlsx`
+      // Abrir en pestaña aparte para que no reemplace la app en el celular
+      enlace.target = '_blank'
+      enlace.rel = 'noopener'
+      document.body.appendChild(enlace)
       enlace.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(enlace)
+      // Revocar con demora para que el navegador del celular alcance a leer el archivo
+      setTimeout(() => URL.revokeObjectURL(url), 4000)
       toast.success('Lista descargada')
     } catch {
       toast.error('No se pudo descargar la lista')
