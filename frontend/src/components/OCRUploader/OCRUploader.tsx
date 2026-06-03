@@ -10,8 +10,8 @@ interface OCRUploaderProps {
 
 // Requisitos críticos de mobile
 const inputStyle: CSSProperties = { fontSize: 16 }
-const botonStyle: CSSProperties = { minHeight: 48, fontSize: 16 }
-const dropzoneStyle: CSSProperties = { minHeight: 150, fontSize: 16 }
+const inputClase =
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
 
 // Campos numéricos editables del panel de revisión
 const CAMPOS_NUMERO: Array<{ clave: keyof OCRResultado; etiqueta: string }> = [
@@ -31,10 +31,10 @@ const CAMPOS_TEXTO: Array<{ clave: keyof OCRResultado; etiqueta: string }> = [
   { clave: 'descripcion_zh', etiqueta: 'Descripción en chino' },
 ]
 
-function chipConfianza(confianza: OCRResultado['confianza']) {
-  if (confianza === 'alta') return { clase: 'bg-green-100 text-green-800', texto: 'Confianza alta' }
-  if (confianza === 'media') return { clase: 'bg-yellow-100 text-yellow-800', texto: 'Confianza media' }
-  return { clase: 'bg-red-100 text-red-800', texto: 'Confianza baja' }
+function chipConfianza(confianza: OCRResultado['confianza']): { style: CSSProperties; texto: string } {
+  if (confianza === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, texto: 'Confianza alta' }
+  if (confianza === 'media') return { style: { backgroundColor: '#FEF3C7', color: '#B45309' }, texto: 'Confianza media' }
+  return { style: { backgroundColor: '#FEE2E2', color: '#EF4444' }, texto: 'Confianza baja' }
 }
 
 function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
@@ -120,16 +120,19 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
   const chip = form ? chipConfianza(form.confianza) : null
 
   return (
-    <div className="mx-auto w-full max-w-2xl p-4">
+    <div className="w-full">
       {/* SECCIÓN A — Área de carga (mientras no haya resultado) */}
       {!resultado && (
         <div className="flex flex-col gap-4">
           <div
             {...getRootProps()}
-            style={dropzoneStyle}
-            className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center ${
-              isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-            }`}
+            style={{
+              minHeight: 150,
+              fontSize: 16,
+              borderColor: '#4B52E8',
+              backgroundColor: isDragActive ? '#F0F1FD' : 'transparent',
+            }}
+            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center"
           >
             <input {...getInputProps()} />
             {preview ? (
@@ -137,13 +140,13 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                 src={preview}
                 alt="Vista previa"
                 style={{ maxHeight: 200 }}
-                className="rounded object-contain"
+                className="rounded-lg object-contain"
               />
             ) : (
               <>
                 <span className="text-4xl">📷</span>
-                <p className="mt-2 font-medium text-gray-700">Tocá para subir una foto</p>
-                <p className="mt-1 text-sm text-gray-500">JPG, PNG o WEBP · máx 10MB</p>
+                <p className="mt-2 font-medium" style={{ color: '#0D0D0D' }}>Toca para subir una foto</p>
+                <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>JPG, PNG o WEBP · máx 10MB</p>
               </>
             )}
           </div>
@@ -152,10 +155,10 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             type="button"
             onClick={handleExtraer}
             disabled={!archivo || cargando}
-            style={botonStyle}
-            className="rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+            className="font-semibold text-white disabled:opacity-60"
+            style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
           >
-            {cargando ? 'Analizando etiqueta...' : 'Extraer datos'}
+            {cargando ? 'Leyendo la etiqueta...' : 'Leer la etiqueta'}
           </button>
         </div>
       )}
@@ -164,36 +167,36 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
       {resultado && form && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-800">Revisar datos extraídos</h2>
+            <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>Revisa y corrige los datos</h3>
             {chip && (
-              <span className={`rounded-full px-3 py-1 text-sm font-medium ${chip.clase}`}>
+              <span className="rounded-full px-3 py-1 text-sm font-semibold" style={chip.style}>
                 {chip.texto}
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {CAMPOS_TEXTO.map(({ clave, etiqueta }) => (
-              <label key={clave} className="flex flex-col gap-1 text-sm text-gray-700">
+              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
                 {etiqueta}
                 <input
                   type="text"
                   value={(form[clave] as string | null) ?? ''}
                   onChange={(e) => actualizarTexto(clave, e.target.value)}
                   style={inputStyle}
-                  className="rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className={inputClase}
                 />
               </label>
             ))}
             {CAMPOS_NUMERO.map(({ clave, etiqueta }) => (
-              <label key={clave} className="flex flex-col gap-1 text-sm text-gray-700">
+              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
                 {etiqueta}
                 <input
                   type="number"
                   value={(form[clave] as number | null) ?? ''}
                   onChange={(e) => actualizarNumero(clave, e.target.value)}
                   style={inputStyle}
-                  className="rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className={inputClase}
                 />
               </label>
             ))}
@@ -203,16 +206,16 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             <button
               type="button"
               onClick={handleConfirmar}
-              style={botonStyle}
-              className="flex-1 rounded bg-green-600 px-4 font-semibold text-white hover:bg-green-700"
+              className="flex-1 font-semibold text-white"
+              style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, fontSize: 16 }}
             >
-              Agregar al Packing List
+              Agregar producto
             </button>
             <button
               type="button"
               onClick={resetear}
-              style={botonStyle}
-              className="flex-1 rounded bg-gray-200 px-4 font-semibold text-gray-800 hover:bg-gray-300"
+              className="flex-1 font-semibold"
+              style={{ minHeight: 48, backgroundColor: '#F3F4F6', color: '#0D0D0D', borderRadius: 8, fontSize: 16 }}
             >
               Cancelar
             </button>
@@ -221,7 +224,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
       )}
 
       {/* SECCIÓN C — Error */}
-      {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-center text-sm" style={{ color: '#EF4444' }}>{error}</p>}
     </div>
   )
 }

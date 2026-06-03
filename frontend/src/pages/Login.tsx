@@ -3,14 +3,35 @@ import type { CSSProperties, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 
-// Estilos en línea para los requisitos críticos de mobile (iOS)
 const inputStyle: CSSProperties = {
   fontSize: 16, // mínimo 16px para evitar el zoom automático en iOS
 }
 
-const botonStyle: CSSProperties = {
-  minHeight: 48, // touch target adecuado
-  fontSize: 16,
+function Logo({ grande = false }: { grande?: boolean }) {
+  return (
+    <div className="text-center">
+      <p
+        style={{
+          fontWeight: 800,
+          fontSize: grande ? 48 : 32,
+          color: grande ? '#FFFFFF' : '#0D0D0D',
+          lineHeight: 1,
+        }}
+      >
+        YU·DA
+      </p>
+      <p
+        style={{
+          fontSize: grande ? 14 : 11,
+          letterSpacing: '0.3em',
+          color: grande ? '#FFFFFF' : '#6B7280',
+          marginTop: 6,
+        }}
+      >
+        IMPORTACIONES
+      </p>
+    </div>
+  )
 }
 
 function Login() {
@@ -29,51 +50,73 @@ function Login() {
   }
 
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center px-4"
-      style={{ backgroundColor: '#1e3a5f' }}
-    >
-      <h1 className="mb-6 text-5xl font-bold tracking-wide text-white">YUDA</h1>
+    <div className="flex min-h-screen">
+      {/* Lado izquierdo (branding) — solo desktop */}
+      <div
+        className="hidden w-1/2 flex-col items-center justify-center p-10 md:flex"
+        style={{ backgroundColor: '#4B52E8' }}
+      >
+        <Logo grande />
+        <p className="mt-6 text-center text-lg font-medium text-white">
+          Conectamos China con tu éxito
+        </p>
+      </div>
 
-      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-lg">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1 text-sm text-gray-700">
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-              style={inputStyle}
-              className="rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-          </label>
+      {/* Lado derecho (formulario) */}
+      <div className="flex w-full flex-col items-center justify-center bg-white px-6 md:w-1/2">
+        <div className="w-full max-w-sm">
+          {/* Logo pequeño arriba (visible sobre todo en mobile) */}
+          <div className="mb-10 md:hidden">
+            <Logo />
+          </div>
 
-          <label className="flex flex-col gap-1 text-sm text-gray-700">
-            Contraseña
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={inputStyle}
-              className="rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-            />
-          </label>
+          <h1 className="mb-8" style={{ fontWeight: 700, fontSize: 24, color: '#0D0D0D' }}>
+            Iniciar sesión
+          </h1>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={botonStyle}
-            className="mt-2 rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
-          >
-            {isLoading ? 'Ingresando...' : 'Ingresar'}
-          </button>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              Email
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+                style={inputStyle}
+                className="border-0 border-b-2 border-gray-200 bg-transparent py-2 focus:border-[#4B52E8] focus:outline-none"
+              />
+            </label>
 
-          {error && <p className="text-center text-sm text-red-600">{error}</p>}
-        </form>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              Contraseña
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={inputStyle}
+                className="border-0 border-b-2 border-gray-200 bg-transparent py-2 focus:border-[#4B52E8] focus:outline-none"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="mt-2 w-full font-semibold text-white disabled:opacity-60"
+              style={{ height: 52, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+            >
+              {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+            </button>
+
+            {error && (
+              <p className="text-center text-sm" style={{ color: '#EF4444' }}>
+                {error}
+              </p>
+            )}
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import axios from 'axios'
-import toast, { Toaster } from 'react-hot-toast'
-import Navbar from '../components/Navbar'
+import toast from 'react-hot-toast'
 import {
   actualizarConfiguracion,
   actualizarUsuario,
@@ -14,7 +13,8 @@ import {
 import type { ConfiguracionResponse, UsuarioAdmin } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
-const botonStyle: CSSProperties = { minHeight: 48, fontSize: 16 }
+const inputClase =
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
 
 type Rol = 'admin' | 'vendedora' | 'contadora'
 
@@ -26,10 +26,31 @@ function mensajeError(err: unknown, generico: string): string {
   return generico
 }
 
+// Botones reutilizables
+const btnPrimario: CSSProperties = {
+  minHeight: 48,
+  backgroundColor: '#4B52E8',
+  color: '#fff',
+  borderRadius: 8,
+  padding: '0 20px',
+  fontSize: 16,
+  fontWeight: 600,
+}
+const btnSecundario: CSSProperties = {
+  minHeight: 48,
+  backgroundColor: '#F3F4F6',
+  color: '#0D0D0D',
+  borderRadius: 8,
+  padding: '0 20px',
+  fontSize: 16,
+  fontWeight: 600,
+}
+
 function Admin() {
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([])
   const [config, setConfig] = useState<ConfiguracionResponse | null>(null)
   const [cargando, setCargando] = useState(false)
+  const [tab, setTab] = useState<'usuarios' | 'config'>('usuarios')
 
   // Modal crear
   const [modalCrear, setModalCrear] = useState(false)
@@ -131,56 +152,88 @@ function Admin() {
     }
   }
 
-  return (
-    <div className="relative min-h-screen bg-gray-100">
-      <Toaster position="top-right" />
-      <Navbar />
+  const tabStyle = (activo: boolean): CSSProperties => ({
+    padding: '10px 4px',
+    marginRight: 24,
+    fontWeight: 600,
+    fontSize: 15,
+    color: activo ? '#4B52E8' : '#6B7280',
+    borderBottom: activo ? '3px solid #4B52E8' : '3px solid transparent',
+    cursor: 'pointer',
+  })
 
-      <main className="mx-auto flex max-w-5xl flex-col gap-10 p-4">
-        {/* ──────── USUARIOS ──────── */}
-        <section>
-          <div className="mb-4 flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-800">Gestión de usuarios</h1>
+  return (
+    <div className="relative flex flex-col gap-6">
+      <div>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>Administración</h1>
+        <p className="text-sm" style={{ color: '#6B7280' }}>
+          Gestión de usuarios y configuración del sistema
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-gray-200">
+        <button type="button" style={tabStyle(tab === 'usuarios')} onClick={() => setTab('usuarios')}>
+          Usuarios
+        </button>
+        <button type="button" style={tabStyle(tab === 'config')} onClick={() => setTab('config')}>
+          Configuración
+        </button>
+      </div>
+
+      {/* ──────── USUARIOS ──────── */}
+      {tab === 'usuarios' && (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>Gestión de usuarios</h2>
             <button
               type="button"
               onClick={() => { setErrorCrear(null); setModalCrear(true) }}
               disabled={cargando}
-              style={botonStyle}
-              className="rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800 disabled:opacity-60"
+              style={btnPrimario}
+              className="disabled:opacity-60"
             >
-              Nuevo usuario
+              + Nuevo usuario
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded border border-gray-200 bg-white">
+          <div className="card overflow-x-auto p-0">
             <table className="w-full text-sm">
-              <thead className="bg-gray-100 text-left">
+              <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
                 <tr>
-                  <th className="px-3 py-2">Nombre</th>
-                  <th className="px-3 py-2">Email</th>
-                  <th className="px-3 py-2">Rol</th>
-                  <th className="px-3 py-2">Estado</th>
-                  <th className="px-3 py-2">Acciones</th>
+                  <th className="px-4 py-3 text-left font-semibold">Nombre</th>
+                  <th className="px-4 py-3 text-left font-semibold">Email</th>
+                  <th className="px-4 py-3 text-left font-semibold">Rol</th>
+                  <th className="px-4 py-3 text-left font-semibold">Estado</th>
+                  <th className="px-4 py-3 text-left font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {usuarios.map((u) => (
-                  <tr key={u.id} className="border-t border-gray-100">
-                    <td className="px-3 py-2">{u.nombre}</td>
-                    <td className="px-3 py-2">{u.email}</td>
-                    <td className="px-3 py-2">{u.rol}</td>
-                    <td className="px-3 py-2">
-                      <span className={u.activo ? 'text-green-700' : 'text-gray-400'}>
+                {usuarios.map((u, i) => (
+                  <tr key={u.id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                    <td className="px-4 py-3 font-medium">{u.nombre}</td>
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">{u.rol}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className="rounded-full px-3 py-1 text-xs font-semibold"
+                        style={
+                          u.activo
+                            ? { backgroundColor: '#D1FAE5', color: '#065F46' }
+                            : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                        }
+                      >
                         {u.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => abrirEditar(u)}
                           disabled={cargando}
-                          className="rounded bg-gray-200 px-3 py-1 font-medium text-gray-800 hover:bg-gray-300 disabled:opacity-60"
+                          className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
+                          style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
                         >
                           Editar
                         </button>
@@ -188,7 +241,8 @@ function Admin() {
                           type="button"
                           onClick={() => handleToggleActivo(u)}
                           disabled={cargando}
-                          className="rounded bg-gray-200 px-3 py-1 font-medium text-gray-800 hover:bg-gray-300 disabled:opacity-60"
+                          className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
+                          style={{ backgroundColor: '#F3F4F6', color: '#0D0D0D' }}
                         >
                           {u.activo ? 'Desactivar' : 'Activar'}
                         </button>
@@ -200,73 +254,63 @@ function Admin() {
             </table>
           </div>
         </section>
+      )}
 
-        {/* ──────── CONFIGURACIÓN ──────── */}
-        <section>
-          <h1 className="mb-4 text-xl font-semibold text-gray-800">Configuración del sistema</h1>
-          <div className="rounded border border-gray-200 bg-white p-4">
-            <p className="text-sm text-gray-700">
-              Tipo de cambio actual:{' '}
-              <span className="font-semibold">{config?.tipo_cambio_usd ?? '—'}</span> RMB/USD
-            </p>
-            <p className="mb-3 text-xs text-gray-400">
-              Última modificación: {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'sin registro'}
-            </p>
-            <div className="flex items-end gap-3">
-              <label className="flex flex-col gap-1 text-sm text-gray-700">
-                Nuevo tipo de cambio
-                <input
-                  type="number"
-                  step="0.01"
-                  value={nuevoTC}
-                  onChange={(e) => setNuevoTC(e.target.value)}
-                  style={inputStyle}
-                  className="w-40 rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={handleGuardarConfig}
-                disabled={cargando}
-                style={botonStyle}
-                className="rounded bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
-              >
-                Guardar
-              </button>
-            </div>
+      {/* ──────── CONFIGURACIÓN ──────── */}
+      {tab === 'config' && (
+        <section className="card max-w-xl">
+          <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            Configuración del sistema
+          </h2>
+          <p className="text-sm" style={{ color: '#0D0D0D' }}>
+            Tipo de cambio actual:{' '}
+            <span className="font-bold">{config?.tipo_cambio_usd ?? '—'}</span> RMB/USD
+          </p>
+          <p className="mb-4 text-xs text-gray-400">
+            Última modificación: {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'sin registro'}
+          </p>
+          <div className="flex items-end gap-3">
+            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              Nuevo tipo de cambio
+              <input
+                type="number"
+                step="0.01"
+                value={nuevoTC}
+                onChange={(e) => setNuevoTC(e.target.value)}
+                style={inputStyle}
+                className={`w-40 ${inputClase}`}
+              />
+            </label>
+            <button type="button" onClick={handleGuardarConfig} disabled={cargando} style={btnPrimario} className="disabled:opacity-60">
+              Guardar
+            </button>
           </div>
         </section>
-      </main>
+      )}
 
       {/* ──────── MODAL CREAR ──────── */}
       {modalCrear && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-20">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">Nuevo usuario</h2>
+        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+          <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>Nuevo usuario</h2>
             <div className="flex flex-col gap-3">
               <input style={inputStyle} placeholder="Nombre" value={formCrear.nombre}
-                onChange={(e) => setFormCrear({ ...formCrear, nombre: e.target.value })}
-                className="rounded border border-gray-300 px-3 py-2" />
+                onChange={(e) => setFormCrear({ ...formCrear, nombre: e.target.value })} className={inputClase} />
               <input style={inputStyle} placeholder="Email" value={formCrear.email}
-                onChange={(e) => setFormCrear({ ...formCrear, email: e.target.value })}
-                className="rounded border border-gray-300 px-3 py-2" />
+                onChange={(e) => setFormCrear({ ...formCrear, email: e.target.value })} className={inputClase} />
               <input style={inputStyle} type="password" placeholder="Contraseña" value={formCrear.password}
-                onChange={(e) => setFormCrear({ ...formCrear, password: e.target.value })}
-                className="rounded border border-gray-300 px-3 py-2" />
+                onChange={(e) => setFormCrear({ ...formCrear, password: e.target.value })} className={inputClase} />
               <select style={inputStyle} value={formCrear.rol}
-                onChange={(e) => setFormCrear({ ...formCrear, rol: e.target.value as Rol })}
-                className="rounded border border-gray-300 px-3 py-2">
+                onChange={(e) => setFormCrear({ ...formCrear, rol: e.target.value as Rol })} className={inputClase}>
                 <option value="admin">admin</option>
                 <option value="vendedora">vendedora</option>
                 <option value="contadora">contadora</option>
               </select>
-              {errorCrear && <p className="text-sm text-red-600">{errorCrear}</p>}
+              {errorCrear && <p className="text-sm" style={{ color: '#EF4444' }}>{errorCrear}</p>}
             </div>
-            <div className="mt-4 flex gap-3">
-              <button type="button" onClick={handleCrear} style={botonStyle}
-                className="flex-1 rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800">Crear</button>
-              <button type="button" onClick={() => setModalCrear(false)} style={botonStyle}
-                className="flex-1 rounded bg-gray-200 px-4 font-semibold text-gray-800 hover:bg-gray-300">Cancelar</button>
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={handleCrear} style={{ ...btnPrimario, flex: 1 }}>Crear</button>
+              <button type="button" onClick={() => setModalCrear(false)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
             </div>
           </div>
         </div>
@@ -274,32 +318,28 @@ function Admin() {
 
       {/* ──────── MODAL EDITAR ──────── */}
       {editando && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-20">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">Editar usuario</h2>
+        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+          <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>Editar usuario</h2>
             <div className="flex flex-col gap-3">
               <input style={inputStyle} placeholder="Nombre" value={formEditar.nombre}
-                onChange={(e) => setFormEditar({ ...formEditar, nombre: e.target.value })}
-                className="rounded border border-gray-300 px-3 py-2" />
+                onChange={(e) => setFormEditar({ ...formEditar, nombre: e.target.value })} className={inputClase} />
               <select style={inputStyle} value={formEditar.rol}
-                onChange={(e) => setFormEditar({ ...formEditar, rol: e.target.value as Rol })}
-                className="rounded border border-gray-300 px-3 py-2">
+                onChange={(e) => setFormEditar({ ...formEditar, rol: e.target.value as Rol })} className={inputClase}>
                 <option value="admin">admin</option>
                 <option value="vendedora">vendedora</option>
                 <option value="contadora">contadora</option>
               </select>
-              {errorEditar && <p className="text-sm text-red-600">{errorEditar}</p>}
+              {errorEditar && <p className="text-sm" style={{ color: '#EF4444' }}>{errorEditar}</p>}
             </div>
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-5 flex flex-col gap-3">
               <div className="flex gap-3">
-                <button type="button" onClick={handleGuardarEditar} style={botonStyle}
-                  className="flex-1 rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800">Guardar</button>
-                <button type="button" onClick={() => setEditando(null)} style={botonStyle}
-                  className="flex-1 rounded bg-gray-200 px-4 font-semibold text-gray-800 hover:bg-gray-300">Cancelar</button>
+                <button type="button" onClick={handleGuardarEditar} style={{ ...btnPrimario, flex: 1 }}>Guardar</button>
+                <button type="button" onClick={() => setEditando(null)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
               </div>
               <button type="button"
                 onClick={() => { setReseteando(editando); setEditando(null); setNuevaPassword(''); setErrorReset(null) }}
-                className="text-sm font-medium text-blue-700 hover:underline">Cambiar contraseña</button>
+                className="text-sm font-medium" style={{ color: '#4B52E8' }}>Cambiar contraseña</button>
             </div>
           </div>
         </div>
@@ -307,20 +347,17 @@ function Admin() {
 
       {/* ──────── MODAL RESET CONTRASEÑA ──────── */}
       {reseteando && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-20">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-gray-800">
+        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+          <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>
               Nueva contraseña · {reseteando.nombre}
             </h2>
             <input style={inputStyle} type="password" placeholder="Nueva contraseña" value={nuevaPassword}
-              onChange={(e) => setNuevaPassword(e.target.value)}
-              className="w-full rounded border border-gray-300 px-3 py-2" />
-            {errorReset && <p className="mt-2 text-sm text-red-600">{errorReset}</p>}
-            <div className="mt-4 flex gap-3">
-              <button type="button" onClick={handleGuardarReset} style={botonStyle}
-                className="flex-1 rounded bg-blue-700 px-4 font-semibold text-white hover:bg-blue-800">Cambiar contraseña</button>
-              <button type="button" onClick={() => setReseteando(null)} style={botonStyle}
-                className="flex-1 rounded bg-gray-200 px-4 font-semibold text-gray-800 hover:bg-gray-300">Cancelar</button>
+              onChange={(e) => setNuevaPassword(e.target.value)} className={`w-full ${inputClase}`} />
+            {errorReset && <p className="mt-2 text-sm" style={{ color: '#EF4444' }}>{errorReset}</p>}
+            <div className="mt-5 flex gap-3">
+              <button type="button" onClick={handleGuardarReset} style={{ ...btnPrimario, flex: 1 }}>Cambiar contraseña</button>
+              <button type="button" onClick={() => setReseteando(null)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
             </div>
           </div>
         </div>

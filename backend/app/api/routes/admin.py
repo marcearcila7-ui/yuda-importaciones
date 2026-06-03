@@ -89,7 +89,7 @@ def actualizar_usuario(
     if usuario_id == usuario.id and cambios.get("activo") is False:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No podés desactivar tu propio usuario",
+            detail="No puedes desactivar tu propio usuario",
         )
 
     if "nombre" in cambios:
@@ -167,6 +167,69 @@ def actualizar_configuracion(
     return ConfiguracionResponse(
         tipo_cambio_usd=float(registro.valor), updated_at=registro.updated_at
     )
+
+
+# ──────────────── MÉTRICAS ────────────────
+
+
+@router.get("/metricas")
+def metricas(
+    usuario: User = Depends(require_roles("admin", "contadora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Métricas del mes actual para el dashboard (admin y contadora)"""
+    ahora = datetime.now()
+    inicio_mes = datetime(ahora.year, ahora.month, 1)
+    if ahora.month == 12:
+        fin_mes = datetime(ahora.year + 1, 1, 1)
+    else:
+        fin_mes = datetime(ahora.year, ahora.month + 1, 1)
+
+    # Sesiones creadas este mes
+    sesiones_mes = (
+        db.query(Sesion)
+        .filter(Sesion.created_at >= inicio_mes, Sesion.created_at < fin_mes)
+        .all()
+    )
+    ids_sesiones = [s.id for s in sesiones_mes]
+
+    # Ítems de esas sesiones
+    items = (
+        db.query(Item).filter(Item.sesion_id.in_(ids_sesiones)).all()
+        if ids_sesiones
+        else []
+    )
+    total_rmb_mes = sum(
+        (i.price_rmb or 0) * (i.qty_por_ctn or 0) * (i.ctns or 0) for i in items
+    )
+
+    # Tipo de cambio: tabla configuracion o valor por defecto de settings
+    registro_tc = (
+        db.query(Configuracion).filter(Configuracion.clave == CLAVE_TIPO_CAMBIO).first()
+    )
+    tipo_cambio = float(registro_tc.valor) if registro_tc else settings.TIPO_CAMBIO_USD
+
+    total_usd_mes = round(total_rmb_mes / tipo_cambio, 2) if tipo_cambio else 0.0
+    proveedores = {(i.supplier_nombre, i.supplier_numero) for i in items}
+
+    # Pedidos generados este mes
+    total_pedidos_mes = (
+        db.query(PedidoGenerado)
+        .filter(
+            PedidoGenerado.fecha_generacion >= inicio_mes,
+            PedidoGenerado.fecha_generacion < fin_mes,
+        )
+        .count()
+    )
+
+    return {
+        "total_sesiones_mes": len(sesiones_mes),
+        "total_rmb_mes": total_rmb_mes,
+        "total_usd_mes": total_usd_mes,
+        "total_items_mes": len(items),
+        "total_pedidos_mes": total_pedidos_mes,
+        "proveedores_unicos_mes": len(proveedores),
+    }
 
 
 # ──────────────── HISTORIAL ────────────────

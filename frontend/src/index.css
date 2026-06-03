@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --yuda-primary: #4b52e8;
+  --yuda-primary-dark: #3840c7;
+  --yuda-accent: #0d0d0d;
+  --yuda-bg: #f5f5f0;
+  --yuda-sidebar: #0d0d0d;
+  --yuda-card: #ffffff;
+  --yuda-text-secondary: #6b7280;
+  --yuda-success: #10b981;
+  --yuda-warning: #f59e0b;
+  --yuda-error: #ef4444;
+}
+
+body {
+  font-family: 'Urbanist', sans-serif;
+  background-color: var(--yuda-bg);
+  color: var(--yuda-accent);
+}
+
+/* Scrollbar fino con el color primario */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--yuda-primary) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--yuda-primary);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer components {
+  .card {
+    background-color: var(--yuda-card);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+  }
+}

@@ -95,7 +95,7 @@ function CeldaEditable({
     onItemActualizado()
   }
 
-  const fondo = meta.ctns ? { backgroundColor: '#EFF6FF' } : undefined
+  const fondo = meta.ctns ? { backgroundColor: '#EEF0FD' } : undefined
 
   if (editando) {
     return (
@@ -155,7 +155,7 @@ function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta })
   return (
     <div
       className="px-1 py-1 text-right"
-      style={meta.usd ? { color: '#DC2626' } : undefined}
+      style={meta.usd ? { color: '#EF4444' } : undefined}
     >
       {valor == null ? '—' : String(valor)}
     </div>
@@ -206,7 +206,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       base.position = 'sticky'
       base.left = meta.stickyLeft
       base.zIndex = esHeader ? 30 : 20
-      base.backgroundColor = esHeader ? '#404040' : '#ffffff'
+      base.backgroundColor = esHeader ? '#0D0D0D' : '#ffffff'
     }
     return base
   }
@@ -216,7 +216,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       <table className="border-collapse text-sm">
         <thead>
           {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id} style={{ backgroundColor: '#404040' }}>
+            <tr key={hg.id} style={{ backgroundColor: '#0D0D0D' }}>
               {hg.headers.map((header) => {
                 const meta = header.column.columnDef.meta as ColMeta
                 return (
@@ -234,7 +234,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="bg-white even:bg-gray-50">
+            <tr key={row.id} className="bg-white even:bg-gray-50 hover:bg-[#F5F5F0]">
               {row.getVisibleCells().map((cell) => {
                 const meta = cell.column.columnDef.meta as ColMeta
                 return (
@@ -251,7 +251,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           ))}
         </tbody>
         <tfoot className="sticky bottom-0">
-          <tr style={{ backgroundColor: '#f3f4f6' }} className="font-bold">
+          <tr style={{ backgroundColor: '#0D0D0D' }} className="font-bold">
             {COLUMNAS.map((col) => {
               let contenido = ''
               if (col.id === 'supplier_nombre') contenido = 'TOTALES:'
@@ -261,12 +261,12 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
               else if (col.id === 't_cbm') contenido = totales.t_cbm.toFixed(6)
               const meta = col.meta
               const estilo = estiloCelda(meta, false)
-              if (meta.stickyLeft !== undefined) estilo.backgroundColor = '#f3f4f6'
+              estilo.backgroundColor = '#0D0D0D'
               return (
                 <td
                   key={col.id}
                   style={estilo}
-                  className="border border-gray-300 px-2 py-2 text-right"
+                  className="border border-gray-700 px-2 py-2 text-right text-white"
                 >
                   {contenido}
                 </td>

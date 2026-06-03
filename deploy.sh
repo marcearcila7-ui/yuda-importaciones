@@ -5,7 +5,7 @@ echo "=== YUDA Importaciones — Deploy ==="
 
 # 1. Verificar que existe .env.prod
 if [ ! -f .env.prod ]; then
-  echo "ERROR: No existe .env.prod. Copiá .env.prod.example y completá los valores."
+  echo "ERROR: No existe .env.prod. Copia .env.prod.example y completa los valores."
   exit 1
 fi
 

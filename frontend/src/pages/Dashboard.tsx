@@ -1,20 +1,78 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import toast, { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
-import Navbar from '../components/Navbar'
+import MetricCard from '../components/MetricCard'
 import OCRUploader from '../components/OCRUploader/OCRUploader'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
 import { exportarPackingExcel } from '../api/packing'
+import { getMetricas } from '../api/admin'
+import { useAuthStore } from '../store/authStore'
 import { usePackingStore } from '../store/packingStore'
+import type { MetricasDashboard } from '../types/admin'
 import type { OCRResultado } from '../types/ocr'
 import type { ItemCreate } from '../types/packing'
 
+// Encabezado de página reutilizable
+function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNode }) {
+  const hoy = new Date()
+  const fecha = hoy.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const fechaCap = fecha.charAt(0).toUpperCase() + fecha.slice(1)
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{titulo}</h1>
+        <p className="text-sm" style={{ color: '#6B7280' }}>
+          {fechaCap}
+        </p>
+      </div>
+      {accesorio}
+    </div>
+  )
+}
+
+// Card de sección con título
+function SectionCard({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <section className="card">
+      <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+        {titulo}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 function Dashboard() {
   const location = useLocation()
-  const { sesionActual, items, sesiones, agregarItem, cargarItems, seleccionarSesion, cargarSesiones } =
-    usePackingStore()
+  const { usuario } = useAuthStore()
+  const {
+    sesionActual,
+    items,
+    sesiones,
+    agregarItem,
+    cargarItems,
+    seleccionarSesion,
+    cargarSesiones,
+  } = usePackingStore()
+  const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
+
+  const esGestion = usuario?.rol === 'admin' || usuario?.rol === 'contadora'
+
+  // Carga las métricas del mes (solo admin y contadora)
+  useEffect(() => {
+    if (!esGestion) return
+    getMetricas()
+      .then(setMetricas)
+      .catch(() => setMetricas(null))
+  }, [esGestion])
 
   // Si se llega desde el Historial con un sesion_id en el state, preseleccionar la sesión
   useEffect(() => {
@@ -32,7 +90,7 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.sesion_id])
 
-  // Toma los datos confirmados del OCR y los agrega como ítem del packing list
+  // Toma los datos confirmados del OCR y los agrega como producto de la cotización
   const handleItemConfirmado = async (datos: OCRResultado & { foto_url: string }) => {
     const itemCreate: ItemCreate = {
       supplier_nombre: datos.supplier_nombre ?? undefined,
@@ -48,10 +106,10 @@ function Dashboard() {
       ctns: 1,
     }
     await agregarItem(itemCreate)
-    toast.success('Ítem agregado al Packing List')
+    toast.success('Producto agregado a la cotización')
   }
 
-  // Descarga el Excel del packing list
+  // Descarga el Excel de la cotización
   const handleExportar = async () => {
     if (!sesionActual) return
     try {
@@ -62,56 +120,79 @@ function Dashboard() {
       enlace.download = `PackingList_${sesionActual.nombre_cliente}.xlsx`
       enlace.click()
       URL.revokeObjectURL(url)
+      toast.success('Lista descargada')
     } catch {
-      toast.error('No se pudo exportar el Packing List')
+      toast.error('No se pudo descargar la lista')
     }
   }
 
+  const fmt = (n: number) => n.toLocaleString('es-ES')
+
   return (
-    <div className="flex min-h-screen flex-col bg-gray-100">
-      <Toaster position="top-right" />
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        titulo="Cotización"
+        accesorio={
+          sesionActual ? (
+            <span
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white"
+              style={{ backgroundColor: '#4B52E8' }}
+            >
+              {sesionActual.nombre_cliente}
+            </span>
+          ) : undefined
+        }
+      />
 
-      <Navbar />
+      {/* Métricas del mes (admin y contadora) */}
+      {esGestion && metricas && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <MetricCard titulo="Cotizaciones este mes" valor={metricas.total_sesiones_mes} icono="📦" color="#4B52E8" />
+          <MetricCard titulo="Total Yuan este mes" valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono="¥" color="#F59E0B" />
+          <MetricCard titulo="Total USD este mes" valor={`$ ${fmt(metricas.total_usd_mes)}`} icono="💵" color="#10B981" />
+          <MetricCard titulo="Ítems procesados" valor={metricas.total_items_mes} icono="📋" color="#4B52E8" />
+          <MetricCard titulo="Proveedores únicos" valor={metricas.proveedores_unicos_mes} icono="🏭" color="#0D0D0D" />
+          <MetricCard titulo="Pedidos generados" valor={metricas.total_pedidos_mes} icono="📄" color="#4B52E8" />
+        </div>
+      )}
 
-      <main className="flex flex-1 flex-col gap-6 p-4">
-        <SesionSelector />
+      {/* Crear / abrir cotización */}
+      <SesionSelector />
 
-        {sesionActual ? (
-          <>
+      {/* Cotización activa */}
+      {sesionActual && (
+        <>
+          <SectionCard titulo="Subir foto de etiqueta">
             <OCRUploader onItemConfirmado={handleItemConfirmado} />
+          </SectionCard>
 
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Packing List · {sesionActual.nombre_cliente}
-              </h2>
+          <SectionCard titulo="Productos de la cotización">
+            <div className="mb-4 flex justify-end">
               <button
                 type="button"
                 onClick={handleExportar}
-                style={{ minHeight: 48 }}
-                className="rounded bg-green-600 px-4 font-semibold text-white hover:bg-green-700"
+                className="font-semibold text-white"
+                style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
               >
-                Exportar Packing List
+                ⬇ Descargar lista (Excel)
               </button>
             </div>
-
-            <GenerarPedidos
-              sesion_id={sesionActual.id}
-              nombre_cliente={sesionActual.nombre_cliente}
-            />
-
             <PackingListTable
               items={items}
               sesion_id={sesionActual.id}
               tipo_cambio_usd={sesionActual.tipo_cambio_usd}
               onItemActualizado={cargarItems}
             />
-          </>
-        ) : (
-          <p className="mt-8 text-center text-gray-600">
-            Seleccioná o creá una cotización para comenzar
-          </p>
-        )}
-      </main>
+          </SectionCard>
+
+          <SectionCard titulo="Generar pedidos">
+            <GenerarPedidos
+              sesion_id={sesionActual.id}
+              nombre_cliente={sesionActual.nombre_cliente}
+            />
+          </SectionCard>
+        </>
+      )}
     </div>
   )
 }

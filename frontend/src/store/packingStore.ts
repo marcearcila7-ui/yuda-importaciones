@@ -16,6 +16,7 @@ interface PackingState {
   agregarItem: (data: ItemCreate) => Promise<void>
   actualizarItem: (item_id: string, data: Partial<ItemCreate>) => Promise<void>
   eliminarItem: (item_id: string) => Promise<void>
+  volverAlInicio: () => void
   clearError: () => void
 }
 
@@ -111,6 +112,9 @@ export const usePackingStore = create<PackingState>((set, get) => ({
       set({ error: mensajeError(err, 'No se pudo eliminar el ítem') })
     }
   },
+
+  // Cierra la cotización actual y vuelve a la pantalla de inicio
+  volverAlInicio: () => set({ sesionActual: null, items: [], error: null }),
 
   clearError: () => set({ error: null }),
 }))

@@ -30,3 +30,12 @@ export interface SesionHistorial {
   tiene_pedidos: boolean
   created_at: string
 }
+
+export interface MetricasDashboard {
+  total_sesiones_mes: number
+  total_rmb_mes: number
+  total_usd_mes: number
+  total_items_mes: number
+  total_pedidos_mes: number
+  proveedores_unicos_mes: number
+}
