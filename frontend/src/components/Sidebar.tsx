@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
@@ -78,7 +77,6 @@ function Sidebar() {
   const location = useLocation()
   const { t } = useTranslation()
   const { usuario, logout } = useAuthStore()
-  const [abierto, setAbierto] = useState(false)
 
   const rol = usuario?.rol
   const linksVisibles = LINKS.filter((l) => !l.roles || (rol && l.roles.includes(rol)))
@@ -110,7 +108,6 @@ function Sidebar() {
             <Link
               key={l.to}
               to={l.to}
-              onClick={() => setAbierto(false)}
               className="flex items-center gap-3 px-3 py-3 text-sm font-medium transition-colors"
               style={{
                 borderRadius: 8,
@@ -162,50 +159,13 @@ function Sidebar() {
     </div>
   )
 
+  // Sidebar fijo solo en desktop (en mobile se usan TopBar + BottomNav del Layout)
   return (
-    <>
-      {/* Sidebar fijo en desktop */}
-      <aside className="hidden md:block" style={{ width: 240, flexShrink: 0 }}>
-        <div className="fixed left-0 top-0 h-screen" style={{ width: 240 }}>
-          {contenido}
-        </div>
-      </aside>
-
-      {/* Top bar fija en mobile */}
-      <div
-        className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between bg-white px-4 py-3 md:hidden"
-        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
-      >
-        <div className="flex items-center gap-2">
-          <LogoYuda size={28} />
-          <span className="font-bold" style={{ color: '#0D0D0D' }}>
-            YU·DA
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <SelectorIdioma />
-          <button
-            type="button"
-            onClick={() => setAbierto(true)}
-            className="text-2xl"
-            style={{ color: '#0D0D0D' }}
-            aria-label="Menú"
-          >
-            ☰
-          </button>
-        </div>
+    <aside className="hidden md:block" style={{ width: 240, flexShrink: 0 }}>
+      <div className="fixed left-0 top-0 h-screen" style={{ width: 240 }}>
+        {contenido}
       </div>
-
-      {/* Drawer mobile */}
-      {abierto && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setAbierto(false)} />
-          <div className="absolute left-0 top-0 h-full" style={{ width: 240 }}>
-            {contenido}
-          </div>
-        </div>
-      )}
-    </>
+    </aside>
   )
 }
 

@@ -53,7 +53,7 @@ function SesionSelector() {
             }}
             placeholder={t('dashboard.ejemploCliente')}
             style={inputStyle}
-            className={inputClase}
+            className={`${inputClase} min-h-[48px] w-full sm:min-h-0`}
           />
         </label>
         <label className="flex flex-col gap-1 text-sm sm:w-44" style={{ color: '#6B7280' }}>
@@ -64,15 +64,15 @@ function SesionSelector() {
             value={tipoCambio}
             onChange={(e) => setTipoCambio(e.target.value)}
             style={inputStyle}
-            className={inputClase}
+            className={`${inputClase} min-h-[48px] w-full sm:min-h-0`}
           />
         </label>
         <button
           type="button"
           onClick={handleCrear}
           disabled={isLoading}
-          className="font-semibold text-white disabled:opacity-60"
-          style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
+          className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:min-h-[48px] sm:w-auto"
+          style={{ backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
         >
           {isLoading ? t('dashboard.creando') : t('dashboard.nuevaCotizacion')}
         </button>
@@ -85,7 +85,36 @@ function SesionSelector() {
           <p className="mb-2 text-sm font-medium" style={{ color: '#6B7280' }}>
             {t('dashboard.abrirReciente')}
           </p>
-          <div className="flex flex-wrap gap-2">
+          {/* Mobile: cards verticales */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {recientes.map((sesion) => (
+              <button
+                key={sesion.id}
+                type="button"
+                onClick={() => seleccionarSesion(sesion)}
+                disabled={isLoading}
+                className="flex min-h-[48px] w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-2 text-left disabled:opacity-60"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold" style={{ color: '#0D0D0D' }}>
+                    {sesion.nombre_cliente}
+                  </span>
+                  <span className="text-xs" style={{ color: '#9CA3AF' }}>
+                    {sesion.fecha}
+                  </span>
+                </span>
+                <span
+                  className="ml-3 flex-shrink-0 rounded-full px-3 py-1 text-sm font-medium text-white"
+                  style={{ backgroundColor: '#4B52E8' }}
+                >
+                  {t('dashboard.abrir')}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop: chips en fila (igual que antes) */}
+          <div className="hidden flex-wrap gap-2 sm:flex">
             {recientes.map((sesion) => (
               <button
                 key={sesion.id}

@@ -3,6 +3,7 @@
     "cotizacion": "报价",
     "historial": "历史记录",
     "administracion": "管理",
+    "admin": "管理",
     "cerrarSesion": "退出登录"
   },
   "login": {
@@ -30,8 +31,10 @@
     "creando": "正在创建...",
     "avisoNombre": "请输入客户名称以创建报价。",
     "abrirReciente": "或打开一个已开始的报价",
+    "abrir": "打开",
     "listaDescargada": "清单已下载",
-    "errorDescargar": "无法下载清单"
+    "errorDescargar": "无法下载清单",
+    "saludo": "你好，{{nombre}} 👋"
   },
   "ocr": {
     "titulo": "上传标签照片",
@@ -56,7 +59,8 @@
     "agregarPacking": "添加到装箱单",
     "cancelar": "取消",
     "exitoAgregado": "产品已添加到装箱单",
-    "errorProcesar": "无法处理该图片"
+    "errorProcesar": "无法处理该图片",
+    "tomarFoto": "📷 拍照或上传图片"
   },
   "packing": {
     "exportar": "导出装箱单",

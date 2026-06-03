@@ -35,7 +35,8 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{titulo}</h1>
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        {/* La fecha en mobile se muestra en el saludo personalizado */}
+        <p className="hidden text-sm sm:block" style={{ color: '#6B7280' }}>
           {fechaCap}
         </p>
       </div>
@@ -58,7 +59,7 @@ function SectionCard({ titulo, children }: { titulo: string; children: ReactNode
 
 function Dashboard() {
   const location = useLocation()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { usuario } = useAuthStore()
   const {
     sesionActual,
@@ -144,6 +145,17 @@ function Dashboard() {
 
   const fmt = (n: number) => n.toLocaleString('es-ES')
 
+  // Fecha actual localizada (para el saludo mobile)
+  const saludoFecha = (() => {
+    const f = new Date().toLocaleDateString(LOCALES[i18n.language] || 'es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    return f.charAt(0).toUpperCase() + f.slice(1)
+  })()
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -160,9 +172,21 @@ function Dashboard() {
         }
       />
 
+      {/* Saludo personalizado: solo mobile */}
+      {usuario && (
+        <div className="sm:hidden">
+          <h2 style={{ fontWeight: 700, fontSize: 20, color: '#0D0D0D' }}>
+            {t('dashboard.saludo', { nombre: usuario.nombre })}
+          </h2>
+          <p className="text-sm" style={{ color: '#6B7280' }}>
+            {saludoFecha}
+          </p>
+        </div>
+      )}
+
       {/* Métricas del mes (admin y contadora) */}
       {esGestion && metricas && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono="📦" color="#4B52E8" />
           <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono="¥" color="#F59E0B" />
           <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono="💵" color="#10B981" />

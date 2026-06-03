@@ -3,6 +3,7 @@
     "cotizacion": "Quotation",
     "historial": "History",
     "administracion": "Administration",
+    "admin": "Admin",
     "cerrarSesion": "Log out"
   },
   "login": {
@@ -30,8 +31,10 @@
     "creando": "Creating...",
     "avisoNombre": "Type the client name to create the quotation.",
     "abrirReciente": "Or open a quotation you already started",
+    "abrir": "Open",
     "listaDescargada": "List downloaded",
-    "errorDescargar": "Could not download the list"
+    "errorDescargar": "Could not download the list",
+    "saludo": "Hi, {{nombre}} 👋"
   },
   "ocr": {
     "titulo": "Upload label photo",
@@ -56,7 +59,8 @@
     "agregarPacking": "Add to Packing List",
     "cancelar": "Cancel",
     "exitoAgregado": "Item added to Packing List",
-    "errorProcesar": "Could not process the image"
+    "errorProcesar": "Could not process the image",
+    "tomarFoto": "📷 Take photo or upload image"
   },
   "packing": {
     "exportar": "Export Packing List",

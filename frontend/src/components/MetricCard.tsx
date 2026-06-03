@@ -31,7 +31,7 @@ function MetricCard({
   const flecha = tendencia === 'up' ? '↑' : tendencia === 'down' ? '↓' : '→'
 
   return (
-    <div className="card flex flex-col gap-3">
+    <div className="card flex flex-col gap-3 p-4 sm:p-6">
       <div className="flex items-start justify-between">
         <span
           className="flex h-11 w-11 items-center justify-center rounded-full text-xl"
@@ -46,7 +46,7 @@ function MetricCard({
         )}
       </div>
       <div>
-        <p style={{ fontWeight: 700, fontSize: 32, color: '#0D0D0D', lineHeight: 1.1 }}>
+        <p className="text-2xl sm:text-[32px]" style={{ fontWeight: 700, color: '#0D0D0D', lineHeight: 1.1 }}>
           {valor}
         </p>
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>

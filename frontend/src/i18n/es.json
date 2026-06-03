@@ -3,6 +3,7 @@
     "cotizacion": "Cotización",
     "historial": "Historial",
     "administracion": "Administración",
+    "admin": "Admin",
     "cerrarSesion": "Cerrar sesión"
   },
   "login": {
@@ -30,8 +31,10 @@
     "creando": "Creando...",
     "avisoNombre": "Escribe el nombre del cliente para crear la cotización.",
     "abrirReciente": "O abre una cotización que ya empezaste",
+    "abrir": "Abrir",
     "listaDescargada": "Lista descargada",
-    "errorDescargar": "No se pudo descargar la lista"
+    "errorDescargar": "No se pudo descargar la lista",
+    "saludo": "Hola, {{nombre}} 👋"
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
@@ -56,7 +59,8 @@
     "agregarPacking": "Agregar al Packing List",
     "cancelar": "Cancelar",
     "exitoAgregado": "Ítem agregado al Packing List",
-    "errorProcesar": "No se pudo procesar la imagen"
+    "errorProcesar": "No se pudo procesar la imagen",
+    "tomarFoto": "📷 Tomar foto o subir imagen"
   },
   "packing": {
     "exportar": "Exportar Packing List",

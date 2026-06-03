@@ -60,7 +60,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
     })
   }, [])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     multiple: false,
     accept: {
@@ -129,36 +129,46 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
           <div
             {...getRootProps()}
             style={{
-              minHeight: 150,
               fontSize: 16,
               borderColor: '#4B52E8',
               backgroundColor: isDragActive ? '#F0F1FD' : 'transparent',
             }}
-            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center"
+            className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center sm:min-h-[150px]"
           >
             <input {...getInputProps()} />
             {preview ? (
               <img
                 src={preview}
                 alt="Vista previa"
-                style={{ maxHeight: 200 }}
-                className="rounded-lg object-contain"
+                className="max-h-[250px] w-full rounded-lg object-contain sm:max-h-[200px]"
               />
             ) : (
               <>
-                <span className="text-4xl">📷</span>
-                <p className="mt-2 font-medium" style={{ color: '#0D0D0D' }}>{t('ocr.instruccion')}</p>
+                <span className="text-5xl sm:text-4xl">📷</span>
+                <p className="mt-3 text-lg font-semibold sm:mt-2 sm:text-base sm:font-medium" style={{ color: '#0D0D0D' }}>{t('ocr.instruccion')}</p>
                 <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{t('ocr.formatos')}</p>
               </>
             )}
           </div>
 
+          {/* CTA de cámara prominente: solo mobile (si todavía no hay imagen) */}
+          {!preview && (
+            <button
+              type="button"
+              onClick={open}
+              className="min-h-[52px] w-full rounded-lg font-semibold text-white sm:hidden"
+              style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+            >
+              {t('ocr.tomarFoto')}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleExtraer}
             disabled={!archivo || cargando}
-            className="font-semibold text-white disabled:opacity-60"
-            style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+            className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:min-h-[48px]"
+            style={{ backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
           >
             {cargando ? t('ocr.analizando') : t('ocr.extraer')}
           </button>
@@ -186,7 +196,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   value={(form[clave] as string | null) ?? ''}
                   onChange={(e) => actualizarTexto(clave, e.target.value)}
                   style={inputStyle}
-                  className={inputClase}
+                  className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
               </label>
             ))}
@@ -198,7 +208,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   value={(form[clave] as number | null) ?? ''}
                   onChange={(e) => actualizarNumero(clave, e.target.value)}
                   style={inputStyle}
-                  className={inputClase}
+                  className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
               </label>
             ))}
