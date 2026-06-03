@@ -3,36 +3,11 @@ import type { CSSProperties, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 
-const inputStyle: CSSProperties = {
-  fontSize: 16, // mínimo 16px para evitar el zoom automático en iOS
-}
-
-function Logo({ grande = false }: { grande?: boolean }) {
-  return (
-    <div className="text-center">
-      <p
-        style={{
-          fontWeight: 800,
-          fontSize: grande ? 48 : 32,
-          color: grande ? '#FFFFFF' : '#0D0D0D',
-          lineHeight: 1,
-        }}
-      >
-        YU·DA
-      </p>
-      <p
-        style={{
-          fontSize: grande ? 14 : 11,
-          letterSpacing: '0.3em',
-          color: grande ? '#FFFFFF' : '#6B7280',
-          marginTop: 6,
-        }}
-      >
-        IMPORTACIONES
-      </p>
-    </div>
-  )
-}
+// font-size 16 evita el zoom automático en iOS
+const inputBase: CSSProperties = { padding: '12px 0', fontSize: 16 }
+const inputClase =
+  'w-full border-0 border-b border-[#E5E7EB] bg-transparent focus:border-[#4B52E8] focus:outline-none'
+const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: '#374151', display: 'block' }
 
 function Login() {
   const navigate = useNavigate()
@@ -51,69 +26,80 @@ function Login() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Lado izquierdo (branding) — solo desktop */}
+      {/* Mitad izquierda (branding) — solo desktop */}
       <div
-        className="hidden w-1/2 flex-col items-center justify-center p-10 md:flex"
+        className="hidden w-1/2 flex-col items-center justify-center md:flex"
         style={{ backgroundColor: '#4B52E8' }}
       >
-        <Logo grande />
-        <p className="mt-6 text-center text-lg font-medium text-white">
+        <p style={{ fontWeight: 800, fontSize: 56, color: '#FFFFFF', lineHeight: 1 }}>YU·DA</p>
+        <p style={{ fontSize: 13, letterSpacing: 4, color: '#FFFFFF', marginTop: 8 }}>
+          IMPORTACIONES
+        </p>
+        <div style={{ width: 40, height: 2, backgroundColor: '#FFFFFF', margin: '24px 0' }} />
+        <p style={{ fontSize: 18, fontWeight: 400, color: '#FFFFFF' }}>
           Conectamos China con tu éxito
+        </p>
+        <p style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.7, marginTop: 8 }}>
+          义乌市与达贸易有限公司
         </p>
       </div>
 
-      {/* Lado derecho (formulario) */}
-      <div className="flex w-full flex-col items-center justify-center bg-white px-6 md:w-1/2">
-        <div className="w-full max-w-sm">
-          {/* Logo pequeño arriba (visible sobre todo en mobile) */}
-          <div className="mb-10 md:hidden">
-            <Logo />
-          </div>
+      {/* Mitad derecha (formulario) */}
+      <div className="flex w-full items-center justify-center bg-white px-6 md:w-1/2">
+        <div className="w-full" style={{ maxWidth: 380 }}>
+          {/* Logo pequeño arriba — solo mobile */}
+          <p
+            className="mb-8 text-center md:hidden"
+            style={{ fontWeight: 800, fontSize: 28, color: '#4B52E8' }}
+          >
+            YU·DA
+          </p>
 
-          <h1 className="mb-8" style={{ fontWeight: 700, fontSize: 24, color: '#0D0D0D' }}>
-            Iniciar sesión
-          </h1>
+          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>Bienvenida</h1>
+          <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
+            Ingresa tus credenciales para continuar
+          </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+          <form onSubmit={handleSubmit} style={{ marginTop: 32 }}>
+            <label htmlFor="email" style={labelStyle}>
               Email
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-                style={inputStyle}
-                className="border-0 border-b-2 border-gray-200 bg-transparent py-2 focus:border-[#4B52E8] focus:outline-none"
-              />
             </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+              style={inputBase}
+              className={inputClase}
+            />
 
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label htmlFor="password" style={{ ...labelStyle, marginTop: 20 }}>
               Contraseña
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-                style={inputStyle}
-                className="border-0 border-b-2 border-gray-200 bg-transparent py-2 focus:border-[#4B52E8] focus:outline-none"
-              />
             </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              style={inputBase}
+              className={inputClase}
+            />
 
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 w-full font-semibold text-white disabled:opacity-60"
-              style={{ height: 52, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+              className="mt-8 w-full rounded-lg bg-[#4B52E8] font-semibold text-white hover:bg-[#3840C7] disabled:opacity-60"
+              style={{ height: 52, fontSize: 16 }}
             >
               {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
             </button>
 
             {error && (
-              <p className="text-center text-sm" style={{ color: '#EF4444' }}>
-                {error}
-              </p>
+              <p style={{ color: '#EF4444', fontSize: 14, marginTop: 12 }}>{error}</p>
             )}
           </form>
         </div>
