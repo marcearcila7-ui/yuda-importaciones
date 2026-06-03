@@ -49,19 +49,22 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
   const handleDescargarZip = async () => {
     setError(null)
     setDescargandoZip(true)
+    // En iPhone/Safari la pestaña debe abrirse dentro del toque (antes del await)
+    const ventana = window.open('', '_blank')
     try {
       const blob = await descargarZip(sesion_id)
       const url = URL.createObjectURL(blob)
-      const enlace = document.createElement('a')
-      enlace.href = url
-      enlace.download = `${nombre_cliente}_Pedidos.zip`
-      enlace.target = '_blank'
-      enlace.rel = 'noopener'
-      document.body.appendChild(enlace)
-      enlace.click()
-      document.body.removeChild(enlace)
-      setTimeout(() => URL.revokeObjectURL(url), 4000)
+      if (ventana) {
+        ventana.location.href = url
+      } else {
+        const enlace = document.createElement('a')
+        enlace.href = url
+        enlace.download = `${nombre_cliente}_Pedidos.zip`
+        enlace.click()
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch {
+      ventana?.close()
       setError('No se pudo descargar el ZIP')
     } finally {
       setDescargandoZip(false)

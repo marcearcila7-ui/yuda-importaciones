@@ -112,22 +112,25 @@ function Dashboard() {
   // Descarga el Excel de la cotización
   const handleExportar = async () => {
     if (!sesionActual) return
+    // En iPhone/Safari la pestaña debe abrirse DENTRO del toque (antes del await),
+    // si no el navegador la bloquea o saca de la app.
+    const ventana = window.open('', '_blank')
     try {
       const blob = await exportarPackingExcel(sesionActual.id)
       const url = URL.createObjectURL(blob)
-      const enlace = document.createElement('a')
-      enlace.href = url
-      enlace.download = `PackingList_${sesionActual.nombre_cliente}.xlsx`
-      // Abrir en pestaña aparte para que no reemplace la app en el celular
-      enlace.target = '_blank'
-      enlace.rel = 'noopener'
-      document.body.appendChild(enlace)
-      enlace.click()
-      document.body.removeChild(enlace)
-      // Revocar con demora para que el navegador del celular alcance a leer el archivo
-      setTimeout(() => URL.revokeObjectURL(url), 4000)
+      if (ventana) {
+        ventana.location.href = url
+      } else {
+        // Fallback (si el navegador bloqueó la pestaña): descarga directa
+        const enlace = document.createElement('a')
+        enlace.href = url
+        enlace.download = `PackingList_${sesionActual.nombre_cliente}.xlsx`
+        enlace.click()
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
       toast.success('Lista descargada')
     } catch {
+      ventana?.close()
       toast.error('No se pudo descargar la lista')
     }
   }
