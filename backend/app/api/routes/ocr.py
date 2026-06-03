@@ -19,8 +19,8 @@ TIPOS_PERMITIDOS = {
     "image/webp": ".webp",
 }
 
-# Tamaño máximo permitido: 10MB
-MAX_BYTES = 10 * 1024 * 1024
+# Tamaño máximo permitido: 25MB (las fotos de celular suelen superar 10MB)
+MAX_BYTES = 25 * 1024 * 1024
 
 
 @router.post("/extraer", response_model=OCRResponse)
@@ -48,7 +48,7 @@ async def extraer(
     if len(imagen_bytes) > MAX_BYTES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La imagen no debe superar 10MB",
+            detail="La imagen no debe superar 25MB",
         )
 
     # a. Nombre único conservando la extensión original

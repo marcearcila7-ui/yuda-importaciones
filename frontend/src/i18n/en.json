@@ -34,12 +34,12 @@
     "abrir": "Open",
     "listaDescargada": "List downloaded",
     "errorDescargar": "Could not download the list",
-    "saludo": "Hi, {{nombre}} 👋"
+    "saludo": "Hi, {{nombre}}"
   },
   "ocr": {
     "titulo": "Upload label photo",
     "instruccion": "Tap to upload a photo",
-    "formatos": "JPG, PNG or WEBP · max 10MB",
+    "formatos": "JPG, PNG or WEBP · max 25MB",
     "extraer": "Extract data",
     "analizando": "Analyzing label...",
     "revisarDatos": "Review extracted data",
@@ -60,7 +60,7 @@
     "cancelar": "Cancel",
     "exitoAgregado": "Item added to Packing List",
     "errorProcesar": "Could not process the image",
-    "tomarFoto": "📷 Take photo or upload image"
+    "tomarFoto": "Take photo or upload image"
   },
   "packing": {
     "exportar": "Export Packing List",

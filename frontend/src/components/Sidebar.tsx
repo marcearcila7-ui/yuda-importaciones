@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ClipboardList, LogOut, Package, Settings } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 // Logo circular YUDA (círculo azul con "Y" blanca)
@@ -61,15 +63,15 @@ function SelectorIdioma() {
 
 interface ItemNav {
   to: string
-  icono: string
+  icono: ReactNode
   clave: string
   roles?: string[]
 }
 
 const LINKS: ItemNav[] = [
-  { to: '/dashboard', icono: '📦', clave: 'cotizacion' },
-  { to: '/historial', icono: '📋', clave: 'historial', roles: ['admin', 'contadora'] },
-  { to: '/admin', icono: '⚙️', clave: 'administracion', roles: ['admin'] },
+  { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion' },
+  { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
+  { to: '/admin', icono: <Settings size={18} />, clave: 'administracion', roles: ['admin'] },
 ]
 
 function Sidebar() {
@@ -121,7 +123,7 @@ function Sidebar() {
                 if (!activo) e.currentTarget.style.backgroundColor = 'transparent'
               }}
             >
-              <span className="text-base">{l.icono}</span>
+              {l.icono}
               {t(`nav.${l.clave}`)}
             </Link>
           )
@@ -153,7 +155,7 @@ function Sidebar() {
           className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-white"
           style={{ backgroundColor: '#1F1F1F', borderRadius: 8 }}
         >
-          ⏏ {t('nav.cerrarSesion')}
+          <LogOut size={18} /> {t('nav.cerrarSesion')}
         </button>
       </div>
     </div>

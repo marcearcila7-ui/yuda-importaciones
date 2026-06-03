@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslation } from 'react-i18next'
+import { Camera } from 'lucide-react'
 import { subirFotoOCR } from '../../api/ocr'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
 
@@ -36,6 +37,52 @@ function chipConfianza(confianza: OCRResultado['confianza']): { style: CSSProper
   if (confianza === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, i18n: 'confianzaAlta' }
   if (confianza === 'media') return { style: { backgroundColor: '#FEF3C7', color: '#B45309' }, i18n: 'confianzaMedia' }
   return { style: { backgroundColor: '#FEE2E2', color: '#EF4444' }, i18n: 'confianzaBaja' }
+}
+
+// Comprime/reduce la imagen antes de subir (las fotos de celular pesan mucho).
+// Reescala a un lado máximo de 1600px y reencoda a JPEG. Si algo falla, devuelve el original.
+async function comprimirImagen(file: File): Promise<File> {
+  if (file.size < 1_500_000) return file
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      const maxLado = 1600
+      if (Math.max(width, height) > maxLado) {
+        const escala = maxLado / Math.max(width, height)
+        width = Math.round(width * escala)
+        height = Math.round(height * escala)
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(file)
+        return
+      }
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file)
+            return
+          }
+          const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg'
+          resolve(new File([blob], nombre, { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        0.85,
+      )
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(file)
+    }
+    img.src = url
+  })
 }
 
 function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
@@ -92,7 +139,8 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
     setCargando(true)
     setError(null)
     try {
-      const respuesta = await subirFotoOCR(archivo)
+      const comprimido = await comprimirImagen(archivo)
+      const respuesta = await subirFotoOCR(comprimido)
       setResultado(respuesta)
       setForm({ ...respuesta.datos_extraidos })
     } catch (err) {
@@ -144,7 +192,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
               />
             ) : (
               <>
-                <span className="text-5xl sm:text-4xl">📷</span>
+                <Camera size={32} />
                 <p className="mt-3 text-lg font-semibold sm:mt-2 sm:text-base sm:font-medium" style={{ color: '#0D0D0D' }}>{t('ocr.instruccion')}</p>
                 <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{t('ocr.formatos')}</p>
               </>
@@ -156,10 +204,10 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             <button
               type="button"
               onClick={open}
-              className="min-h-[52px] w-full rounded-lg font-semibold text-white sm:hidden"
+              className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white sm:hidden"
               style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
             >
-              {t('ocr.tomarFoto')}
+              <Camera size={16} /> {t('ocr.tomarFoto')}
             </button>
           )}
 

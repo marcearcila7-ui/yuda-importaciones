@@ -1,18 +1,20 @@
+import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ClipboardList, Package, Settings } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 interface ItemNav {
   to: string
-  icono: string
+  icono: ReactNode
   i18nKey: string
   roles?: string[]
 }
 
 const ITEMS: ItemNav[] = [
-  { to: '/dashboard', icono: '📦', i18nKey: 'nav.cotizacion' },
-  { to: '/historial', icono: '📋', i18nKey: 'nav.historial', roles: ['admin', 'contadora'] },
-  { to: '/admin', icono: '⚙️', i18nKey: 'nav.admin', roles: ['admin'] },
+  { to: '/dashboard', icono: <Package size={24} />, i18nKey: 'nav.cotizacion' },
+  { to: '/historial', icono: <ClipboardList size={24} />, i18nKey: 'nav.historial', roles: ['admin', 'contadora'] },
+  { to: '/admin', icono: <Settings size={24} />, i18nKey: 'nav.admin', roles: ['admin'] },
 ]
 
 // Barra de navegación inferior, solo visible en mobile
@@ -43,7 +45,7 @@ function BottomNav() {
               textDecoration: 'none',
             }}
           >
-            <span style={{ fontSize: 24, lineHeight: 1 }}>{item.icono}</span>
+            {item.icono}
             <span style={{ fontSize: 10, fontWeight: 500 }}>{t(item.i18nKey)}</span>
           </Link>
         )

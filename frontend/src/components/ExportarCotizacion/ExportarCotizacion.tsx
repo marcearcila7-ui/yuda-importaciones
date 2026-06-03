@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FileSpreadsheet, FileText } from 'lucide-react'
 import { exportarCotizacionExcel, exportarCotizacionPDF } from '../../api/packing'
 
 interface ExportarCotizacionProps {
@@ -90,19 +91,31 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           type="button"
           onClick={() => descargar('excel')}
           disabled={generando !== null}
-          className="flex-1 text-white disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
           style={{ ...btnDescarga, backgroundColor: '#10B981' }}
         >
-          {generando === 'excel' ? t('cotizacion.generando') : t('cotizacion.descargarExcel')}
+          {generando === 'excel' ? (
+            t('cotizacion.generando')
+          ) : (
+            <>
+              <FileSpreadsheet size={18} /> {t('cotizacion.descargarExcel')}
+            </>
+          )}
         </button>
         <button
           type="button"
           onClick={() => descargar('pdf')}
           disabled={generando !== null}
-          className="flex-1 text-white disabled:opacity-60"
+          className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
           style={{ ...btnDescarga, backgroundColor: '#4B52E8' }}
         >
-          {generando === 'pdf' ? t('cotizacion.generando') : t('cotizacion.descargarPDF')}
+          {generando === 'pdf' ? (
+            t('cotizacion.generando')
+          ) : (
+            <>
+              <FileText size={18} /> {t('cotizacion.descargarPDF')}
+            </>
+          )}
         </button>
       </div>
 

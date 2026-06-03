@@ -34,12 +34,12 @@
     "abrir": "Abrir",
     "listaDescargada": "Lista descargada",
     "errorDescargar": "No se pudo descargar la lista",
-    "saludo": "Hola, {{nombre}} 👋"
+    "saludo": "Hola, {{nombre}}"
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
     "instruccion": "Toca para subir una foto",
-    "formatos": "JPG, PNG o WEBP · máx 10MB",
+    "formatos": "JPG, PNG o WEBP · máx 25MB",
     "extraer": "Extraer datos",
     "analizando": "Analizando etiqueta...",
     "revisarDatos": "Revisar datos extraídos",
@@ -60,7 +60,7 @@
     "cancelar": "Cancelar",
     "exitoAgregado": "Ítem agregado al Packing List",
     "errorProcesar": "No se pudo procesar la imagen",
-    "tomarFoto": "📷 Tomar foto o subir imagen"
+    "tomarFoto": "Tomar foto o subir imagen"
   },
   "packing": {
     "exportar": "Exportar Packing List",

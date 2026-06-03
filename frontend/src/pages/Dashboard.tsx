@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store } from 'lucide-react'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
@@ -187,12 +188,12 @@ function Dashboard() {
       {/* Métricas del mes (admin y contadora) */}
       {esGestion && metricas && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono="📦" color="#4B52E8" />
-          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono="¥" color="#F59E0B" />
-          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono="💵" color="#10B981" />
-          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono="📋" color="#4B52E8" />
-          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono="🏭" color="#0D0D0D" />
-          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono="📄" color="#4B52E8" />
+          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono={<ShoppingBag size={20} />} color="#4B52E8" />
+          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono={<Coins size={20} />} color="#F59E0B" />
+          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono={<DollarSign size={20} />} color="#10B981" />
+          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono={<Package size={20} />} color="#4B52E8" />
+          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono={<Store size={20} />} color="#0D0D0D" />
+          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono={<FileText size={20} />} color="#4B52E8" />
         </div>
       )}
 
@@ -211,10 +212,10 @@ function Dashboard() {
               <button
                 type="button"
                 onClick={handleExportar}
-                className="font-semibold text-white"
+                className="flex items-center gap-2 font-semibold text-white"
                 style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
               >
-                ⬇ {t('dashboard.exportarPacking')}
+                <Download size={18} /> {t('dashboard.exportarPacking')}
               </button>
             </div>
             <PackingListTable

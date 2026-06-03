@@ -34,12 +34,12 @@
     "abrir": "打开",
     "listaDescargada": "清单已下载",
     "errorDescargar": "无法下载清单",
-    "saludo": "你好，{{nombre}} 👋"
+    "saludo": "你好，{{nombre}}"
   },
   "ocr": {
     "titulo": "上传标签照片",
     "instruccion": "点击上传照片",
-    "formatos": "JPG、PNG 或 WEBP · 最大 10MB",
+    "formatos": "JPG、PNG 或 WEBP · 最大 25MB",
     "extraer": "提取数据",
     "analizando": "正在识别标签...",
     "revisarDatos": "核对提取的数据",
@@ -60,7 +60,7 @@
     "cancelar": "取消",
     "exitoAgregado": "产品已添加到装箱单",
     "errorProcesar": "无法处理该图片",
-    "tomarFoto": "📷 拍照或上传图片"
+    "tomarFoto": "拍照或上传图片"
   },
   "packing": {
     "exportar": "导出装箱单",

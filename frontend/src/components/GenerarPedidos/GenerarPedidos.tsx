@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
+import { AlertTriangle, Download, FileText } from 'lucide-react'
 import { descargarZip, generarPedidos } from '../../api/pedidos'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
@@ -78,16 +79,24 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
         type="button"
         onClick={handleGenerar}
         disabled={generando}
-        className="w-full disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 disabled:opacity-60"
         style={btnPrimario}
       >
-        {generando ? t('pedidos.generando') : `📄 ${t('pedidos.generar')}`}
+        {generando ? (
+          t('pedidos.generando')
+        ) : (
+          <>
+            <FileText size={18} /> {t('pedidos.generar')}
+          </>
+        )}
       </button>
 
       {/* SECCIÓN B — Advertencias */}
       {resultado && resultado.warnings.length > 0 && (
         <div className="rounded-xl p-4" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
-          <p className="font-bold" style={{ color: '#B45309' }}>{t('pedidos.advertencias')}</p>
+          <p className="flex items-center gap-2 font-bold" style={{ color: '#B45309' }}>
+            <AlertTriangle size={18} /> {t('pedidos.advertencias')}
+          </p>
           <ul className="mt-2 list-disc pl-5 text-sm" style={{ color: '#B45309' }}>
             {resultado.warnings.map((w, i) => (
               <li key={i}>{w}</li>
@@ -113,10 +122,10 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
               <button
                 type="button"
                 onClick={() => window.open(pedido.url_descarga, '_blank')}
-                className="rounded-lg px-3 py-1 text-sm font-medium text-white"
+                className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
                 style={{ backgroundColor: '#4B52E8' }}
               >
-                ⬇ {t('pedidos.descargarExcel')}
+                <Download size={16} /> {t('pedidos.descargarExcel')}
               </button>
             </div>
           ))}

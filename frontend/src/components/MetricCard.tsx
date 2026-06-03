@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react'
+
 interface MetricCardProps {
   titulo: string
   valor: string | number
   subtitulo?: string
-  icono: string
+  icono: ReactNode
   color?: string
   tendencia?: 'up' | 'down' | 'neutral'
   porcentaje?: number
@@ -34,8 +36,8 @@ function MetricCard({
     <div className="card flex flex-col gap-3 p-4 sm:p-6">
       <div className="flex items-start justify-between">
         <span
-          className="flex h-11 w-11 items-center justify-center rounded-full text-xl"
-          style={{ backgroundColor: hexAlpha(color, 0.1) }}
+          className="flex h-11 w-11 items-center justify-center rounded-full"
+          style={{ backgroundColor: hexAlpha(color, 0.1), color }}
         >
           {icono}
         </span>
