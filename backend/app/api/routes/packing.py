@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.item import Item
 from app.models.sesion import Sesion
 from app.models.user import User
+from app.schemas.cotizacion import CotizacionRequest
 from app.schemas.packing import (
     ItemCreate,
     ItemResponse,
@@ -15,6 +16,10 @@ from app.schemas.packing import (
     ReordenarItem,
     SesionCreate,
     SesionResponse,
+)
+from app.services.cotizacion_service import (
+    generar_cotizacion_excel,
+    generar_cotizacion_pdf,
 )
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
@@ -263,5 +268,61 @@ def exportar_packing_excel(
     return Response(
         content=contenido,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.post("/sesiones/{sesion_id}/exportar/cotizacion-excel")
+def exportar_cotizacion_excel(
+    sesion_id: str,
+    datos: CotizacionRequest,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Genera la cotización para el cliente en Excel (multiidioma)"""
+    sesion = _obtener_sesion(db, sesion_id)
+    items = (
+        db.query(Item)
+        .filter(Item.sesion_id == sesion_id)
+        .order_by(Item.orden.asc())
+        .all()
+    )
+
+    contenido = generar_cotizacion_excel(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
+
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Cotizacion_{datos.idioma}.xlsx"
+
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.post("/sesiones/{sesion_id}/exportar/cotizacion-pdf")
+def exportar_cotizacion_pdf(
+    sesion_id: str,
+    datos: CotizacionRequest,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Genera la cotización para el cliente en PDF (multiidioma)"""
+    sesion = _obtener_sesion(db, sesion_id)
+    items = (
+        db.query(Item)
+        .filter(Item.sesion_id == sesion_id)
+        .order_by(Item.orden.asc())
+        .all()
+    )
+
+    contenido = generar_cotizacion_pdf(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
+
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Cotizacion_{datos.idioma}.pdf"
+
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
     )

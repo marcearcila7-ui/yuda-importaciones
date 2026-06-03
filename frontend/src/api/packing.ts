@@ -55,3 +55,21 @@ export async function exportarPackingExcel(sesion_id: string): Promise<Blob> {
   })
   return data as Blob
 }
+
+export async function exportarCotizacionExcel(sesion_id: string, idioma: string): Promise<Blob> {
+  const { data } = await apiClient.post(
+    `/sesiones/${sesion_id}/exportar/cotizacion-excel`,
+    { idioma },
+    { responseType: 'blob' },
+  )
+  return data as Blob
+}
+
+export async function exportarCotizacionPDF(sesion_id: string, idioma: string): Promise<Blob> {
+  const { data } = await apiClient.post(
+    `/sesiones/${sesion_id}/exportar/cotizacion-pdf`,
+    { idioma },
+    { responseType: 'blob' },
+  )
+  return data as Blob
+}

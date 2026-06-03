@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
 import OCRUploader from '../components/OCRUploader/OCRUploader'
@@ -199,6 +200,11 @@ function Dashboard() {
               onItemActualizado={cargarItems}
             />
           </SectionCard>
+
+          <ExportarCotizacion
+            sesion_id={sesionActual.id}
+            nombre_cliente={sesionActual.nombre_cliente}
+          />
 
           <SectionCard titulo={t('dashboard.generarPedidos')}>
             <GenerarPedidos

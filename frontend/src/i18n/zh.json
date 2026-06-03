@@ -165,6 +165,13 @@
     "proveedoresUnicos": "供应商数量",
     "pedidosGenerados": "已生成订单数"
   },
+  "cotizacion": {
+    "titulo": "导出客户报价单",
+    "descargarExcel": "下载 Excel",
+    "descargarPDF": "下载 PDF",
+    "generando": "正在生成...",
+    "error": "无法生成报价单"
+  },
   "roles": {
     "admin": "管理员",
     "vendedora": "销售员",

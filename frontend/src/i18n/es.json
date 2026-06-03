@@ -165,6 +165,13 @@
     "proveedoresUnicos": "Proveedores únicos",
     "pedidosGenerados": "Pedidos generados"
   },
+  "cotizacion": {
+    "titulo": "Exportar cotización para el cliente",
+    "descargarExcel": "Descargar Excel",
+    "descargarPDF": "Descargar PDF",
+    "generando": "Generando...",
+    "error": "No se pudo generar la cotización"
+  },
   "roles": {
     "admin": "Administrador",
     "vendedora": "Vendedora",
