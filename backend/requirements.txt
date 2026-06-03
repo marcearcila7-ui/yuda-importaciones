@@ -1,0 +1,18 @@
+fastapi
+uvicorn[standard]
+sqlalchemy==2.0.*
+alembic
+psycopg2-binary
+pydantic==2.*
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+# Fijado por compatibilidad: passlib 1.7.4 falla con bcrypt >= 4.1 (no es una librería nueva)
+bcrypt==4.0.1
+python-multipart
+anthropic
+openpyxl
+weasyprint
+python-dotenv
+storage3==0.7.7
+httpx==0.27.0

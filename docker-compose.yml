@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:15
+    # Las credenciales se leen del .env; si no están, se usan los valores por defecto.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yuda}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yuda}
+      POSTGRES_DB: ${POSTGRES_DB:-yuda}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yuda} -d ${POSTGRES_DB:-yuda}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Volumen para recarga en caliente del código del backend
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    # En Docker el frontend habla con el backend por el nombre del servicio
+    environment:
+      VITE_API_TARGET: http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

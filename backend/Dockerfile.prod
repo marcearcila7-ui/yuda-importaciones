@@ -1,0 +1,48 @@
+# ───────── Stage 1: builder ─────────
+FROM python:3.11-slim AS builder
+
+# Dependencias del sistema para compilar psycopg2 y weasyprint
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instala las dependencias de Python en un prefijo aislado
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# ───────── Stage 2: runner ─────────
+FROM python:3.11-slim AS runner
+
+# Solo las librerías de runtime que weasyprint necesita
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copia los paquetes instalados en el builder
+COPY --from=builder /install /usr/local
+
+# Copia el código de la aplicación
+COPY . .
+
+# Usuario no-root y carpeta de subidas con permisos correctos
+RUN useradd -m appuser \
+    && mkdir -p /app/uploads \
+    && chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 8000
+
+# Sin --reload en producción
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

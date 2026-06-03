@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:15
+    # Credenciales y DB desde .env.prod
+    env_file:
+      - .env.prod
+    volumes:
+      - yuda_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Usa las variables del contenedor (provistas por env_file)
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - yuda_network
+    # Sin puertos expuestos: solo accesible en la red interna
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    volumes:
+      # Subidas persistentes entre deploys
+      - yuda_uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    networks:
+      - yuda_network
+    # Sin puertos expuestos: solo accesible en la red interna
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - yuda_network
+
+networks:
+  yuda_network:
+    driver: bridge
+
+volumes:
+  yuda_postgres_data:
+  yuda_uploads_data:
