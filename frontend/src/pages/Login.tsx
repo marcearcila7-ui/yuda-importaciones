@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 
 // font-size 16 evita el zoom automático en iOS
@@ -11,6 +12,7 @@ const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: '#3741
 
 function Login() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { login, isLoading, error } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +39,7 @@ function Login() {
         </p>
         <div style={{ width: 40, height: 2, backgroundColor: '#FFFFFF', margin: '24px 0' }} />
         <p style={{ fontSize: 18, fontWeight: 400, color: '#FFFFFF' }}>
-          Conectamos China con tu éxito
+          {t('login.tagline')}
         </p>
         <p style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.7, marginTop: 8 }}>
           义乌市与达贸易有限公司
@@ -55,14 +57,14 @@ function Login() {
             YU·DA
           </p>
 
-          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>Bienvenida</h1>
+          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('login.bienvenida')}</h1>
           <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
-            Ingresa tus credenciales para continuar
+            {t('login.credenciales')}
           </p>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 32 }}>
             <label htmlFor="email" style={labelStyle}>
-              Email
+              {t('login.email')}
             </label>
             <input
               id="email"
@@ -76,7 +78,7 @@ function Login() {
             />
 
             <label htmlFor="password" style={{ ...labelStyle, marginTop: 20 }}>
-              Contraseña
+              {t('login.contrasena')}
             </label>
             <input
               id="password"
@@ -95,7 +97,7 @@ function Login() {
               className="mt-8 w-full rounded-lg bg-[#4B52E8] font-semibold text-white hover:bg-[#3840C7] disabled:opacity-60"
               style={{ height: 52, fontSize: 16 }}
             >
-              {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+              {isLoading ? t('login.ingresando') : t('login.ingresar')}
             </button>
 
             {error && (

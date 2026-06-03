@@ -1,26 +1,19 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getHistorial } from '../api/admin'
 import type { SesionHistorial } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
-
-function fechaHoy(): string {
-  const f = new Date().toLocaleDateString('es-ES', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  return f.charAt(0).toUpperCase() + f.slice(1)
-}
-
 const inputClase =
   'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
 
+const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
+
 function Historial() {
   const navigate = useNavigate()
+  const { t, i18n } = useTranslation()
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [cargando, setCargando] = useState(false)
   const [fechaDesde, setFechaDesde] = useState('')
@@ -47,27 +40,37 @@ function Historial() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const fechaHoyTexto = (() => {
+    const f = new Date().toLocaleDateString(LOCALES[i18n.language] || 'es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+    return f.charAt(0).toUpperCase() + f.slice(1)
+  })()
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>Historial de cotizaciones</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('historial.titulo')}</h1>
         <p className="text-sm" style={{ color: '#6B7280' }}>
-          {fechaHoy()}
+          {fechaHoyTexto}
         </p>
       </div>
 
       {/* Filtros */}
       <div className="card flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-          Desde
+          {t('historial.fechaDesde')}
           <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
         <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-          Hasta
+          {t('historial.fechaHasta')}
           <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
         <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-          Cliente
+          {t('historial.cliente')}
           <input type="text" value={nombreCliente} onChange={(e) => setNombreCliente(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
         <button
@@ -77,27 +80,27 @@ function Historial() {
           className="font-semibold text-white disabled:opacity-60"
           style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
         >
-          Buscar
+          {t('historial.buscar')}
         </button>
       </div>
 
       {/* Tabla */}
       {sesiones.length === 0 ? (
         <p className="mt-6 text-center" style={{ color: '#6B7280' }}>
-          No hay cotizaciones que coincidan con los filtros
+          {t('historial.sinResultados')}
         </p>
       ) : (
         <div className="card overflow-x-auto p-0">
           <table className="w-full text-sm">
             <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">Fecha</th>
-                <th className="px-4 py-3 text-left font-semibold">Cliente</th>
-                <th className="px-4 py-3 text-right font-semibold">Ítems</th>
-                <th className="px-4 py-3 text-right font-semibold">Total ¥</th>
-                <th className="px-4 py-3 text-right font-semibold">Total USD</th>
-                <th className="px-4 py-3 text-right font-semibold">Proveedores</th>
-                <th className="px-4 py-3 text-left font-semibold">Pedidos</th>
+                <th className="px-4 py-3 text-left font-semibold">{t('historial.fecha')}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t('historial.cliente')}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t('historial.items')}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t('historial.totalRmb')}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t('historial.totalUsd')}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t('historial.proveedores')}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t('historial.pedidos')}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -119,7 +122,7 @@ function Historial() {
                           : { backgroundColor: '#F3F4F6', color: '#6B7280' }
                       }
                     >
-                      {s.tiene_pedidos ? 'Con pedidos' : 'Sin pedidos'}
+                      {s.tiene_pedidos ? t('historial.conPedidos') : t('historial.sinPedidos')}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -129,7 +132,7 @@ function Historial() {
                       className="rounded-lg px-3 py-1 text-sm font-medium"
                       style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
                     >
-                      Ver detalle
+                      {t('historial.verDetalle')}
                     </button>
                   </td>
                 </tr>

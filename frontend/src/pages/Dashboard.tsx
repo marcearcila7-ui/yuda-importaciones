@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
 import OCRUploader from '../components/OCRUploader/OCRUploader'
@@ -15,10 +16,14 @@ import type { MetricasDashboard } from '../types/admin'
 import type { OCRResultado } from '../types/ocr'
 import type { ItemCreate } from '../types/packing'
 
+// Mapea el idioma de i18n a un locale para fechas
+const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
+
 // Encabezado de página reutilizable
 function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNode }) {
+  const { i18n } = useTranslation()
   const hoy = new Date()
-  const fecha = hoy.toLocaleDateString('es-ES', {
+  const fecha = hoy.toLocaleDateString(LOCALES[i18n.language] || 'es-ES', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -52,6 +57,7 @@ function SectionCard({ titulo, children }: { titulo: string; children: ReactNode
 
 function Dashboard() {
   const location = useLocation()
+  const { t } = useTranslation()
   const { usuario } = useAuthStore()
   const {
     sesionActual,
@@ -106,7 +112,7 @@ function Dashboard() {
       ctns: 1,
     }
     await agregarItem(itemCreate)
-    toast.success('Producto agregado a la cotización')
+    toast.success(t('ocr.exitoAgregado'))
   }
 
   // Descarga el Excel de la cotización
@@ -128,10 +134,10 @@ function Dashboard() {
         enlace.click()
       }
       setTimeout(() => URL.revokeObjectURL(url), 60000)
-      toast.success('Lista descargada')
+      toast.success(t('dashboard.listaDescargada'))
     } catch {
       ventana?.close()
-      toast.error('No se pudo descargar la lista')
+      toast.error(t('dashboard.errorDescargar'))
     }
   }
 
@@ -140,7 +146,7 @@ function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        titulo="Cotización"
+        titulo={t('dashboard.titulo')}
         accesorio={
           sesionActual ? (
             <span
@@ -156,12 +162,12 @@ function Dashboard() {
       {/* Métricas del mes (admin y contadora) */}
       {esGestion && metricas && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <MetricCard titulo="Cotizaciones este mes" valor={metricas.total_sesiones_mes} icono="📦" color="#4B52E8" />
-          <MetricCard titulo="Total Yuan este mes" valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono="¥" color="#F59E0B" />
-          <MetricCard titulo="Total USD este mes" valor={`$ ${fmt(metricas.total_usd_mes)}`} icono="💵" color="#10B981" />
-          <MetricCard titulo="Ítems procesados" valor={metricas.total_items_mes} icono="📋" color="#4B52E8" />
-          <MetricCard titulo="Proveedores únicos" valor={metricas.proveedores_unicos_mes} icono="🏭" color="#0D0D0D" />
-          <MetricCard titulo="Pedidos generados" valor={metricas.total_pedidos_mes} icono="📄" color="#4B52E8" />
+          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono="📦" color="#4B52E8" />
+          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono="¥" color="#F59E0B" />
+          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono="💵" color="#10B981" />
+          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono="📋" color="#4B52E8" />
+          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono="🏭" color="#0D0D0D" />
+          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono="📄" color="#4B52E8" />
         </div>
       )}
 
@@ -171,11 +177,11 @@ function Dashboard() {
       {/* Cotización activa */}
       {sesionActual && (
         <>
-          <SectionCard titulo="Subir foto de etiqueta">
+          <SectionCard titulo={t('dashboard.subirFoto')}>
             <OCRUploader onItemConfirmado={handleItemConfirmado} />
           </SectionCard>
 
-          <SectionCard titulo="Productos de la cotización">
+          <SectionCard titulo={t('dashboard.productos')}>
             <div className="mb-4 flex justify-end">
               <button
                 type="button"
@@ -183,7 +189,7 @@ function Dashboard() {
                 className="font-semibold text-white"
                 style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
               >
-                ⬇ Descargar lista (Excel)
+                ⬇ {t('dashboard.exportarPacking')}
               </button>
             </div>
             <PackingListTable
@@ -194,7 +200,7 @@ function Dashboard() {
             />
           </SectionCard>
 
-          <SectionCard titulo="Generar pedidos">
+          <SectionCard titulo={t('dashboard.generarPedidos')}>
             <GenerarPedidos
               sesion_id={sesionActual.id}
               nombre_cliente={sesionActual.nombre_cliente}

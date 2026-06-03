@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import {
   actualizarConfiguracion,
   actualizarUsuario,
@@ -26,7 +27,6 @@ function mensajeError(err: unknown, generico: string): string {
   return generico
 }
 
-// Botones reutilizables
 const btnPrimario: CSSProperties = {
   minHeight: 48,
   backgroundColor: '#4B52E8',
@@ -47,6 +47,7 @@ const btnSecundario: CSSProperties = {
 }
 
 function Admin() {
+  const { t } = useTranslation()
   const [usuarios, setUsuarios] = useState<UsuarioAdmin[]>([])
   const [config, setConfig] = useState<ConfiguracionResponse | null>(null)
   const [cargando, setCargando] = useState(false)
@@ -78,7 +79,7 @@ function Admin() {
       setConfig(cfg)
       setNuevoTC(String(cfg.tipo_cambio_usd))
     } catch (err) {
-      toast.error(mensajeError(err, 'No se pudieron cargar los datos'))
+      toast.error(mensajeError(err, t('admin.errorCargar')))
     } finally {
       setCargando(false)
     }
@@ -86,6 +87,7 @@ function Admin() {
 
   useEffect(() => {
     cargar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleCrear = async () => {
@@ -95,9 +97,9 @@ function Admin() {
       setModalCrear(false)
       setFormCrear({ nombre: '', email: '', password: '', rol: 'vendedora' })
       await cargar()
-      toast.success('Usuario creado')
+      toast.success(t('admin.usuarioCreado'))
     } catch (err) {
-      setErrorCrear(mensajeError(err, 'No se pudo crear el usuario'))
+      setErrorCrear(mensajeError(err, t('admin.errorCrear')))
     }
   }
 
@@ -106,7 +108,7 @@ function Admin() {
       await actualizarUsuario(u.id, { activo: !u.activo })
       await cargar()
     } catch (err) {
-      toast.error(mensajeError(err, 'No se pudo actualizar el usuario'))
+      toast.error(mensajeError(err, t('admin.errorActualizar')))
     }
   }
 
@@ -123,9 +125,9 @@ function Admin() {
       await actualizarUsuario(editando.id, { nombre: formEditar.nombre, rol: formEditar.rol })
       setEditando(null)
       await cargar()
-      toast.success('Usuario actualizado')
+      toast.success(t('admin.usuarioActualizado'))
     } catch (err) {
-      setErrorEditar(mensajeError(err, 'No se pudo actualizar el usuario'))
+      setErrorEditar(mensajeError(err, t('admin.errorActualizar')))
     }
   }
 
@@ -136,9 +138,9 @@ function Admin() {
       await resetPassword(reseteando.id, nuevaPassword)
       setReseteando(null)
       setNuevaPassword('')
-      toast.success('Contraseña actualizada')
+      toast.success(t('admin.contrasenaActualizada'))
     } catch (err) {
-      setErrorReset(mensajeError(err, 'No se pudo cambiar la contraseña'))
+      setErrorReset(mensajeError(err, t('admin.errorContrasena')))
     }
   }
 
@@ -146,9 +148,9 @@ function Admin() {
     try {
       const cfg = await actualizarConfiguracion(Number(nuevoTC))
       setConfig(cfg)
-      toast.success('Tipo de cambio actualizado')
+      toast.success(t('admin.tipoCambioActualizado'))
     } catch (err) {
-      toast.error(mensajeError(err, 'No se pudo guardar la configuración'))
+      toast.error(mensajeError(err, t('admin.errorConfig')))
     }
   }
 
@@ -165,19 +167,19 @@ function Admin() {
   return (
     <div className="relative flex flex-col gap-6">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>Administración</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('admin.titulo')}</h1>
         <p className="text-sm" style={{ color: '#6B7280' }}>
-          Gestión de usuarios y configuración del sistema
+          {t('admin.subtitulo')}
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button type="button" style={tabStyle(tab === 'usuarios')} onClick={() => setTab('usuarios')}>
-          Usuarios
+          {t('admin.usuarios')}
         </button>
         <button type="button" style={tabStyle(tab === 'config')} onClick={() => setTab('config')}>
-          Configuración
+          {t('admin.configuracion')}
         </button>
       </div>
 
@@ -185,7 +187,7 @@ function Admin() {
       {tab === 'usuarios' && (
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>Gestión de usuarios</h2>
+            <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('admin.gestionUsuarios')}</h2>
             <button
               type="button"
               onClick={() => { setErrorCrear(null); setModalCrear(true) }}
@@ -193,7 +195,7 @@ function Admin() {
               style={btnPrimario}
               className="disabled:opacity-60"
             >
-              + Nuevo usuario
+              + {t('admin.nuevoUsuario')}
             </button>
           </div>
 
@@ -201,11 +203,11 @@ function Admin() {
             <table className="w-full text-sm">
               <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Nombre</th>
-                  <th className="px-4 py-3 text-left font-semibold">Email</th>
-                  <th className="px-4 py-3 text-left font-semibold">Rol</th>
-                  <th className="px-4 py-3 text-left font-semibold">Estado</th>
-                  <th className="px-4 py-3 text-left font-semibold">Acciones</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t('admin.nombre')}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t('admin.email')}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t('admin.rol')}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t('admin.estado')}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t('admin.acciones')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,7 +215,7 @@ function Admin() {
                   <tr key={u.id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
                     <td className="px-4 py-3 font-medium">{u.nombre}</td>
                     <td className="px-4 py-3">{u.email}</td>
-                    <td className="px-4 py-3">{u.rol}</td>
+                    <td className="px-4 py-3">{t(`roles.${u.rol}`)}</td>
                     <td className="px-4 py-3">
                       <span
                         className="rounded-full px-3 py-1 text-xs font-semibold"
@@ -223,7 +225,7 @@ function Admin() {
                             : { backgroundColor: '#F3F4F6', color: '#6B7280' }
                         }
                       >
-                        {u.activo ? 'Activo' : 'Inactivo'}
+                        {u.activo ? t('admin.activo') : t('admin.inactivo')}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -235,7 +237,7 @@ function Admin() {
                           className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
                           style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
                         >
-                          Editar
+                          {t('admin.editar')}
                         </button>
                         <button
                           type="button"
@@ -244,7 +246,7 @@ function Admin() {
                           className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
                           style={{ backgroundColor: '#F3F4F6', color: '#0D0D0D' }}
                         >
-                          {u.activo ? 'Desactivar' : 'Activar'}
+                          {u.activo ? t('admin.desactivar') : t('admin.activar')}
                         </button>
                       </div>
                     </td>
@@ -260,18 +262,19 @@ function Admin() {
       {tab === 'config' && (
         <section className="card max-w-xl">
           <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
-            Configuración del sistema
+            {t('admin.configSistema')}
           </h2>
           <p className="text-sm" style={{ color: '#0D0D0D' }}>
-            Tipo de cambio actual:{' '}
+            {t('admin.tipoCambioActual')}{' '}
             <span className="font-bold">{config?.tipo_cambio_usd ?? '—'}</span> RMB/USD
           </p>
           <p className="mb-4 text-xs text-gray-400">
-            Última modificación: {config?.updated_at ? new Date(config.updated_at).toLocaleString() : 'sin registro'}
+            {t('admin.ultimaModificacion')}{' '}
+            {config?.updated_at ? new Date(config.updated_at).toLocaleString() : t('admin.sinRegistro')}
           </p>
           <div className="flex items-end gap-3">
             <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-              Nuevo tipo de cambio
+              {t('admin.tipoCambio')}
               <input
                 type="number"
                 step="0.01"
@@ -282,7 +285,7 @@ function Admin() {
               />
             </label>
             <button type="button" onClick={handleGuardarConfig} disabled={cargando} style={btnPrimario} className="disabled:opacity-60">
-              Guardar
+              {t('admin.guardar')}
             </button>
           </div>
         </section>
@@ -292,25 +295,25 @@ function Admin() {
       {modalCrear && (
         <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>Nuevo usuario</h2>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>{t('admin.nuevoUsuario')}</h2>
             <div className="flex flex-col gap-3">
-              <input style={inputStyle} placeholder="Nombre" value={formCrear.nombre}
+              <input style={inputStyle} placeholder={t('admin.nombre')} value={formCrear.nombre}
                 onChange={(e) => setFormCrear({ ...formCrear, nombre: e.target.value })} className={inputClase} />
-              <input style={inputStyle} placeholder="Email" value={formCrear.email}
+              <input style={inputStyle} placeholder={t('admin.email')} value={formCrear.email}
                 onChange={(e) => setFormCrear({ ...formCrear, email: e.target.value })} className={inputClase} />
-              <input style={inputStyle} type="password" placeholder="Contraseña" value={formCrear.password}
+              <input style={inputStyle} type="password" placeholder={t('admin.contrasena')} value={formCrear.password}
                 onChange={(e) => setFormCrear({ ...formCrear, password: e.target.value })} className={inputClase} />
               <select style={inputStyle} value={formCrear.rol}
                 onChange={(e) => setFormCrear({ ...formCrear, rol: e.target.value as Rol })} className={inputClase}>
-                <option value="admin">admin</option>
-                <option value="vendedora">vendedora</option>
-                <option value="contadora">contadora</option>
+                <option value="admin">{t('roles.admin')}</option>
+                <option value="vendedora">{t('roles.vendedora')}</option>
+                <option value="contadora">{t('roles.contadora')}</option>
               </select>
               {errorCrear && <p className="text-sm" style={{ color: '#EF4444' }}>{errorCrear}</p>}
             </div>
             <div className="mt-5 flex gap-3">
-              <button type="button" onClick={handleCrear} style={{ ...btnPrimario, flex: 1 }}>Crear</button>
-              <button type="button" onClick={() => setModalCrear(false)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
+              <button type="button" onClick={handleCrear} style={{ ...btnPrimario, flex: 1 }}>{t('admin.crear')}</button>
+              <button type="button" onClick={() => setModalCrear(false)} style={{ ...btnSecundario, flex: 1 }}>{t('admin.cancelar')}</button>
             </div>
           </div>
         </div>
@@ -320,26 +323,26 @@ function Admin() {
       {editando && (
         <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>Editar usuario</h2>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>{t('admin.editarUsuario')}</h2>
             <div className="flex flex-col gap-3">
-              <input style={inputStyle} placeholder="Nombre" value={formEditar.nombre}
+              <input style={inputStyle} placeholder={t('admin.nombre')} value={formEditar.nombre}
                 onChange={(e) => setFormEditar({ ...formEditar, nombre: e.target.value })} className={inputClase} />
               <select style={inputStyle} value={formEditar.rol}
                 onChange={(e) => setFormEditar({ ...formEditar, rol: e.target.value as Rol })} className={inputClase}>
-                <option value="admin">admin</option>
-                <option value="vendedora">vendedora</option>
-                <option value="contadora">contadora</option>
+                <option value="admin">{t('roles.admin')}</option>
+                <option value="vendedora">{t('roles.vendedora')}</option>
+                <option value="contadora">{t('roles.contadora')}</option>
               </select>
               {errorEditar && <p className="text-sm" style={{ color: '#EF4444' }}>{errorEditar}</p>}
             </div>
             <div className="mt-5 flex flex-col gap-3">
               <div className="flex gap-3">
-                <button type="button" onClick={handleGuardarEditar} style={{ ...btnPrimario, flex: 1 }}>Guardar</button>
-                <button type="button" onClick={() => setEditando(null)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
+                <button type="button" onClick={handleGuardarEditar} style={{ ...btnPrimario, flex: 1 }}>{t('admin.guardar')}</button>
+                <button type="button" onClick={() => setEditando(null)} style={{ ...btnSecundario, flex: 1 }}>{t('admin.cancelar')}</button>
               </div>
               <button type="button"
                 onClick={() => { setReseteando(editando); setEditando(null); setNuevaPassword(''); setErrorReset(null) }}
-                className="text-sm font-medium" style={{ color: '#4B52E8' }}>Cambiar contraseña</button>
+                className="text-sm font-medium" style={{ color: '#4B52E8' }}>{t('admin.cambiarContrasena')}</button>
             </div>
           </div>
         </div>
@@ -350,14 +353,14 @@ function Admin() {
         <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
             <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>
-              Nueva contraseña · {reseteando.nombre}
+              {t('admin.nuevaContrasena')} · {reseteando.nombre}
             </h2>
-            <input style={inputStyle} type="password" placeholder="Nueva contraseña" value={nuevaPassword}
+            <input style={inputStyle} type="password" placeholder={t('admin.nuevaContrasena')} value={nuevaPassword}
               onChange={(e) => setNuevaPassword(e.target.value)} className={`w-full ${inputClase}`} />
             {errorReset && <p className="mt-2 text-sm" style={{ color: '#EF4444' }}>{errorReset}</p>}
             <div className="mt-5 flex gap-3">
-              <button type="button" onClick={handleGuardarReset} style={{ ...btnPrimario, flex: 1 }}>Cambiar contraseña</button>
-              <button type="button" onClick={() => setReseteando(null)} style={{ ...btnSecundario, flex: 1 }}>Cancelar</button>
+              <button type="button" onClick={handleGuardarReset} style={{ ...btnPrimario, flex: 1 }}>{t('admin.cambiarContrasena')}</button>
+              <button type="button" onClick={() => setReseteando(null)} style={{ ...btnSecundario, flex: 1 }}>{t('admin.cancelar')}</button>
             </div>
           </div>
         </div>

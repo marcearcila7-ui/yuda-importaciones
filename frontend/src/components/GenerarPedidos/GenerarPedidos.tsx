@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import axios from 'axios'
+import { useTranslation } from 'react-i18next'
 import { descargarZip, generarPedidos } from '../../api/pedidos'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
@@ -19,15 +20,14 @@ const btnPrimario: CSSProperties = {
 }
 
 function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
+  const { t } = useTranslation()
   const [generando, setGenerando] = useState(false)
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
 
   const handleGenerar = async () => {
-    const confirmado = window.confirm(
-      `¿Generar pedidos para ${nombre_cliente}? Se creará un archivo Excel por cada proveedor.`,
-    )
+    const confirmado = window.confirm(t('pedidos.confirmar', { cliente: nombre_cliente }))
     if (!confirmado) return
 
     setError(null)
@@ -36,7 +36,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
       const data = await generarPedidos(sesion_id)
       setResultado(data)
     } catch (err) {
-      let mensaje = 'No se pudieron generar los pedidos'
+      let mensaje = t('pedidos.errorGenerar')
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         mensaje = err.response.data.detail
       }
@@ -65,7 +65,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch {
       ventana?.close()
-      setError('No se pudo descargar el ZIP')
+      setError(t('pedidos.errorZip'))
     } finally {
       setDescargandoZip(false)
     }
@@ -81,13 +81,13 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
         className="w-full disabled:opacity-60"
         style={btnPrimario}
       >
-        {generando ? 'Generando pedidos...' : '📄 Generar pedidos'}
+        {generando ? t('pedidos.generando') : `📄 ${t('pedidos.generar')}`}
       </button>
 
       {/* SECCIÓN B — Advertencias */}
       {resultado && resultado.warnings.length > 0 && (
         <div className="rounded-xl p-4" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
-          <p className="font-bold" style={{ color: '#B45309' }}>Advertencias:</p>
+          <p className="font-bold" style={{ color: '#B45309' }}>{t('pedidos.advertencias')}</p>
           <ul className="mt-2 list-disc pl-5 text-sm" style={{ color: '#B45309' }}>
             {resultado.warnings.map((w, i) => (
               <li key={i}>{w}</li>
@@ -99,7 +99,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
       {/* SECCIÓN C — Resultado */}
       {resultado && (
         <div className="flex flex-col gap-3">
-          <p className="font-bold" style={{ color: '#0D0D0D' }}>Pedidos generados:</p>
+          <p className="font-bold" style={{ color: '#0D0D0D' }}>{t('pedidos.generados')}</p>
           {resultado.pedidos.map((pedido) => (
             <div
               key={pedido.supplier}
@@ -108,7 +108,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
             >
               <span className="text-sm" style={{ color: '#0D0D0D' }}>
                 {pedido.supplier}{' '}
-                <span style={{ color: '#9CA3AF' }}>({pedido.items_count} ítems)</span>
+                <span style={{ color: '#9CA3AF' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
               </span>
               <button
                 type="button"
@@ -116,7 +116,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
                 className="rounded-lg px-3 py-1 text-sm font-medium text-white"
                 style={{ backgroundColor: '#4B52E8' }}
               >
-                ⬇ Descargar
+                ⬇ {t('pedidos.descargarExcel')}
               </button>
             </div>
           ))}
@@ -129,7 +129,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
               className="w-full font-semibold text-white disabled:opacity-60"
               style={{ minHeight: 48, backgroundColor: '#0D0D0D', borderRadius: 8, fontSize: 16 }}
             >
-              {descargandoZip ? 'Preparando ZIP...' : 'Descargar todos (ZIP)'}
+              {descargandoZip ? t('pedidos.preparandoZip') : t('pedidos.descargarZip')}
             </button>
           )}
         </div>

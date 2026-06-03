@@ -6,6 +6,7 @@ import {
   useReactTable,
   type ColumnDef,
 } from '@tanstack/react-table'
+import { useTranslation } from 'react-i18next'
 import { usePackingStore } from '../../store/packingStore'
 import type { ItemResponse } from '../../types/packing'
 
@@ -163,10 +164,11 @@ function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta })
 }
 
 function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
+  const { t } = useTranslation()
   // Construye las definiciones de columna para TanStack Table
   const columnas: ColumnDef<ItemResponse>[] = COLUMNAS.map((col) => ({
     id: col.id,
-    header: col.header,
+    header: t(`packing.cols.${col.id}`),
     meta: col.meta,
     cell: ({ row }) => {
       const meta = col.meta
@@ -254,7 +256,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           <tr style={{ backgroundColor: '#0D0D0D' }} className="font-bold">
             {COLUMNAS.map((col) => {
               let contenido = ''
-              if (col.id === 'supplier_nombre') contenido = 'TOTALES:'
+              if (col.id === 'supplier_nombre') contenido = `${t('packing.totales')}:`
               else if (col.id === 'ctns') contenido = String(totales.ctns)
               else if (col.id === 'total_rmb') contenido = totales.total_rmb.toFixed(2)
               else if (col.id === 'total_usd') contenido = totales.total_usd.toFixed(2)

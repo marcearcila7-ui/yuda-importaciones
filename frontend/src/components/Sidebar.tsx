@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 
 // Logo circular YUDA (círculo azul con "Y" blanca)
@@ -14,22 +15,68 @@ function LogoYuda({ size = 36 }: { size?: number }) {
   )
 }
 
+const IDIOMAS = [
+  { code: 'es', label: 'ES' },
+  { code: 'en', label: 'EN' },
+  { code: 'zh', label: '中文' },
+]
+
+// Selector de idioma: ES | EN | 中文
+function SelectorIdioma() {
+  const { i18n } = useTranslation()
+  const cambiar = (code: string) => {
+    i18n.changeLanguage(code)
+    localStorage.setItem('yuda_idioma', code)
+  }
+  return (
+    <div className="flex gap-1">
+      {IDIOMAS.map((idi) => {
+        const activo = i18n.language === idi.code
+        return (
+          <button
+            key={idi.code}
+            type="button"
+            onClick={() => cambiar(idi.code)}
+            style={{
+              borderRadius: 6,
+              backgroundColor: activo ? '#4B52E8' : 'transparent',
+              color: activo ? '#FFFFFF' : '#9CA3AF',
+              padding: '4px 10px',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+            onMouseEnter={(e) => {
+              if (!activo) e.currentTarget.style.color = '#FFFFFF'
+            }}
+            onMouseLeave={(e) => {
+              if (!activo) e.currentTarget.style.color = '#9CA3AF'
+            }}
+          >
+            {idi.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 interface ItemNav {
   to: string
   icono: string
-  texto: string
+  clave: string
   roles?: string[]
 }
 
 const LINKS: ItemNav[] = [
-  { to: '/dashboard', icono: '📦', texto: 'Cotización' },
-  { to: '/historial', icono: '📋', texto: 'Historial', roles: ['admin', 'contadora'] },
-  { to: '/admin', icono: '⚙️', texto: 'Administración', roles: ['admin'] },
+  { to: '/dashboard', icono: '📦', clave: 'cotizacion' },
+  { to: '/historial', icono: '📋', clave: 'historial', roles: ['admin', 'contadora'] },
+  { to: '/admin', icono: '⚙️', clave: 'administracion', roles: ['admin'] },
 ]
 
 function Sidebar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { t } = useTranslation()
   const { usuario, logout } = useAuthStore()
   const [abierto, setAbierto] = useState(false)
 
@@ -78,14 +125,17 @@ function Sidebar() {
               }}
             >
               <span className="text-base">{l.icono}</span>
-              {l.texto}
+              {t(`nav.${l.clave}`)}
             </Link>
           )
         })}
       </nav>
 
-      {/* Usuario */}
+      {/* Selector de idioma + usuario */}
       <div className="border-t border-white/10 px-4 py-4">
+        <div className="mb-3">
+          <SelectorIdioma />
+        </div>
         <div className="flex items-center gap-3">
           <span
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full font-bold text-white"
@@ -96,7 +146,7 @@ function Sidebar() {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-white">{usuario?.nombre}</p>
             <p className="truncate text-xs" style={{ color: '#9CA3AF' }}>
-              {usuario?.rol}
+              {usuario?.rol ? t(`roles.${usuario.rol}`) : ''}
             </p>
           </div>
         </div>
@@ -106,7 +156,7 @@ function Sidebar() {
           className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-white"
           style={{ backgroundColor: '#1F1F1F', borderRadius: 8 }}
         >
-          ⏏ Salir
+          ⏏ {t('nav.cerrarSesion')}
         </button>
       </div>
     </div>
@@ -132,24 +182,24 @@ function Sidebar() {
             YU·DA
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => setAbierto(true)}
-          className="text-2xl"
-          style={{ color: '#0D0D0D' }}
-          aria-label="Abrir menú"
-        >
-          ☰
-        </button>
+        <div className="flex items-center gap-3">
+          <SelectorIdioma />
+          <button
+            type="button"
+            onClick={() => setAbierto(true)}
+            className="text-2xl"
+            style={{ color: '#0D0D0D' }}
+            aria-label="Menú"
+          >
+            ☰
+          </button>
+        </div>
       </div>
 
       {/* Drawer mobile */}
       {abierto && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setAbierto(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setAbierto(false)} />
           <div className="absolute left-0 top-0 h-full" style={{ width: 240 }}>
             {contenido}
           </div>
