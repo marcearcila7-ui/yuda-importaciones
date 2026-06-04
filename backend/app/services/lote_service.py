@@ -2,12 +2,15 @@ import asyncio
 
 import httpx
 
+from app.core.config import settings
 from app.database import SessionLocal
 from app.models.lote import LoteItem, LoteOCR
 from app.services.ocr_service import extraer_datos_etiqueta
 
-# Cuántas fotos del lote se leen en paralelo
-CONCURRENCIA = 4
+# Fotos en paralelo dentro de un mismo lote (acota memoria/descargas por job).
+# El tope GLOBAL de llamadas reales a Anthropic vive en ocr_service (semáforo global),
+# así que aunque corran muchos lotes a la vez, el OCR nunca se dispara sin control.
+CONCURRENCIA = settings.OCR_CONCURRENCIA_LOTE
 
 
 def _media_type(url: str) -> str:

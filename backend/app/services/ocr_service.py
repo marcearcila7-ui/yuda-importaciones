@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import re
@@ -8,6 +9,33 @@ from app.core.config import settings
 
 # Modelo de visión a utilizar
 MODELO = "claude-opus-4-5-20251101"
+
+# Cliente único reutilizado (evita abrir una conexión nueva por cada foto).
+# max_retries: el SDK reintenta con backoff exponencial ante 429 / 5xx / errores de red.
+_client: AsyncAnthropic | None = None
+
+# Tope GLOBAL de llamadas de visión en simultáneo en todo el proceso.
+# Aunque 20 vendedoras disparen lotes a la vez, nunca habrá más de N llamadas
+# concurrentes a Anthropic: el resto se encola. Protege rate limits y conexiones.
+_ocr_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_client() -> AsyncAnthropic:
+    global _client
+    if _client is None:
+        _client = AsyncAnthropic(
+            api_key=settings.ANTHROPIC_API_KEY,
+            max_retries=settings.OCR_MAX_RETRIES,
+        )
+    return _client
+
+
+def _get_semaphore() -> asyncio.Semaphore:
+    # Se crea de forma perezosa dentro del event loop en ejecución.
+    global _ocr_semaphore
+    if _ocr_semaphore is None:
+        _ocr_semaphore = asyncio.Semaphore(settings.OCR_CONCURRENCIA_GLOBAL)
+    return _ocr_semaphore
 
 # Prompt fijo enviado a Claude Vision (no configurable desde la UI)
 PROMPT = """
@@ -98,32 +126,33 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # 1. Imagen a base64
     base64_string = base64.standard_b64encode(imagen_bytes).decode("utf-8")
 
-    # 2-4. Llamada a la API de Anthropic
+    # 2-4. Llamada a la API de Anthropic (cliente único + tope global de concurrencia)
     try:
-        client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-        response = await client.messages.create(
-            model=MODELO,
-            max_tokens=1024,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": base64_string,
+        client = _get_client()
+        async with _get_semaphore():
+            response = await client.messages.create(
+                model=MODELO,
+                max_tokens=1024,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": media_type,
+                                    "data": base64_string,
+                                },
                             },
-                        },
-                        {
-                            "type": "text",
-                            "text": PROMPT,
-                        },
-                    ],
-                }
-            ],
-        )
+                            {
+                                "type": "text",
+                                "text": PROMPT,
+                            },
+                        ],
+                    }
+                ],
+            )
         texto = response.content[0].text
     except Exception as e:
         print(f"Error llamando a la API de Anthropic: {e}")

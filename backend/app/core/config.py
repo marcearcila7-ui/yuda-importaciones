@@ -15,6 +15,17 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
 
+    # Tope GLOBAL de llamadas de OCR (Anthropic) en simultáneo en todo el sistema.
+    # Protege contra rate limits y agotamiento de conexiones bajo picos de carga.
+    OCR_CONCURRENCIA_GLOBAL: int = 6
+    # Fotos en paralelo dentro de un mismo lote (acota memoria/descargas por job).
+    OCR_CONCURRENCIA_LOTE: int = 4
+    # Reintentos automáticos con backoff del SDK de Anthropic ante 429/errores transitorios.
+    OCR_MAX_RETRIES: int = 4
+    # Pool de conexiones a la base de datos (total máx = POOL_SIZE + MAX_OVERFLOW).
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
