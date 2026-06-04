@@ -1,12 +1,19 @@
+import os
+from copy import copy
 from datetime import date
 from io import BytesIO
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter, range_boundaries
 
 from app.services.imagen_service import descargar_imagen_png
+
+# Plantilla literal del formato de pedido al proveedor (FORMATO PEDIDO de YUDA)
+PLANTILLA_PEDIDO = os.path.join(
+    os.path.dirname(__file__), "..", "templates", "formato_pedido.xlsx"
+)
 
 # Encabezados en el orden exacto del Packing List (columnas A..W)
 ENCABEZADOS = [
@@ -139,117 +146,106 @@ def agrupar_items_por_supplier(items: list) -> dict:
     return {clave: grupos[clave] for clave in sorted(grupos)}
 
 
-# Encabezados del Formato Pedido en el orden exacto (columnas A..M)
-ENCABEZADOS_PEDIDO = [
-    "NO", "PHOTO", "ITEM NO", "DESCRIPTION", "CTN", "QTY/CTN", "UNIT",
-    "QTY", "PRICE", "AMOUNT", "CBM", "T.CBM", "G.W",
-]
+# ─── Formato de pedido al proveedor: se rellena la plantilla LITERAL de YUDA ───
 
-# Anchos de columna del Formato Pedido (mismo orden que ENCABEZADOS_PEDIDO)
-ANCHOS_PEDIDO = [6, 14, 12, 35, 8, 10, 8, 10, 10, 12, 10, 10, 8]
+# La plantilla trae 11 filas de productos (7..17) y la fila de totales en la 18.
+PED_FILA0 = 7
+PED_FILAS_PLANTILLA = 11
+PED_FILA_TOTALES = 18
+
+
+def _descripcion_proveedor(item) -> str:
+    """Para el proveedor chino, priorizar la descripción en chino."""
+    return (
+        getattr(item, "descripcion_zh", None)
+        or getattr(item, "descripcion_es", None)
+        or getattr(item, "descripcion_en", None)
+        or ""
+    )
+
+
+def _expandir_pedido(ws, faltan: int) -> None:
+    """Agrega 'faltan' filas de producto antes de la fila de totales, clonando
+    el estilo y las fórmulas de una fila de datos, y desplazando las celdas
+    combinadas y alturas del pie (que openpyxl no mueve solo)."""
+    # Guardar y quitar las combinaciones del pie (fila >= totales)
+    combinaciones = []
+    for m in list(ws.merged_cells.ranges):
+        c1, r1, c2, r2 = range_boundaries(str(m))
+        if r1 >= PED_FILA_TOTALES:
+            combinaciones.append((c1, r1, c2, r2))
+            ws.unmerge_cells(str(m))
+    alturas = {
+        r: ws.row_dimensions[r].height
+        for r in list(ws.row_dimensions)
+        if r >= PED_FILA_TOTALES and ws.row_dimensions[r].height
+    }
+
+    ws.insert_rows(PED_FILA_TOTALES, amount=faltan)
+
+    # Re-aplicar combinaciones y alturas desplazadas
+    for c1, r1, c2, r2 in combinaciones:
+        ws.merge_cells(start_row=r1 + faltan, start_column=c1, end_row=r2 + faltan, end_column=c2)
+    for r, h in alturas.items():
+        ws.row_dimensions[r + faltan].height = h
+
+    # Nuevas filas de datos con el estilo y las fórmulas de la fila modelo
+    for off in range(faltan):
+        nueva = PED_FILA_TOTALES + off
+        ws.row_dimensions[nueva].height = ws.row_dimensions[PED_FILA0].height
+        for col in range(1, 15):
+            ws.cell(row=nueva, column=col)._style = copy(ws.cell(row=PED_FILA0, column=col)._style)
+        ws.cell(row=nueva, column=8, value="PCS")
+        ws.cell(row=nueva, column=9, value=f"=G{nueva}*F{nueva}")
+        ws.cell(row=nueva, column=11, value=f"=J{nueva}*I{nueva}")
+        ws.cell(row=nueva, column=13, value=f"=L{nueva}*F{nueva}")
 
 
 def generar_formato_pedido(
     supplier_nombre: str, supplier_numero: str, items: list, fecha: date
 ) -> bytes:
-    """Genera el Excel del Formato Pedido de un proveedor y devuelve sus bytes"""
-    wb = Workbook()
+    """Rellena la plantilla literal FORMATO PEDIDO con los productos del proveedor.
+
+    El sistema completa: NO, foto, ITEM NO, descripción, CTN, QTY/CTN, precio,
+    CBM y G.W. Las fórmulas (QTY, AMOUNT, T.CBM, totales) y todo lo demás
+    (membrete, fechas, firmas, notas) quedan tal cual el formato original.
+    """
+    wb = load_workbook(PLANTILLA_PEDIDO)
     ws = wb.active
-    ws.title = "Formato Pedido"
 
-    fill_header = PatternFill(start_color="404040", end_color="404040", fill_type="solid")
-    font_header = Font(color="FFFFFF", bold=True)
-    fill_total = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")
-    font_bold = Font(bold=True)
-    centro = Alignment(horizontal="center", vertical="center")
+    n = len(items)
+    if n > PED_FILAS_PLANTILLA:
+        faltan = n - PED_FILAS_PLANTILLA
+        _expandir_pedido(ws, faltan)
+        ultima = (PED_FILA0 + n - 1)
+        total_row = PED_FILA_TOTALES + faltan
+        for col, letra in [(6, "F"), (9, "I"), (11, "K"), (13, "M")]:
+            ws.cell(row=total_row, column=col, value=f"=SUM({letra}{PED_FILA0}:{letra}{ultima})")
 
-    ultima_col = len(ENCABEZADOS_PEDIDO)  # 13 (A..M)
-
-    # Filas 1-4: encabezado de la empresa, mergeadas de A a M
-    ws.merge_cells("A1:M1")
-    ws["A1"] = "YUDA — 义乌市与达贸易有限公司"
-    ws["A1"].font = font_bold
-    ws["A1"].alignment = centro
-
-    ws.merge_cells("A2:M2")
-    ws["A2"] = "BOOTH: 17907   TEL: 18806893598"
-    ws["A2"].alignment = centro
-
-    ws.merge_cells("A3:M3")
-    ws["A3"] = "ORDER DATE: ___年___月___日     DELIVERY DATE: ___年___月___日"
-    ws["A3"].alignment = centro
-
-    ws.merge_cells("A4:M4")
-    ws["A4"] = "地址：义乌市稠州北路1121号福田大厦A座0909-0911室"
-    ws["A4"].alignment = centro
-
-    # Fila 5: encabezados de columnas
-    for idx, titulo in enumerate(ENCABEZADOS_PEDIDO, start=1):
-        celda = ws.cell(row=5, column=idx, value=titulo)
-        celda.fill = fill_header
-        celda.font = font_header
-        celda.alignment = centro
-
-    # Filas de datos desde la fila 6
-    fila = 6
-    for n, item in enumerate(items, start=1):
-        # DESCRIPTION = descripcion_es / descripcion_en (omitir separador si falta alguno)
-        partes = [
-            p
-            for p in [getattr(item, "descripcion_es", None), getattr(item, "descripcion_en", None)]
-            if p
-        ]
-        descripcion = " / ".join(partes)
-
-        largo = getattr(item, "largo_cm", 0) or 0
-        ancho = getattr(item, "ancho_cm", 0) or 0
-        alto = getattr(item, "alto_cm", 0) or 0
-        cbm = round(largo * ancho * alto / 1_000_000, 6)
-
-        ws.cell(row=fila, column=1, value=n)  # NO
-        # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda
+    for idx, item in enumerate(items):
+        f = PED_FILA0 + idx
+        ws.cell(row=f, column=1, value=idx + 1)  # A: NO
+        # B: PHOTO
         if getattr(item, "foto_url", None):
-            buf = descargar_imagen_png(item.foto_url, lado_px=120)
+            buf = descargar_imagen_png(item.foto_url, lado_px=180)
             if buf is not None:
                 try:
                     img = XLImage(buf)
-                    img.width = 55
-                    img.height = 55
-                    ws.add_image(img, f"B{fila}")
-                    ws.row_dimensions[fila].height = 45
+                    img.width = 150
+                    img.height = 140
+                    ws.add_image(img, f"B{f}")
                 except Exception:
                     pass
-        ws.cell(row=fila, column=3, value=getattr(item, "item_no", None))
-        ws.cell(row=fila, column=4, value=descripcion)
-        ws.cell(row=fila, column=5, value=getattr(item, "ctns", None))  # CTN
-        ws.cell(row=fila, column=6, value=getattr(item, "qty_por_ctn", None))  # QTY/CTN
-        ws.cell(row=fila, column=7, value="PCS")  # UNIT
-        ws.cell(row=fila, column=8, value=f"=E{fila}*F{fila}")  # QTY = CTN * QTY/CTN
-        ws.cell(row=fila, column=9, value=getattr(item, "price_rmb", None))  # PRICE
-        ws.cell(row=fila, column=10, value=f"=I{fila}*H{fila}")  # AMOUNT = PRICE * QTY
-        ws.cell(row=fila, column=11, value=cbm)  # CBM (numérico, no fórmula)
-        ws.cell(row=fila, column=12, value=f"=K{fila}*E{fila}")  # T.CBM = CBM * CTN
-        ws.cell(row=fila, column=13, value=getattr(item, "gw", None))  # G.W
-        fila += 1
-
-    ultima_fila_datos = fila - 1 if items else 5
-    fila_total = fila
-
-    # Fila TOTAL
-    celda_total = ws.cell(row=fila_total, column=1, value="Total Amount (总金额) ¥:")
-    celda_total.font = font_bold
-    ws.cell(row=fila_total, column=5, value=f"=SUM(E6:E{ultima_fila_datos})")
-    ws.cell(row=fila_total, column=8, value=f"=SUM(H6:H{ultima_fila_datos})")
-    ws.cell(row=fila_total, column=10, value=f"=SUM(J6:J{ultima_fila_datos})")
-    ws.cell(row=fila_total, column=12, value=f"=SUM(L6:L{ultima_fila_datos})")
-    for col in range(1, ultima_col + 1):
-        celda = ws.cell(row=fila_total, column=col)
-        celda.font = font_bold
-        celda.fill = fill_total
-
-    # Anchos de columna
-    for idx, ancho in enumerate(ANCHOS_PEDIDO, start=1):
-        ws.column_dimensions[get_column_letter(idx)].width = ancho
+        ws.cell(row=f, column=3, value=getattr(item, "item_no", None))   # C: ITEM NO
+        ws.cell(row=f, column=4, value=_descripcion_proveedor(item))     # D: DESCRIPTION
+        ws.cell(row=f, column=6, value=getattr(item, "ctns", None))      # F: CTN
+        ws.cell(row=f, column=7, value=getattr(item, "qty_por_ctn", None))  # G: QTY/CTN
+        ws.cell(row=f, column=10, value=getattr(item, "price_rmb", None))   # J: PRICE
+        largo = getattr(item, "largo_cm", 0) or 0
+        ancho = getattr(item, "ancho_cm", 0) or 0
+        alto = getattr(item, "alto_cm", 0) or 0
+        ws.cell(row=f, column=12, value=round(largo * ancho * alto / 1_000_000, 6))  # L: CBM
+        ws.cell(row=f, column=14, value=getattr(item, "gw", None))       # N: G.W
 
     buffer = BytesIO()
     wb.save(buffer)

@@ -1,28 +1,37 @@
-"""Generación del PDF de Formato Pedido (documento para el proveedor)."""
+"""Generación del PDF de Formato Pedido (documento para el proveedor).
+
+Réplica fiel del formato FORMATO PEDIDO de YUDA: membrete, tabla con
+encabezados bilingües, totales y las notas/condiciones/firmas. Se genera a
+partir de los datos (no editable), para enviar al proveedor sin que lo alteren.
+"""
 from datetime import date
 
 from weasyprint import HTML
 
-CSS = """
-@page { size: A4 landscape; margin: 1.2cm; }
-* { font-family: 'Helvetica', 'Arial', sans-serif; }
-.empresa { text-align: center; font-size: 14px; font-weight: bold; color: #0D0D0D; }
-.sub { text-align: center; font-size: 10px; color: #444; margin-bottom: 2px; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px; }
-th { background: #404040; color: #fff; padding: 5px 4px; border: 1px solid #555; }
-td { padding: 4px; border: 1px solid #ccc; text-align: center; vertical-align: middle; }
-td.desc { text-align: left; }
-td.foto img { width: 50px; height: 50px; object-fit: cover; }
-tr.alt td { background: #F7F7FA; }
+PED_CSS = """
+@page { size: A4 landscape; margin: 0.8cm; }
+* { font-family: 'Noto Sans CJK SC', 'Arial', sans-serif; box-sizing: border-box; }
+.empresa { text-align: center; font-size: 16px; font-weight: bold; }
+.cab { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 9px; }
+.cab td { border: 1px solid #999; padding: 3px 5px; }
+table.items { width: 100%; border-collapse: collapse; font-size: 9px; }
+table.items th { background: #404040; color: #fff; padding: 4px 3px; border: 1px solid #555; white-space: pre-line; }
+table.items td { padding: 3px; border: 1px solid #999; text-align: center; vertical-align: middle; }
+table.items td.desc { text-align: left; }
+table.items td.foto img { width: 70px; height: 70px; object-fit: cover; }
 tr.total td { background: #EEE; font-weight: bold; }
+.firmas { margin-top: 6px; font-size: 10px; border: 1px solid #999; padding: 6px; }
+.notas { margin-top: 4px; font-size: 8px; }
+.notas td { vertical-align: top; padding: 2px 6px; }
+.marca { border: 1px solid #999; padding: 4px; font-size: 8px; }
 """
 
 
 def generar_pedido_pdf(
     supplier_nombre: str, supplier_numero: str, items: list, fecha: date
 ) -> bytes:
-    """Genera el PDF del Formato Pedido de un proveedor (con fotos) y devuelve sus bytes."""
-    filas_html = []
+    """Genera el PDF del Formato Pedido del proveedor (réplica fiel, con fotos)."""
+    filas = []
     tot_ctn = tot_qty = tot_amount = tot_tcbm = 0.0
 
     for n, item in enumerate(items, start=1):
@@ -43,50 +52,66 @@ def generar_pedido_pdf(
         tot_amount += amount
         tot_tcbm += tcbm
 
-        partes = [p for p in [item.descripcion_es, item.descripcion_en] if p]
-        descripcion = " / ".join(partes)
+        desc = item.descripcion_zh or item.descripcion_es or item.descripcion_en or ""
         foto = f'<img src="{item.foto_url}" />' if getattr(item, "foto_url", None) else ""
-        alt = ' class="alt"' if n % 2 == 0 else ""
-
-        filas_html.append(
-            f"<tr{alt}>"
+        filas.append(
+            f"<tr>"
             f"<td>{n}</td>"
             f'<td class="foto">{foto}</td>'
             f"<td>{item.item_no or ''}</td>"
-            f'<td class="desc">{descripcion}</td>'
-            f"<td>{ctn}</td>"
-            f"<td>{qty_ctn}</td>"
-            f"<td>{qty}</td>"
-            f"<td>{price}</td>"
-            f"<td>{round(amount, 2)}</td>"
-            f"<td>{cbm}</td>"
-            f"<td>{tcbm}</td>"
-            f"<td>{gw}</td>"
+            f'<td class="desc">{desc}</td>'
+            f"<td>{ctn}</td><td>{qty_ctn}</td><td>PCS</td><td>{qty}</td>"
+            f"<td>{price}</td><td>{round(amount, 2)}</td>"
+            f"<td>{cbm}</td><td>{tcbm}</td><td>{gw}</td>"
             f"</tr>"
         )
 
-    encabezado = (
-        "<tr><th>NO</th><th>PHOTO</th><th>ITEM NO</th><th>DESCRIPTION</th>"
-        "<th>CTN</th><th>QTY/CTN</th><th>QTY</th><th>PRICE</th><th>AMOUNT</th>"
-        "<th>CBM</th><th>T.CBM</th><th>G.W</th></tr>"
+    encab = (
+        "<tr>"
+        "<th>NO\n序号</th><th>PHOTO\n产品照片</th><th>ITEM NO\n客户货号</th>"
+        "<th>DESCRIPTION\n品名及规格</th><th>CTN\n箱数</th><th>QTY/CTN\n装箱数</th>"
+        "<th>UNIT</th><th>QTY\n总数量</th><th>PRICE\n单价</th><th>AMOUNT\n金额</th>"
+        "<th>CBM\n箱规</th><th>T.CBM\n总体积</th><th>G.W\n毛重</th>"
+        "</tr>"
     )
     total = (
-        f'<tr class="total"><td colspan="4">Total Amount (总金额) ¥</td>'
-        f"<td>{int(tot_ctn)}</td><td></td><td>{int(tot_qty)}</td><td></td>"
-        f"<td>{round(tot_amount, 2)}</td><td></td><td>{round(tot_tcbm, 6)}</td><td></td></tr>"
+        f'<tr class="total"><td colspan="4">Total Amount（总金额）¥</td>'
+        f"<td>{int(tot_ctn)}</td><td></td><td></td><td>{int(tot_qty)}</td>"
+        f"<td></td><td>{round(tot_amount, 2)}</td><td></td><td>{round(tot_tcbm, 6)}</td><td></td></tr>"
     )
 
-    nombre = supplier_nombre or "Sin proveedor"
-    booth = f" · BOOTH: {supplier_numero}" if supplier_numero else ""
+    terminos = (
+        "1.质量要求技术标准：产品品质、规格应完全与样品及合同要求相符.否则拒绝收货<br>"
+        "2.买方已付订金或订单被卖方取消时，卖方需返还三倍订金作为买方损失.<br>"
+        "3.订单的任何变更需取得买方经理的认可.未经买方经理认可，对订单的修改将不被买方接受.<br>"
+        "4.供方必须按照买方签订的时间准时交货.若不能如期交货，一切责任由供货方承担.<br>"
+        "5.货品要保质、保量、不良货品可以退掉."
+    )
+    marca = (
+        "两张正唛 / 两张侧唛<br>ITEM NO.: 客户货号<br>QTY.: 装箱数 PCS<br>"
+        "G.W.: 毛重 KGS<br>N.W.: KGS<br>MEAS.: X X CM<br>"
+        "普货用五层硬纸箱 重大货加套编织袋<br>易碎液体等产品请贴向上易碎标<br>"
+        "所有产品交货时都需要每款每色验货"
+    )
 
-    html = f"""<html><head><meta charset="utf-8"><style>{CSS}</style></head><body>
-      <p class="empresa">YUDA — 义乌市与达贸易有限公司</p>
-      <p class="sub">{nombre}{booth} · ORDER DATE: {fecha.strftime('%Y-%m-%d')}</p>
-      <p class="sub">地址：义乌市稠州北路1121号福田大厦A座0909-0911室</p>
-      <table>
-        <thead>{encabezado}</thead>
-        <tbody>{''.join(filas_html)}{total}</tbody>
-      </table>
+    cabecera = f"""
+    <p class="empresa">义乌市与达贸易有限公司</p>
+    <table class="cab"><tr>
+      <td>BOOTH(店面)：17907<br>TEL(电话)：18806893598<br>CONTACT(联系人)：小何<br>PAYMENT TIME(付款时间)：30天（节假日除外）</td>
+      <td>ORDER DATE(订货日期)：____年__月__日<br>DELIVERY DATE(交货日期)：____年__月__日<br>DELIVERY ADD(交货地址)：<br>CLIENTE(客户)：</td>
+      <td>地址(add)：浙江省义乌市稠州北路1121号<br>福田大厦A座0909-0911室<br>电话：+86 18058944598<br>工作时间：周一到周五9:00-17:00</td>
+    </tr></table>
+    """
+
+    html = f"""<html><head><meta charset="utf-8"><style>{PED_CSS}</style></head><body>
+      {cabecera}
+      <table class="items"><thead>{encab}</thead><tbody>{''.join(filas)}{total}</tbody></table>
+      <div class="firmas">Total Amount（总金额）：____拾____万____仟____佰____拾____元　　¥：__________<br><br>
+        采购方签名（Buyer Signature）：______________________　　　供货方签名（Seller Signature）：______________________</div>
+      <table class="notas"><tr>
+        <td style="width:65%"><b>注意事项：</b><br>{terminos}</td>
+        <td class="marca">{marca}</td>
+      </tr></table>
     </body></html>"""
 
     return HTML(string=html).write_pdf()
