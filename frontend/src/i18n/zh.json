@@ -27,7 +27,11 @@
     "subirFoto": "上传标签照片",
     "productos": "报价产品",
     "generarPedidos": "生成订单",
-    "exportarPacking": "导出装箱单",
+    "exportarPacking": "下载清单 (Excel)",
+    "exportarPackingTitulo": "产品清单 (Excel)",
+    "exportarPackingAyuda": "包含所有明细的内部表格，供你和供应商使用。",
+    "grupoCliente": "给客户",
+    "grupoInterno": "内部文件（供应商用）",
     "pasoUno": "第一步：输入客户名称并点击「新建报价」。然后您可以上传照片并整理产品清单。",
     "ejemploCliente": "例如：洛佩斯五金店",
     "creando": "正在创建...",
@@ -65,8 +69,16 @@
     "tomarFoto": "拍照或上传图片"
   },
   "packing": {
-    "exportar": "导出装箱单",
+    "exportar": "下载清单 (Excel)",
     "totales": "合计",
+    "tocaEditar": "点按编辑",
+    "sinProductos": "暂无产品。请在上方上传照片以添加。",
+    "fProveedor": "供应商",
+    "fDescripcion": "描述",
+    "fCajas": "箱数",
+    "fUnidCaja": "每箱数量",
+    "fPrecioRmb": "单价(RMB)",
+    "fTotalUsd": "总额 USD",
     "cols": {
       "supplier_nombre": "供应商",
       "supplier_numero": "摊位号",
@@ -182,6 +194,7 @@
   },
   "cotizacion": {
     "titulo": "导出客户报价单",
+    "ayuda": "这是你交给客户的文件（PDF 或 Excel）。",
     "descargarExcel": "下载 Excel",
     "descargarPDF": "下载 PDF",
     "generando": "正在生成...",
@@ -249,7 +262,7 @@
   },
   "envio": {
     "titulo": "客户与发货",
-    "intro": "将此报价关联到客户并发送。之后你可以更新发货状态。",
+    "intro": "将此报价发布到客户门户，让客户在线查看并跟踪发货。请先选择客户。",
     "elegirCliente": "客户",
     "selecciona": "选择一个客户",
     "asignar": "分配",

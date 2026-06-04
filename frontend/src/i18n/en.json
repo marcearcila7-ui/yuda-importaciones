@@ -27,7 +27,11 @@
     "subirFoto": "Upload label photo",
     "productos": "Quotation products",
     "generarPedidos": "Generate orders",
-    "exportarPacking": "Export Packing List",
+    "exportarPacking": "Download list (Excel)",
+    "exportarPackingTitulo": "Product list (Excel)",
+    "exportarPackingAyuda": "Internal sheet with all the details, for you and your suppliers.",
+    "grupoCliente": "For the client",
+    "grupoInterno": "Internal documents (for suppliers)",
     "pasoUno": "Step 1: type the client name and tap «New quotation». Then you can upload photos and build the product list.",
     "ejemploCliente": "E.g.: López Hardware",
     "creando": "Creating...",
@@ -65,8 +69,16 @@
     "tomarFoto": "Take photo or upload image"
   },
   "packing": {
-    "exportar": "Export Packing List",
+    "exportar": "Download list (Excel)",
     "totales": "TOTALS",
+    "tocaEditar": "Tap to edit",
+    "sinProductos": "No products yet. Upload photos above to add them.",
+    "fProveedor": "Supplier",
+    "fDescripcion": "Description",
+    "fCajas": "Boxes",
+    "fUnidCaja": "Units/box",
+    "fPrecioRmb": "Price RMB",
+    "fTotalUsd": "Total USD",
     "cols": {
       "supplier_nombre": "SUPPLIER",
       "supplier_numero": "BOOTH No.",
@@ -182,6 +194,7 @@
   },
   "cotizacion": {
     "titulo": "Export quotation for the client",
+    "ayuda": "This is the document you hand to the client (PDF or Excel).",
     "descargarExcel": "Download Excel",
     "descargarPDF": "Download PDF",
     "generando": "Generating...",
@@ -249,7 +262,7 @@
   },
   "envio": {
     "titulo": "Client and shipment",
-    "intro": "Link this quotation to a client and send it. You can then update the shipment status.",
+    "intro": "Publish this quotation in the client's portal so they can view it online and follow the shipment. First choose the client.",
     "elegirCliente": "Client",
     "selecciona": "Select a client",
     "asignar": "Assign",

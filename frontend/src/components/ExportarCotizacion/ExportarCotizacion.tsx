@@ -61,6 +61,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   return (
     <div className="card flex flex-col gap-4">
       <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('cotizacion.titulo')}</h2>
+      <p className="text-sm" style={{ color: '#6B7280' }}>{t('cotizacion.ayuda')}</p>
 
       {/* Selector de idioma */}
       <div className="flex gap-1">

@@ -70,6 +70,7 @@ function CeldaEditable({
   meta: ColMeta
   onItemActualizado: () => void
 }) {
+  const { t } = useTranslation()
   const actualizarItem = usePackingStore((s) => s.actualizarItem)
   const campo = meta.campo as keyof ItemResponse
   const valorActual = item[campo]
@@ -128,7 +129,7 @@ function CeldaEditable({
       className={`min-h-[28px] cursor-pointer px-1 py-1 ${guardando ? 'opacity-50' : ''} ${
         meta.ctns ? 'border border-blue-300' : ''
       }`}
-      title="Click para editar"
+      title={t('packing.tocaEditar')}
     >
       {guardando ? '…' : valorActual == null || valorActual === '' ? '—' : String(valorActual)}
     </div>
@@ -159,6 +160,95 @@ function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta })
       style={meta.usd ? { color: '#EF4444' } : undefined}
     >
       {valor == null ? '—' : String(valor)}
+    </div>
+  )
+}
+
+// ─── Vista móvil: cada producto como tarjeta con los campos clave ───
+
+type TipoCampo = 'text' | 'num'
+
+function CampoMovil({
+  item,
+  campo,
+  label,
+  tipo,
+  onSaved,
+}: {
+  item: ItemResponse
+  campo: keyof ItemResponse
+  label: string
+  tipo: TipoCampo
+  onSaved: () => void
+}) {
+  const actualizarItem = usePackingStore((s) => s.actualizarItem)
+  const actual = item[campo]
+  const [valor, setValor] = useState<string>(actual == null ? '' : String(actual))
+  const [guardando, setGuardando] = useState(false)
+
+  const guardar = async () => {
+    let nuevo: string | number | undefined
+    if (tipo === 'text') {
+      nuevo = valor === '' ? undefined : valor
+    } else {
+      nuevo = valor === '' ? 0 : Number(valor)
+      if (Number.isNaN(nuevo)) return
+    }
+    if (String(actual ?? '') === String(nuevo ?? '')) return
+    setGuardando(true)
+    await actualizarItem(item.id, { [campo]: nuevo })
+    setGuardando(false)
+    onSaved()
+  }
+
+  return (
+    <label className="flex flex-col gap-1 text-xs" style={{ color: '#6B7280' }}>
+      {label}
+      <input
+        type={tipo === 'text' ? 'text' : 'number'}
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        onBlur={guardar}
+        style={{ ...inputStyle, opacity: guardando ? 0.5 : 1 }}
+        className="rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-[#4B52E8] focus:outline-none"
+      />
+    </label>
+  )
+}
+
+function TarjetaMovil({
+  item,
+  onItemActualizado,
+}: {
+  item: ItemResponse
+  onItemActualizado: () => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-3">
+      <div className="flex gap-3">
+        {item.foto_url ? (
+          <img src={item.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
+        ) : (
+          <div style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
+        )}
+        <div className="min-w-0 flex-1">
+          <CampoMovil item={item} campo="supplier_nombre" label={t('packing.fProveedor')} tipo="text" onSaved={onItemActualizado} />
+        </div>
+      </div>
+
+      <CampoMovil item={item} campo="descripcion_es" label={t('packing.fDescripcion')} tipo="text" onSaved={onItemActualizado} />
+
+      <div className="grid grid-cols-3 gap-2">
+        <CampoMovil item={item} campo="ctns" label={t('packing.fCajas')} tipo="num" onSaved={onItemActualizado} />
+        <CampoMovil item={item} campo="qty_por_ctn" label={t('packing.fUnidCaja')} tipo="num" onSaved={onItemActualizado} />
+        <CampoMovil item={item} campo="price_rmb" label={t('packing.fPrecioRmb')} tipo="num" onSaved={onItemActualizado} />
+      </div>
+
+      <div className="flex justify-between border-t border-gray-100 pt-2 text-sm">
+        <span style={{ color: '#6B7280' }}>{t('packing.fTotalUsd')}</span>
+        <span style={{ fontWeight: 700, color: '#0D0D0D' }}>$ {(item.total_usd || 0).toFixed(2)}</span>
+      </div>
     </div>
   )
 }
@@ -214,7 +304,30 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded border border-gray-200">
+    <>
+      {/* Vista móvil: tarjetas */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        {items.length === 0 ? (
+          <p className="py-4 text-center text-sm" style={{ color: '#9CA3AF' }}>
+            {t('packing.sinProductos')}
+          </p>
+        ) : (
+          <>
+            {items.map((it) => (
+              <TarjetaMovil key={it.id} item={it} onItemActualizado={onItemActualizado} />
+            ))}
+            <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: '#0D0D0D' }}>
+              <span className="text-sm font-bold text-white">
+                {t('packing.totales')} · {totales.ctns} {t('packing.fCajas').toLowerCase()}
+              </span>
+              <span className="text-sm font-bold text-white">$ {totales.total_usd.toFixed(2)}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Vista escritorio: tabla completa */}
+      <div className="hidden w-full overflow-x-auto rounded border border-gray-200 sm:block">
       <table className="border-collapse text-sm">
         <thead>
           {table.getHeaderGroups().map((hg) => (
@@ -277,7 +390,8 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           </tr>
         </tfoot>
       </table>
-    </div>
+      </div>
+    </>
   )
 }
 

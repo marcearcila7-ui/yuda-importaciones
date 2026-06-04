@@ -27,7 +27,11 @@
     "subirFoto": "Subir foto de etiqueta",
     "productos": "Productos de la cotización",
     "generarPedidos": "Generar pedidos",
-    "exportarPacking": "Exportar Packing List",
+    "exportarPacking": "Descargar lista (Excel)",
+    "exportarPackingTitulo": "Lista de productos (Excel)",
+    "exportarPackingAyuda": "Hoja interna con todos los detalles, para ti y para tus proveedores.",
+    "grupoCliente": "Para el cliente",
+    "grupoInterno": "Documentos internos (para proveedores)",
     "pasoUno": "Paso 1: escribe el nombre del cliente y toca «Nueva cotización». Después podrás subir fotos y armar la lista de productos.",
     "ejemploCliente": "Ej: Ferretería López",
     "creando": "Creando...",
@@ -65,8 +69,16 @@
     "tomarFoto": "Tomar foto o subir imagen"
   },
   "packing": {
-    "exportar": "Exportar Packing List",
+    "exportar": "Descargar lista (Excel)",
     "totales": "TOTALES",
+    "tocaEditar": "Toca para editar",
+    "sinProductos": "Aún no hay productos. Sube fotos arriba para agregarlos.",
+    "fProveedor": "Proveedor",
+    "fDescripcion": "Descripción",
+    "fCajas": "Cajas",
+    "fUnidCaja": "Unid/caja",
+    "fPrecioRmb": "Precio RMB",
+    "fTotalUsd": "Total USD",
     "cols": {
       "supplier_nombre": "PROVEEDOR",
       "supplier_numero": "N° STAND",
@@ -182,6 +194,7 @@
   },
   "cotizacion": {
     "titulo": "Exportar cotización para el cliente",
+    "ayuda": "Este es el documento que le entregas al cliente (PDF o Excel).",
     "descargarExcel": "Descargar Excel",
     "descargarPDF": "Descargar PDF",
     "generando": "Generando...",
@@ -249,7 +262,7 @@
   },
   "envio": {
     "titulo": "Cliente y envío",
-    "intro": "Vincula esta cotización con un cliente y envíasela. Después podrás actualizar el estado del envío.",
+    "intro": "Publica esta cotización en el portal del cliente para que la vea en línea y siga el avance del envío. Primero elige el cliente.",
     "elegirCliente": "Cliente",
     "selecciona": "Selecciona un cliente",
     "asignar": "Asignar",

@@ -58,6 +58,18 @@ function SectionCard({ titulo, children }: { titulo: string; children: ReactNode
   )
 }
 
+// Separador que agrupa secciones (ej. "Para el cliente", "Documentos internos")
+function GroupHeading({ texto }: { texto: string }) {
+  return (
+    <div className="mt-2 flex items-center gap-3">
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: '#9CA3AF' }}>
+        {texto.toUpperCase()}
+      </span>
+      <span className="h-px flex-1" style={{ backgroundColor: '#E5E7EB' }} />
+    </div>
+  )
+}
+
 function Dashboard() {
   const location = useLocation()
   const { t, i18n } = useTranslation()
@@ -189,21 +201,13 @@ function Dashboard() {
       {/* Cotización activa */}
       {sesionActual && (
         <>
+          {/* 1. Agregar productos */}
           <SectionCard titulo={t('lote.titulo')}>
             <CargaMasiva />
           </SectionCard>
 
+          {/* 2. Revisar productos */}
           <SectionCard titulo={t('dashboard.productos')}>
-            <div className="mb-4 flex justify-end">
-              <button
-                type="button"
-                onClick={handleExportar}
-                className="flex items-center gap-2 font-semibold text-white"
-                style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
-              >
-                <Download size={18} /> {t('dashboard.exportarPacking')}
-              </button>
-            </div>
             <PackingListTable
               items={items}
               sesion_id={sesionActual.id}
@@ -211,6 +215,9 @@ function Dashboard() {
               onItemActualizado={cargarItems}
             />
           </SectionCard>
+
+          {/* 3. Para el cliente */}
+          <GroupHeading texto={t('dashboard.grupoCliente')} />
 
           <ExportarCotizacion
             sesion_id={sesionActual.id}
@@ -226,6 +233,23 @@ function Dashboard() {
               />
             </SectionCard>
           )}
+
+          {/* 4. Documentos internos / para proveedores */}
+          <GroupHeading texto={t('dashboard.grupoInterno')} />
+
+          <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
+            <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
+              {t('dashboard.exportarPackingAyuda')}
+            </p>
+            <button
+              type="button"
+              onClick={handleExportar}
+              className="flex items-center gap-2 font-semibold text-white"
+              style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
+            >
+              <Download size={18} /> {t('dashboard.exportarPacking')}
+            </button>
+          </SectionCard>
 
           <SectionCard titulo={t('dashboard.generarPedidos')}>
             <GenerarPedidos
