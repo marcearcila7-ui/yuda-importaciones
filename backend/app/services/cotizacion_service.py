@@ -24,7 +24,7 @@ CONTACTO = {
 LABELS = {
     "es": {
         "empresa": "YUDA IMPORTACIONES",
-        "cols": ["N°", "Foto", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM"],
+        "cols": ["N°", "Foto", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM", "Peso kg", "Peso total kg"],
         "numero": "N° Cotización",
         "emision": "Fecha de emisión",
         "cliente": "Cliente",
@@ -34,7 +34,7 @@ LABELS = {
     },
     "en": {
         "empresa": "YIWU YUDA TRADING CO.,LTD",
-        "cols": ["N°", "Photo", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM"],
+        "cols": ["N°", "Photo", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM", "Weight kg", "Total weight kg"],
         "numero": "Quotation No.",
         "emision": "Issue date",
         "cliente": "Client",
@@ -44,7 +44,7 @@ LABELS = {
     },
     "zh": {
         "empresa": "义乌市与达贸易有限公司",
-        "cols": ["序号", "图片", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM"],
+        "cols": ["序号", "图片", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM", "毛重kg", "总毛重kg"],
         "numero": "报价单号",
         "emision": "签发日期",
         "cliente": "客户",
@@ -154,7 +154,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
 
     # Filas de datos
     fila = fila_head + 1
-    tot_cajas = tot_rmb = tot_usd = tot_cbm = 0.0
+    tot_cajas = tot_rmb = tot_usd = tot_cbm = tot_gw = 0.0
     for n, item in enumerate(items, start=1):
         calc = _calcular(item, tipo_cambio)
         valores = [
@@ -173,6 +173,8 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
             calc["total_usd"],
             calc["cbm"],
             calc["t_cbm"],
+            item.gw,
+            round((item.gw or 0) * (item.ctns or 0), 2),
         ]
         for idx, val in enumerate(valores, start=1):
             celda = ws.cell(row=fila, column=idx, value=val)
@@ -196,6 +198,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         tot_rmb += calc["total_rmb"]
         tot_usd += calc["total_usd"]
         tot_cbm += calc["t_cbm"]
+        tot_gw += round((item.gw or 0) * (item.ctns or 0), 2)
         fila += 1
 
     # Fila de totales
@@ -204,6 +207,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     ws.cell(row=fila, column=11, value=round(tot_rmb, 2))
     ws.cell(row=fila, column=13, value=round(tot_usd, 2))
     ws.cell(row=fila, column=15, value=round(tot_cbm, 6))
+    ws.cell(row=fila, column=17, value=round(tot_gw, 2))
     for col in range(1, ncols + 1):
         c = ws.cell(row=fila, column=col)
         c.fill = fill_tot
@@ -242,9 +246,10 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     numero = _numero_cotizacion(sesion, fecha)
 
     filas_html = []
-    tot_cajas = tot_rmb = tot_usd = tot_cbm = 0.0
+    tot_cajas = tot_rmb = tot_usd = tot_cbm = tot_gw = 0.0
     for n, item in enumerate(items, start=1):
         calc = _calcular(item, tipo_cambio)
+        gw_total = round((item.gw or 0) * (item.ctns or 0), 2)
         foto = (
             f'<img src="{item.foto_url}" />'
             if getattr(item, "foto_url", None)
@@ -268,12 +273,15 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
             f"<td>{calc['total_usd']}</td>"
             f"<td>{calc['cbm']}</td>"
             f"<td>{calc['t_cbm']}</td>"
+            f"<td>{item.gw or 0}</td>"
+            f"<td>{gw_total}</td>"
             f"</tr>"
         )
         tot_cajas += item.ctns or 0
         tot_rmb += calc["total_rmb"]
         tot_usd += calc["total_usd"]
         tot_cbm += calc["t_cbm"]
+        tot_gw += gw_total
 
     headers_html = "".join(f"<th>{c}</th>" for c in lab["cols"])
     nota = lab["nota"].format(tc=tipo_cambio)
@@ -316,6 +324,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
         <td>{int(tot_cajas)}</td><td></td><td></td><td></td>
         <td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>
         <td></td><td>{round(tot_cbm, 6)}</td>
+        <td></td><td>{round(tot_gw, 2)}</td>
       </tr>
     </tbody>
   </table>
