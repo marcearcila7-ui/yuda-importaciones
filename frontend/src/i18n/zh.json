@@ -188,8 +188,8 @@
     "error": "无法生成报价单"
   },
   "lote": {
-    "titulo": "批量上传产品",
-    "instruccion": "一次选择多张标签照片（最多 {{max}} 张），系统会全部识别。",
+    "titulo": "添加产品",
+    "instruccion": "上传一张或多张标签照片（最多 {{max}} 张），系统会为你全部识别。",
     "seleccionar": "选择照片",
     "procesando": "正在识别标签... {{hechas}} / {{total}}",
     "revisar": "已识别的产品（{{n}}）",

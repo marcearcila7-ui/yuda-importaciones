@@ -10,7 +10,6 @@ import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizac
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
 import MetricasVendedoras from '../components/MetricasVendedoras'
-import OCRUploader from '../components/OCRUploader/OCRUploader'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
 import { exportarPackingExcel } from '../api/packing'
@@ -18,8 +17,6 @@ import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
 import { usePackingStore } from '../store/packingStore'
 import type { MetricasDashboard } from '../types/admin'
-import type { OCRResultado } from '../types/ocr'
-import type { ItemCreate } from '../types/packing'
 
 // Mapea el idioma de i18n a un locale para fechas
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
@@ -69,7 +66,6 @@ function Dashboard() {
     sesionActual,
     items,
     sesiones,
-    agregarItem,
     cargarItems,
     seleccionarSesion,
     cargarSesiones,
@@ -104,25 +100,6 @@ function Dashboard() {
     preseleccionar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.sesion_id])
-
-  // Toma los datos confirmados del OCR y los agrega como producto de la cotización
-  const handleItemConfirmado = async (datos: OCRResultado & { foto_url: string }) => {
-    const itemCreate: ItemCreate = {
-      supplier_nombre: datos.supplier_nombre ?? undefined,
-      supplier_numero: datos.supplier_numero ?? undefined,
-      foto_url: datos.foto_url,
-      descripcion_zh: datos.descripcion_zh ?? undefined,
-      qty_por_ctn: datos.qty_por_ctn ?? 1,
-      price_rmb: datos.price_rmb ?? 0,
-      gw: datos.gw ?? 0,
-      largo_cm: datos.largo_cm ?? 0,
-      ancho_cm: datos.ancho_cm ?? 0,
-      alto_cm: datos.alto_cm ?? 0,
-      ctns: 1,
-    }
-    await agregarItem(itemCreate)
-    toast.success(t('ocr.exitoAgregado'))
-  }
 
   // Descarga el Excel de la cotización
   const handleExportar = async () => {
@@ -212,10 +189,6 @@ function Dashboard() {
       {/* Cotización activa */}
       {sesionActual && (
         <>
-          <SectionCard titulo={t('dashboard.subirFoto')}>
-            <OCRUploader onItemConfirmado={handleItemConfirmado} />
-          </SectionCard>
-
           <SectionCard titulo={t('lote.titulo')}>
             <CargaMasiva />
           </SectionCard>

@@ -188,8 +188,8 @@
     "error": "Could not generate the quotation"
   },
   "lote": {
-    "titulo": "Upload multiple products",
-    "instruccion": "Select several label photos (up to {{max}}) and the system reads them all.",
+    "titulo": "Add products",
+    "instruccion": "Upload one or several label photos (up to {{max}}) and the system reads them for you.",
     "seleccionar": "Select photos",
     "procesando": "Reading labels... {{hechas}} of {{total}}",
     "revisar": "Detected products ({{n}})",

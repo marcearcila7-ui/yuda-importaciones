@@ -188,8 +188,8 @@
     "error": "No se pudo generar la cotización"
   },
   "lote": {
-    "titulo": "Cargar varios productos",
-    "instruccion": "Selecciona varias fotos de etiquetas (hasta {{max}}) y el sistema las lee todas.",
+    "titulo": "Agregar productos",
+    "instruccion": "Sube una o varias fotos de etiquetas (hasta {{max}}) y el sistema las lee por ti.",
     "seleccionar": "Seleccionar fotos",
     "procesando": "Leyendo etiquetas... {{hechas}} de {{total}}",
     "revisar": "Productos detectados ({{n}})",
