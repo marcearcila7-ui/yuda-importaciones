@@ -191,7 +191,9 @@
     "quitar": "移除",
     "tope": "每次最多 {{max}} 张照片。已取前 {{max}} 张。",
     "fallas": "{{n}} 张照片无法识别，已跳过。",
-    "exito": "已将 {{n}} 个产品添加到报价"
+    "exito": "已将 {{n}} 个产品添加到报价",
+    "fallidasTitulo": "无法识别（{{n}}）",
+    "reintentar": "重试"
   },
   "roles": {
     "admin": "管理员",

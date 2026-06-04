@@ -2,26 +2,18 @@ import { useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Images, Trash2 } from 'lucide-react'
-import { subirFotoOCR } from '../../api/ocr'
-import { comprimirImagen } from '../../lib/comprimirImagen'
+import { Images, RefreshCw, Trash2 } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
+import { useLoteStore } from '../../store/loteStore'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
-// Tope coherente por tanda y cuántas se leen en paralelo
-const MAX_LOTE = 50
-const CONCURRENCIA = 4
+// Tope coherente por tanda
+const MAX_LOTE = 100
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none'
-
-interface Resultado {
-  id: string
-  foto_url: string
-  datos: OCRResultado
-}
 
 function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   if (c === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, texto: t('ocr.confianzaAlta') }
@@ -32,19 +24,26 @@ function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
 function CargaMasiva() {
   const { t } = useTranslation()
   const agregarItem = usePackingStore((s) => s.agregarItem)
+  const {
+    procesando,
+    progreso,
+    resultados,
+    fallidas,
+    procesarArchivos,
+    reintentarFallidas,
+    actualizarDato,
+    quitar,
+    limpiar,
+  } = useLoteStore()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [procesando, setProcesando] = useState(false)
-  const [progreso, setProgreso] = useState({ hechas: 0, total: 0 })
-  const [resultados, setResultados] = useState<Resultado[]>([])
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
-  const handleSeleccion = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleSeleccion = (e: ChangeEvent<HTMLInputElement>) => {
     const todos = Array.from(e.target.files ?? [])
-    e.target.value = '' // permite volver a elegir las mismas
+    e.target.value = ''
     if (todos.length === 0) return
-
     let lote = todos
     if (todos.length > MAX_LOTE) {
       setAviso(t('lote.tope', { max: MAX_LOTE }))
@@ -52,50 +51,16 @@ function CargaMasiva() {
     } else {
       setAviso(null)
     }
-
-    setResultados([])
-    setProcesando(true)
-    setProgreso({ hechas: 0, total: lote.length })
-
-    let fallidas = 0
-    const acumulados: Resultado[] = []
-    let idx = 0
-    const worker = async () => {
-      while (idx < lote.length) {
-        const archivo = lote[idx++]
-        try {
-          const comprimido = await comprimirImagen(archivo)
-          const resp = await subirFotoOCR(comprimido)
-          acumulados.push({ id: resp.foto_url, foto_url: resp.foto_url, datos: { ...resp.datos_extraidos } })
-        } catch {
-          fallidas++
-        }
-        setProgreso((p) => ({ ...p, hechas: p.hechas + 1 }))
-      }
-    }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, lote.length) }, worker))
-
-    setResultados(acumulados)
-    setProcesando(false)
-    if (fallidas > 0) toast.error(t('lote.fallas', { n: fallidas }))
+    procesarArchivos(lote)
   }
 
-  const actualizarTexto = (id: string, campo: keyof OCRResultado, valor: string) => {
-    setResultados((rs) =>
-      rs.map((r) => (r.id === id ? { ...r, datos: { ...r.datos, [campo]: valor === '' ? null : valor } } : r)),
-    )
-  }
+  const actualizarTexto = (id: string, campo: keyof OCRResultado, valor: string) =>
+    actualizarDato(id, campo, valor === '' ? null : valor)
 
   const actualizarNumero = (id: string, campo: keyof OCRResultado, valor: string) => {
     const n = valor === '' ? null : Number(valor)
-    setResultados((rs) =>
-      rs.map((r) =>
-        r.id === id ? { ...r, datos: { ...r.datos, [campo]: n !== null && Number.isNaN(n) ? null : n } } : r,
-      ),
-    )
+    actualizarDato(id, campo, n !== null && Number.isNaN(n) ? null : n)
   }
-
-  const quitar = (id: string) => setResultados((rs) => rs.filter((r) => r.id !== id))
 
   const agregarTodos = async () => {
     if (resultados.length === 0) return
@@ -118,7 +83,7 @@ function CargaMasiva() {
       }
       await agregarItem(item)
     }
-    setResultados([])
+    limpiar()
     setAgregando(false)
     toast.success(t('lote.exito', { n }))
   }
@@ -138,18 +103,15 @@ function CargaMasiva() {
         className="hidden"
       />
 
-      {/* Botón seleccionar (oculto mientras hay resultados para revisar) */}
-      {resultados.length === 0 && (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={procesando}
-          className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-          style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
-        >
-          <Images size={18} /> {t('lote.seleccionar')}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={procesando}
+        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+        style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+      >
+        <Images size={18} /> {t('lote.seleccionar')}
+      </button>
 
       {aviso && <p className="text-sm" style={{ color: '#B45309' }}>{aviso}</p>}
 
@@ -171,22 +133,34 @@ function CargaMasiva() {
         </div>
       )}
 
+      {/* Fotos que fallaron (con reintento) */}
+      {fallidas.length > 0 && !procesando && (
+        <div className="rounded-xl p-3" style={{ backgroundColor: '#FEE2E2' }}>
+          <p className="mb-2 text-sm font-semibold" style={{ color: '#EF4444' }}>
+            {t('lote.fallidasTitulo', { n: fallidas.length })}
+          </p>
+          <button
+            type="button"
+            onClick={reintentarFallidas}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
+            style={{ backgroundColor: '#EF4444' }}
+          >
+            <RefreshCw size={16} /> {t('lote.reintentar')}
+          </button>
+        </div>
+      )}
+
       {/* Revisión en bloque */}
       {resultados.length > 0 && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
-              {t('lote.revisar', { n: resultados.length })}
-            </h3>
-          </div>
+          <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
+            {t('lote.revisar', { n: resultados.length })}
+          </h3>
 
           {resultados.map((r) => {
             const chip = chipConfianza(r.datos.confianza, t)
             return (
-              <div
-                key={r.id}
-                className="flex gap-3 rounded-xl border border-gray-200 p-3"
-              >
+              <div key={r.id} className="flex gap-3 rounded-xl border border-gray-200 p-3">
                 {r.foto_url ? (
                   <img src={r.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
                 ) : (
@@ -223,7 +197,7 @@ function CargaMasiva() {
           <button
             type="button"
             onClick={agregarTodos}
-            disabled={agregando}
+            disabled={agregando || procesando}
             className="min-h-[52px] w-full rounded-lg font-semibold text-white disabled:opacity-60"
             style={{ backgroundColor: '#10B981', fontSize: 16 }}
           >

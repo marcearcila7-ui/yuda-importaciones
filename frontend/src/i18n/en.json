@@ -191,7 +191,9 @@
     "quitar": "Remove",
     "tope": "Up to {{max}} photos at a time. We took the first {{max}}.",
     "fallas": "{{n}} photo(s) could not be read and were skipped.",
-    "exito": "{{n}} products added to the quotation"
+    "exito": "{{n}} products added to the quotation",
+    "fallidasTitulo": "Could not be read ({{n}})",
+    "reintentar": "Retry"
   },
   "roles": {
     "admin": "Administrator",

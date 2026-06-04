@@ -191,7 +191,9 @@
     "quitar": "Quitar",
     "tope": "Se permiten hasta {{max}} fotos por vez. Tomamos las primeras {{max}}.",
     "fallas": "{{n}} foto(s) no se pudieron leer y se omitieron.",
-    "exito": "{{n}} productos agregados a la cotización"
+    "exito": "{{n}} productos agregados a la cotización",
+    "fallidasTitulo": "No se pudieron leer ({{n}})",
+    "reintentar": "Reintentar"
   },
   "roles": {
     "admin": "Administrador",
