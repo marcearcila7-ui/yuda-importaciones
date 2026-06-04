@@ -79,6 +79,8 @@ class SesionResponse(BaseModel):
     fecha: date
     tipo_cambio_usd: float
     user_id: str
+    cliente_id: str | None = None
+    enviada_cliente: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

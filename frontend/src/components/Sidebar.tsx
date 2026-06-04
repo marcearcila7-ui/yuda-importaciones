@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, LogOut, Package, Settings } from 'lucide-react'
+import { ClipboardList, LogOut, Network, Package, Settings, Users } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 // Logo circular YUDA (círculo azul con "Y" blanca)
@@ -70,6 +70,8 @@ interface ItemNav {
 
 const LINKS: ItemNav[] = [
   { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion' },
+  { to: '/clientes', icono: <Users size={18} />, clave: 'clientes', roles: ['admin', 'vendedora'] },
+  { to: '/equipo', icono: <Network size={18} />, clave: 'equipo', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
   { to: '/admin', icono: <Settings size={18} />, clave: 'administracion', roles: ['admin'] },
 ]

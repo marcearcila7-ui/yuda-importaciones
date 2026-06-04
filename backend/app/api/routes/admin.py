@@ -8,9 +8,11 @@ from app.api.dependencies import get_current_user, require_roles
 from app.core.config import settings
 from app.core.security import hash_password
 from app.database import get_db
+from app.models.cliente import Cliente
 from app.models.configuracion import Configuracion
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
+from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import RolUsuario, User
 from app.schemas.admin import (
@@ -280,6 +282,73 @@ def metricas_vendedoras(
                 "total_items": total_items,
                 "total_rmb": round(total_rmb, 2),
                 "total_usd": round(total_usd, 2),
+            }
+        )
+
+    return {"vendedoras": resultado}
+
+
+@router.get("/equipo")
+def panorama_equipo(
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Panorama para Marcela: cada vendedora con sus clientes y el envío de cada cotización"""
+    vendedoras = (
+        db.query(User).filter(User.rol == RolUsuario.vendedora).order_by(User.nombre.asc()).all()
+    )
+
+    resultado = []
+    for v in vendedoras:
+        clientes = (
+            db.query(Cliente)
+            .filter(Cliente.vendedora_id == v.id)
+            .order_by(Cliente.nombre.asc())
+            .all()
+        )
+        lista_clientes = []
+        for c in clientes:
+            sesiones = (
+                db.query(Sesion)
+                .filter(Sesion.cliente_id == c.id)
+                .order_by(Sesion.created_at.desc())
+                .all()
+            )
+            cotizaciones = []
+            for s in sesiones:
+                seg = (
+                    db.query(SeguimientoPedido)
+                    .filter(SeguimientoPedido.sesion_id == s.id)
+                    .first()
+                )
+                cotizaciones.append(
+                    {
+                        "sesion_id": s.id,
+                        "numero": f"YUDA-{s.fecha:%Y%m%d}-{s.id[:6].upper()}",
+                        "fecha": s.fecha.isoformat(),
+                        "nombre_cliente": s.nombre_cliente,
+                        "enviada": s.enviada_cliente,
+                        "estado": seg.estado if seg else None,
+                    }
+                )
+            lista_clientes.append(
+                {
+                    "id": c.id,
+                    "nombre": c.nombre,
+                    "email": c.email,
+                    "empresa": c.empresa,
+                    "pais": c.pais,
+                    "activo": c.activo,
+                    "cotizaciones": cotizaciones,
+                }
+            )
+        resultado.append(
+            {
+                "user_id": v.id,
+                "nombre": v.nombre,
+                "email": v.email,
+                "total_clientes": len(lista_clientes),
+                "clientes": lista_clientes,
             }
         )
 

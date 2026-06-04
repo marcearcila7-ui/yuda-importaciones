@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
+import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
@@ -77,6 +78,8 @@ function Dashboard() {
 
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
+  // El bloque de cliente y envío lo gestionan admin y vendedoras
+  const esStaffVentas = usuario?.rol === 'admin' || usuario?.rol === 'vendedora'
 
   // Carga las métricas del mes (solo admin)
   useEffect(() => {
@@ -240,6 +243,16 @@ function Dashboard() {
             sesion_id={sesionActual.id}
             nombre_cliente={sesionActual.nombre_cliente}
           />
+
+          {esStaffVentas && (
+            <SectionCard titulo={t('envio.titulo')}>
+              <ClienteEnvio
+                sesionId={sesionActual.id}
+                clienteIdInicial={sesionActual.cliente_id ?? null}
+                enviadaInicial={sesionActual.enviada_cliente ?? false}
+              />
+            </SectionCard>
+          )}
 
           <SectionCard titulo={t('dashboard.generarPedidos')}>
             <GenerarPedidos

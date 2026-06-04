@@ -37,5 +37,7 @@ export interface Sesion {
   fecha: string
   tipo_cambio_usd: number
   user_id: string
+  cliente_id?: string | null
+  enviada_cliente?: boolean
   created_at: string
 }

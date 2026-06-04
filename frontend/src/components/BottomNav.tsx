@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, Package, Settings } from 'lucide-react'
+import { ClipboardList, Network, Package, Settings, Users } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 interface ItemNav {
@@ -13,6 +13,8 @@ interface ItemNav {
 
 const ITEMS: ItemNav[] = [
   { to: '/dashboard', icono: <Package size={24} />, i18nKey: 'nav.cotizacion' },
+  { to: '/clientes', icono: <Users size={24} />, i18nKey: 'nav.clientes', roles: ['admin', 'vendedora'] },
+  { to: '/equipo', icono: <Network size={24} />, i18nKey: 'nav.equipo', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={24} />, i18nKey: 'nav.historial', roles: ['admin', 'contadora'] },
   { to: '/admin', icono: <Settings size={24} />, i18nKey: 'nav.admin', roles: ['admin'] },
 ]

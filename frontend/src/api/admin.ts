@@ -7,6 +7,7 @@ import type {
   UsuarioAdmin,
   UsuarioCreate,
 } from '../types/admin'
+import type { EquipoResponse } from '../types/equipo'
 
 // Adjunta el token de localStorage en cada request
 apiClient.interceptors.request.use((config) => {
@@ -71,5 +72,10 @@ export async function getMetricas(): Promise<MetricasDashboard> {
 
 export async function getMetricasVendedoras(): Promise<MetricasVendedorasResponse> {
   const { data } = await apiClient.get<MetricasVendedorasResponse>('/admin/metricas-vendedoras')
+  return data
+}
+
+export async function getEquipo(): Promise<EquipoResponse> {
+  const { data } = await apiClient.get<EquipoResponse>('/admin/equipo')
   return data
 }

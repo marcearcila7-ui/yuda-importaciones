@@ -1,0 +1,296 @@
+import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
+import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
+import { Check, Copy, KeyRound, Plus, UserPlus, Users } from 'lucide-react'
+import {
+  actualizarCliente,
+  crearCliente,
+  getClientes,
+  resetPasswordCliente,
+} from '../api/clientes'
+import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
+
+const inputStyle: CSSProperties = { fontSize: 16 }
+const inputClase =
+  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
+
+function Campo({
+  label,
+  value,
+  onChange,
+  type = 'text',
+  placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  type?: string
+  placeholder?: string
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+      {label}
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+        className={inputClase}
+      />
+    </label>
+  )
+}
+
+function Clientes() {
+  const { t } = useTranslation()
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [mostrarForm, setMostrarForm] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
+  const [copiado, setCopiado] = useState(false)
+
+  const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
+
+  const cargar = () =>
+    getClientes()
+      .then(setClientes)
+      .catch(() => toast.error(t('clientes.errorCargar')))
+
+  useEffect(() => {
+    cargar()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const setCampo = (campo: keyof ClienteCreate, valor: string) =>
+    setForm((f) => ({ ...f, [campo]: valor }))
+
+  const handleCrear = async () => {
+    if (!form.nombre.trim() || !form.email.trim()) {
+      toast.error(t('clientes.faltanDatos'))
+      return
+    }
+    setGuardando(true)
+    try {
+      const creado = await crearCliente({
+        nombre: form.nombre.trim(),
+        email: form.email.trim(),
+        empresa: form.empresa?.trim() || undefined,
+        pais: form.pais?.trim() || undefined,
+        telefono: form.telefono?.trim() || undefined,
+        password: form.password?.trim() || undefined,
+      })
+      setCredenciales(creado)
+      setCopiado(false)
+      setForm({ nombre: '', email: '' })
+      setMostrarForm(false)
+      toast.success(t('clientes.creado'))
+      cargar()
+    } catch (err) {
+      const detalle =
+        typeof err === 'object' && err && 'response' in err
+          ? // @ts-expect-error acceso defensivo al detalle de axios
+            err.response?.data?.detail
+          : null
+      toast.error(detalle || t('clientes.errorCrear'))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  const copiarCredenciales = async () => {
+    if (!credenciales) return
+    const texto = `YUDA Importaciones — acceso a tu portal\nEmail: ${credenciales.email}\nContraseña: ${credenciales.password_inicial}`
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2500)
+    } catch {
+      toast.error(t('clientes.errorCopiar'))
+    }
+  }
+
+  const toggleActivo = async (c: Cliente) => {
+    try {
+      await actualizarCliente(c.id, { activo: !c.activo })
+      cargar()
+    } catch {
+      toast.error(t('clientes.errorActualizar'))
+    }
+  }
+
+  const resetear = async (c: Cliente) => {
+    const nueva = window.prompt(t('clientes.promptPassword', { nombre: c.nombre }))
+    if (!nueva) return
+    if (nueva.trim().length < 6) {
+      toast.error(t('clientes.passwordCorta'))
+      return
+    }
+    try {
+      await resetPasswordCliente(c.id, nueva.trim())
+      toast.success(t('clientes.passwordReseteada'))
+    } catch {
+      toast.error(t('clientes.errorActualizar'))
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('clientes.titulo')}</h1>
+          <p className="text-sm" style={{ color: '#6B7280' }}>
+            {t('clientes.subtitulo')}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMostrarForm((v) => !v)}
+          className="flex items-center gap-2 font-semibold text-white"
+          style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+        >
+          <UserPlus size={18} /> {t('clientes.nuevo')}
+        </button>
+      </div>
+
+      {/* Credenciales recién creadas */}
+      {credenciales && (
+        <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
+          <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
+            {t('clientes.credencialesTitulo')}
+          </h2>
+          <p className="mb-3 text-sm" style={{ color: '#6B7280' }}>
+            {t('clientes.credencialesAviso')}
+          </p>
+          <div className="rounded-lg p-3 text-sm" style={{ backgroundColor: '#F5F5F0' }}>
+            <p>
+              <strong>{t('clientes.email')}:</strong> {credenciales.email}
+            </p>
+            <p>
+              <strong>{t('clientes.password')}:</strong>{' '}
+              <span style={{ fontFamily: 'monospace' }}>{credenciales.password_inicial}</span>
+            </p>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={copiarCredenciales}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
+              style={{ backgroundColor: '#10B981' }}
+            >
+              {copiado ? <Check size={16} /> : <Copy size={16} />}{' '}
+              {copiado ? t('clientes.copiado') : t('clientes.copiar')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCredenciales(null)}
+              className="rounded-lg px-3 py-2 text-sm font-medium"
+              style={{ color: '#6B7280' }}
+            >
+              {t('clientes.cerrar')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Formulario nuevo cliente */}
+      {mostrarForm && (
+        <div className="card flex flex-col gap-4">
+          <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('clientes.nuevo')}</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Campo label={t('clientes.nombre')} value={form.nombre} onChange={(v) => setCampo('nombre', v)} />
+            <Campo label={t('clientes.email')} type="email" value={form.email} onChange={(v) => setCampo('email', v)} placeholder="cliente@correo.com" />
+            <Campo label={t('clientes.empresa')} value={form.empresa ?? ''} onChange={(v) => setCampo('empresa', v)} />
+            <Campo label={t('clientes.pais')} value={form.pais ?? ''} onChange={(v) => setCampo('pais', v)} />
+            <Campo label={t('clientes.telefono')} value={form.telefono ?? ''} onChange={(v) => setCampo('telefono', v)} />
+            <Campo label={t('clientes.passwordOpcional')} value={form.password ?? ''} onChange={(v) => setCampo('password', v)} placeholder={t('clientes.passwordAuto')} />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleCrear}
+              disabled={guardando}
+              className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
+              style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+            >
+              <Plus size={18} /> {guardando ? t('clientes.creando') : t('clientes.crear')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMostrarForm(false)}
+              className="rounded-lg px-4 text-sm font-medium"
+              style={{ color: '#6B7280' }}
+            >
+              {t('clientes.cancelar')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de clientes */}
+      <div className="card">
+        <h2 className="mb-4 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+          <Users size={18} /> {t('clientes.listaTitulo')}
+        </h2>
+
+        {clientes.length === 0 ? (
+          <p className="text-sm" style={{ color: '#6B7280' }}>
+            {t('clientes.sinClientes')}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {clientes.map((c) => (
+              <div
+                key={c.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 p-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold" style={{ color: '#0D0D0D' }}>
+                    {c.nombre}
+                    {c.empresa ? <span style={{ color: '#9CA3AF' }}> · {c.empresa}</span> : null}
+                  </p>
+                  <p className="text-sm" style={{ color: '#6B7280' }}>
+                    {c.email}
+                    {c.pais ? ` · ${c.pais}` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={
+                      c.activo
+                        ? { backgroundColor: '#D1FAE5', color: '#10B981' }
+                        : { backgroundColor: '#FEE2E2', color: '#EF4444' }
+                    }
+                  >
+                    {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => resetear(c)}
+                    title={t('clientes.resetPassword')}
+                    className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium"
+                    style={{ color: '#4B52E8' }}
+                  >
+                    <KeyRound size={14} /> {t('clientes.resetPassword')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleActivo(c)}
+                    className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium"
+                    style={{ color: c.activo ? '#EF4444' : '#10B981' }}
+                  >
+                    {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default Clientes

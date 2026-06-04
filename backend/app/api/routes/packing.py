@@ -7,6 +7,7 @@ from app.api.dependencies import get_current_user
 from app.database import get_db
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
+from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.cotizacion import CotizacionRequest
@@ -124,6 +125,7 @@ def eliminar_sesion(
     # Borrar primero los registros que dependen de la sesión (FK)
     db.query(Item).filter(Item.sesion_id == sesion_id).delete()
     db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).delete()
+    db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).delete()
     db.query(Sesion).filter(Sesion.id == sesion_id).delete()
     db.commit()
     return {"detail": "Cotización eliminada"}
