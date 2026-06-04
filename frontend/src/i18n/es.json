@@ -171,7 +171,12 @@
     "totalUSD": "Total USD este mes",
     "itemsProcesados": "Ítems procesados",
     "proveedoresUnicos": "Proveedores únicos",
-    "pedidosGenerados": "Pedidos generados"
+    "pedidosGenerados": "Pedidos generados",
+    "porVendedora": "Por vendedora (este mes)",
+    "vendedora": "Vendedora",
+    "cotizaciones": "Cotizaciones",
+    "totalGeneral": "Total general",
+    "sinVendedoras": "Aún no hay vendedoras registradas"
   },
   "cotizacion": {
     "titulo": "Exportar cotización para el cliente",

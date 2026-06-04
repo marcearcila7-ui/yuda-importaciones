@@ -8,6 +8,7 @@ import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
+import MetricasVendedoras from '../components/MetricasVendedoras'
 import OCRUploader from '../components/OCRUploader/OCRUploader'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
@@ -74,15 +75,16 @@ function Dashboard() {
   } = usePackingStore()
   const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
 
-  const esGestion = usuario?.rol === 'admin' || usuario?.rol === 'contadora'
+  // Las métricas (generales y por vendedora) solo las ve Marcela / admin
+  const esAdmin = usuario?.rol === 'admin'
 
-  // Carga las métricas del mes (solo admin y contadora)
+  // Carga las métricas del mes (solo admin)
   useEffect(() => {
-    if (!esGestion) return
+    if (!esAdmin) return
     getMetricas()
       .then(setMetricas)
       .catch(() => setMetricas(null))
-  }, [esGestion])
+  }, [esAdmin])
 
   // Si se llega desde el Historial con un sesion_id en el state, preseleccionar la sesión
   useEffect(() => {
@@ -186,8 +188,8 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Métricas del mes (admin y contadora) */}
-      {esGestion && metricas && (
+      {/* Métricas del mes (solo Marcela / admin) */}
+      {esAdmin && metricas && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono={<ShoppingBag size={20} />} color="#4B52E8" />
           <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono={<Coins size={20} />} color="#F59E0B" />
@@ -197,6 +199,9 @@ function Dashboard() {
           <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono={<FileText size={20} />} color="#4B52E8" />
         </div>
       )}
+
+      {/* Métricas por vendedora (solo Marcela / admin) */}
+      {esAdmin && <MetricasVendedoras />}
 
       {/* Crear / abrir cotización */}
       <SesionSelector />

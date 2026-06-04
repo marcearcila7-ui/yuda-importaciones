@@ -171,7 +171,12 @@
     "totalUSD": "本月美元总额",
     "itemsProcesados": "已处理产品数",
     "proveedoresUnicos": "供应商数量",
-    "pedidosGenerados": "已生成订单数"
+    "pedidosGenerados": "已生成订单数",
+    "porVendedora": "按销售员（本月）",
+    "vendedora": "销售员",
+    "cotizaciones": "报价数",
+    "totalGeneral": "总计",
+    "sinVendedoras": "尚未注册销售员"
   },
   "cotizacion": {
     "titulo": "导出客户报价单",

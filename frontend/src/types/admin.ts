@@ -39,3 +39,16 @@ export interface MetricasDashboard {
   total_pedidos_mes: number
   proveedores_unicos_mes: number
 }
+
+export interface MetricaVendedora {
+  user_id: string
+  nombre: string
+  total_sesiones: number
+  total_items: number
+  total_rmb: number
+  total_usd: number
+}
+
+export interface MetricasVendedorasResponse {
+  vendedoras: MetricaVendedora[]
+}

@@ -171,7 +171,12 @@
     "totalUSD": "Total USD this month",
     "itemsProcesados": "Items processed",
     "proveedoresUnicos": "Unique suppliers",
-    "pedidosGenerados": "Orders generated"
+    "pedidosGenerados": "Orders generated",
+    "porVendedora": "By salesperson (this month)",
+    "vendedora": "Salesperson",
+    "cotizaciones": "Quotations",
+    "totalGeneral": "Grand total",
+    "sinVendedoras": "No salespeople registered yet"
   },
   "cotizacion": {
     "titulo": "Export quotation for the client",

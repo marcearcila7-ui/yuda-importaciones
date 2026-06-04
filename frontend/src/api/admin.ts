@@ -2,6 +2,7 @@ import apiClient from './client'
 import type {
   ConfiguracionResponse,
   MetricasDashboard,
+  MetricasVendedorasResponse,
   SesionHistorial,
   UsuarioAdmin,
   UsuarioCreate,
@@ -65,5 +66,10 @@ export async function getHistorial(filtros?: {
 
 export async function getMetricas(): Promise<MetricasDashboard> {
   const { data } = await apiClient.get<MetricasDashboard>('/admin/metricas')
+  return data
+}
+
+export async function getMetricasVendedoras(): Promise<MetricasVendedorasResponse> {
+  const { data } = await apiClient.get<MetricasVendedorasResponse>('/admin/metricas-vendedoras')
   return data
 }

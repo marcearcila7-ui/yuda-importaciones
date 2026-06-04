@@ -174,10 +174,10 @@ def actualizar_configuracion(
 
 @router.get("/metricas")
 def metricas(
-    usuario: User = Depends(require_roles("admin", "contadora")),
+    usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> dict:
-    """Métricas del mes actual para el dashboard (admin y contadora)"""
+    """Métricas del mes actual para el dashboard (solo admin)"""
     ahora = datetime.now()
     inicio_mes = datetime(ahora.year, ahora.month, 1)
     if ahora.month == 12:
@@ -230,6 +230,60 @@ def metricas(
         "total_pedidos_mes": total_pedidos_mes,
         "proveedores_unicos_mes": len(proveedores),
     }
+
+
+@router.get("/metricas-vendedoras")
+def metricas_vendedoras(
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Métricas del mes actual desglosadas por cada vendedora (solo admin)"""
+    ahora = datetime.now()
+    inicio_mes = datetime(ahora.year, ahora.month, 1)
+    if ahora.month == 12:
+        fin_mes = datetime(ahora.year + 1, 1, 1)
+    else:
+        fin_mes = datetime(ahora.year, ahora.month + 1, 1)
+
+    vendedoras = (
+        db.query(User).filter(User.rol == RolUsuario.vendedora).order_by(User.nombre.asc()).all()
+    )
+
+    resultado = []
+    for v in vendedoras:
+        sesiones = (
+            db.query(Sesion)
+            .filter(
+                Sesion.user_id == v.id,
+                Sesion.created_at >= inicio_mes,
+                Sesion.created_at < fin_mes,
+            )
+            .all()
+        )
+        total_items = 0
+        total_rmb = 0.0
+        total_usd = 0.0
+        for s in sesiones:
+            items = db.query(Item).filter(Item.sesion_id == s.id).all()
+            total_items += len(items)
+            sesion_rmb = sum(
+                (i.price_rmb or 0) * (i.qty_por_ctn or 0) * (i.ctns or 0) for i in items
+            )
+            total_rmb += sesion_rmb
+            if s.tipo_cambio_usd:
+                total_usd += sesion_rmb / s.tipo_cambio_usd
+        resultado.append(
+            {
+                "user_id": v.id,
+                "nombre": v.nombre,
+                "total_sesiones": len(sesiones),
+                "total_items": total_items,
+                "total_rmb": round(total_rmb, 2),
+                "total_usd": round(total_usd, 2),
+            }
+        )
+
+    return {"vendedoras": resultado}
 
 
 # ──────────────── HISTORIAL ────────────────
