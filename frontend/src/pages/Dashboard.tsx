@@ -237,7 +237,20 @@ function Dashboard() {
             </SectionCard>
           )}
 
-          {/* 4. Documentos internos / para proveedores */}
+          {/* 4. Pedidos a proveedores */}
+          <GroupHeading texto={t('dashboard.grupoProveedores')} />
+
+          <SectionCard titulo={t('dashboard.generarPedidos')}>
+            <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
+              {t('dashboard.generarPedidosAyuda')}
+            </p>
+            <GenerarPedidos
+              sesion_id={sesionActual.id}
+              nombre_cliente={sesionActual.nombre_cliente}
+            />
+          </SectionCard>
+
+          {/* 5. Uso interno (tus registros) */}
           <GroupHeading texto={t('dashboard.grupoInterno')} />
 
           <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
@@ -262,13 +275,6 @@ function Dashboard() {
                 <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
               </button>
             </div>
-          </SectionCard>
-
-          <SectionCard titulo={t('dashboard.generarPedidos')}>
-            <GenerarPedidos
-              sesion_id={sesionActual.id}
-              nombre_cliente={sesionActual.nombre_cliente}
-            />
           </SectionCard>
         </>
       )}

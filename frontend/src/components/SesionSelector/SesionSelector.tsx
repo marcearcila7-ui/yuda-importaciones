@@ -16,8 +16,7 @@ type Modo = 'cliente' | 'libre'
 
 function SesionSelector() {
   const { t } = useTranslation()
-  const { sesiones, isLoading, cargarSesiones, crearSesion, seleccionarSesion } =
-    usePackingStore()
+  const { isLoading, crearSesion } = usePackingStore()
 
   const [modo, setModo] = useState<Modo>('cliente')
   const [nombreLibre, setNombreLibre] = useState('')
@@ -37,11 +36,10 @@ function SesionSelector() {
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
 
   useEffect(() => {
-    cargarSesiones()
     getClientes()
       .then(setClientes)
       .catch(() => undefined)
-  }, [cargarSesiones])
+  }, [])
 
   const crearClienteInline = async () => {
     if (!nuevoNombre.trim() || !nuevoEmail.trim()) {
@@ -96,8 +94,6 @@ function SesionSelector() {
     }
     setTipoCambio('6.7')
   }
-
-  const recientes = sesiones.slice(0, 5)
 
   const btnModo = (m: Modo, label: string) => {
     const activo = modo === m
@@ -250,57 +246,6 @@ function SesionSelector() {
 
       {aviso && <p className="mt-2 text-sm" style={{ color: '#EF4444' }}>{aviso}</p>}
 
-      {recientes.length > 0 && (
-        <div className="mt-6">
-          <p className="mb-2 text-sm font-medium" style={{ color: '#6B7280' }}>
-            {t('dashboard.abrirReciente')}
-          </p>
-          {/* Mobile: cards verticales */}
-          <div className="flex flex-col gap-2 sm:hidden">
-            {recientes.map((sesion) => (
-              <button
-                key={sesion.id}
-                type="button"
-                onClick={() => seleccionarSesion(sesion)}
-                disabled={isLoading}
-                className="flex min-h-[48px] w-full items-center justify-between rounded-xl border border-gray-200 px-4 py-2 text-left disabled:opacity-60"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold" style={{ color: '#0D0D0D' }}>
-                    {sesion.nombre_cliente}
-                  </span>
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>
-                    {sesion.fecha}
-                  </span>
-                </span>
-                <span
-                  className="ml-3 flex-shrink-0 rounded-full px-3 py-1 text-sm font-medium text-white"
-                  style={{ backgroundColor: '#4B52E8' }}
-                >
-                  {t('dashboard.abrir')}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Desktop: chips en fila */}
-          <div className="hidden flex-wrap gap-2 sm:flex">
-            {recientes.map((sesion) => (
-              <button
-                key={sesion.id}
-                type="button"
-                onClick={() => seleccionarSesion(sesion)}
-                disabled={isLoading}
-                className="rounded-full px-4 py-2 text-sm font-medium transition-colors disabled:opacity-60"
-                style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
-              >
-                {sesion.nombre_cliente}{' '}
-                <span style={{ color: '#9CA3AF' }}>· TC {sesion.tipo_cambio_usd}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
