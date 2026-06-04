@@ -58,7 +58,18 @@ def generar_packing_list_excel(
     fila = 4
     for item in items:
         ws.cell(row=fila, column=1, value=getattr(item, "supplier_nombre", None))
-        # Columna 2 (PHOTO) se deja vacía
+        # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda
+        if getattr(item, "foto_url", None):
+            buf = descargar_imagen_png(item.foto_url, lado_px=120)
+            if buf is not None:
+                try:
+                    img = XLImage(buf)
+                    img.width = 55
+                    img.height = 55
+                    ws.add_image(img, f"B{fila}")
+                    ws.row_dimensions[fila].height = 45
+                except Exception:
+                    pass
         ws.cell(row=fila, column=3, value=getattr(item, "item_no", None))
         ws.cell(row=fila, column=4, value=getattr(item, "descripcion_es", None))
         ws.cell(row=fila, column=5, value=getattr(item, "descripcion_en", None))
