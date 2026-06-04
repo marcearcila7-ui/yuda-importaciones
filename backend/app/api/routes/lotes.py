@@ -6,6 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFi
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
+from app.core.config import settings
 from app.database import get_db
 from app.models.lote import LoteItem, LoteOCR
 from app.models.sesion import Sesion
@@ -92,8 +93,13 @@ def procesar(
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
 ) -> dict:
-    """Marca el lote como 'procesando' y dispara el OCR en segundo plano"""
+    """Dispara el OCR del lote: lo encola para el worker, o lo corre en segundo plano"""
     lote = _obtener_lote(db, lote_id)
+    if settings.USE_WORKER:
+        # La cola vive en la base; el worker aparte lo toma y procesa.
+        lote.estado = "encolado"
+        db.commit()
+        return {"detail": "Lote en cola"}
     lote.estado = "procesando"
     db.commit()
     background.add_task(procesar_lote, lote_id)
@@ -112,6 +118,10 @@ def reprocesar(
     db.query(LoteItem).filter(
         LoteItem.lote_id == lote_id, LoteItem.estado == "error"
     ).update({LoteItem.estado: "pendiente"})
+    if settings.USE_WORKER:
+        lote.estado = "encolado"
+        db.commit()
+        return {"detail": "Reprocesando (en cola)"}
     lote.estado = "procesando"
     db.commit()
     background.add_task(procesar_lote, lote_id)

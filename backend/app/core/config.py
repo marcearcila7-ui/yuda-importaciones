@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
 
+    # Cola con worker aparte. Si es True, el OCR de los lotes NO corre en el proceso
+    # web: se encola en la base y lo procesa un servicio worker separado
+    # (python -m app.worker). Default False = comportamiento anterior (OCR en el web).
+    USE_WORKER: bool = False
+    # Cada cuánto el worker consulta la cola cuando está ocioso.
+    WORKER_POLL_SECONDS: int = 3
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
