@@ -9,6 +9,7 @@ class PedidoGeneradoInfo(BaseModel):
     supplier: str
     archivo_nombre: str
     url_descarga: str
+    url_pdf: str | None = None
     items_count: int
 
 
@@ -26,6 +27,7 @@ class PedidoGeneradoResponse(BaseModel):
     sesion_id: str
     supplier: str
     archivo_xlsx_url: str
+    archivo_pdf_url: str | None = None
     fecha_generacion: datetime
 
     model_config = ConfigDict(from_attributes=True)

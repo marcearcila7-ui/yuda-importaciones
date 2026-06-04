@@ -121,6 +121,7 @@
     "advertencias": "Advertencias:",
     "generados": "Pedidos generados:",
     "descargarExcel": "Descargar Excel",
+    "descargarPdf": "Descargar PDF",
     "descargarZip": "Descargar todos (ZIP)",
     "preparandoZip": "Preparando ZIP...",
     "itemsCount": "{{n}} ítems",

@@ -2,8 +2,11 @@ from datetime import date
 from io import BytesIO
 
 from openpyxl import Workbook
+from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+
+from app.services.imagen_service import descargar_imagen_png
 
 # Encabezados en el orden exacto del Packing List (columnas A..W)
 ENCABEZADOS = [
@@ -193,7 +196,18 @@ def generar_formato_pedido(
         cbm = round(largo * ancho * alto / 1_000_000, 6)
 
         ws.cell(row=fila, column=1, value=n)  # NO
-        # Columna 2 (PHOTO) se deja vacía
+        # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda
+        if getattr(item, "foto_url", None):
+            buf = descargar_imagen_png(item.foto_url, lado_px=120)
+            if buf is not None:
+                try:
+                    img = XLImage(buf)
+                    img.width = 55
+                    img.height = 55
+                    ws.add_image(img, f"B{fila}")
+                    ws.row_dimensions[fila].height = 45
+                except Exception:
+                    pass
         ws.cell(row=fila, column=3, value=getattr(item, "item_no", None))
         ws.cell(row=fila, column=4, value=descripcion)
         ws.cell(row=fila, column=5, value=getattr(item, "ctns", None))  # CTN

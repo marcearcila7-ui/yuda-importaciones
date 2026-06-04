@@ -119,14 +119,26 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
                 {pedido.supplier}{' '}
                 <span style={{ color: '#9CA3AF' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
               </span>
-              <button
-                type="button"
-                onClick={() => window.open(pedido.url_descarga, '_blank')}
-                className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
-                style={{ backgroundColor: '#4B52E8' }}
-              >
-                <Download size={16} /> {t('pedidos.descargarExcel')}
-              </button>
+              <div className="flex flex-shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.open(pedido.url_descarga, '_blank')}
+                  className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
+                  style={{ backgroundColor: '#10B981' }}
+                >
+                  <Download size={16} /> {t('pedidos.descargarExcel')}
+                </button>
+                {pedido.url_pdf && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(pedido.url_pdf as string, '_blank')}
+                    className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
+                    style={{ backgroundColor: '#4B52E8' }}
+                  >
+                    <FileText size={16} /> {t('pedidos.descargarPdf')}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
 

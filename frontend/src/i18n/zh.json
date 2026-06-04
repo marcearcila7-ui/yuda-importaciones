@@ -121,6 +121,7 @@
     "advertencias": "提示：",
     "generados": "已生成的订单：",
     "descargarExcel": "下载 Excel",
+    "descargarPdf": "下载 PDF",
     "descargarZip": "全部下载 (ZIP)",
     "preparandoZip": "正在准备 ZIP...",
     "itemsCount": "{{n}} 件",

@@ -121,6 +121,7 @@
     "advertencias": "Warnings:",
     "generados": "Generated orders:",
     "descargarExcel": "Download Excel",
+    "descargarPdf": "Download PDF",
     "descargarZip": "Download all (ZIP)",
     "preparandoZip": "Preparing ZIP...",
     "itemsCount": "{{n}} items",

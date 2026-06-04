@@ -2,6 +2,7 @@ export interface PedidoGeneradoInfo {
   supplier: string
   archivo_nombre: string
   url_descarga: string
+  url_pdf?: string | null
   items_count: number
 }
 

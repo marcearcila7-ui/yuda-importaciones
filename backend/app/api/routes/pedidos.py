@@ -20,7 +20,8 @@ from app.schemas.pedidos import (
     PedidoGeneradoResponse,
 )
 from app.services.excel_service import agrupar_items_por_supplier, generar_formato_pedido
-from app.services.storage_service import subir_excel
+from app.services.pdf_service import generar_pedido_pdf
+from app.services.storage_service import subir_excel, subir_pdf
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -104,12 +105,18 @@ def generar_pedidos(
         contenido = generar_formato_pedido(
             primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy
         )
+        contenido_pdf = generar_pedido_pdf(
+            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy
+        )
 
         nombre_archivo = f"{fecha_str}_{_sanitizar(clave)}_Pedido.xlsx"
+        nombre_pdf = f"{fecha_str}_{_sanitizar(clave)}_Pedido.pdf"
         ruta_en_bucket = f"{sesion_id}/{nombre_archivo}"
+        ruta_pdf = f"{sesion_id}/{nombre_pdf}"
 
-        # Subir el Excel a Supabase Storage (carpeta por sesión) y usar su URL pública
+        # Subir Excel y PDF a Supabase Storage (carpeta por sesión)
         url_descarga = subir_excel(contenido, ruta_en_bucket)
+        url_pdf = subir_pdf(contenido_pdf, ruta_pdf)
 
         # Upsert del registro en pedidos_generados
         registro = (
@@ -122,12 +129,14 @@ def generar_pedidos(
         )
         if registro:
             registro.archivo_xlsx_url = url_descarga
+            registro.archivo_pdf_url = url_pdf
             registro.fecha_generacion = datetime.now()
         else:
             registro = PedidoGenerado(
                 sesion_id=sesion_id,
                 supplier=clave,
                 archivo_xlsx_url=url_descarga,
+                archivo_pdf_url=url_pdf,
             )
             db.add(registro)
 
@@ -136,6 +145,7 @@ def generar_pedidos(
                 supplier=clave,
                 archivo_nombre=nombre_archivo,
                 url_descarga=url_descarga,
+                url_pdf=url_pdf,
                 items_count=len(grupo),
             )
         )
@@ -186,9 +196,13 @@ def descargar_zip(
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         for pedido in pedidos:
+            # Excel del proveedor
             nombre = os.path.basename(pedido.archivo_xlsx_url)
-            response = httpx.get(pedido.archivo_xlsx_url)
-            zf.writestr(nombre, response.content)
+            zf.writestr(nombre, httpx.get(pedido.archivo_xlsx_url).content)
+            # PDF del proveedor (si existe)
+            if pedido.archivo_pdf_url:
+                nombre_pdf = os.path.basename(pedido.archivo_pdf_url)
+                zf.writestr(nombre_pdf, httpx.get(pedido.archivo_pdf_url).content)
 
     fecha_str = datetime.now().strftime("%Y%m%d")
     nombre_zip = f"{fecha_str}_{sesion.nombre_cliente}_Pedidos.zip"
