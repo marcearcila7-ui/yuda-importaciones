@@ -180,6 +180,19 @@
     "generando": "正在生成...",
     "error": "无法生成报价单"
   },
+  "lote": {
+    "titulo": "批量上传产品",
+    "instruccion": "一次选择多张标签照片（最多 {{max}} 张），系统会全部识别。",
+    "seleccionar": "选择照片",
+    "procesando": "正在识别标签... {{hechas}} / {{total}}",
+    "revisar": "已识别的产品（{{n}}）",
+    "agregarTodos": "全部添加（{{n}}）",
+    "agregando": "正在添加产品...",
+    "quitar": "移除",
+    "tope": "每次最多 {{max}} 张照片。已取前 {{max}} 张。",
+    "fallas": "{{n}} 张照片无法识别，已跳过。",
+    "exito": "已将 {{n}} 个产品添加到报价"
+  },
   "roles": {
     "admin": "管理员",
     "vendedora": "销售员",

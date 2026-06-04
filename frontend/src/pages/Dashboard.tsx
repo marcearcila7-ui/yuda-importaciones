@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store } from 'lucide-react'
+import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricCard from '../components/MetricCard'
@@ -205,6 +206,10 @@ function Dashboard() {
         <>
           <SectionCard titulo={t('dashboard.subirFoto')}>
             <OCRUploader onItemConfirmado={handleItemConfirmado} />
+          </SectionCard>
+
+          <SectionCard titulo={t('lote.titulo')}>
+            <CargaMasiva />
           </SectionCard>
 
           <SectionCard titulo={t('dashboard.productos')}>

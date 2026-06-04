@@ -180,6 +180,19 @@
     "generando": "Generando...",
     "error": "No se pudo generar la cotización"
   },
+  "lote": {
+    "titulo": "Cargar varios productos",
+    "instruccion": "Selecciona varias fotos de etiquetas (hasta {{max}}) y el sistema las lee todas.",
+    "seleccionar": "Seleccionar fotos",
+    "procesando": "Leyendo etiquetas... {{hechas}} de {{total}}",
+    "revisar": "Productos detectados ({{n}})",
+    "agregarTodos": "Agregar todos ({{n}})",
+    "agregando": "Agregando productos...",
+    "quitar": "Quitar",
+    "tope": "Se permiten hasta {{max}} fotos por vez. Tomamos las primeras {{max}}.",
+    "fallas": "{{n}} foto(s) no se pudieron leer y se omitieron.",
+    "exito": "{{n}} productos agregados a la cotización"
+  },
   "roles": {
     "admin": "Administrador",
     "vendedora": "Vendedora",

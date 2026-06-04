@@ -180,6 +180,19 @@
     "generando": "Generating...",
     "error": "Could not generate the quotation"
   },
+  "lote": {
+    "titulo": "Upload multiple products",
+    "instruccion": "Select several label photos (up to {{max}}) and the system reads them all.",
+    "seleccionar": "Select photos",
+    "procesando": "Reading labels... {{hechas}} of {{total}}",
+    "revisar": "Detected products ({{n}})",
+    "agregarTodos": "Add all ({{n}})",
+    "agregando": "Adding products...",
+    "quitar": "Remove",
+    "tope": "Up to {{max}} photos at a time. We took the first {{max}}.",
+    "fallas": "{{n}} photo(s) could not be read and were skipped.",
+    "exito": "{{n}} products added to the quotation"
+  },
   "roles": {
     "admin": "Administrator",
     "vendedora": "Salesperson",
