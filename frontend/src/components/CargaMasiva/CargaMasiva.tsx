@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -8,7 +8,6 @@ import { useLoteStore } from '../../store/loteStore'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
-// Tope coherente por tanda
 const MAX_LOTE = 100
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -23,27 +22,39 @@ function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
 
 function CargaMasiva() {
   const { t } = useTranslation()
+  const sesionActual = usePackingStore((s) => s.sesionActual)
   const agregarItem = usePackingStore((s) => s.agregarItem)
   const {
-    procesando,
-    progreso,
+    fase,
+    subidas,
+    totalSubir,
+    procesadas,
+    totalProc,
     resultados,
-    fallidas,
-    procesarArchivos,
-    reintentarFallidas,
+    errores,
+    iniciar,
+    retomar,
+    reintentar,
     actualizarDato,
     quitar,
-    limpiar,
+    finalizar,
   } = useLoteStore()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+  const sesionId = sesionActual?.id
+
+  // Al entrar, retomar un lote en curso de esta sesión (si la vendedora cerró y volvió)
+  useEffect(() => {
+    if (sesionId) retomar(sesionId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesionId])
 
   const handleSeleccion = (e: ChangeEvent<HTMLInputElement>) => {
     const todos = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (todos.length === 0) return
+    if (todos.length === 0 || !sesionId) return
     let lote = todos
     if (todos.length > MAX_LOTE) {
       setAviso(t('lote.tope', { max: MAX_LOTE }))
@@ -51,7 +62,7 @@ function CargaMasiva() {
     } else {
       setAviso(null)
     }
-    procesarArchivos(lote)
+    iniciar(sesionId, lote)
   }
 
   const actualizarTexto = (id: string, campo: keyof OCRResultado, valor: string) =>
@@ -83,10 +94,20 @@ function CargaMasiva() {
       }
       await agregarItem(item)
     }
-    limpiar()
+    await finalizar()
     setAgregando(false)
     toast.success(t('lote.exito', { n }))
   }
+
+  const enProgreso = fase === 'subiendo' || fase === 'procesando'
+  const pct =
+    fase === 'subiendo'
+      ? totalSubir
+        ? (subidas / totalSubir) * 100
+        : 0
+      : totalProc
+        ? (procesadas / totalProc) * 100
+        : 0
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -103,45 +124,47 @@ function CargaMasiva() {
         className="hidden"
       />
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={procesando}
-        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-        style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
-      >
-        <Images size={18} /> {t('lote.seleccionar')}
-      </button>
+      {fase === 'idle' && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white"
+          style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+        >
+          <Images size={18} /> {t('lote.seleccionar')}
+        </button>
+      )}
 
       {aviso && <p className="text-sm" style={{ color: '#B45309' }}>{aviso}</p>}
 
-      {/* Progreso */}
-      {procesando && (
+      {/* Progreso (subiendo o procesando) */}
+      {enProgreso && (
         <div>
           <p className="mb-2 text-sm font-medium" style={{ color: '#0D0D0D' }}>
-            {t('lote.procesando', { hechas: progreso.hechas, total: progreso.total })}
+            {fase === 'subiendo'
+              ? t('lote.subiendo', { hechas: subidas, total: totalSubir })
+              : t('lote.procesando', { hechas: procesadas, total: totalProc })}
           </p>
           <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: '#EEF0FD' }}>
-            <div
-              className="h-full transition-all"
-              style={{
-                width: `${progreso.total ? (progreso.hechas / progreso.total) * 100 : 0}%`,
-                backgroundColor: '#4B52E8',
-              }}
-            />
+            <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#4B52E8' }} />
           </div>
+          {fase === 'procesando' && (
+            <p className="mt-2 text-xs" style={{ color: '#6B7280' }}>
+              {t('lote.segundoPlano')}
+            </p>
+          )}
         </div>
       )}
 
       {/* Fotos que fallaron (con reintento) */}
-      {fallidas.length > 0 && !procesando && (
+      {fase === 'completado' && errores > 0 && (
         <div className="rounded-xl p-3" style={{ backgroundColor: '#FEE2E2' }}>
           <p className="mb-2 text-sm font-semibold" style={{ color: '#EF4444' }}>
-            {t('lote.fallidasTitulo', { n: fallidas.length })}
+            {t('lote.fallidasTitulo', { n: errores })}
           </p>
           <button
             type="button"
-            onClick={reintentarFallidas}
+            onClick={reintentar}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
             style={{ backgroundColor: '#EF4444' }}
           >
@@ -151,11 +174,16 @@ function CargaMasiva() {
       )}
 
       {/* Revisión en bloque */}
-      {resultados.length > 0 && (
+      {fase === 'completado' && resultados.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
-            {t('lote.revisar', { n: resultados.length })}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
+              {t('lote.revisar', { n: resultados.length })}
+            </h3>
+            <button type="button" onClick={finalizar} className="text-sm font-medium" style={{ color: '#6B7280' }}>
+              {t('lote.descartar')}
+            </button>
+          </div>
 
           {resultados.map((r) => {
             const chip = chipConfianza(r.datos.confianza, t)
@@ -197,7 +225,7 @@ function CargaMasiva() {
           <button
             type="button"
             onClick={agregarTodos}
-            disabled={agregando || procesando}
+            disabled={agregando}
             className="min-h-[52px] w-full rounded-lg font-semibold text-white disabled:opacity-60"
             style={{ backgroundColor: '#10B981', fontSize: 16 }}
           >

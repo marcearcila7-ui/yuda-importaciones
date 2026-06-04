@@ -193,7 +193,10 @@
     "fallas": "{{n}} 张照片无法识别，已跳过。",
     "exito": "已将 {{n}} 个产品添加到报价",
     "fallidasTitulo": "无法识别（{{n}}）",
-    "reintentar": "重试"
+    "reintentar": "重试",
+    "subiendo": "正在上传照片... {{hechas}} / {{total}}",
+    "descartar": "放弃",
+    "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。"
   },
   "roles": {
     "admin": "管理员",

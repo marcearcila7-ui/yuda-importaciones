@@ -193,7 +193,10 @@
     "fallas": "{{n}} photo(s) could not be read and were skipped.",
     "exito": "{{n}} products added to the quotation",
     "fallidasTitulo": "Could not be read ({{n}})",
-    "reintentar": "Retry"
+    "reintentar": "Retry",
+    "subiendo": "Uploading photos... {{hechas}} of {{total}}",
+    "descartar": "Discard",
+    "segundoPlano": "You can close the app: processing continues and you'll see the results when you return."
   },
   "roles": {
     "admin": "Administrator",

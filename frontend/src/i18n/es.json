@@ -193,7 +193,10 @@
     "fallas": "{{n}} foto(s) no se pudieron leer y se omitieron.",
     "exito": "{{n}} productos agregados a la cotización",
     "fallidasTitulo": "No se pudieron leer ({{n}})",
-    "reintentar": "Reintentar"
+    "reintentar": "Reintentar",
+    "subiendo": "Subiendo fotos... {{hechas}} de {{total}}",
+    "descartar": "Descartar",
+    "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados."
   },
   "roles": {
     "admin": "Administrador",

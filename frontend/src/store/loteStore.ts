@@ -1,5 +1,14 @@
 import { create } from 'zustand'
-import { subirFotoOCR } from '../api/ocr'
+import {
+  borrarLote,
+  crearLote,
+  estadoLote,
+  loteActivo,
+  procesarLoteApi,
+  reprocesarLote,
+  subirFotoLote,
+  type LoteEstadoResp,
+} from '../api/lotes'
 import { comprimirImagen } from '../lib/comprimirImagen'
 import type { OCRResultado } from '../types/ocr'
 
@@ -9,82 +18,152 @@ export interface ResultadoLote {
   datos: OCRResultado
 }
 
-interface Fallida {
-  nombre: string
-  file: File
-}
+type Fase = 'idle' | 'subiendo' | 'procesando' | 'completado'
 
 const CONCURRENCIA = 4
-const REINTENTOS = 2
-
-// Lee una foto con reintentos automáticos ante fallas transitorias
-async function ocrConReintentos(file: File): Promise<ResultadoLote> {
-  let ultimoError: unknown
-  for (let intento = 0; intento <= REINTENTOS; intento++) {
-    try {
-      const comprimido = await comprimirImagen(file)
-      const resp = await subirFotoOCR(comprimido)
-      return { id: resp.foto_url, foto_url: resp.foto_url, datos: { ...resp.datos_extraidos } }
-    } catch (e) {
-      ultimoError = e
-      await new Promise((r) => setTimeout(r, 800 * (intento + 1)))
-    }
-  }
-  throw ultimoError
-}
 
 interface LoteState {
-  procesando: boolean
-  progreso: { hechas: number; total: number }
+  fase: Fase
+  loteId: string | null
+  subidas: number
+  totalSubir: number
+  procesadas: number
+  totalProc: number
   resultados: ResultadoLote[]
-  fallidas: Fallida[]
-  procesarArchivos: (files: File[]) => Promise<void>
-  reintentarFallidas: () => Promise<void>
+  errores: number
+  iniciar: (sesionId: string, files: File[]) => Promise<void>
+  retomar: (sesionId: string) => Promise<void>
+  reintentar: () => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
   quitar: (id: string) => void
-  limpiar: () => void
+  finalizar: () => Promise<void>
+}
+
+let pollTimer: ReturnType<typeof setInterval> | null = null
+const detenerPoll = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+}
+
+const ESTADO_INICIAL = {
+  fase: 'idle' as Fase,
+  loteId: null,
+  subidas: 0,
+  totalSubir: 0,
+  procesadas: 0,
+  totalProc: 0,
+  resultados: [] as ResultadoLote[],
+  errores: 0,
 }
 
 export const useLoteStore = create<LoteState>((set, get) => {
-  // Procesa una lista de archivos en paralelo (cap CONCURRENCIA), agregando resultados al store
-  const procesarPool = async (files: File[]) => {
-    let idx = 0
-    const worker = async () => {
-      while (idx < files.length) {
-        const f = files[idx++]
-        try {
-          const r = await ocrConReintentos(f)
-          set((s) => ({ resultados: [...s.resultados, r] }))
-        } catch {
-          set((s) => ({ fallidas: [...s.fallidas, { nombre: f.name, file: f }] }))
-        }
-        set((s) => ({ progreso: { ...s.progreso, hechas: s.progreso.hechas + 1 } }))
-      }
+  // Vuelca el estado del servidor al store; si terminó, arma los resultados
+  const aplicarEstado = (est: LoteEstadoResp) => {
+    if (est.estado === 'completado') {
+      const resultados = est.items
+        .filter((i) => i.estado === 'ok' && i.datos)
+        .map((i) => ({ id: i.id, foto_url: i.foto_url, datos: { ...(i.datos as OCRResultado) } }))
+      const errores = est.items.filter((i) => i.estado === 'error').length
+      set({ fase: 'completado', resultados, errores, procesadas: est.procesadas, totalProc: est.total })
+    } else {
+      set({ fase: 'procesando', procesadas: est.procesadas, totalProc: est.total })
     }
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
+  }
+
+  const iniciarPoll = (loteId: string) => {
+    detenerPoll()
+    pollTimer = setInterval(async () => {
+      try {
+        const est = await estadoLote(loteId)
+        aplicarEstado(est)
+        if (est.estado === 'completado') detenerPoll()
+      } catch {
+        // ignorar fallas transitorias de red
+      }
+    }, 3000)
   }
 
   return {
-    procesando: false,
-    progreso: { hechas: 0, total: 0 },
-    resultados: [],
-    fallidas: [],
+    ...ESTADO_INICIAL,
 
-    // Procesa una tanda nueva; los resultados se ACUMULAN a los ya revisados
-    procesarArchivos: async (files) => {
+    iniciar: async (sesionId, files) => {
       if (files.length === 0) return
-      set({ procesando: true, progreso: { hechas: 0, total: files.length } })
-      await procesarPool(files)
-      set({ procesando: false })
+      detenerPoll()
+      // Limpiar un lote previo de la sesión, si quedó
+      try {
+        const prev = await loteActivo(sesionId)
+        if (prev.lote_id) await borrarLote(prev.lote_id)
+      } catch {
+        // sin lote previo
+      }
+      set({ ...ESTADO_INICIAL, fase: 'subiendo', totalSubir: files.length })
+
+      const { lote_id } = await crearLote(sesionId)
+      set({ loteId: lote_id })
+
+      // Subir las fotos (comprimidas) en paralelo
+      let idx = 0
+      const worker = async () => {
+        while (idx < files.length) {
+          const f = files[idx++]
+          try {
+            const comprimido = await comprimirImagen(f)
+            await subirFotoLote(lote_id, comprimido)
+          } catch {
+            // foto que no se pudo subir: se omite
+          }
+          set((s) => ({ subidas: s.subidas + 1 }))
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
+
+      // Disparar el OCR en segundo plano y empezar a consultar
+      await procesarLoteApi(lote_id)
+      set({ fase: 'procesando', procesadas: 0, totalProc: files.length })
+      iniciarPoll(lote_id)
     },
 
-    // Reintenta solo las fotos que habían fallado
-    reintentarFallidas: async () => {
-      const files = get().fallidas.map((f) => f.file)
-      if (files.length === 0) return
-      set({ fallidas: [], procesando: true, progreso: { hechas: 0, total: files.length } })
-      await procesarPool(files)
-      set({ procesando: false })
+    retomar: async (sesionId) => {
+      if (get().fase !== 'idle') return
+      let resp
+      try {
+        resp = await loteActivo(sesionId)
+      } catch {
+        return
+      }
+      if (!resp.lote_id) return
+      const loteId = resp.lote_id
+      if (resp.estado === 'cargando') {
+        // Lote abandonado durante la subida: limpiarlo
+        try {
+          await borrarLote(loteId)
+        } catch {
+          // ignorar
+        }
+        return
+      }
+      set({ loteId })
+      try {
+        const est = await estadoLote(loteId)
+        aplicarEstado(est)
+        if (est.estado !== 'completado') iniciarPoll(loteId)
+      } catch {
+        // ignorar
+      }
+    },
+
+    reintentar: async () => {
+      const loteId = get().loteId
+      if (!loteId) return
+      set({ fase: 'procesando' })
+      try {
+        await reprocesarLote(loteId)
+        iniciarPoll(loteId)
+      } catch {
+        // ignorar
+      }
     },
 
     actualizarDato: (id, campo, valor) =>
@@ -96,6 +175,17 @@ export const useLoteStore = create<LoteState>((set, get) => {
 
     quitar: (id) => set((s) => ({ resultados: s.resultados.filter((r) => r.id !== id) })),
 
-    limpiar: () => set({ resultados: [], fallidas: [], progreso: { hechas: 0, total: 0 }, procesando: false }),
+    finalizar: async () => {
+      detenerPoll()
+      const loteId = get().loteId
+      if (loteId) {
+        try {
+          await borrarLote(loteId)
+        } catch {
+          // ignorar
+        }
+      }
+      set({ ...ESTADO_INICIAL })
+    },
   }
 })
