@@ -12,7 +12,7 @@ import MetricCard from '../components/MetricCard'
 import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
-import { exportarPackingExcel } from '../api/packing'
+import { exportarPackingExcel, exportarPackingPDF } from '../api/packing'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
 import { usePackingStore } from '../store/packingStore'
@@ -113,14 +113,17 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.sesion_id])
 
-  // Descarga el Excel de la cotización
-  const handleExportar = async () => {
+  // Descarga el Packing List interno (Excel o PDF)
+  const descargarPacking = async (tipo: 'excel' | 'pdf') => {
     if (!sesionActual) return
     // En iPhone/Safari la pestaña debe abrirse DENTRO del toque (antes del await),
     // si no el navegador la bloquea o saca de la app.
     const ventana = window.open('', '_blank')
     try {
-      const blob = await exportarPackingExcel(sesionActual.id)
+      const blob =
+        tipo === 'excel'
+          ? await exportarPackingExcel(sesionActual.id)
+          : await exportarPackingPDF(sesionActual.id)
       const url = URL.createObjectURL(blob)
       if (ventana) {
         ventana.location.href = url
@@ -128,7 +131,7 @@ function Dashboard() {
         // Fallback (si el navegador bloqueó la pestaña): descarga directa
         const enlace = document.createElement('a')
         enlace.href = url
-        enlace.download = `PackingList_${sesionActual.nombre_cliente}.xlsx`
+        enlace.download = `PackingList_${sesionActual.nombre_cliente}.${tipo === 'excel' ? 'xlsx' : 'pdf'}`
         enlace.click()
       }
       setTimeout(() => URL.revokeObjectURL(url), 60000)
@@ -241,14 +244,24 @@ function Dashboard() {
             <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
               {t('dashboard.exportarPackingAyuda')}
             </p>
-            <button
-              type="button"
-              onClick={handleExportar}
-              className="flex items-center gap-2 font-semibold text-white"
-              style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
-            >
-              <Download size={18} /> {t('dashboard.exportarPacking')}
-            </button>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => descargarPacking('excel')}
+                className="flex items-center justify-center gap-2 font-semibold text-white"
+                style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
+              >
+                <Download size={18} /> {t('dashboard.exportarPacking')}
+              </button>
+              <button
+                type="button"
+                onClick={() => descargarPacking('pdf')}
+                className="flex items-center justify-center gap-2 font-semibold text-white"
+                style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px' }}
+              >
+                <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
+              </button>
+            </div>
           </SectionCard>
 
           <SectionCard titulo={t('dashboard.generarPedidos')}>

@@ -90,3 +90,80 @@ def generar_pedido_pdf(
     </body></html>"""
 
     return HTML(string=html).write_pdf()
+
+
+def generar_packing_list_pdf(
+    items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float
+) -> bytes:
+    """Genera el PDF del Packing List interno (con fotos) y devuelve sus bytes."""
+    tc = tipo_cambio_usd or 1
+    filas_html = []
+    tot_ctns = tot_rmb = tot_usd = tot_tcbm = tot_tgw = 0.0
+
+    for n, item in enumerate(items, start=1):
+        ctns = item.ctns or 0
+        qty_ctn = item.qty_por_ctn or 0
+        t_qty = ctns * qty_ctn
+        price = item.price_rmb or 0
+        total_rmb = price * t_qty
+        price_usd = round(price / tc, 4)
+        total_usd = round(price_usd * t_qty, 2)
+        largo = item.largo_cm or 0
+        ancho = item.ancho_cm or 0
+        alto = item.alto_cm or 0
+        cbm = round(largo * ancho * alto / 1_000_000, 6)
+        t_cbm = round(cbm * ctns, 6)
+        gw = item.gw or 0
+        t_gw = round(gw * ctns, 2)
+
+        tot_ctns += ctns
+        tot_rmb += total_rmb
+        tot_usd += total_usd
+        tot_tcbm += t_cbm
+        tot_tgw += t_gw
+
+        foto = f'<img src="{item.foto_url}" />' if getattr(item, "foto_url", None) else ""
+        alt = ' class="alt"' if n % 2 == 0 else ""
+        filas_html.append(
+            f"<tr{alt}>"
+            f"<td>{n}</td>"
+            f'<td class="foto">{foto}</td>'
+            f"<td>{item.supplier_nombre or ''}</td>"
+            f"<td>{item.item_no or ''}</td>"
+            f'<td class="desc">{item.descripcion_es or item.descripcion_en or ""}</td>'
+            f"<td>{ctns}</td>"
+            f"<td>{qty_ctn}</td>"
+            f"<td>{t_qty}</td>"
+            f"<td>{price}</td>"
+            f"<td>{round(total_rmb, 2)}</td>"
+            f"<td>{price_usd}</td>"
+            f"<td>{total_usd}</td>"
+            f"<td>{cbm}</td>"
+            f"<td>{t_cbm}</td>"
+            f"<td>{gw}</td>"
+            f"<td>{t_gw}</td>"
+            f"</tr>"
+        )
+
+    encabezado = (
+        "<tr><th>N°</th><th>FOTO</th><th>PROVEEDOR</th><th>N° ÍTEM</th><th>DESCRIPCIÓN</th>"
+        "<th>CAJAS</th><th>UN/CAJA</th><th>T.UN</th><th>PRECIO ¥</th><th>TOTAL ¥</th>"
+        "<th>PRECIO $</th><th>TOTAL $</th><th>CBM</th><th>T.CBM</th><th>GW</th><th>T.GW</th></tr>"
+    )
+    total = (
+        f'<tr class="total"><td colspan="5">TOTALES</td>'
+        f"<td>{int(tot_ctns)}</td><td></td><td></td><td></td>"
+        f"<td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>"
+        f"<td></td><td>{round(tot_tcbm, 6)}</td><td></td><td>{round(tot_tgw, 2)}</td></tr>"
+    )
+
+    html = f"""<html><head><meta charset="utf-8"><style>{CSS}</style></head><body>
+      <p class="empresa">YUDA — Packing List</p>
+      <p class="sub">{sesion_nombre_cliente} · 1 USD = {tipo_cambio_usd} RMB</p>
+      <table>
+        <thead>{encabezado}</thead>
+        <tbody>{''.join(filas_html)}{total}</tbody>
+      </table>
+    </body></html>"""
+
+    return HTML(string=html).write_pdf()

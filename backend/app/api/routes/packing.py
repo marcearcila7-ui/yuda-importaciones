@@ -26,6 +26,7 @@ from app.services.cotizacion_service import (
 )
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
+from app.services.pdf_service import generar_packing_list_pdf
 
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
 router = APIRouter(tags=["packing"])
@@ -302,6 +303,35 @@ def exportar_packing_excel(
     return Response(
         content=contenido,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.get("/sesiones/{sesion_id}/exportar/packing-pdf")
+def exportar_packing_pdf(
+    sesion_id: str,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Genera y descarga el Packing List en PDF (con fotos)"""
+    sesion = _obtener_sesion(db, sesion_id)
+    items = (
+        db.query(Item)
+        .filter(Item.sesion_id == sesion_id)
+        .order_by(Item.orden.asc())
+        .all()
+    )
+
+    contenido = generar_packing_list_pdf(
+        items, sesion.nombre_cliente, sesion.tipo_cambio_usd
+    )
+
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_PackingList.pdf"
+
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
     )
 
