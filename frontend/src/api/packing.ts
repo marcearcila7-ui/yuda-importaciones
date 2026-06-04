@@ -18,6 +18,7 @@ export async function getSesiones(): Promise<Sesion[]> {
 export async function crearSesion(datos: {
   nombre_cliente: string
   tipo_cambio_usd?: number
+  cliente_id?: string | null
 }): Promise<Sesion> {
   const { data } = await apiClient.post<Sesion>('/sesiones', datos)
   return data

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Check, Copy, KeyRound, Plus, UserPlus, Users } from 'lucide-react'
+import { KeyRound, Plus, UserPlus, Users } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
   getClientes,
   resetPasswordCliente,
 } from '../api/clientes'
+import CredencialesCliente from '../components/CredencialesCliente'
 import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -49,7 +50,6 @@ function Clientes() {
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
-  const [copiado, setCopiado] = useState(false)
 
   const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
@@ -82,7 +82,6 @@ function Clientes() {
         password: form.password?.trim() || undefined,
       })
       setCredenciales(creado)
-      setCopiado(false)
       setForm({ nombre: '', email: '' })
       setMostrarForm(false)
       toast.success(t('clientes.creado'))
@@ -96,18 +95,6 @@ function Clientes() {
       toast.error(detalle || t('clientes.errorCrear'))
     } finally {
       setGuardando(false)
-    }
-  }
-
-  const copiarCredenciales = async () => {
-    if (!credenciales) return
-    const texto = `YUDA Importaciones — acceso a tu portal\nEmail: ${credenciales.email}\nContraseña: ${credenciales.password_inicial}`
-    try {
-      await navigator.clipboard.writeText(texto)
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2500)
-    } catch {
-      toast.error(t('clientes.errorCopiar'))
     }
   }
 
@@ -154,43 +141,10 @@ function Clientes() {
         </button>
       </div>
 
-      {/* Credenciales recién creadas */}
+      {/* Credenciales recién creadas (incluye el link del portal) */}
       {credenciales && (
-        <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
-          <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
-            {t('clientes.credencialesTitulo')}
-          </h2>
-          <p className="mb-3 text-sm" style={{ color: '#6B7280' }}>
-            {t('clientes.credencialesAviso')}
-          </p>
-          <div className="rounded-lg p-3 text-sm" style={{ backgroundColor: '#F5F5F0' }}>
-            <p>
-              <strong>{t('clientes.email')}:</strong> {credenciales.email}
-            </p>
-            <p>
-              <strong>{t('clientes.password')}:</strong>{' '}
-              <span style={{ fontFamily: 'monospace' }}>{credenciales.password_inicial}</span>
-            </p>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              onClick={copiarCredenciales}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
-              style={{ backgroundColor: '#10B981' }}
-            >
-              {copiado ? <Check size={16} /> : <Copy size={16} />}{' '}
-              {copiado ? t('clientes.copiado') : t('clientes.copiar')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setCredenciales(null)}
-              className="rounded-lg px-3 py-2 text-sm font-medium"
-              style={{ color: '#6B7280' }}
-            >
-              {t('clientes.cerrar')}
-            </button>
-          </div>
+        <div className="card">
+          <CredencialesCliente cliente={credenciales} onCerrar={() => setCredenciales(null)} />
         </div>
       )}
 

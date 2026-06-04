@@ -69,6 +69,8 @@ class SesionCreate(BaseModel):
 
     nombre_cliente: str
     tipo_cambio_usd: float = 6.7
+    # Si se crea para un cliente del portal, su id (la cotización nace vinculada)
+    cliente_id: str | None = None
 
 
 class SesionResponse(BaseModel):

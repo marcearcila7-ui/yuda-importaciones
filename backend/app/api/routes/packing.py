@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.database import get_db
+from app.models.cliente import Cliente
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
 from app.models.seguimiento import SeguimientoPedido
@@ -100,11 +101,23 @@ def crear_sesion(
 ) -> Sesion:
     """Crea una sesión asociada al usuario actual (solo admin y vendedora)"""
     _exigir_roles(usuario, "admin", "vendedora")
+
+    nombre = datos.nombre_cliente
+    # Si se crea para un cliente del portal, validar y usar su nombre
+    if datos.cliente_id:
+        cliente = db.query(Cliente).filter(Cliente.id == datos.cliente_id).first()
+        if cliente is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
+        if usuario.rol.value == "vendedora" and cliente.vendedora_id != usuario.id:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre este cliente")
+        nombre = cliente.nombre
+
     sesion = Sesion(
-        nombre_cliente=datos.nombre_cliente,
+        nombre_cliente=nombre,
         fecha=datetime.now().date(),
         tipo_cambio_usd=datos.tipo_cambio_usd,
         user_id=usuario.id,
+        cliente_id=datos.cliente_id,
     )
     db.add(sesion)
     db.commit()
