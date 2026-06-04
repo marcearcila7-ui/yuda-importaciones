@@ -31,6 +31,7 @@ LABELS = {
         "tipoCambio": "Tipo de cambio",
         "totales": "TOTALES",
         "nota": "Los precios están sujetos a confirmación del proveedor. Tipo de cambio: 1 USD = {tc} RMB",
+        "resumen": "RESUMEN:   {n} productos   ·   {cajas} cajas   ·   Total USD ${usd}   ·   Peso total {gw} kg   ·   CBM {cbm}",
     },
     "en": {
         "empresa": "YIWU YUDA TRADING CO.,LTD",
@@ -41,6 +42,7 @@ LABELS = {
         "tipoCambio": "Exchange rate",
         "totales": "TOTALS",
         "nota": "Prices are subject to supplier confirmation. Exchange rate: 1 USD = {tc} RMB",
+        "resumen": "SUMMARY:   {n} products   ·   {cajas} boxes   ·   Total USD ${usd}   ·   Total weight {gw} kg   ·   CBM {cbm}",
     },
     "zh": {
         "empresa": "义乌市与达贸易有限公司",
@@ -51,6 +53,7 @@ LABELS = {
         "tipoCambio": "汇率",
         "totales": "合计",
         "nota": "价格以供应商确认为准。汇率：1 USD = {tc} RMB",
+        "resumen": "汇总：   {n} 件产品   ·   {cajas} 箱   ·   总计 USD ${usd}   ·   总毛重 {gw} kg   ·   CBM {cbm}",
     },
 }
 
@@ -178,18 +181,19 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         ]
         for idx, val in enumerate(valores, start=1):
             celda = ws.cell(row=fila, column=idx, value=val)
+            celda.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             if n % 2 == 0:
                 celda.fill = fill_alt
-        ws.row_dimensions[fila].height = 45
+        ws.row_dimensions[fila].height = 90
 
-        # Foto: descargar y agregar como imagen en la celda B
+        # Foto: descargar y agregar como imagen en la celda B (más grande, más visible)
         if getattr(item, "foto_url", None):
             buf = _descargar_imagen_png(item.foto_url)
             if buf is not None:
                 try:
                     img = XLImage(buf)
-                    img.width = 55
-                    img.height = 55
+                    img.width = 110
+                    img.height = 110
                     ws.add_image(img, f"B{fila}")
                 except Exception:
                     pass
@@ -208,6 +212,20 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     ws.cell(row=fila, column=13, value=round(tot_usd, 2))
     ws.cell(row=fila, column=15, value=round(tot_cbm, 6))
     ws.cell(row=fila, column=17, value=round(tot_gw, 2))
+
+    # Recuadro de resumen amigable (fila 8, arriba de la tabla)
+    ws.merge_cells(f"A8:{ultima_col}8")
+    ws["A8"] = lab["resumen"].format(
+        n=len(items),
+        cajas=int(tot_cajas),
+        usd=round(tot_usd, 2),
+        gw=round(tot_gw, 2),
+        cbm=round(tot_cbm, 6),
+    )
+    ws["A8"].fill = PatternFill(start_color="EEF0FD", end_color="EEF0FD", fill_type="solid")
+    ws["A8"].font = Font(bold=True, color="4B52E8", size=11)
+    ws["A8"].alignment = centro
+    ws.row_dimensions[8].height = 24
     for col in range(1, ncols + 1):
         c = ws.cell(row=fila, column=col)
         c.fill = fill_tot
@@ -230,7 +248,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         ws.cell(row=fila_contacto + i, column=1, value=linea)
 
     # Anchos de columna
-    anchos = [5, 12, 12, 30, 14, 12, 8, 9, 10, 11, 11, 11, 11, 9, 9]
+    anchos = [5, 18, 13, 34, 14, 12, 8, 9, 10, 11, 11, 11, 11, 9, 9, 9, 11]
     for idx, ancho in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = ancho
 
@@ -300,8 +318,10 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
   th {{ background: #4B52E8; color: #fff; padding: 5px; font-size: 9px; }}
   td {{ border: 1px solid #E5E7EB; padding: 4px; text-align: center; }}
   tr.alt td {{ background: #F5F5F0; }}
-  td.foto img {{ max-width: 50px; max-height: 50px; }}
+  td.foto img {{ max-width: 90px; max-height: 90px; }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
+  .resumen {{ background: #EEF0FD; color: #4B52E8; font-weight: bold; text-align: center;
+             padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 11px; }}
   .nota {{ margin: 12px 0; font-size: 9px; font-style: italic; }}
   .contacto {{ margin-top: 10px; font-size: 8px; color: #6B7280; border-top: 1px solid #E5E7EB; padding-top: 6px; }}
 </style></head><body>
@@ -315,6 +335,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     <div><strong>{lab['cliente']}:</strong> {sesion.nombre_cliente}</div>
     <div><strong>{lab['tipoCambio']}:</strong> 1 USD = {tipo_cambio} RMB</div>
   </div>
+  <div class="resumen">{lab['resumen'].format(n=len(items), cajas=int(tot_cajas), usd=round(tot_usd, 2), gw=round(tot_gw, 2), cbm=round(tot_cbm, 6))}</div>
   <table>
     <thead><tr>{headers_html}</tr></thead>
     <tbody>
