@@ -2,15 +2,17 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Link as LinkIcon, Save, Send, Ship, UserCheck } from 'lucide-react'
+import { Link as LinkIcon, Plus, Save, Send, Ship, UserCheck, UserPlus } from 'lucide-react'
 import {
+  crearCliente,
   enviarACliente,
   getClientes,
   getSeguimiento,
   guardarSeguimiento,
   vincularCliente,
 } from '../../api/clientes'
-import type { Cliente } from '../../types/cliente'
+import CredencialesCliente from '../CredencialesCliente'
+import type { Cliente, ClienteCreado } from '../../types/cliente'
 import { ESTADOS_ENVIO } from '../../types/seguimiento'
 import type { Hito, Seguimiento } from '../../types/seguimiento'
 
@@ -18,19 +20,28 @@ interface Props {
   sesionId: string
   clienteIdInicial: string | null
   enviadaInicial: boolean
+  nombreClienteSesion?: string
 }
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
 
-function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial }: Props) {
+function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClienteSesion }: Props) {
   const { t } = useTranslation()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteId, setClienteId] = useState<string | null>(clienteIdInicial)
   const [enviada, setEnviada] = useState(enviadaInicial)
   const [seleccion, setSeleccion] = useState('')
   const [trabajando, setTrabajando] = useState(false)
+
+  // Crear cliente nuevo directamente desde aquí
+  const [creandoForm, setCreandoForm] = useState(false)
+  const [guardandoCliente, setGuardandoCliente] = useState(false)
+  const [nuevoNombre, setNuevoNombre] = useState('')
+  const [nuevoEmail, setNuevoEmail] = useState('')
+  const [nuevaPass, setNuevaPass] = useState('')
+  const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
 
   // Estado del seguimiento (editable)
   const [estado, setEstado] = useState<string>('cotizacion_enviada')
@@ -84,6 +95,39 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial }: Props) {
       toast.error(t('envio.errorAsignar'))
     } finally {
       setTrabajando(false)
+    }
+  }
+
+  const crearClienteInline = async () => {
+    if (!nuevoNombre.trim() || !nuevoEmail.trim()) {
+      toast.error(t('clientes.faltanDatos'))
+      return
+    }
+    setGuardandoCliente(true)
+    try {
+      const creado = await crearCliente({
+        nombre: nuevoNombre.trim(),
+        email: nuevoEmail.trim(),
+        password: nuevaPass.trim() || undefined,
+      })
+      setClientes((c) => [creado, ...c])
+      // Crear y dejar ya vinculado a esta cotización
+      await vincularCliente(sesionId, creado.id)
+      setClienteId(creado.id)
+      setCredenciales(creado)
+      setCreandoForm(false)
+      setNuevoEmail('')
+      setNuevaPass('')
+      toast.success(t('clientes.creado'))
+    } catch (err) {
+      const detalle =
+        typeof err === 'object' && err && 'response' in err
+          ? // @ts-expect-error acceso defensivo al detalle de axios
+            err.response?.data?.detail
+          : null
+      toast.error(detalle || t('clientes.errorCrear'))
+    } finally {
+      setGuardandoCliente(false)
     }
   }
 
@@ -151,34 +195,78 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial }: Props) {
         {t('envio.intro')}
       </p>
 
-      {/* Asignar cliente */}
+      {/* Asignar o crear cliente */}
       {!clienteActual ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-            {t('envio.elegirCliente')}
-            <select
-              value={seleccion}
-              onChange={(e) => setSeleccion(e.target.value)}
-              style={inputStyle}
-              className={inputClase}
-            >
-              <option value="">{t('envio.selecciona')}</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre} · {c.email}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={asignar}
-            disabled={trabajando || !seleccion}
-            className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-            style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
-          >
-            <LinkIcon size={18} /> {t('envio.asignar')}
-          </button>
+        <div className="flex flex-col gap-3">
+          {!creandoForm ? (
+            <>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+                  {t('envio.elegirCliente')}
+                  <select
+                    value={seleccion}
+                    onChange={(e) => setSeleccion(e.target.value)}
+                    style={inputStyle}
+                    className={inputClase}
+                  >
+                    <option value="">{t('envio.selecciona')}</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} · {c.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={asignar}
+                  disabled={trabajando || !seleccion}
+                  className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
+                  style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+                >
+                  <LinkIcon size={18} /> {t('envio.asignar')}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNuevoNombre(nombreClienteSesion ?? '')
+                  setCreandoForm(true)
+                }}
+                className="flex items-center gap-2 self-start text-sm font-semibold"
+                style={{ color: '#4B52E8' }}
+              >
+                <UserPlus size={16} /> {t('dashboard.crearClienteNuevo')}
+              </button>
+            </>
+          ) : (
+            <div className="rounded-xl border border-gray-200 p-3">
+              <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+                {t('clientes.nuevo')}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input style={inputStyle} className={inputClase} placeholder={t('clientes.nombre')} value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} />
+                <input style={inputStyle} className={inputClase} type="email" placeholder={t('clientes.email')} value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} />
+                <input style={inputStyle} className={`${inputClase} sm:col-span-2`} placeholder={t('clientes.passwordOpcional')} value={nuevaPass} onChange={(e) => setNuevaPass(e.target.value)} />
+              </div>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={crearClienteInline}
+                  disabled={guardandoCliente}
+                  className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
+                  style={{ minHeight: 40, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+                >
+                  <Plus size={16} /> {guardandoCliente ? t('clientes.creando') : t('clientes.crear')}
+                </button>
+                <button type="button" onClick={() => setCreandoForm(false)} className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                  {t('clientes.cancelar')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {credenciales && <CredencialesCliente cliente={credenciales} onCerrar={() => setCredenciales(null)} />}
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3" style={{ backgroundColor: '#EEF0FD' }}>

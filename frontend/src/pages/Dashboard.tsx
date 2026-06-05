@@ -233,6 +233,7 @@ function Dashboard() {
                 sesionId={sesionActual.id}
                 clienteIdInicial={sesionActual.cliente_id ?? null}
                 enviadaInicial={sesionActual.enviada_cliente ?? false}
+                nombreClienteSesion={sesionActual.nombre_cliente}
               />
             </SectionCard>
           )}
