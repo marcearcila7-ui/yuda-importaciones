@@ -24,6 +24,7 @@ const CONCURRENCIA = 4
 
 interface LoteState {
   fase: Fase
+  sesionId: string | null
   loteId: string | null
   subidas: number
   totalSubir: number
@@ -49,6 +50,7 @@ const detenerPoll = () => {
 
 const ESTADO_INICIAL = {
   fase: 'idle' as Fase,
+  sesionId: null,
   loteId: null,
   subidas: 0,
   totalSubir: 0,
@@ -98,7 +100,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
       } catch {
         // sin lote previo
       }
-      set({ ...ESTADO_INICIAL, fase: 'subiendo', totalSubir: files.length })
+      set({ ...ESTADO_INICIAL, sesionId, fase: 'subiendo', totalSubir: files.length })
 
       const { lote_id } = await crearLote(sesionId)
       set({ loteId: lote_id })
@@ -126,7 +128,13 @@ export const useLoteStore = create<LoteState>((set, get) => {
     },
 
     retomar: async (sesionId) => {
-      if (get().fase !== 'idle') return
+      const actual = get()
+      // Si ya estamos mostrando el lote de ESTA misma cotización, no rehacer
+      if (actual.fase !== 'idle' && actual.sesionId === sesionId) return
+      // Cambió de cotización (o primera vez): limpiar lo que haya quedado del
+      // lote anterior (evita que se mezclen productos de otro cliente) y fijar la sesión
+      detenerPoll()
+      set({ ...ESTADO_INICIAL, sesionId })
       let resp
       try {
         resp = await loteActivo(sesionId)
