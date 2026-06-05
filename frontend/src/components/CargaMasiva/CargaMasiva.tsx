@@ -83,7 +83,11 @@ function CargaMasiva() {
         supplier_nombre: d.supplier_nombre ?? undefined,
         supplier_numero: d.supplier_numero ?? undefined,
         foto_url: r.foto_url,
+        descripcion_es: d.descripcion_es ?? undefined,
+        descripcion_en: d.descripcion_en ?? undefined,
         descripcion_zh: d.descripcion_zh ?? undefined,
+        material: d.material ?? undefined,
+        uso: d.uso ?? undefined,
         qty_por_ctn: d.qty_por_ctn ?? 1,
         price_rmb: d.price_rmb ?? 0,
         gw: d.gw ?? 0,
@@ -199,9 +203,9 @@ function CargaMasiva() {
                   <input style={inputStyle} className={`${inputClase} col-span-2`} placeholder={t('ocr.proveedor')}
                     value={(r.datos.supplier_nombre as string | null) ?? ''}
                     onChange={(e) => actualizarTexto(r.id, 'supplier_nombre', e.target.value)} />
-                  <input style={inputStyle} className={`${inputClase} col-span-2`} placeholder={t('ocr.descripcionZh')}
-                    value={(r.datos.descripcion_zh as string | null) ?? ''}
-                    onChange={(e) => actualizarTexto(r.id, 'descripcion_zh', e.target.value)} />
+                  <input style={inputStyle} className={`${inputClase} col-span-2`} placeholder={t('packing.fDescripcion')}
+                    value={(r.datos.descripcion_es as string | null) ?? ''}
+                    onChange={(e) => actualizarTexto(r.id, 'descripcion_es', e.target.value)} />
                   <input type="number" style={inputStyle} className={inputClase} placeholder={t('ocr.precioRMB')}
                     value={(r.datos.price_rmb as number | null) ?? ''}
                     onChange={(e) => actualizarNumero(r.id, 'price_rmb', e.target.value)} />

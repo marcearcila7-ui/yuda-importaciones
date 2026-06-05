@@ -39,12 +39,22 @@ def _get_semaphore() -> asyncio.Semaphore:
 
 # Prompt fijo enviado a Claude Vision (no configurable desde la UI)
 PROMPT = """
-Eres un experto en leer etiquetas de precios de proveedores del mercado de Yiwu, China.
-Analiza esta imagen y extrae los datos que puedas encontrar.
+Eres un experto en productos del mercado mayorista de Yiwu, China.
+En la imagen hay UN PRODUCTO y, normalmente, un cartel/tablero o etiqueta con su descripción, precio y datos.
+
+Tu tarea tiene DOS partes y debes combinarlas:
+1. IDENTIFICA visualmente qué producto es mirando la foto (qué es, de qué material parece, para qué sirve).
+2. LEE el cartel/tablero/etiqueta y extrae los datos escritos (precio, proveedor, medidas, etc.).
+
 Responde ÚNICAMENTE con un objeto JSON válido, sin texto antes ni después, sin bloques de código, sin comillas adicionales.
 
 El JSON debe tener exactamente estas claves:
 {
+  "descripcion_es": "qué es el producto, en español, claro y específico (ej: 'Vaso plástico con tapa y sorbete') o null",
+  "descripcion_en": "lo mismo en inglés (ej: 'Plastic cup with lid and straw') o null",
+  "descripcion_zh": "lo mismo en chino, o lo que diga el cartel en chino, o null",
+  "material": "material principal que ves (plástico, metal, vidrio, cerámica, tela, madera, silicona, papel...) o null",
+  "uso": "categoría o uso del producto (cocina, hogar, juguete, oficina, baño, decoración, mascotas...) o null",
   "supplier_nombre": "nombre de la tienda o empresa (string o null)",
   "supplier_numero": "número de stand o booth (string o null)",
   "price_rmb": número decimal del precio en yuan o null,
@@ -56,21 +66,28 @@ El JSON debe tener exactamente estas claves:
   "gw": número decimal del peso bruto por caja en kg o null,
   "colores": "colores disponibles como string separado por comas o null",
   "cantidad_minima": número entero de cantidad mínima de pedido o null,
-  "descripcion_zh": "descripción del producto en chino si aparece o null",
   "notas": "cualquier otra información relevante o null",
   "confianza": "alta, media o baja según tu certeza en la extracción"
 }
 
 Reglas:
-- Si un campo no aparece en la imagen usa null, nunca inventes datos
-- price_rmb, qty_por_ctn, largo_cm, ancho_cm, alto_cm, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings
-- confianza es obligatorio, nunca null
+- SIEMPRE identifica el producto y completa descripcion_es y descripcion_en mirando la foto, aunque el cartel no traiga descripción.
+- La descripción debe ser útil y específica del producto que ves, no genérica.
+- material y uso: infiérelos de la imagen aunque no estén escritos; si realmente no podés deducirlo, usa null.
+- Si un dato NUMÉRICO (precio, medidas, peso) no aparece, usa null; nunca inventes números.
+- price_rmb, qty_por_ctn, largo_cm, ancho_cm, alto_cm, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
+- confianza es obligatorio, nunca null.
 """
 
 
 def _resultado_vacio() -> dict:
     """Devuelve un resultado con todos los campos en null y confianza baja"""
     return {
+        "descripcion_es": None,
+        "descripcion_en": None,
+        "descripcion_zh": None,
+        "material": None,
+        "uso": None,
         "supplier_nombre": None,
         "supplier_numero": None,
         "price_rmb": None,
@@ -82,7 +99,6 @@ def _resultado_vacio() -> dict:
         "gw": None,
         "colores": None,
         "cantidad_minima": None,
-        "descripcion_zh": None,
         "notas": None,
         "confianza": "baja",
     }

@@ -1,4 +1,9 @@
 export interface OCRResultado {
+  descripcion_es: string | null
+  descripcion_en: string | null
+  descripcion_zh: string | null
+  material: string | null
+  uso: string | null
   supplier_nombre: string | null
   supplier_numero: string | null
   price_rmb: number | null
@@ -10,7 +15,6 @@ export interface OCRResultado {
   gw: number | null
   colores: string | null
   cantidad_minima: number | null
-  descripcion_zh: string | null
   notas: string | null
   confianza: 'alta' | 'media' | 'baja'
 }
