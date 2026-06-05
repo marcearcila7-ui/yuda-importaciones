@@ -271,7 +271,9 @@
     "errorCrear": "No se pudo crear el cliente",
     "errorCargar": "No se pudieron cargar los clientes",
     "errorActualizar": "No se pudo actualizar el cliente",
-    "faltanDatos": "Completa el nombre y el email"
+    "faltanDatos": "Completa el nombre y el email",
+    "seguimiento": "Ver/editar seguimiento",
+    "sinCotizacionesEnviadas": "Este cliente aún no tiene cotizaciones enviadas."
   },
   "envio": {
     "titulo": "Cliente y envío",
@@ -286,6 +288,8 @@
     "enviada": "Cotización enviada al cliente",
     "errorEnviar": "No se pudo enviar la cotización",
     "yaEnviada": "El cliente ya puede ver esta cotización en su portal.",
+    "trackingEnClientes": "El seguimiento del envío se actualiza en la sección Clientes, abriendo este cliente.",
+    "irAClientes": "Ir a Clientes",
     "estadoActual": "Estado actual del envío",
     "fechasHitos": "Fechas de cada etapa (opcional)",
     "guardarSeguimiento": "Guardar seguimiento",

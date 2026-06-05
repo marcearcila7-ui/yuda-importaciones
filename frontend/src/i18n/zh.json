@@ -271,7 +271,9 @@
     "errorCrear": "无法创建客户",
     "errorCargar": "无法加载客户",
     "errorActualizar": "无法更新客户",
-    "faltanDatos": "请填写姓名和邮箱"
+    "faltanDatos": "请填写姓名和邮箱",
+    "seguimiento": "查看/编辑跟踪",
+    "sinCotizacionesEnviadas": "该客户还没有已发送的报价。"
   },
   "envio": {
     "titulo": "客户与发货",
@@ -286,6 +288,8 @@
     "enviada": "报价已发送给客户",
     "errorEnviar": "无法发送报价",
     "yaEnviada": "客户现在可以在其门户中查看此报价。",
+    "trackingEnClientes": "发货跟踪在「客户」板块更新，打开该客户即可。",
+    "irAClientes": "前往客户",
     "estadoActual": "当前发货状态",
     "fechasHitos": "每个阶段的日期（可选）",
     "guardarSeguimiento": "保存跟踪",

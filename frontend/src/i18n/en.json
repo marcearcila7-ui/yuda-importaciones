@@ -271,7 +271,9 @@
     "errorCrear": "Could not create the client",
     "errorCargar": "Could not load the clients",
     "errorActualizar": "Could not update the client",
-    "faltanDatos": "Fill in the name and email"
+    "faltanDatos": "Fill in the name and email",
+    "seguimiento": "View/edit tracking",
+    "sinCotizacionesEnviadas": "This client has no sent quotations yet."
   },
   "envio": {
     "titulo": "Client and shipment",
@@ -286,6 +288,8 @@
     "enviada": "Quotation sent to the client",
     "errorEnviar": "Could not send the quotation",
     "yaEnviada": "The client can now see this quotation in their portal.",
+    "trackingEnClientes": "The shipment tracking is updated in the Clients section, opening this client.",
+    "irAClientes": "Go to Clients",
     "estadoActual": "Current shipment status",
     "fechasHitos": "Date of each stage (optional)",
     "guardarSeguimiento": "Save tracking",
