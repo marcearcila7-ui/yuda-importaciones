@@ -291,7 +291,9 @@
     "trackingEnClientes": "El seguimiento del envío se actualiza en la sección Clientes, abriendo este cliente.",
     "irAClientes": "Ir a Clientes",
     "estadoActual": "Estado actual del envío",
-    "fechasHitos": "Fechas de cada etapa (opcional)",
+    "fechasHitos": "Etapas del envío",
+    "etapasAyuda": "Marca la etapa actual y completa la fecha de cada una.",
+    "etapaActual": "Etapa actual",
     "guardarSeguimiento": "Guardar seguimiento",
     "seguimientoGuardado": "Seguimiento actualizado",
     "errorGuardar": "No se pudo guardar el seguimiento"

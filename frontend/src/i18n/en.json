@@ -291,7 +291,9 @@
     "trackingEnClientes": "The shipment tracking is updated in the Clients section, opening this client.",
     "irAClientes": "Go to Clients",
     "estadoActual": "Current shipment status",
-    "fechasHitos": "Date of each stage (optional)",
+    "fechasHitos": "Shipment stages",
+    "etapasAyuda": "Mark the current stage and fill in the date of each one.",
+    "etapaActual": "Current stage",
     "guardarSeguimiento": "Save tracking",
     "seguimientoGuardado": "Tracking updated",
     "errorGuardar": "Could not save the tracking"

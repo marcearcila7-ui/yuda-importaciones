@@ -70,17 +70,6 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
-        {t('envio.estadoActual')}
-        <select value={estado} onChange={(e) => setEstado(e.target.value)} style={inputStyle} className={inputClase}>
-          {ESTADOS_ENVIO.map((k) => (
-            <option key={k} value={k}>
-              {t(`seguimiento.estados.${k}`)}
-            </option>
-          ))}
-        </select>
-      </label>
-
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
           {t('seguimiento.numeroTracking')}
@@ -112,31 +101,59 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
       </label>
 
       <div>
-        <p className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+        <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
           <Ship size={16} /> {t('envio.fechasHitos')}
         </p>
+        <p className="mb-3 text-xs" style={{ color: '#6B7280' }}>
+          {t('envio.etapasAyuda')}
+        </p>
         <div className="flex flex-col gap-2">
-          {ESTADOS_ENVIO.map((k) => (
-            <div key={k} className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_2fr] sm:items-center">
-              <span className="text-sm" style={{ color: '#374151' }}>
-                {t(`seguimiento.estados.${k}`)}
-              </span>
-              <input
-                type="date"
-                value={hitos[k]?.fecha ?? ''}
-                onChange={(e) => setHito(k, 'fecha', e.target.value)}
-                style={inputStyle}
-                className="rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none"
-              />
-              <input
-                value={hitos[k]?.nota ?? ''}
-                onChange={(e) => setHito(k, 'nota', e.target.value)}
-                placeholder={t('seguimiento.notaOpcional')}
-                style={inputStyle}
-                className="rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none"
-              />
-            </div>
-          ))}
+          {ESTADOS_ENVIO.map((k) => {
+            const esActual = estado === k
+            return (
+              <div
+                key={k}
+                className="rounded-lg border p-2"
+                style={{
+                  borderColor: esActual ? '#4B52E8' : '#E5E7EB',
+                  backgroundColor: esActual ? '#EEF0FD' : '#FFFFFF',
+                }}
+              >
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input
+                    type="radio"
+                    name={`estado-${sesionId}`}
+                    checked={esActual}
+                    onChange={() => setEstado(k)}
+                  />
+                  <span className="text-sm" style={{ fontWeight: esActual ? 700 : 500, color: '#0D0D0D' }}>
+                    {t(`seguimiento.estados.${k}`)}
+                  </span>
+                  {esActual && (
+                    <span className="ml-auto text-xs font-semibold" style={{ color: '#4B52E8' }}>
+                      {t('envio.etapaActual')}
+                    </span>
+                  )}
+                </label>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <input
+                    type="date"
+                    value={hitos[k]?.fecha ?? ''}
+                    onChange={(e) => setHito(k, 'fecha', e.target.value)}
+                    style={inputStyle}
+                    className="rounded-lg border border-gray-200 px-2 py-2 focus:border-[#4B52E8] focus:outline-none"
+                  />
+                  <input
+                    value={hitos[k]?.nota ?? ''}
+                    onChange={(e) => setHito(k, 'nota', e.target.value)}
+                    placeholder={t('seguimiento.notaOpcional')}
+                    style={inputStyle}
+                    className="rounded-lg border border-gray-200 px-2 py-2 focus:border-[#4B52E8] focus:outline-none"
+                  />
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 

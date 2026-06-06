@@ -291,7 +291,9 @@
     "trackingEnClientes": "发货跟踪在「客户」板块更新，打开该客户即可。",
     "irAClientes": "前往客户",
     "estadoActual": "当前发货状态",
-    "fechasHitos": "每个阶段的日期（可选）",
+    "fechasHitos": "发货阶段",
+    "etapasAyuda": "标记当前阶段并填写每个阶段的日期。",
+    "etapaActual": "当前阶段",
     "guardarSeguimiento": "保存跟踪",
     "seguimientoGuardado": "跟踪已更新",
     "errorGuardar": "无法保存跟踪"
