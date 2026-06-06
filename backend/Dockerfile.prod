@@ -19,13 +19,17 @@ RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 # ───────── Stage 2: runner ─────────
 FROM python:3.11-slim AS runner
 
-# Solo las librerías de runtime que weasyprint necesita
+# Librerías de runtime de weasyprint + fuentes.
+# fonts-noto-cjk: imprescindible para que el chino (formato del proveedor) NO
+# salga como rectángulos en el PDF. fonts-dejavu cubre el texto latino.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \
+    fonts-noto-cjk \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

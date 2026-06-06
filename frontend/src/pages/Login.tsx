@@ -10,12 +10,23 @@ const inputClase =
   'w-full border-0 border-b border-[#E5E7EB] bg-transparent focus:border-[#4B52E8] focus:outline-none'
 const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: '#374151', display: 'block' }
 
+const IDIOMAS = [
+  { code: 'es', label: 'ES' },
+  { code: 'en', label: 'EN' },
+  { code: 'zh', label: '中文' },
+]
+
 function Login() {
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { login, isLoading, error } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  const cambiarIdioma = (code: string) => {
+    i18n.changeLanguage(code)
+    localStorage.setItem('yuda_idioma', code)
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -27,7 +38,30 @@ function Login() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="relative flex min-h-screen">
+      {/* Selector de idioma: visible siempre, arriba a la derecha */}
+      <div className="absolute right-4 top-4 z-20 flex gap-1">
+        {IDIOMAS.map((idi) => {
+          const activo = i18n.language === idi.code
+          return (
+            <button
+              key={idi.code}
+              type="button"
+              onClick={() => cambiarIdioma(idi.code)}
+              style={{
+                borderRadius: 6,
+                backgroundColor: activo ? '#4B52E8' : '#EEF0FD',
+                color: activo ? '#FFFFFF' : '#4B52E8',
+                padding: '4px 10px',
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {idi.label}
+            </button>
+          )
+        })}
+      </div>
       {/* Mitad izquierda (branding) — solo desktop */}
       <div
         className="hidden w-1/2 flex-col items-center justify-center md:flex"

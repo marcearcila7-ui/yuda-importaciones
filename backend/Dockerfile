@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Dependencias del sistema necesarias para weasyprint (Pango/Cairo) y psycopg2
+# Dependencias del sistema para weasyprint (Pango/Cairo), psycopg2 y fuentes.
+# fonts-noto-cjk: necesaria para que el chino del PDF no salga como rectángulos.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     libpango-1.0-0 \
@@ -10,6 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
+    fonts-noto-cjk \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Instala las dependencias de Python
