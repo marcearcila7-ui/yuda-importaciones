@@ -308,7 +308,13 @@
     "subiendo": "Uploading…",
     "verBl": "View BL",
     "blSubido": "BL uploaded",
-    "errorBl": "Could not upload the BL"
+    "errorBl": "Could not upload the BL",
+    "adjuntosEtapa": "Attachments for this stage (visible to the client)",
+    "adjuntarArchivo": "Attach PDF or image",
+    "adjuntoSubido": "File attached",
+    "errorAdjunto": "Could not attach the file",
+    "archivo": "File",
+    "quitarAdjunto": "Remove attachment"
   },
   "seguimiento": {
     "estados": {

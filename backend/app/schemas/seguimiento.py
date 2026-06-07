@@ -5,11 +5,20 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from app.models.seguimiento import ESTADOS_ENVIO
 
 
+class AdjuntoInput(BaseModel):
+    """Archivo adjunto de una etapa (PDF o imagen) que el cliente verá en el tracking"""
+
+    url: str
+    nombre: str | None = None
+    tipo: str | None = None  # 'pdf' | 'imagen'
+
+
 class HitoInput(BaseModel):
-    """Fecha y nota opcionales de un hito"""
+    """Fecha, nota y adjuntos opcionales de un hito"""
 
     fecha: str | None = None
     nota: str | None = None
+    adjuntos: list[AdjuntoInput] | None = None
 
 
 class SeguimientoUpdate(BaseModel):

@@ -30,7 +30,7 @@ from app.schemas.cliente import (
 from app.schemas.packing import SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
 from app.services.notificacion_service import avisar_listo_para_envio
-from app.services.storage_service import subir_pdf
+from app.services.storage_service import subir_foto, subir_pdf
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
@@ -323,3 +323,46 @@ async def subir_bl_pdf(
     loop = asyncio.get_event_loop()
     url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
     return {"url": url}
+
+
+# Tipos de imagen permitidos como adjunto de una etapa
+_IMG_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+
+
+@router.post("/sesiones/{sesion_id}/seguimiento/adjunto")
+async def subir_adjunto_seguimiento(
+    sesion_id: str,
+    archivo: UploadFile,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sube un PDF o imagen para adjuntarlo a una etapa del seguimiento.
+
+    Lo puede subir la vendedora (en sus etapas) o Marcela; el cliente lo verá en
+    su portal dentro del tracking. Devuelve {url, nombre, tipo} para guardarlo en
+    el hito correspondiente.
+    """
+    _sesion_autorizada(db, sesion_id, usuario)
+
+    if archivo.content_type == "application/pdf":
+        tipo, extension = "pdf", ".pdf"
+    elif archivo.content_type in _IMG_EXT:
+        tipo, extension = "imagen", _IMG_EXT[archivo.content_type]
+    else:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos PDF o imágenes (JPG, PNG, WEBP)"
+        )
+
+    contenido = await archivo.read()
+    if len(contenido) > 25 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
+
+    nombre_archivo = f"seguimiento/{sesion_id}-{uuid.uuid4().hex[:8]}{extension}"
+    loop = asyncio.get_event_loop()
+    if tipo == "pdf":
+        url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
+    else:
+        url = await loop.run_in_executor(
+            None, lambda: subir_foto(contenido, nombre_archivo, archivo.content_type)
+        )
+    return {"url": url, "nombre": archivo.filename, "tipo": tipo}

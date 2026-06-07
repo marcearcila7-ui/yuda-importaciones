@@ -308,7 +308,13 @@
     "subiendo": "上传中…",
     "verBl": "查看提单",
     "blSubido": "提单已上传",
-    "errorBl": "无法上传提单"
+    "errorBl": "无法上传提单",
+    "adjuntosEtapa": "此阶段的附件（客户可见）",
+    "adjuntarArchivo": "添加 PDF 或图片",
+    "adjuntoSubido": "文件已添加",
+    "errorAdjunto": "无法添加文件",
+    "archivo": "文件",
+    "quitarAdjunto": "移除附件"
   },
   "seguimiento": {
     "estados": {

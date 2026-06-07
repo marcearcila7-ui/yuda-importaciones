@@ -1,7 +1,7 @@
 import apiClient from './client'
 import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
 import type { Sesion } from '../types/packing'
-import type { Seguimiento, SeguimientoUpdate } from '../types/seguimiento'
+import type { Adjunto, Seguimiento, SeguimientoUpdate } from '../types/seguimiento'
 
 // El interceptor de token (yuda_token) ya está registrado en api/admin.ts
 
@@ -73,4 +73,19 @@ export async function subirBlPdf(sesion_id: string, archivo: File): Promise<stri
     { headers: { 'Content-Type': 'multipart/form-data' } },
   )
   return data.url
+}
+
+// Sube un adjunto (PDF o imagen) de una etapa; el cliente lo verá en el tracking
+export async function subirAdjuntoSeguimiento(
+  sesion_id: string,
+  archivo: File,
+): Promise<Adjunto> {
+  const form = new FormData()
+  form.append('archivo', archivo)
+  const { data } = await apiClient.post<Adjunto>(
+    `/sesiones/${sesion_id}/seguimiento/adjunto`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
 }

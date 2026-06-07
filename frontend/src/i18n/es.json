@@ -308,7 +308,13 @@
     "subiendo": "Subiendo…",
     "verBl": "Ver BL",
     "blSubido": "BL cargado",
-    "errorBl": "No se pudo subir el BL"
+    "errorBl": "No se pudo subir el BL",
+    "adjuntosEtapa": "Adjuntos de esta etapa (el cliente los verá)",
+    "adjuntarArchivo": "Adjuntar PDF o imagen",
+    "adjuntoSubido": "Archivo adjuntado",
+    "errorAdjunto": "No se pudo adjuntar el archivo",
+    "archivo": "Archivo",
+    "quitarAdjunto": "Quitar adjunto"
   },
   "seguimiento": {
     "estados": {

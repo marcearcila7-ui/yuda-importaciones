@@ -153,6 +153,33 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                       {hito.nota}
                     </p>
                   )}
+                  {!!hito?.adjuntos?.length && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {hito.adjuntos.map((a, ai) =>
+                        a.tipo === 'imagen' ? (
+                          <a key={`${a.url}-${ai}`} href={a.url} target="_blank" rel="noreferrer">
+                            <img
+                              src={a.url}
+                              alt={a.nombre || ''}
+                              className="rounded-lg border object-cover"
+                              style={{ width: 64, height: 64, borderColor: '#E5E7EB' }}
+                            />
+                          </a>
+                        ) : (
+                          <a
+                            key={`${a.url}-${ai}`}
+                            href={a.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
+                            style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+                          >
+                            <FileText size={14} /> {a.nombre || t('envio.archivo')}
+                          </a>
+                        ),
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )

@@ -2,11 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { FileText, Lock, Save, Ship, Upload } from 'lucide-react'
-import { getSeguimiento, guardarSeguimiento, subirBlPdf } from '../api/clientes'
+import { FileText, ImageIcon, Lock, Paperclip, Save, Ship, Upload, X } from 'lucide-react'
+import {
+  getSeguimiento,
+  guardarSeguimiento,
+  subirAdjuntoSeguimiento,
+  subirBlPdf,
+} from '../api/clientes'
 import { useAuthStore } from '../store/authStore'
 import { ESTADOS_ENVIO, ESTADOS_VENDEDORA } from '../types/seguimiento'
-import type { Hito, Seguimiento } from '../types/seguimiento'
+import type { Adjunto, Hito, Seguimiento } from '../types/seguimiento'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
@@ -31,7 +36,9 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const [hitos, setHitos] = useState<Record<string, Hito>>({})
   const [trabajando, setTrabajando] = useState(false)
   const [subiendoBl, setSubiendoBl] = useState(false)
+  const [subiendoAdj, setSubiendoAdj] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const adjRef = useRef<HTMLInputElement>(null)
 
   const cargar = (s: Seguimiento) => {
     setEstado(s.estado)
@@ -54,10 +61,33 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const setHito = (key: string, campo: keyof Hito, valor: string) =>
     setHitos((h) => ({ ...h, [key]: { ...h[key], [campo]: valor || null } }))
 
+  const setAdjuntos = (key: string, adjuntos: Adjunto[]) =>
+    setHitos((h) => ({ ...h, [key]: { ...h[key], adjuntos } }))
+
   // La vendedora no puede tocar el envío una vez está en tránsito (lo movió Marcela).
   const bloqueadaVendedora = !esAdmin && !ESTADOS_VENDEDORA_SET.has(estado)
   // Opciones del desplegable según el rol.
   const opcionesEstado = esAdmin ? ESTADOS_ENVIO : ESTADOS_VENDEDORA
+
+  // Adjuntos de la etapa seleccionada (los que el cliente verá en el tracking).
+  const adjuntosEtapa = hitos[estado]?.adjuntos ?? []
+
+  const subirAdj = async (archivo: File) => {
+    setSubiendoAdj(true)
+    try {
+      const adj = await subirAdjuntoSeguimiento(sesionId, archivo)
+      setAdjuntos(estado, [...adjuntosEtapa, adj])
+      toast.success(t('envio.adjuntoSubido'))
+    } catch {
+      toast.error(t('envio.errorAdjunto'))
+    } finally {
+      setSubiendoAdj(false)
+      if (adjRef.current) adjRef.current.value = ''
+    }
+  }
+
+  const quitarAdj = (i: number) =>
+    setAdjuntos(estado, adjuntosEtapa.filter((_, idx) => idx !== i))
 
   const subirBl = async (archivo: File) => {
     setSubiendoBl(true)
@@ -78,7 +108,13 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     const limpios: Record<string, Hito> = {}
     for (const k of ESTADOS_ENVIO) {
       const h = hitos[k]
-      if (h && (h.fecha || h.nota)) limpios[k] = { fecha: h.fecha || null, nota: h.nota || null }
+      const adjuntos = h?.adjuntos ?? []
+      if (h && (h.fecha || h.nota || adjuntos.length))
+        limpios[k] = {
+          fecha: h.fecha || null,
+          nota: h.nota || null,
+          adjuntos: adjuntos.length ? adjuntos : null,
+        }
     }
     try {
       const s = await guardarSeguimiento(sesionId, {
@@ -154,6 +190,66 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                   className={inputClase}
                 />
               </label>
+            </div>
+
+            {/* Adjuntos de la etapa: el cliente los recibe en el tracking */}
+            <div className="mt-3">
+              <p className="mb-1 text-sm" style={{ color: '#6B7280' }}>
+                {t('envio.adjuntosEtapa')}
+              </p>
+              {adjuntosEtapa.length > 0 && (
+                <div className="mb-2 flex flex-col gap-1">
+                  {adjuntosEtapa.map((a, i) => (
+                    <div
+                      key={`${a.url}-${i}`}
+                      className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm"
+                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}
+                    >
+                      {a.tipo === 'imagen' ? (
+                        <ImageIcon size={15} style={{ color: '#4B52E8' }} />
+                      ) : (
+                        <FileText size={15} style={{ color: '#4B52E8' }} />
+                      )}
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 truncate"
+                        style={{ color: '#0D0D0D' }}
+                      >
+                        {a.nombre || t('envio.archivo')}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => quitarAdj(i)}
+                        aria-label={t('envio.quitarAdjunto')}
+                        style={{ color: '#9CA3AF' }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <input
+                ref={adjRef}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) subirAdj(f)
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => adjRef.current?.click()}
+                disabled={subiendoAdj}
+                className="flex min-h-[40px] items-center gap-2 rounded-lg border border-dashed px-3 text-sm font-medium disabled:opacity-60"
+                style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+              >
+                <Paperclip size={16} /> {subiendoAdj ? t('envio.subiendo') : t('envio.adjuntarArchivo')}
+              </button>
             </div>
           </>
         )}

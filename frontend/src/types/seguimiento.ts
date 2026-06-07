@@ -20,9 +20,16 @@ export const ESTADOS_VENDEDORA = [
   'en_bodega',
 ] as const
 
+export interface Adjunto {
+  url: string
+  nombre?: string | null
+  tipo?: string | null // 'pdf' | 'imagen'
+}
+
 export interface Hito {
   fecha?: string | null
   nota?: string | null
+  adjuntos?: Adjunto[] | null
 }
 
 export interface Seguimiento {
