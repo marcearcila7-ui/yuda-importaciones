@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Ship } from 'lucide-react'
+import { ExternalLink, FileText, Ship } from 'lucide-react'
 import { ESTADOS_ENVIO } from '../../types/seguimiento'
 import type { Seguimiento } from '../../types/seguimiento'
 
@@ -22,7 +22,12 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
 
   const indiceActual = ESTADOS_ENVIO.indexOf(seguimiento.estado as (typeof ESTADOS_ENVIO)[number])
   const hitos = seguimiento.hitos ?? {}
-  const tieneEnvio = seguimiento.numero_tracking || seguimiento.naviera || seguimiento.url_tracking
+  const tieneEnvio =
+    seguimiento.numero_tracking ||
+    seguimiento.naviera ||
+    seguimiento.url_tracking ||
+    seguimiento.bl_numero ||
+    seguimiento.bl_pdf_url
 
   return (
     <div className="flex flex-col gap-5">
@@ -61,18 +66,37 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                 <strong>{t('seguimiento.eta')}:</strong> {fmtFecha(seguimiento.fecha_eta)}
               </p>
             )}
+            {seguimiento.bl_numero && (
+              <p>
+                <strong>{t('seguimiento.bl')}:</strong>{' '}
+                <span style={{ fontFamily: 'monospace' }}>{seguimiento.bl_numero}</span>
+              </p>
+            )}
           </div>
-          {seguimiento.url_tracking && (
-            <a
-              href={seguimiento.url_tracking}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
-              style={{ backgroundColor: '#4B52E8' }}
-            >
-              <ExternalLink size={16} /> {t('seguimiento.consultarTracking')}
-            </a>
-          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {seguimiento.url_tracking && (
+              <a
+                href={seguimiento.url_tracking}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
+                style={{ backgroundColor: '#4B52E8' }}
+              >
+                <ExternalLink size={16} /> {t('seguimiento.consultarTracking')}
+              </a>
+            )}
+            {seguimiento.bl_pdf_url && (
+              <a
+                href={seguimiento.bl_pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+                style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+              >
+                <FileText size={16} /> {t('seguimiento.verBl')}
+              </a>
+            )}
+          </div>
         </div>
       )}
 

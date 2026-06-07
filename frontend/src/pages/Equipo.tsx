@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronRight, FileText, UserRound, Users } from 'lucide-react'
-import SeguimientoTimeline from '../components/portal/SeguimientoTimeline'
+import { AlertCircle, ChevronDown, ChevronRight, FileText, UserRound, Users } from 'lucide-react'
+import SeguimientoEditor from '../components/SeguimientoEditor'
 import { getEquipo } from '../api/admin'
-import { getSeguimiento } from '../api/clientes'
 import type { EquipoCotizacion, EquipoResponse } from '../types/equipo'
-import type { Seguimiento } from '../types/seguimiento'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
@@ -21,8 +19,6 @@ function Equipo() {
   const [vendAbierta, setVendAbierta] = useState<Set<string>>(new Set())
   const [cliAbierto, setCliAbierto] = useState<Set<string>>(new Set())
   const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
-  // sesion_id -> seguimiento | 'loading' | null (sin datos)
-  const [seguimientos, setSeguimientos] = useState<Record<string, Seguimiento | 'loading' | null>>({})
 
   useEffect(() => {
     getEquipo()
@@ -46,13 +42,26 @@ function Equipo() {
     })
   }
 
-  const abrirCotizacion = (cot: EquipoCotizacion) => {
-    toggle(cotAbierta, setCotAbierta, cot.sesion_id)
-    if (cot.enviada && seguimientos[cot.sesion_id] === undefined) {
-      setSeguimientos((s) => ({ ...s, [cot.sesion_id]: 'loading' }))
-      getSeguimiento(cot.sesion_id).then((seg) =>
-        setSeguimientos((s) => ({ ...s, [cot.sesion_id]: seg })),
-      )
+  // Cotizaciones que esperan que Marcela cargue la naviera y el BL.
+  const pendientes: { cot: EquipoCotizacion; vendedora: string }[] = []
+  for (const v of equipo?.vendedoras ?? []) {
+    for (const c of v.clientes) {
+      for (const cot of c.cotizaciones) {
+        if (cot.pendiente_bl) pendientes.push({ cot, vendedora: v.nombre })
+      }
+    }
+  }
+
+  const abrirPendiente = (sesionId: string) => {
+    // Abre toda la jerarquía hasta esa cotización
+    for (const v of equipo?.vendedoras ?? []) {
+      for (const c of v.clientes) {
+        if (c.cotizaciones.some((x) => x.sesion_id === sesionId)) {
+          setVendAbierta((s) => new Set(s).add(v.user_id))
+          setCliAbierto((s) => new Set(s).add(c.id))
+          setCotAbierta((s) => new Set(s).add(sesionId))
+        }
+      }
     }
   }
 
@@ -64,6 +73,33 @@ function Equipo() {
           {t('equipo.subtitulo')}
         </p>
       </div>
+
+      {/* Pendientes de BL: lo que Marcela debe atender */}
+      {pendientes.length > 0 && (
+        <div className="rounded-xl border p-4" style={{ borderColor: '#FCD34D', backgroundColor: '#FFFBEB' }}>
+          <p className="mb-2 flex items-center gap-2 text-sm font-bold" style={{ color: '#B45309' }}>
+            <AlertCircle size={16} /> {t('equipo.pendientesBl', { n: pendientes.length })}
+          </p>
+          <div className="flex flex-col gap-1">
+            {pendientes.map(({ cot, vendedora }) => (
+              <button
+                key={cot.sesion_id}
+                type="button"
+                onClick={() => abrirPendiente(cot.sesion_id)}
+                className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white"
+              >
+                <span style={{ color: '#92400E' }}>
+                  <strong>{cot.numero}</strong> · {cot.nombre_cliente}
+                  <span style={{ color: '#B45309' }}> ({vendedora})</span>
+                </span>
+                <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chipEstado(cot.estado)}>
+                  {cot.estado ? t(`seguimiento.estados.${cot.estado}`) : ''}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {equipo === null ? (
         <p className="text-sm" style={{ color: '#6B7280' }}>
@@ -143,12 +179,11 @@ function Equipo() {
                                     <div className="flex flex-col gap-2 pt-2">
                                       {c.cotizaciones.map((cot) => {
                                         const coAbierta = cotAbierta.has(cot.sesion_id)
-                                        const seg = seguimientos[cot.sesion_id]
                                         return (
                                           <div key={cot.sesion_id} className="rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
                                             <button
                                               type="button"
-                                              onClick={() => abrirCotizacion(cot)}
+                                              onClick={() => toggle(cotAbierta, setCotAbierta, cot.sesion_id)}
                                               className="flex w-full items-center justify-between gap-2 p-2 text-left"
                                             >
                                               <div className="flex items-center gap-2">
@@ -158,11 +193,18 @@ function Equipo() {
                                                 </span>
                                                 <span className="text-xs" style={{ color: '#9CA3AF' }}>{fmtFecha(cot.fecha)}</span>
                                               </div>
-                                              <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chipEstado(cot.enviada ? cot.estado : null)}>
-                                                {cot.enviada && cot.estado
-                                                  ? t(`seguimiento.estados.${cot.estado}`)
-                                                  : t('equipo.noEnviada')}
-                                              </span>
+                                              <div className="flex items-center gap-2">
+                                                {cot.pendiente_bl && (
+                                                  <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: '#FEF3C7', color: '#B45309' }}>
+                                                    <AlertCircle size={12} /> {t('equipo.bl')}
+                                                  </span>
+                                                )}
+                                                <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chipEstado(cot.enviada ? cot.estado : null)}>
+                                                  {cot.enviada && cot.estado
+                                                    ? t(`seguimiento.estados.${cot.estado}`)
+                                                    : t('equipo.noEnviada')}
+                                                </span>
+                                              </div>
                                             </button>
 
                                             {coAbierta && (
@@ -171,16 +213,8 @@ function Equipo() {
                                                   <p className="text-sm" style={{ color: '#9CA3AF' }}>
                                                     {t('equipo.noEnviadaDetalle')}
                                                   </p>
-                                                ) : seg === 'loading' || seg === undefined ? (
-                                                  <p className="text-sm" style={{ color: '#9CA3AF' }}>
-                                                    {t('equipo.cargandoSeguimiento')}
-                                                  </p>
-                                                ) : seg ? (
-                                                  <SeguimientoTimeline seguimiento={seg} />
                                                 ) : (
-                                                  <p className="text-sm" style={{ color: '#9CA3AF' }}>
-                                                    {t('equipo.cargandoSeguimiento')}
-                                                  </p>
+                                                  <SeguimientoEditor sesionId={cot.sesion_id} />
                                                 )}
                                               </div>
                                             )}

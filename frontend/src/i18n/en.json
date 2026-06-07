@@ -296,7 +296,19 @@
     "etapaActual": "Current stage",
     "guardarSeguimiento": "Save tracking",
     "seguimientoGuardado": "Tracking updated",
-    "errorGuardar": "Could not save the tracking"
+    "errorGuardar": "Could not save the tracking",
+    "enQueEtapa": "Which stage is the shipment in?",
+    "fechaDeEtapa": "What day did it reach this stage?",
+    "enTransitoMarcela": "The container is on its way. This part is managed by Marcela.",
+    "infoEnvioMarcela": "Shipping details (managed by Marcela)",
+    "infoEnvioBloqueada": "Shipping details (carrier and BL) are managed by Marcela.",
+    "blNumero": "BL number",
+    "blPdf": "BL document (PDF)",
+    "subirBl": "Upload BL",
+    "subiendo": "Uploading…",
+    "verBl": "View BL",
+    "blSubido": "BL uploaded",
+    "errorBl": "Could not upload the BL"
   },
   "seguimiento": {
     "estados": {
@@ -316,7 +328,9 @@
     "notaOpcional": "Note (optional)",
     "datosEnvio": "Shipment details",
     "consultarTracking": "Check tracking",
-    "estadoEnvio": "Shipment status"
+    "estadoEnvio": "Shipment status",
+    "bl": "BL",
+    "verBl": "View BL"
   },
   "equipo": {
     "titulo": "Team",
@@ -328,7 +342,9 @@
     "sinCotizaciones": "No quotations for this client",
     "noEnviada": "Not sent",
     "noEnviadaDetalle": "This quotation has not been sent to the client yet.",
-    "cargandoSeguimiento": "Loading tracking..."
+    "cargandoSeguimiento": "Loading tracking...",
+    "pendientesBl": "Pending BL ({{n}})",
+    "bl": "BL"
   },
   "portal": {
     "titulo": "Client portal",
@@ -349,5 +365,10 @@
     "precioUnit": "Unit price",
     "total": "Total",
     "seguimiento": "Shipment tracking"
+  },
+  "notif": {
+    "titulo": "Notifications",
+    "marcarTodas": "Mark all read",
+    "sinAvisos": "No notifications"
   }
 }

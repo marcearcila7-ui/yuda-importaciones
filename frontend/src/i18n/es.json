@@ -296,7 +296,19 @@
     "etapaActual": "Etapa actual",
     "guardarSeguimiento": "Guardar seguimiento",
     "seguimientoGuardado": "Seguimiento actualizado",
-    "errorGuardar": "No se pudo guardar el seguimiento"
+    "errorGuardar": "No se pudo guardar el seguimiento",
+    "enQueEtapa": "¿En qué etapa está el envío?",
+    "fechaDeEtapa": "¿Qué día llegó a esta etapa?",
+    "enTransitoMarcela": "El contenedor está en camino. Esta parte la gestiona Marcela.",
+    "infoEnvioMarcela": "Información de envío (la gestiona Marcela)",
+    "infoEnvioBloqueada": "Los datos del envío (naviera y BL) los gestiona Marcela.",
+    "blNumero": "Número de BL",
+    "blPdf": "Documento BL (PDF)",
+    "subirBl": "Subir BL",
+    "subiendo": "Subiendo…",
+    "verBl": "Ver BL",
+    "blSubido": "BL cargado",
+    "errorBl": "No se pudo subir el BL"
   },
   "seguimiento": {
     "estados": {
@@ -316,7 +328,9 @@
     "notaOpcional": "Nota (opcional)",
     "datosEnvio": "Datos del envío",
     "consultarTracking": "Consultar seguimiento",
-    "estadoEnvio": "Estado del envío"
+    "estadoEnvio": "Estado del envío",
+    "bl": "BL",
+    "verBl": "Ver BL"
   },
   "equipo": {
     "titulo": "Equipo",
@@ -328,7 +342,9 @@
     "sinCotizaciones": "Sin cotizaciones para este cliente",
     "noEnviada": "Sin enviar",
     "noEnviadaDetalle": "Esta cotización todavía no se envió al cliente.",
-    "cargandoSeguimiento": "Cargando seguimiento..."
+    "cargandoSeguimiento": "Cargando seguimiento...",
+    "pendientesBl": "Pendientes de BL ({{n}})",
+    "bl": "BL"
   },
   "portal": {
     "titulo": "Portal de clientes",
@@ -349,5 +365,10 @@
     "precioUnit": "Precio unitario",
     "total": "Total",
     "seguimiento": "Seguimiento del envío"
+  },
+  "notif": {
+    "titulo": "Avisos",
+    "marcarTodas": "Marcar todas leídas",
+    "sinAvisos": "No tienes avisos"
   }
 }

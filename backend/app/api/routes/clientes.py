@@ -1,15 +1,23 @@
+import asyncio
 import secrets
 import string
+import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import require_roles
 from app.database import get_db
 from app.models.cliente import Cliente
-from app.models.seguimiento import ESTADO_INICIAL, SeguimientoPedido
+from app.models.seguimiento import (
+    CAMPOS_SOLO_ADMIN,
+    ESTADO_DISPARA_AVISO,
+    ESTADO_INICIAL,
+    ESTADOS_VENDEDORA,
+    SeguimientoPedido,
+)
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.cliente import (
@@ -21,6 +29,8 @@ from app.schemas.cliente import (
 )
 from app.schemas.packing import SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
+from app.services.notificacion_service import avisar_listo_para_envio
+from app.services.storage_service import subir_pdf
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
@@ -238,23 +248,78 @@ def actualizar_seguimiento(
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
 ) -> SeguimientoPedido:
-    """Crea o actualiza el seguimiento del envío de una cotización"""
-    _sesion_autorizada(db, sesion_id, usuario)
+    """Crea o actualiza el seguimiento del envío de una cotización.
+
+    La vendedora gestiona las etapas hasta "en bodega" y las notas/fechas de
+    cada hito. Cuando el contenedor está en camino (naviera, tracking, BL, ETA
+    y las etapas de tránsito en adelante) la información es exclusiva de Marcela.
+    """
+    sesion = _sesion_autorizada(db, sesion_id, usuario)
+    es_vendedora = usuario.rol.value == "vendedora"
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
-        seg = SeguimientoPedido(sesion_id=sesion_id)
+        seg = SeguimientoPedido(sesion_id=sesion_id, estado=ESTADO_INICIAL)
         db.add(seg)
 
+    estado_anterior = seg.estado
+
+    # La vendedora no puede mover ni tocar el envío una vez está en tránsito.
+    if es_vendedora:
+        if estado_anterior not in ESTADOS_VENDEDORA:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Esta cotización ya está en tránsito; la gestiona Marcela",
+            )
+        if datos.estado not in ESTADOS_VENDEDORA:
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "La etapa de envío (en tránsito en adelante) la gestiona Marcela",
+            )
+
+    # Campos que cualquiera del equipo autorizado puede actualizar
     seg.estado = datos.estado
     seg.novedades = datos.novedades
-    seg.numero_tracking = datos.numero_tracking
-    seg.naviera = datos.naviera
-    seg.url_tracking = datos.url_tracking
-    seg.fecha_eta = datos.fecha_eta
     if datos.hitos is not None:
         seg.hitos = {k: v.model_dump() for k, v in datos.hitos.items()}
+
+    # Información de envío: solo Marcela (admin). La vendedora conserva lo cargado.
+    if not es_vendedora:
+        seg.numero_tracking = datos.numero_tracking
+        seg.naviera = datos.naviera
+        seg.url_tracking = datos.url_tracking
+        seg.fecha_eta = datos.fecha_eta
+        seg.bl_numero = datos.bl_numero
+        seg.bl_pdf_url = datos.bl_pdf_url
+
+    # Aviso a Marcela cuando la cotización llega a "en bodega" (lista para envío)
+    if datos.estado == ESTADO_DISPARA_AVISO and estado_anterior != ESTADO_DISPARA_AVISO:
+        numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+        avisar_listo_para_envio(db, sesion_id, numero, sesion.nombre_cliente)
 
     db.commit()
     db.refresh(seg)
     return seg
+
+
+@router.post("/sesiones/{sesion_id}/seguimiento/bl-pdf")
+async def subir_bl_pdf(
+    sesion_id: str,
+    archivo: UploadFile,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sube el PDF del BL (solo Marcela) y devuelve su URL para guardarla en el seguimiento"""
+    _sesion_autorizada(db, sesion_id, usuario)
+
+    if archivo.content_type != "application/pdf":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El BL debe ser un archivo PDF")
+
+    contenido = await archivo.read()
+    if len(contenido) > 25 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El PDF no debe superar 25MB")
+
+    nombre_archivo = f"bl/{sesion_id}-{uuid.uuid4().hex[:8]}.pdf"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
+    return {"url": url}

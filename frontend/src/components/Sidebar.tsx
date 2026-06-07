@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, LogOut, Network, Package, Settings, Users } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import NotificacionesBell from './NotificacionesBell'
 
 // Logo circular YUDA (círculo azul con "Y" blanca)
 function LogoYuda({ size = 36 }: { size?: number }) {
@@ -150,6 +151,7 @@ function Sidebar() {
               {usuario?.rol ? t(`roles.${usuario.rol}`) : ''}
             </p>
           </div>
+          {rol === 'admin' && <NotificacionesBell />}
         </div>
         <button
           type="button"

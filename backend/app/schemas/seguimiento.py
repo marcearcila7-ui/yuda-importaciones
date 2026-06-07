@@ -21,6 +21,8 @@ class SeguimientoUpdate(BaseModel):
     naviera: str | None = None
     url_tracking: str | None = None
     fecha_eta: date | None = None
+    bl_numero: str | None = None
+    bl_pdf_url: str | None = None
     hitos: dict[str, HitoInput] | None = None
 
     @field_validator("estado")
@@ -50,6 +52,8 @@ class SeguimientoResponse(BaseModel):
     naviera: str | None = None
     url_tracking: str | None = None
     fecha_eta: date | None = None
+    bl_numero: str | None = None
+    bl_pdf_url: str | None = None
     hitos: dict | None = None
     updated_at: datetime | None = None
 

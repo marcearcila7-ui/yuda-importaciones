@@ -11,6 +11,15 @@ export const ESTADOS_ENVIO = [
 
 export type EstadoEnvio = (typeof ESTADOS_ENVIO)[number]
 
+// Etapas que la vendedora puede gestionar. De "en_transito" en adelante la
+// información del envío (naviera, tracking, BL) es exclusiva de Marcela.
+export const ESTADOS_VENDEDORA = [
+  'cotizacion_enviada',
+  'pedido_confirmado',
+  'proveedor_recibio',
+  'en_bodega',
+] as const
+
 export interface Hito {
   fecha?: string | null
   nota?: string | null
@@ -23,6 +32,8 @@ export interface Seguimiento {
   naviera?: string | null
   url_tracking?: string | null
   fecha_eta?: string | null
+  bl_numero?: string | null
+  bl_pdf_url?: string | null
   hitos?: Record<string, Hito> | null
   updated_at?: string | null
 }
@@ -34,5 +45,7 @@ export interface SeguimientoUpdate {
   naviera?: string | null
   url_tracking?: string | null
   fecha_eta?: string | null
+  bl_numero?: string | null
+  bl_pdf_url?: string | null
   hitos?: Record<string, Hito> | null
 }

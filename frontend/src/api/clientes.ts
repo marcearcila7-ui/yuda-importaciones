@@ -62,3 +62,15 @@ export async function guardarSeguimiento(
   const { data } = await apiClient.put<Seguimiento>(`/sesiones/${sesion_id}/seguimiento`, datos)
   return data
 }
+
+// Sube el PDF del BL (solo admin) y devuelve su URL pública
+export async function subirBlPdf(sesion_id: string, archivo: File): Promise<string> {
+  const form = new FormData()
+  form.append('archivo', archivo)
+  const { data } = await apiClient.post<{ url: string }>(
+    `/sesiones/${sesion_id}/seguimiento/bl-pdf`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data.url
+}

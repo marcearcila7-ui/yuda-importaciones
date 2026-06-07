@@ -5,6 +5,11 @@ export interface EquipoCotizacion {
   nombre_cliente: string
   enviada: boolean
   estado: string | null
+  naviera: string | null
+  numero_tracking: string | null
+  bl_numero: string | null
+  bl_pdf_url: string | null
+  pendiente_bl: boolean
 }
 
 export interface EquipoCliente {

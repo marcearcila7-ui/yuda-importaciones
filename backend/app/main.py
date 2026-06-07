@@ -4,7 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import admin, auth, clientes, lotes, ocr, packing, pedidos, portal
+from app.api.routes import (
+    admin,
+    auth,
+    clientes,
+    lotes,
+    notificaciones,
+    ocr,
+    packing,
+    pedidos,
+    portal,
+)
 from app.core.config import settings
 
 app = FastAPI(title="YUDA Importaciones")
@@ -32,6 +42,7 @@ app.include_router(admin.historial_router, prefix="/api/v1")
 app.include_router(lotes.router, prefix="/api/v1")
 app.include_router(clientes.router, prefix="/api/v1")
 app.include_router(portal.router, prefix="/api/v1")
+app.include_router(notificaciones.router, prefix="/api/v1")
 
 
 @app.get("/")

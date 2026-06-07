@@ -321,6 +321,13 @@ def panorama_equipo(
                     .filter(SeguimientoPedido.sesion_id == s.id)
                     .first()
                 )
+                # Pendiente de BL: lista para envío o en tránsito y sin BL cargado.
+                # Es lo que Marcela debe atender.
+                pendiente_bl = bool(
+                    seg
+                    and seg.estado in ("en_bodega", "en_transito")
+                    and not seg.bl_numero
+                )
                 cotizaciones.append(
                     {
                         "sesion_id": s.id,
@@ -329,6 +336,11 @@ def panorama_equipo(
                         "nombre_cliente": s.nombre_cliente,
                         "enviada": s.enviada_cliente,
                         "estado": seg.estado if seg else None,
+                        "naviera": seg.naviera if seg else None,
+                        "numero_tracking": seg.numero_tracking if seg else None,
+                        "bl_numero": seg.bl_numero if seg else None,
+                        "bl_pdf_url": seg.bl_pdf_url if seg else None,
+                        "pendiente_bl": pendiente_bl,
                     }
                 )
             lista_clientes.append(

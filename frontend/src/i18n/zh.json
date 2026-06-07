@@ -296,7 +296,19 @@
     "etapaActual": "当前阶段",
     "guardarSeguimiento": "保存跟踪",
     "seguimientoGuardado": "跟踪已更新",
-    "errorGuardar": "无法保存跟踪"
+    "errorGuardar": "无法保存跟踪",
+    "enQueEtapa": "货物处于哪个阶段？",
+    "fechaDeEtapa": "到达此阶段的日期？",
+    "enTransitoMarcela": "集装箱正在运输中。此部分由 Marcela 管理。",
+    "infoEnvioMarcela": "运输信息（由 Marcela 管理）",
+    "infoEnvioBloqueada": "运输信息（船公司和提单）由 Marcela 管理。",
+    "blNumero": "提单号",
+    "blPdf": "提单文件（PDF）",
+    "subirBl": "上传提单",
+    "subiendo": "上传中…",
+    "verBl": "查看提单",
+    "blSubido": "提单已上传",
+    "errorBl": "无法上传提单"
   },
   "seguimiento": {
     "estados": {
@@ -316,7 +328,9 @@
     "notaOpcional": "备注（可选）",
     "datosEnvio": "发货信息",
     "consultarTracking": "查询跟踪",
-    "estadoEnvio": "发货状态"
+    "estadoEnvio": "发货状态",
+    "bl": "提单",
+    "verBl": "查看提单"
   },
   "equipo": {
     "titulo": "团队",
@@ -328,7 +342,9 @@
     "sinCotizaciones": "该客户没有报价",
     "noEnviada": "未发送",
     "noEnviadaDetalle": "此报价尚未发送给客户。",
-    "cargandoSeguimiento": "正在加载跟踪..."
+    "cargandoSeguimiento": "正在加载跟踪...",
+    "pendientesBl": "待处理提单（{{n}}）",
+    "bl": "提单"
   },
   "portal": {
     "titulo": "客户门户",
@@ -349,5 +365,10 @@
     "precioUnit": "单价",
     "total": "总计",
     "seguimiento": "发货跟踪"
+  },
+  "notif": {
+    "titulo": "通知",
+    "marcarTodas": "全部标为已读",
+    "sinAvisos": "暂无通知"
   }
 }

@@ -21,6 +21,22 @@ ESTADOS_ENVIO = [
 
 ESTADO_INICIAL = "cotizacion_enviada"
 
+# Etapas que la vendedora puede gestionar. De "en_transito" en adelante (cuando
+# el contenedor ya está en camino) la información es exclusiva de Marcela (admin).
+ESTADOS_VENDEDORA = [
+    "cotizacion_enviada",
+    "pedido_confirmado",
+    "proveedor_recibio",
+    "en_bodega",
+]
+
+# Campos de envío que solo Marcela (admin) puede editar.
+CAMPOS_SOLO_ADMIN = ("numero_tracking", "naviera", "url_tracking", "bl_numero", "bl_pdf_url")
+
+# Etapa que dispara el aviso a Marcela: la mercancía está lista para enviarse,
+# es el momento de cargar naviera y BL.
+ESTADO_DISPARA_AVISO = "en_bodega"
+
 
 class SeguimientoPedido(Base):
     """Seguimiento del envío de una cotización (1 a 1 con la sesión)."""
@@ -37,6 +53,9 @@ class SeguimientoPedido(Base):
     naviera: Mapped[str | None] = mapped_column(String, nullable=True)
     url_tracking: Mapped[str | None] = mapped_column(String, nullable=True)
     fecha_eta: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # BL (Bill of Lading): lo carga Marcela cuando el contenedor está en tránsito.
+    bl_numero: Mapped[str | None] = mapped_column(String, nullable=True)
+    bl_pdf_url: Mapped[str | None] = mapped_column(String, nullable=True)
     # { estado_key: { "fecha": "YYYY-MM-DD", "nota": "..." } }
     hitos: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
