@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store } from 'lucide-react'
+import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
@@ -81,6 +81,7 @@ function Dashboard() {
     cargarItems,
     seleccionarSesion,
     cargarSesiones,
+    volverAlInicio,
   } = usePackingStore()
   const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
 
@@ -96,6 +97,15 @@ function Dashboard() {
       .then(setMetricas)
       .catch(() => setMetricas(null))
   }, [esAdmin])
+
+  // Escritorio limpio para Marcela: al entrar a "Cotización" sin abrir una a
+  // propósito (ej. desde el Historial), no arrastrar la cotización que estuviera
+  // activa de antes.
+  useEffect(() => {
+    const sesionId = (location.state as { sesion_id?: string } | null)?.sesion_id
+    if (esAdmin && !sesionId) volverAlInicio()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Si se llega desde el Historial con un sesion_id en el state, preseleccionar la sesión
   useEffect(() => {
@@ -204,6 +214,25 @@ function Dashboard() {
       {/* Cotización activa */}
       {sesionActual && (
         <>
+          {/* Barra de la cotización abierta: cuál es + cerrarla */}
+          <div
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3"
+            style={{ backgroundColor: '#EEF0FD' }}
+          >
+            <p className="text-sm" style={{ color: '#4B52E8' }}>
+              {t('dashboard.cotizacionAbierta')}{' '}
+              <strong>{sesionActual.nombre_cliente}</strong>
+            </p>
+            <button
+              type="button"
+              onClick={volverAlInicio}
+              className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
+              style={{ borderColor: '#4B52E8', color: '#4B52E8', backgroundColor: '#FFFFFF' }}
+            >
+              <X size={15} /> {t('dashboard.cerrarCotizacion')}
+            </button>
+          </div>
+
           {/* 1. Agregar productos */}
           <SectionCard titulo={t('lote.titulo')}>
             <CargaMasiva />

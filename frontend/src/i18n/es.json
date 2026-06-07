@@ -51,7 +51,9 @@
     "abrir": "Abrir",
     "listaDescargada": "Lista descargada",
     "errorDescargar": "No se pudo descargar la lista",
-    "saludo": "Hola, {{nombre}}"
+    "saludo": "Hola, {{nombre}}",
+    "cotizacionAbierta": "Cotización abierta:",
+    "cerrarCotizacion": "Cerrar cotización"
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
@@ -273,7 +275,11 @@
     "errorActualizar": "No se pudo actualizar el cliente",
     "faltanDatos": "Completa el nombre y el email",
     "seguimiento": "Ver/editar seguimiento",
-    "sinCotizacionesEnviadas": "Este cliente aún no tiene cotizaciones enviadas."
+    "sinCotizacionesEnviadas": "Este cliente aún no tiene cotizaciones enviadas.",
+    "eliminar": "Eliminar",
+    "confirmarEliminar": "¿Eliminar a {{nombre}}? Esta acción no se puede deshacer.",
+    "eliminado": "Cliente eliminado",
+    "errorEliminar": "No se pudo eliminar el cliente"
   },
   "envio": {
     "titulo": "Cliente y envío",

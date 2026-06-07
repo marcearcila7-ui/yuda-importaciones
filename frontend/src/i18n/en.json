@@ -51,7 +51,9 @@
     "abrir": "Open",
     "listaDescargada": "List downloaded",
     "errorDescargar": "Could not download the list",
-    "saludo": "Hi, {{nombre}}"
+    "saludo": "Hi, {{nombre}}",
+    "cotizacionAbierta": "Open quote:",
+    "cerrarCotizacion": "Close quote"
   },
   "ocr": {
     "titulo": "Upload label photo",
@@ -273,7 +275,11 @@
     "errorActualizar": "Could not update the client",
     "faltanDatos": "Fill in the name and email",
     "seguimiento": "View/edit tracking",
-    "sinCotizacionesEnviadas": "This client has no sent quotations yet."
+    "sinCotizacionesEnviadas": "This client has no sent quotations yet.",
+    "eliminar": "Delete",
+    "confirmarEliminar": "Delete {{nombre}}? This cannot be undone.",
+    "eliminado": "Client deleted",
+    "errorEliminar": "Could not delete the client"
   },
   "envio": {
     "titulo": "Client and shipment",

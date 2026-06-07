@@ -27,6 +27,10 @@ export async function resetPasswordCliente(id: string, nueva_password: string): 
   await apiClient.post(`/clientes/${id}/reset-password`, { nueva_password })
 }
 
+export async function eliminarCliente(id: string): Promise<void> {
+  await apiClient.delete(`/clientes/${id}`)
+}
+
 export async function getCotizacionesCliente(id: string): Promise<Sesion[]> {
   const { data } = await apiClient.get<Sesion[]>(`/clientes/${id}/cotizaciones`)
   return data

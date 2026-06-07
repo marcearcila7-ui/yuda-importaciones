@@ -150,6 +150,38 @@ def actualizar_cliente(
     return cliente
 
 
+@router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_cliente(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> None:
+    """Elimina un cliente. Se bloquea si tiene cotizaciones ya enviadas (tienen
+    seguimiento/portal activos); en ese caso conviene desactivarlo. Las cotizaciones
+    sin enviar se desvinculan para no perder el trabajo.
+    """
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+
+    enviadas = (
+        db.query(Sesion)
+        .filter(Sesion.cliente_id == cliente_id, Sesion.enviada_cliente.is_(True))
+        .count()
+    )
+    if enviadas:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este cliente tiene cotizaciones enviadas con seguimiento activo. "
+            "Desactívalo en lugar de eliminarlo.",
+        )
+
+    # Desvincula las cotizaciones sin enviar para conservarlas
+    db.query(Sesion).filter(Sesion.cliente_id == cliente_id).update(
+        {Sesion.cliente_id: None}
+    )
+    db.delete(cliente)
+    db.commit()
+
+
 @router.post("/clientes/{cliente_id}/reset-password")
 def reset_password_cliente(
     cliente_id: str,

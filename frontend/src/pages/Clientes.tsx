@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ChevronDown, ChevronRight, FileText, KeyRound, Plus, UserPlus, Users } from 'lucide-react'
+import axios from 'axios'
+import { ChevronDown, ChevronRight, FileText, KeyRound, Plus, Trash2, UserPlus, Users } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
+  eliminarCliente,
   getClientes,
   getCotizacionesCliente,
   resetPasswordCliente,
@@ -136,6 +138,19 @@ function Clientes() {
       cargar()
     } catch {
       toast.error(t('clientes.errorActualizar'))
+    }
+  }
+
+  const eliminar = async (c: Cliente) => {
+    if (!window.confirm(t('clientes.confirmarEliminar', { nombre: c.nombre }))) return
+    try {
+      await eliminarCliente(c.id)
+      toast.success(t('clientes.eliminado'))
+      cargar()
+    } catch (err) {
+      // 409: tiene cotizaciones enviadas → mostramos el mensaje del backend
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(typeof detalle === 'string' ? detalle : t('clientes.errorEliminar'))
     }
   }
 
@@ -272,6 +287,15 @@ function Clientes() {
                         style={{ color: c.activo ? '#EF4444' : '#10B981' }}
                       >
                         {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => eliminar(c)}
+                        title={t('clientes.eliminar')}
+                        className="flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
+                        style={{ borderColor: '#FCA5A5', color: '#EF4444' }}
+                      >
+                        <Trash2 size={14} /> {t('clientes.eliminar')}
                       </button>
                     </div>
                   </div>
