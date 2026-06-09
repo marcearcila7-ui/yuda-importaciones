@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
@@ -45,7 +47,14 @@ function SelectorIdiomaMobile() {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { usuario } = useAuthStore()
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { usuario, logout } = useAuthStore()
+
+  const cerrarSesion = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F5F0' }}>
@@ -60,11 +69,21 @@ export default function Layout({ children }: { children: ReactNode }) {
         style={{ height: 56, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
       >
         <span style={{ fontWeight: 800, fontSize: 20, color: '#4B52E8' }}>YU·DA</span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <SelectorIdiomaMobile />
-          <span className="max-w-[110px] truncate" style={{ fontSize: 14, color: '#6B7280' }}>
+          <span className="max-w-[80px] truncate" style={{ fontSize: 14, color: '#6B7280' }}>
             {usuario?.nombre}
           </span>
+          <button
+            type="button"
+            onClick={cerrarSesion}
+            aria-label={t('nav.cerrarSesion')}
+            title={t('nav.cerrarSesion')}
+            className="flex items-center justify-center rounded-lg"
+            style={{ width: 40, height: 40, color: '#EF4444' }}
+          >
+            <LogOut size={20} />
+          </button>
         </div>
       </div>
 
