@@ -42,6 +42,7 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'material', header: 'MATERIAL', meta: { campo: 'material', kind: 'text-edit', width: 120 } },
   { id: 'uso', header: 'USO', meta: { campo: 'uso', kind: 'text-edit', width: 100 } },
   { id: 'ctns', header: 'CTNS', meta: { campo: 'ctns', kind: 'num-edit', width: 80, ctns: true } },
+  { id: 'moq_cajas', header: 'MQT', meta: { campo: 'moq_cajas', kind: 'num-edit', width: 80 } },
   { id: 'qty_por_ctn', header: 'QTY/CTN', meta: { campo: 'qty_por_ctn', kind: 'num-edit', width: 90 } },
   { id: 'unit', header: 'UNIT', meta: { kind: 'unit', width: 70 } },
   { id: 't_qty', header: 'T.QTY', meta: { campo: 't_qty', kind: 'ro-num', width: 90 } },
@@ -241,6 +242,7 @@ function TarjetaMovil({
 
       <div className="grid grid-cols-3 gap-2">
         <CampoMovil item={item} campo="ctns" label={t('packing.fCajas')} tipo="num" onSaved={onItemActualizado} />
+        <CampoMovil item={item} campo="moq_cajas" label={t('packing.fMqt')} tipo="num" onSaved={onItemActualizado} />
         <CampoMovil item={item} campo="qty_por_ctn" label={t('packing.fUnidCaja')} tipo="num" onSaved={onItemActualizado} />
         <CampoMovil item={item} campo="price_rmb" label={t('packing.fPrecioRmb')} tipo="num" onSaved={onItemActualizado} />
       </div>

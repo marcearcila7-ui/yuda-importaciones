@@ -8,7 +8,13 @@ def calcular_campos_item(item: Item, tipo_cambio_usd: float) -> dict:
     # Protección por si el tipo de cambio fuera 0
     price_usd = round(item.price_rmb / tipo_cambio_usd, 4) if tipo_cambio_usd else 0.0
     total_usd = round(price_usd * t_qty, 4)
-    cbm = round(item.largo_cm * item.ancho_cm * item.alto_cm / 1_000_000, 6)
+    # CBM: si la etiqueta trajo uno directo (guardado), se usa ese; si no, se
+    # calcula por dimensiones (largo×ancho×alto / 1.000.000).
+    cbm = (
+        round(item.cbm, 6)
+        if getattr(item, "cbm", None)
+        else round(item.largo_cm * item.ancho_cm * item.alto_cm / 1_000_000, 6)
+    )
     t_cbm = round(cbm * item.ctns, 6)
     t_gw = round(item.gw * item.ctns, 4)
 

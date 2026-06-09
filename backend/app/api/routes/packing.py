@@ -62,6 +62,7 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         largo_cm=item.largo_cm,
         ancho_cm=item.ancho_cm,
         alto_cm=item.alto_cm,
+        moq_cajas=item.moq_cajas,
         ctns=item.ctns,
         orden=item.orden,
         **calculados,

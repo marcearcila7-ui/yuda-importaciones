@@ -89,6 +89,7 @@
     "fProveedor": "供应商",
     "fDescripcion": "描述",
     "fCajas": "箱数",
+    "fMqt": "起订量(箱)",
     "fUnidCaja": "每箱数量",
     "fPrecioRmb": "单价(RMB)",
     "fTotalUsd": "总额 USD",

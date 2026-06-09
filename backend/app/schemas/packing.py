@@ -22,6 +22,10 @@ class ItemCreate(BaseModel):
     largo_cm: float = 0.0
     ancho_cm: float = 0.0
     alto_cm: float = 0.0
+    # CBM directo de etiqueta (opcional); si es None se calcula por dimensiones.
+    cbm: Optional[float] = None
+    # MQT: mínima cantidad de cajas que pide el proveedor.
+    moq_cajas: Optional[int] = None
     ctns: int = 1
     orden: int = 0
 
@@ -43,6 +47,8 @@ class ItemUpdate(BaseModel):
     largo_cm: Optional[float] = None
     ancho_cm: Optional[float] = None
     alto_cm: Optional[float] = None
+    cbm: Optional[float] = None
+    moq_cajas: Optional[int] = None
     ctns: Optional[int] = None
     orden: Optional[int] = None
 

@@ -89,6 +89,7 @@
     "fProveedor": "Proveedor",
     "fDescripcion": "Descripción",
     "fCajas": "Cajas",
+    "fMqt": "MQT (mín. cajas)",
     "fUnidCaja": "Unid/caja",
     "fPrecioRmb": "Precio RMB",
     "fTotalUsd": "Total USD",

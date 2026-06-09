@@ -30,5 +30,9 @@ class Item(Base):
     largo_cm: Mapped[float] = mapped_column(Float, default=0)
     ancho_cm: Mapped[float] = mapped_column(Float, default=0)
     alto_cm: Mapped[float] = mapped_column(Float, default=0)
+    # CBM leído directo de la etiqueta (si la trae). Si es None se calcula por dimensiones.
+    cbm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # MQT: mínima cantidad de CAJAS que exige el proveedor (MOQ en cartones).
+    moq_cajas: Mapped[int | None] = mapped_column(Integer, nullable=True)
     ctns: Mapped[int] = mapped_column(Integer, default=1)
     orden: Mapped[int] = mapped_column(Integer, default=0)

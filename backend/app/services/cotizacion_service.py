@@ -24,7 +24,7 @@ CONTACTO = {
 LABELS = {
     "es": {
         "empresa": "YUDA IMPORTACIONES",
-        "cols": ["N°", "Foto", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM", "Peso kg", "Peso total kg"],
+        "cols": ["N°", "Foto", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM", "Peso kg", "Peso total kg", "MQT (mín. cajas)"],
         "numero": "N° Cotización",
         "emision": "Fecha de emisión",
         "cliente": "Cliente",
@@ -35,7 +35,7 @@ LABELS = {
     },
     "en": {
         "empresa": "YIWU YUDA TRADING CO.,LTD",
-        "cols": ["N°", "Photo", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM", "Weight kg", "Total weight kg"],
+        "cols": ["N°", "Photo", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM", "Weight kg", "Total weight kg", "MOQ (min. boxes)"],
         "numero": "Quotation No.",
         "emision": "Issue date",
         "cliente": "Client",
@@ -46,7 +46,7 @@ LABELS = {
     },
     "zh": {
         "empresa": "义乌市与达贸易有限公司",
-        "cols": ["序号", "图片", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM", "毛重kg", "总毛重kg"],
+        "cols": ["序号", "图片", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM", "毛重kg", "总毛重kg", "起订量(箱)"],
         "numero": "报价单号",
         "emision": "签发日期",
         "cliente": "客户",
@@ -79,7 +79,10 @@ def _calcular(item, tipo_cambio: float) -> dict:
     total_rmb = (item.price_rmb or 0) * t_qty
     price_usd = round((item.price_rmb or 0) / tipo_cambio, 4) if tipo_cambio else 0.0
     total_usd = round(price_usd * t_qty, 2)
-    cbm = round((item.largo_cm or 0) * (item.ancho_cm or 0) * (item.alto_cm or 0) / 1_000_000, 6)
+    # CBM directo de etiqueta si existe; si no, se calcula por dimensiones.
+    cbm = round(item.cbm, 6) if getattr(item, "cbm", None) else round(
+        (item.largo_cm or 0) * (item.ancho_cm or 0) * (item.alto_cm or 0) / 1_000_000, 6
+    )
     t_cbm = round(cbm * (item.ctns or 0), 6)
     return {
         "t_qty": t_qty,
@@ -178,6 +181,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
             calc["t_cbm"],
             item.gw,
             round((item.gw or 0) * (item.ctns or 0), 2),
+            item.moq_cajas,
         ]
         for idx, val in enumerate(valores, start=1):
             celda = ws.cell(row=fila, column=idx, value=val)
@@ -293,6 +297,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
             f"<td>{calc['t_cbm']}</td>"
             f"<td>{item.gw or 0}</td>"
             f"<td>{gw_total}</td>"
+            f"<td>{item.moq_cajas if item.moq_cajas is not None else ''}</td>"
             f"</tr>"
         )
         tot_cajas += item.ctns or 0
@@ -346,6 +351,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
         <td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>
         <td></td><td>{round(tot_cbm, 6)}</td>
         <td></td><td>{round(tot_gw, 2)}</td>
+        <td></td>
       </tr>
     </tbody>
   </table>

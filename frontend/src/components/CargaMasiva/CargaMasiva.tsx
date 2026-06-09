@@ -94,6 +94,8 @@ function CargaMasiva() {
         largo_cm: d.largo_cm ?? 0,
         ancho_cm: d.ancho_cm ?? 0,
         alto_cm: d.alto_cm ?? 0,
+        cbm: d.cbm_directo ?? undefined,
+        moq_cajas: d.cantidad_minima ?? undefined,
         ctns: 1,
       }
       await agregarItem(item)

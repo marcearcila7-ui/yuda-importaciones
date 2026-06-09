@@ -89,6 +89,7 @@
     "fProveedor": "Supplier",
     "fDescripcion": "Description",
     "fCajas": "Boxes",
+    "fMqt": "MOQ (min. boxes)",
     "fUnidCaja": "Units/box",
     "fPrecioRmb": "Price RMB",
     "fTotalUsd": "Total USD",

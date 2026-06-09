@@ -14,6 +14,10 @@ export interface ItemCreate {
   largo_cm?: number
   ancho_cm?: number
   alto_cm?: number
+  // CBM directo de etiqueta (opcional); si no, se calcula por dimensiones.
+  cbm?: number | null
+  // MQT: mínima cantidad de cajas que pide el proveedor.
+  moq_cajas?: number | null
   ctns: number
   orden?: number
 }
