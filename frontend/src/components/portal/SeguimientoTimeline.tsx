@@ -58,7 +58,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
             {seguimiento.numero_tracking && (
               <p>
                 <strong>{t('seguimiento.numeroTracking')}:</strong>{' '}
-                <span style={{ fontFamily: 'monospace' }}>{seguimiento.numero_tracking}</span>
+                <span className="break-all" style={{ fontFamily: 'monospace' }}>{seguimiento.numero_tracking}</span>
               </p>
             )}
             {seguimiento.fecha_eta && (
@@ -69,7 +69,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
             {seguimiento.bl_numero && (
               <p>
                 <strong>{t('seguimiento.bl')}:</strong>{' '}
-                <span style={{ fontFamily: 'monospace' }}>{seguimiento.bl_numero}</span>
+                <span className="break-all" style={{ fontFamily: 'monospace' }}>{seguimiento.bl_numero}</span>
               </p>
             )}
           </div>
