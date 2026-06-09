@@ -10,7 +10,7 @@ import {
   subirBlPdf,
 } from '../api/clientes'
 import { useAuthStore } from '../store/authStore'
-import { ESTADOS_ENVIO, ESTADOS_VENDEDORA } from '../types/seguimiento'
+import { ESTADOS_ENVIO, ESTADOS_VENDEDORA, NAVIERAS } from '../types/seguimiento'
 import type { Adjunto, Hito, Seguimiento } from '../types/seguimiento'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -29,6 +29,8 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const [novedades, setNovedades] = useState('')
   const [tracking, setTracking] = useState('')
   const [naviera, setNaviera] = useState('')
+  // Cuando la naviera no está en la lista Top 20, Marcela la escribe a mano ("Otra").
+  const [navieraOtra, setNavieraOtra] = useState(false)
   const [urlTracking, setUrlTracking] = useState('')
   const [eta, setEta] = useState('')
   const [blNumero, setBlNumero] = useState('')
@@ -45,6 +47,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     setNovedades(s.novedades ?? '')
     setTracking(s.numero_tracking ?? '')
     setNaviera(s.naviera ?? '')
+    setNavieraOtra(!!s.naviera && !(NAVIERAS as readonly string[]).includes(s.naviera))
     setUrlTracking(s.url_tracking ?? '')
     setEta(s.fecha_eta ?? '')
     setBlNumero(s.bl_numero ?? '')
@@ -276,7 +279,38 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
               {t('seguimiento.naviera')}
-              <input value={naviera} onChange={(e) => setNaviera(e.target.value)} style={inputStyle} className={inputClase} />
+              <select
+                value={navieraOtra ? '__otra__' : naviera}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === '__otra__') {
+                    setNavieraOtra(true)
+                    setNaviera('')
+                  } else {
+                    setNavieraOtra(false)
+                    setNaviera(v)
+                  }
+                }}
+                style={inputStyle}
+                className={inputClase}
+              >
+                <option value="">{t('envio.navieraSelecciona')}</option>
+                {NAVIERAS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+                <option value="__otra__">{t('envio.navieraOtra')}</option>
+              </select>
+              {navieraOtra && (
+                <input
+                  value={naviera}
+                  onChange={(e) => setNaviera(e.target.value)}
+                  placeholder={t('envio.navieraOtraPlaceholder')}
+                  style={inputStyle}
+                  className={`${inputClase} mt-2`}
+                />
+              )}
             </label>
             <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
               {t('seguimiento.numeroTracking')}

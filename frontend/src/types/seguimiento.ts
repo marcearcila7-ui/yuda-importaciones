@@ -11,6 +11,31 @@ export const ESTADOS_ENVIO = [
 
 export type EstadoEnvio = (typeof ESTADOS_ENVIO)[number]
 
+// Top 20 navieras internacionales que Marcela puede seleccionar al cargar el BL.
+// Si la naviera no está en la lista, escribe el nombre en el campo "Otra".
+export const NAVIERAS = [
+  'MSC (Mediterranean Shipping Company)',
+  'Maersk',
+  'CMA CGM',
+  'COSCO Shipping Lines',
+  'Hapag-Lloyd',
+  'ONE (Ocean Network Express)',
+  'Evergreen Marine',
+  'HMM (Hyundai Merchant Marine)',
+  'Yang Ming Marine Transport',
+  'ZIM Integrated Shipping Services',
+  'PIL (Pacific International Lines)',
+  'Wan Hai Lines',
+  'SITC Container Lines',
+  'TS Lines',
+  'OOCL',
+  'Matson',
+  'SeaLead Shipping',
+  'Emirates Shipping Line',
+  'KMTC Line',
+  'Sinokor Merchant Marine',
+] as const
+
 // Etapas que la vendedora puede gestionar. De "en_transito" en adelante la
 // información del envío (naviera, tracking, BL) es exclusiva de Marcela.
 export const ESTADOS_VENDEDORA = [
