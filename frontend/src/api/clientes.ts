@@ -10,6 +10,11 @@ export async function getClientes(): Promise<Cliente[]> {
   return data
 }
 
+export async function getCliente(id: string): Promise<Cliente> {
+  const { data } = await apiClient.get<Cliente>(`/clientes/${id}`)
+  return data
+}
+
 export async function crearCliente(datos: ClienteCreate): Promise<ClienteCreado> {
   const { data } = await apiClient.post<ClienteCreado>('/clientes', datos)
   return data

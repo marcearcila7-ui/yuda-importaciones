@@ -152,7 +152,24 @@
     "eliminar": "Eliminar",
     "confirmarEliminar": "¿Eliminar la cotización de {{cliente}}? Esta acción no se puede deshacer.",
     "eliminada": "Cotización eliminada",
-    "errorEliminar": "No se pudo eliminar la cotización"
+    "errorEliminar": "No se pudo eliminar la cotización",
+    "exportar": "Exportar CSV"
+  },
+  "detalle": {
+    "volver": "Volver al historial",
+    "titulo": "Detalle de la cotización",
+    "tipoCambio": "Tipo de cambio",
+    "cargando": "Cargando…",
+    "noEncontrada": "No se encontró la cotización",
+    "cliente": "Datos del cliente",
+    "productos": "Productos",
+    "sinProductos": "Esta cotización no tiene productos",
+    "descripcion": "Descripción",
+    "proveedor": "Proveedor",
+    "ctns": "Cajas",
+    "precioRmb": "Precio RMB",
+    "envio": "Estado del envío",
+    "sinEnvio": "Todavía no hay información de envío"
   },
   "admin": {
     "titulo": "Administración",

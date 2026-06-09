@@ -152,7 +152,24 @@
     "eliminar": "Delete",
     "confirmarEliminar": "Delete the quotation for {{cliente}}? This action cannot be undone.",
     "eliminada": "Quotation deleted",
-    "errorEliminar": "Could not delete the quotation"
+    "errorEliminar": "Could not delete the quotation",
+    "exportar": "Export CSV"
+  },
+  "detalle": {
+    "volver": "Back to history",
+    "titulo": "Quotation detail",
+    "tipoCambio": "Exchange rate",
+    "cargando": "Loading…",
+    "noEncontrada": "Quotation not found",
+    "cliente": "Customer details",
+    "productos": "Products",
+    "sinProductos": "This quotation has no products",
+    "descripcion": "Description",
+    "proveedor": "Supplier",
+    "ctns": "Cartons",
+    "precioRmb": "Price RMB",
+    "envio": "Shipping status",
+    "sinEnvio": "No shipping information yet"
   },
   "admin": {
     "titulo": "Administration",

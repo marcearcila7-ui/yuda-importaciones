@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import PortalProtectedRoute from './components/portal/PortalProtectedRoute'
 import Admin from './pages/Admin'
 import Clientes from './pages/Clientes'
+import CotizacionDetalle from './pages/CotizacionDetalle'
 import Dashboard from './pages/Dashboard'
 import Equipo from './pages/Equipo'
 import Historial from './pages/Historial'
@@ -54,9 +55,10 @@ function App() {
           <Route path="/equipo" element={<Layout><Equipo /></Layout>} />
         </Route>
 
-        {/* Historial: admin y contadora */}
+        {/* Historial y detalle de cotización (solo lectura): admin y contadora */}
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/historial" element={<Layout><Historial /></Layout>} />
+          <Route path="/cotizacion/:id" element={<Layout><CotizacionDetalle /></Layout>} />
         </Route>
 
         {/* Cualquier otra ruta redirige al dashboard */}

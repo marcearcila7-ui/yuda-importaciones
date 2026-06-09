@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import { Download } from 'lucide-react'
 import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
 import { useAuthStore } from '../store/authStore'
@@ -37,6 +38,44 @@ function Historial() {
     } finally {
       setCargando(false)
     }
+  }
+
+  // Exporta el historial visible a CSV (se abre en Excel/Sheets). Solo lo que
+  // está cargado en pantalla, respetando los filtros aplicados.
+  const exportarCsv = () => {
+    if (sesiones.length === 0) return
+    const cols = [
+      t('historial.fecha'),
+      t('historial.cliente'),
+      t('historial.items'),
+      t('historial.totalRmb'),
+      t('historial.totalUsd'),
+      t('historial.proveedores'),
+      t('historial.pedidos'),
+    ]
+    const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+    const filas = sesiones.map((s) =>
+      [
+        s.fecha,
+        s.nombre_cliente,
+        s.total_items,
+        s.total_rmb.toFixed(2),
+        s.total_usd.toFixed(2),
+        s.cantidad_proveedores,
+        s.tiene_pedidos ? t('historial.conPedidos') : t('historial.sinPedidos'),
+      ]
+        .map(escapar)
+        .join(','),
+    )
+    // BOM para que Excel reconozca UTF-8 (acentos/ñ)
+    const csv = '﻿' + [cols.map(escapar).join(','), ...filas].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const enlace = document.createElement('a')
+    enlace.href = url
+    enlace.download = `historial_cotizaciones_${new Date().toISOString().slice(0, 10)}.csv`
+    enlace.click()
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
   }
 
   const handleEliminar = async (s: SesionHistorial) => {
@@ -99,6 +138,15 @@ function Historial() {
         >
           {t('historial.buscar')}
         </button>
+        <button
+          type="button"
+          onClick={exportarCsv}
+          disabled={sesiones.length === 0}
+          className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
+          style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
+        >
+          <Download size={18} /> {t('historial.exportar')}
+        </button>
       </div>
 
       {/* Tabla */}
@@ -146,7 +194,11 @@ function Historial() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => navigate('/dashboard', { state: { sesion_id: s.id } })}
+                        onClick={() =>
+                          esAdmin
+                            ? navigate('/dashboard', { state: { sesion_id: s.id } })
+                            : navigate(`/cotizacion/${s.id}`)
+                        }
                         className="rounded-lg px-3 py-1 text-sm font-medium"
                         style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
                       >

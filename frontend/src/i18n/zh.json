@@ -152,7 +152,24 @@
     "eliminar": "删除",
     "confirmarEliminar": "确定删除 {{cliente}} 的报价吗？此操作无法撤销。",
     "eliminada": "报价已删除",
-    "errorEliminar": "无法删除报价"
+    "errorEliminar": "无法删除报价",
+    "exportar": "导出 CSV"
+  },
+  "detalle": {
+    "volver": "返回历史记录",
+    "titulo": "报价详情",
+    "tipoCambio": "汇率",
+    "cargando": "加载中…",
+    "noEncontrada": "未找到报价",
+    "cliente": "客户信息",
+    "productos": "产品",
+    "sinProductos": "此报价没有产品",
+    "descripcion": "描述",
+    "proveedor": "供应商",
+    "ctns": "箱数",
+    "precioRmb": "价格 RMB",
+    "envio": "运输状态",
+    "sinEnvio": "暂无运输信息"
   },
   "admin": {
     "titulo": "管理",

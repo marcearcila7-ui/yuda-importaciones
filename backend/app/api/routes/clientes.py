@@ -112,7 +112,8 @@ def listar_clientes(
 @router.get("/clientes/{cliente_id}", response_model=ClienteResponse)
 def obtener_cliente(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    # La contadora ve la ficha del cliente en solo lectura (para conciliar).
+    usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
 ) -> Cliente:
     return _cliente_autorizado(db, cliente_id, usuario)
