@@ -2,6 +2,8 @@ export interface ItemCreate {
   supplier_nombre?: string
   supplier_numero?: string
   foto_url?: string
+  // Foto final (limpia) para los documentos de cliente/proveedor; si falta se usa foto_url.
+  foto_final_url?: string | null
   item_no?: string
   descripcion_es?: string
   descripcion_en?: string

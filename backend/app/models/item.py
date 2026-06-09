@@ -16,7 +16,11 @@ class Item(Base):
     # Todos los campos de texto son nullable
     supplier_nombre: Mapped[str | None] = mapped_column(String, nullable=True)
     supplier_numero: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Foto 1: producto + tablero con datos. Es la que lee el OCR.
     foto_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Foto 2 (final/limpia): solo se muestra en los documentos del cliente y del
+    # proveedor. No se extraen datos de ella. Si falta, se usa foto_url.
+    foto_final_url: Mapped[str | None] = mapped_column(String, nullable=True)
     item_no: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_es: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_en: Mapped[str | None] = mapped_column(String, nullable=True)

@@ -1,6 +1,9 @@
+import asyncio
+import os
+import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -27,9 +30,14 @@ from app.services.cotizacion_service import (
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
+from app.services.storage_service import subir_foto
 
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
 router = APIRouter(tags=["packing"])
+
+# Tipos de imagen permitidos para la foto final del producto
+_TIPOS_FOTO = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+_MAX_FOTO_BYTES = 25 * 1024 * 1024
 
 
 def _exigir_roles(usuario: User, *roles: str) -> None:
@@ -48,6 +56,7 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         id=item.id,
         sesion_id=item.sesion_id,
         foto_url=item.foto_url,
+        foto_final_url=item.foto_final_url,
         supplier_nombre=item.supplier_nombre,
         supplier_numero=item.supplier_numero,
         item_no=item.item_no,
@@ -245,6 +254,51 @@ def actualizar_item(
     cambios = datos.model_dump(exclude_unset=True)
     for clave, valor in cambios.items():
         setattr(item, clave, valor)
+    db.commit()
+    db.refresh(item)
+    return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+
+@router.post("/sesiones/{sesion_id}/items/{item_id}/foto-final", response_model=ItemResponse)
+async def subir_foto_final(
+    sesion_id: str,
+    item_id: str,
+    foto: UploadFile,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItemResponse:
+    """Sube/reemplaza la foto FINAL (limpia) de un producto.
+
+    Esta foto solo se muestra en los documentos del cliente y del proveedor;
+    el OCR sigue usando la foto de datos (foto_url). Solo admin y vendedora.
+    """
+    _exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id)
+
+    item = (
+        db.query(Item)
+        .filter(Item.id == item_id, Item.sesion_id == sesion_id)
+        .first()
+    )
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
+
+    if foto.content_type not in _TIPOS_FOTO:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Solo se permiten imágenes JPG, PNG o WEBP"
+        )
+    imagen_bytes = await foto.read()
+    if len(imagen_bytes) > _MAX_FOTO_BYTES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La imagen no debe superar 25MB")
+
+    extension = os.path.splitext(foto.filename or "")[1] or _TIPOS_FOTO[foto.content_type]
+    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, foto.content_type)
+    )
+
+    item.foto_final_url = url
     db.commit()
     db.refresh(item)
     return _construir_item_response(item, sesion.tipo_cambio_usd)

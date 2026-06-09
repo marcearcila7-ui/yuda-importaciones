@@ -225,9 +225,10 @@ def generar_formato_pedido(
     for idx, item in enumerate(items):
         f = PED_FILA0 + idx
         ws.cell(row=f, column=1, value=idx + 1)  # A: NO
-        # B: PHOTO
-        if getattr(item, "foto_url", None):
-            buf = descargar_imagen_png(item.foto_url, lado_px=180)
+        # B: PHOTO — la final (limpia) si existe; si no, la de datos como respaldo.
+        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        if foto_doc:
+            buf = descargar_imagen_png(foto_doc, lado_px=180)
             if buf is not None:
                 try:
                     img = XLImage(buf)

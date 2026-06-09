@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   flexRender,
@@ -7,7 +7,9 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { usePackingStore } from '../../store/packingStore'
+import { subirFotoFinal } from '../../api/packing'
 import type { ItemResponse } from '../../types/packing'
 
 interface PackingListTableProps {
@@ -17,7 +19,7 @@ interface PackingListTableProps {
   onItemActualizado: () => void
 }
 
-type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'photo' | 'unit'
+type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'photo' | 'photo-final' | 'unit'
 
 interface ColMeta {
   campo?: keyof ItemResponse
@@ -35,6 +37,7 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'supplier_nombre', header: 'SUPPLIER', meta: { campo: 'supplier_nombre', kind: 'text-edit', width: 160, stickyLeft: 0 } },
   { id: 'supplier_numero', header: 'N° STAND', meta: { campo: 'supplier_numero', kind: 'text-edit', width: 100 } },
   { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 60 } },
+  { id: 'foto_final', header: 'FOTO FINAL', meta: { kind: 'photo-final', width: 90 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
   { id: 'descripcion_es', header: 'ESPAÑOL', meta: { campo: 'descripcion_es', kind: 'text-edit', width: 200, stickyLeft: 160 } },
   { id: 'descripcion_en', header: 'ENGLISH', meta: { campo: 'descripcion_en', kind: 'text-edit', width: 200 } },
@@ -165,6 +168,69 @@ function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta })
   )
 }
 
+// Celda de la FOTO FINAL (limpia): se sube/reemplaza por producto. Solo aparece
+// en los documentos del cliente y del proveedor; el OCR no la usa.
+function CeldaFotoFinal({
+  item,
+  sesionId,
+  onItemActualizado,
+}: {
+  item: ItemResponse
+  sesionId: string
+  onItemActualizado: () => void
+}) {
+  const { t } = useTranslation()
+  const ref = useRef<HTMLInputElement>(null)
+  const [subiendo, setSubiendo] = useState(false)
+
+  const subir = async (archivo: File) => {
+    setSubiendo(true)
+    try {
+      await subirFotoFinal(sesionId, item.id, archivo)
+      onItemActualizado()
+      toast.success(t('packing.fotoFinalSubida'))
+    } catch {
+      toast.error(t('packing.fotoFinalError'))
+    } finally {
+      setSubiendo(false)
+      if (ref.current) ref.current.value = ''
+    }
+  }
+
+  return (
+    <div className="flex justify-center">
+      <input
+        ref={ref}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) subir(f)
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        disabled={subiendo}
+        title={t(item.foto_final_url ? 'packing.fotoFinalCambiar' : 'packing.fotoFinalSubir')}
+        className="rounded border border-dashed disabled:opacity-50"
+        style={{ borderColor: '#4B52E8', padding: item.foto_final_url ? 0 : '8px 6px' }}
+      >
+        {subiendo ? (
+          <span className="block px-2 py-3 text-xs" style={{ color: '#4B52E8' }}>…</span>
+        ) : item.foto_final_url ? (
+          <img src={item.foto_final_url} alt="foto final" style={{ width: 40, height: 40 }} className="rounded object-cover" />
+        ) : (
+          <span className="block text-xs font-medium" style={{ color: '#4B52E8' }}>
+            + {t('packing.fotoFinalSubir')}
+          </span>
+        )}
+      </button>
+    </div>
+  )
+}
+
 // ─── Vista móvil: cada producto como tarjeta con los campos clave ───
 
 type TipoCampo = 'text' | 'num'
@@ -240,6 +306,11 @@ function TarjetaMovil({
 
       <CampoMovil item={item} campo="descripcion_es" label={t('packing.fDescripcion')} tipo="text" onSaved={onItemActualizado} />
 
+      <div className="flex items-center justify-between gap-2 text-xs" style={{ color: '#6B7280' }}>
+        <span>{t('packing.fFotoFinal')}</span>
+        <CeldaFotoFinal item={item} sesionId={item.sesion_id} onItemActualizado={onItemActualizado} />
+      </div>
+
       <div className="grid grid-cols-3 gap-2">
         <CampoMovil item={item} campo="ctns" label={t('packing.fCajas')} tipo="num" onSaved={onItemActualizado} />
         <CampoMovil item={item} campo="moq_cajas" label={t('packing.fMqt')} tipo="num" onSaved={onItemActualizado} />
@@ -255,7 +326,7 @@ function TarjetaMovil({
   )
 }
 
-function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
+function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTableProps) {
   const { t } = useTranslation()
   // Construye las definiciones de columna para TanStack Table
   const columnas: ColumnDef<ItemResponse>[] = COLUMNAS.map((col) => ({
@@ -269,6 +340,15 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           <CeldaEditable
             item={row.original}
             meta={meta}
+            onItemActualizado={onItemActualizado}
+          />
+        )
+      }
+      if (meta.kind === 'photo-final') {
+        return (
+          <CeldaFotoFinal
+            item={row.original}
+            sesionId={sesion_id}
             onItemActualizado={onItemActualizado}
           />
         )

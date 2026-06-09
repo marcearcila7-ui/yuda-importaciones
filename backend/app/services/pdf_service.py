@@ -53,7 +53,9 @@ def generar_pedido_pdf(
         tot_tcbm += tcbm
 
         desc = item.descripcion_zh or item.descripcion_es or item.descripcion_en or ""
-        foto = f'<img src="{item.foto_url}" />' if getattr(item, "foto_url", None) else ""
+        # Foto final (limpia) si existe; si no, la de datos como respaldo.
+        _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        foto = f'<img src="{_foto_doc}" />' if _foto_doc else ""
         filas.append(
             f"<tr>"
             f"<td>{n}</td>"

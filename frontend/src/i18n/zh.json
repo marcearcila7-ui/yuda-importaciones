@@ -97,6 +97,7 @@
       "supplier_nombre": "供应商",
       "supplier_numero": "摊位号",
       "foto_url": "照片",
+      "foto_final": "成品图",
       "item_no": "货号",
       "descripcion_es": "西班牙语",
       "descripcion_en": "英文",
@@ -104,6 +105,7 @@
       "material": "材质",
       "uso": "用途",
       "ctns": "箱数",
+      "moq_cajas": "起订量",
       "qty_por_ctn": "每箱数量",
       "unit": "单位",
       "t_qty": "总数量",
@@ -118,7 +120,12 @@
       "t_cbm": "总体积",
       "gw": "毛重",
       "t_gw": "总毛重"
-    }
+    },
+    "fFotoFinal": "成品图",
+    "fotoFinalSubir": "上传成品图",
+    "fotoFinalCambiar": "更换成品图",
+    "fotoFinalSubida": "成品图已更新",
+    "fotoFinalError": "无法上传成品图"
   },
   "pedidos": {
     "generar": "生成订单",
@@ -230,7 +237,15 @@
     "descargarExcel": "下载 Excel",
     "descargarPDF": "下载 PDF",
     "generando": "正在生成...",
-    "error": "无法生成报价单"
+    "error": "无法生成报价单",
+    "confirmTitulo": "生成前确认",
+    "sinProductos": "请先添加产品再生成报价。",
+    "prodCount": "报价中有 {{n}} 件产品",
+    "faltaFotoDatos": "{{n}} 件缺少带数据的产品照片。生成前请先上传。",
+    "fotoDatosOk": "所有产品都有数据照片（AI 读取用）。",
+    "revisarDatos": "{{n}} 件缺少价格或描述。请检查提取结果。",
+    "fotoFinalResumen": "成品图：已上传 {{con}} 件 · {{sin}} 件将使用数据照片作为备用。",
+    "confirmCheck": "我确认信息已正确提取，且两张照片均按用途上传。"
   },
   "lote": {
     "titulo": "添加产品",

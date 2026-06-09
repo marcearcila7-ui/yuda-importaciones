@@ -50,6 +50,23 @@ export async function eliminarItem(sesion_id: string, item_id: string): Promise<
   await apiClient.delete(`/sesiones/${sesion_id}/items/${item_id}`)
 }
 
+// Sube/reemplaza la foto FINAL (limpia) de un producto. Solo se usa en los
+// documentos del cliente y del proveedor; el OCR no la toca.
+export async function subirFotoFinal(
+  sesion_id: string,
+  item_id: string,
+  archivo: File,
+): Promise<ItemResponse> {
+  const form = new FormData()
+  form.append('foto', archivo)
+  const { data } = await apiClient.post<ItemResponse>(
+    `/sesiones/${sesion_id}/items/${item_id}/foto-final`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
 export async function eliminarSesion(sesion_id: string): Promise<void> {
   await apiClient.delete(`/sesiones/${sesion_id}`)
 }

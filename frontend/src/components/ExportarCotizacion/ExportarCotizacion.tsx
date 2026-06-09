@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileSpreadsheet, FileText } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, FileText } from 'lucide-react'
 import { exportarCotizacionExcel, exportarCotizacionPDF } from '../../api/packing'
+import { usePackingStore } from '../../store/packingStore'
 
 interface ExportarCotizacionProps {
   sesion_id: string
@@ -29,8 +30,23 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const [idioma, setIdioma] = useState(inicial)
   const [generando, setGenerando] = useState<'excel' | 'pdf' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [confirmado, setConfirmado] = useState(false)
+
+  const items = usePackingStore((s) => s.items)
+  // Foto 1 (producto con datos): obligatoria para generar. La cargan el OCR.
+  const sinFotoDatos = items.filter((i) => !i.foto_url).length
+  // Datos clave que deberían haberse extraído (precio + alguna descripción).
+  const sinDatos = items.filter(
+    (i) => !i.price_rmb || !(i.descripcion_es || i.descripcion_en || i.descripcion_zh),
+  ).length
+  // Foto 2 (final): opcional; las que no la tengan usan la de datos como respaldo.
+  const conFotoFinal = items.filter((i) => i.foto_final_url).length
+  const sinProductos = items.length === 0
+  // No se puede generar sin productos, sin la foto de datos en todos, ni sin confirmar.
+  const bloqueado = sinProductos || sinFotoDatos > 0 || !confirmado
 
   const descargar = async (tipo: 'excel' | 'pdf') => {
+    if (bloqueado) return
     setError(null)
     setGenerando(tipo)
     // En iPhone/Safari la pestaña debe abrirse dentro del toque (antes del await)
@@ -87,11 +103,57 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
         })}
       </div>
 
+      {/* Antes de generar: confirmar extracción y fotos según su propósito */}
+      <div className="rounded-xl border p-3" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
+        <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+          {t('cotizacion.confirmTitulo')}
+        </p>
+        {sinProductos ? (
+          <p className="flex items-center gap-2 text-sm" style={{ color: '#B45309' }}>
+            <AlertTriangle size={15} /> {t('cotizacion.sinProductos')}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1.5 text-sm">
+            <p style={{ color: '#6B7280' }}>{t('cotizacion.prodCount', { n: items.length })}</p>
+            {/* Foto de datos (obligatoria) */}
+            {sinFotoDatos > 0 ? (
+              <p className="flex items-center gap-2" style={{ color: '#EF4444' }}>
+                <AlertTriangle size={15} /> {t('cotizacion.faltaFotoDatos', { n: sinFotoDatos })}
+              </p>
+            ) : (
+              <p className="flex items-center gap-2" style={{ color: '#10B981' }}>
+                <CheckCircle2 size={15} /> {t('cotizacion.fotoDatosOk')}
+              </p>
+            )}
+            {/* Extracción de datos */}
+            {sinDatos > 0 && (
+              <p className="flex items-center gap-2" style={{ color: '#B45309' }}>
+                <AlertTriangle size={15} /> {t('cotizacion.revisarDatos', { n: sinDatos })}
+              </p>
+            )}
+            {/* Foto final (opcional, con respaldo) */}
+            <p style={{ color: '#6B7280' }}>
+              {t('cotizacion.fotoFinalResumen', { con: conFotoFinal, sin: items.length - conFotoFinal })}
+            </p>
+            {/* Confirmación explícita */}
+            <label className="mt-1 flex items-start gap-2" style={{ color: '#0D0D0D' }}>
+              <input
+                type="checkbox"
+                checked={confirmado}
+                onChange={(e) => setConfirmado(e.target.checked)}
+                style={{ marginTop: 3, width: 16, height: 16 }}
+              />
+              <span>{t('cotizacion.confirmCheck')}</span>
+            </label>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <button
           type="button"
           onClick={() => descargar('excel')}
-          disabled={generando !== null}
+          disabled={generando !== null || bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
           style={{ ...btnDescarga, backgroundColor: '#10B981' }}
         >
@@ -106,7 +168,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
         <button
           type="button"
           onClick={() => descargar('pdf')}
-          disabled={generando !== null}
+          disabled={generando !== null || bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
           style={{ ...btnDescarga, backgroundColor: '#4B52E8' }}
         >

@@ -97,6 +97,7 @@
       "supplier_nombre": "SUPPLIER",
       "supplier_numero": "BOOTH No.",
       "foto_url": "PHOTO",
+      "foto_final": "FINAL PHOTO",
       "item_no": "ITEM NO",
       "descripcion_es": "SPANISH",
       "descripcion_en": "ENGLISH",
@@ -104,6 +105,7 @@
       "material": "MATERIAL",
       "uso": "USE",
       "ctns": "CARTONS",
+      "moq_cajas": "MOQ",
       "qty_por_ctn": "QTY/CTN",
       "unit": "UNIT",
       "t_qty": "TOTAL QTY",
@@ -118,7 +120,12 @@
       "t_cbm": "T.CBM",
       "gw": "G.W",
       "t_gw": "T.G.W"
-    }
+    },
+    "fFotoFinal": "Final photo",
+    "fotoFinalSubir": "Upload final photo",
+    "fotoFinalCambiar": "Change final photo",
+    "fotoFinalSubida": "Final photo updated",
+    "fotoFinalError": "Could not upload the final photo"
   },
   "pedidos": {
     "generar": "Generate Orders",
@@ -230,7 +237,15 @@
     "descargarExcel": "Download Excel",
     "descargarPDF": "Download PDF",
     "generando": "Generating...",
-    "error": "Could not generate the quotation"
+    "error": "Could not generate the quotation",
+    "confirmTitulo": "Before generating",
+    "sinProductos": "Add products before generating the quotation.",
+    "prodCount": "{{n}} products in the quotation",
+    "faltaFotoDatos": "{{n}} without the product-with-data photo. Upload it before generating.",
+    "fotoDatosOk": "All products have their data photo (the one the AI reads).",
+    "revisarDatos": "{{n}} products without price or description. Check the extraction.",
+    "fotoFinalResumen": "Final photo: {{con}} uploaded · {{sin}} will use the data photo as fallback.",
+    "confirmCheck": "I confirm the information was extracted correctly and both photos are loaded for their purpose."
   },
   "lote": {
     "titulo": "Add products",

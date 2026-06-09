@@ -70,11 +70,19 @@ El JSON debe tener exactamente estas claves:
   "confianza": "alta, media o baja según tu certeza en la extracción"
 }
 
+MUY IMPORTANTE — el tablero/pizarra escrito a mano usa estas etiquetas (en español, manuscritas). Reconócelas SIEMPRE, aunque la letra sea irregular:
+- "PRECIO" (o "PRECIO:") → price_rmb. Ej: "PRECIO: 12.8" → 12.8
+- "CX" → qty_por_ctn (cantidad de piezas por caja). Ej: "CX: 100" → 100
+- "CBM" o "CMB" (a veces escriben las letras al revés, ambas significan lo mismo: el cubicaje/volumen por caja) → cbm_directo. Ej: "CMB: 0.072" → 0.072
+- "MQT" → cantidad_minima (mínima cantidad de CAJAS que pide el proveedor). Si dice "MQT: 10 CAJAS" extrae solo el número: 10
+- A veces hay una tarjeta de visita del proveedor: usa su nombre para supplier_nombre y el número de stand/dirección para supplier_numero.
+
 Reglas:
 - SIEMPRE identifica el producto y completa descripcion_es y descripcion_en mirando la foto, aunque el cartel no traiga descripción.
 - La descripción debe ser útil y específica del producto que ves, no genérica.
 - material y uso: infiérelos de la imagen aunque no estén escritos; si realmente no podés deducirlo, usa null.
 - Si un dato NUMÉRICO (precio, medidas, peso) no aparece, usa null; nunca inventes números.
+- Pero si en el tablero SÍ aparecen PRECIO, CX, CBM/CMB o MQT, DEBES extraerlos (no los dejes en null).
 - price_rmb, qty_por_ctn, largo_cm, ancho_cm, alto_cm, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
 - confianza es obligatorio, nunca null.
 """

@@ -190,9 +190,10 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
                 celda.fill = fill_alt
         ws.row_dimensions[fila].height = 90
 
-        # Foto: descargar y agregar como imagen en la celda B (más grande, más visible)
-        if getattr(item, "foto_url", None):
-            buf = _descargar_imagen_png(item.foto_url)
+        # Foto: la final (limpia) si existe; si no, la de datos como respaldo.
+        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        if foto_doc:
+            buf = _descargar_imagen_png(foto_doc)
             if buf is not None:
                 try:
                     img = XLImage(buf)
@@ -272,11 +273,8 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     for n, item in enumerate(items, start=1):
         calc = _calcular(item, tipo_cambio)
         gw_total = round((item.gw or 0) * (item.ctns or 0), 2)
-        foto = (
-            f'<img src="{item.foto_url}" />'
-            if getattr(item, "foto_url", None)
-            else ""
-        )
+        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        foto = f'<img src="{foto_doc}" />' if foto_doc else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
         filas_html.append(
             f"<tr{alt}>"

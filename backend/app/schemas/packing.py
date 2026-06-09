@@ -10,6 +10,8 @@ class ItemCreate(BaseModel):
     supplier_nombre: Optional[str] = None
     supplier_numero: Optional[str] = None
     foto_url: Optional[str] = None
+    # Foto final (limpia) para los documentos de cliente/proveedor; si falta se usa foto_url.
+    foto_final_url: Optional[str] = None
     item_no: Optional[str] = None
     descripcion_es: Optional[str] = None
     descripcion_en: Optional[str] = None
@@ -35,6 +37,7 @@ class ItemUpdate(BaseModel):
 
     supplier_nombre: Optional[str] = None
     supplier_numero: Optional[str] = None
+    foto_final_url: Optional[str] = None
     item_no: Optional[str] = None
     descripcion_es: Optional[str] = None
     descripcion_en: Optional[str] = None
