@@ -7,6 +7,11 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
+# Cache-bust: cambiar este valor fuerza a Railway a rehacer el build desde aquí
+# (evita que reuse un dist viejo cacheado). Subilo si vuelve a quedar pegado.
+ARG CACHE_BUST=2026-06-08-v3
+RUN echo "build rev: $CACHE_BUST"
+
 # Copia el resto del código
 COPY . .
 
