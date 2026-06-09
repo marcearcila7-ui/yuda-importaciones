@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useLocation } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, X } from 'lucide-react'
@@ -152,6 +152,10 @@ function Dashboard() {
     }
   }
 
+  // La contadora no gestiona cotizaciones: su pantalla es el historial.
+  // (red de seguridad si entra por URL directa o por el fallback de rutas).
+  if (usuario?.rol === 'contadora') return <Navigate to="/historial" replace />
+
   const fmt = (n: number) => n.toLocaleString('es-ES')
 
   // Fecha actual localizada (para el saludo mobile)
@@ -208,8 +212,8 @@ function Dashboard() {
       {/* Métricas por vendedora (solo Marcela / admin) */}
       {esAdmin && <MetricasVendedoras />}
 
-      {/* Crear / abrir cotización */}
-      <SesionSelector />
+      {/* Crear / abrir cotización (solo staff de ventas) */}
+      {esStaffVentas && <SesionSelector />}
 
       {/* Cotización activa */}
       {sesionActual && (

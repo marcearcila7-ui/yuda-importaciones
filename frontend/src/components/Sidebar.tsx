@@ -70,7 +70,7 @@ interface ItemNav {
 }
 
 const LINKS: ItemNav[] = [
-  { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion' },
+  { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion', roles: ['admin', 'vendedora'] },
   { to: '/clientes', icono: <Users size={18} />, clave: 'clientes', roles: ['admin', 'vendedora'] },
   { to: '/equipo', icono: <Network size={18} />, clave: 'equipo', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },

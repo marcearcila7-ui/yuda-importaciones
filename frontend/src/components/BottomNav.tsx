@@ -12,7 +12,7 @@ interface ItemNav {
 }
 
 const ITEMS: ItemNav[] = [
-  { to: '/dashboard', icono: <Package size={24} />, i18nKey: 'nav.cotizacion' },
+  { to: '/dashboard', icono: <Package size={24} />, i18nKey: 'nav.cotizacion', roles: ['admin', 'vendedora'] },
   { to: '/clientes', icono: <Users size={24} />, i18nKey: 'nav.clientes', roles: ['admin', 'vendedora'] },
   { to: '/equipo', icono: <Network size={24} />, i18nKey: 'nav.equipo', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={24} />, i18nKey: 'nav.historial', roles: ['admin', 'contadora'] },

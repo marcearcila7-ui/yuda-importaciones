@@ -33,7 +33,9 @@ function Login() {
     await login(email, password)
     // Si el login fue exitoso, el store guardó el token
     if (localStorage.getItem('yuda_token')) {
-      navigate('/dashboard')
+      // La contadora no crea cotizaciones: su inicio es el historial.
+      const rol = useAuthStore.getState().usuario?.rol
+      navigate(rol === 'contadora' ? '/historial' : '/dashboard')
     }
   }
 
