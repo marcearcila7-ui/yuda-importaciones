@@ -35,6 +35,7 @@ function CargaMasiva() {
     resultados,
     errores,
     iniciar,
+    agregarMas,
     retomar,
     reintentar,
     actualizarDato,
@@ -42,6 +43,7 @@ function CargaMasiva() {
     finalizar,
   } = useLoteStore()
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputMasRef = useRef<HTMLInputElement>(null)
 
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -65,6 +67,22 @@ function CargaMasiva() {
       setAviso(null)
     }
     iniciar(sesionId, lote)
+  }
+
+  // Sumar más fotos a la tanda que ya está en revisión
+  const handleAgregarMas = (e: ChangeEvent<HTMLInputElement>) => {
+    const nuevas = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (nuevas.length === 0) return
+    const cupo = Math.max(0, MAX_LOTE - (resultados.length + errores))
+    let lote = nuevas
+    if (nuevas.length > cupo) {
+      setAviso(t('lote.tope', { max: MAX_LOTE }))
+      lote = nuevas.slice(0, cupo)
+    } else {
+      setAviso(null)
+    }
+    if (lote.length > 0) agregarMas(lote)
   }
 
   const actualizarTexto = (id: string, campo: keyof OCRResultado, valor: string) =>
@@ -133,6 +151,14 @@ function CargaMasiva() {
         accept="image/jpeg,image/png,image/webp"
         multiple
         onChange={handleSeleccion}
+        className="hidden"
+      />
+      <input
+        ref={inputMasRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        onChange={handleAgregarMas}
         className="hidden"
       />
 
@@ -248,6 +274,16 @@ function CargaMasiva() {
               </div>
             )
           })}
+
+          <button
+            type="button"
+            onClick={() => inputMasRef.current?.click()}
+            disabled={agregando}
+            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold disabled:opacity-60"
+            style={{ backgroundColor: '#EEF0FD', color: '#4B52E8', fontSize: 16 }}
+          >
+            <Images size={18} /> {t('lote.agregarMas')}
+          </button>
 
           <button
             type="button"

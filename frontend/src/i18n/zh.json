@@ -282,7 +282,8 @@
     "subiendo": "正在上传照片... {{hechas}} / {{total}}",
     "descartar": "放弃",
     "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。",
-    "noLegibles": "{{n}} 张照片不清晰。请重拍后才能添加这些产品。"
+    "noLegibles": "{{n}} 张照片不清晰。请重拍后才能添加这些产品。",
+    "agregarMas": "添加更多照片"
   },
   "roles": {
     "admin": "管理员",

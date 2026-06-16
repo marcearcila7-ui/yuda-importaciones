@@ -282,7 +282,8 @@
     "subiendo": "Uploading photos... {{hechas}} of {{total}}",
     "descartar": "Discard",
     "segundoPlano": "You can close the app: processing continues and you'll see the results when you return.",
-    "noLegibles": "{{n}} photo(s) not legible. Retake them to add those products."
+    "noLegibles": "{{n}} photo(s) not legible. Retake them to add those products.",
+    "agregarMas": "Add more photos"
   },
   "roles": {
     "admin": "Administrator",

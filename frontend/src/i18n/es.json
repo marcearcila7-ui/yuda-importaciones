@@ -282,7 +282,8 @@
     "subiendo": "Subiendo fotos... {{hechas}} de {{total}}",
     "descartar": "Descartar",
     "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados.",
-    "noLegibles": "{{n}} foto(s) no legible(s). Vuelve a tomarlas para poder agregar esos productos."
+    "noLegibles": "{{n}} foto(s) no legible(s). Vuelve a tomarlas para poder agregar esos productos.",
+    "agregarMas": "Agregar más fotos"
   },
   "roles": {
     "admin": "Administrador",

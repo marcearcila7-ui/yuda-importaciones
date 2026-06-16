@@ -33,6 +33,7 @@ interface LoteState {
   resultados: ResultadoLote[]
   errores: number
   iniciar: (sesionId: string, files: File[]) => Promise<void>
+  agregarMas: (files: File[]) => Promise<void>
   retomar: (sesionId: string) => Promise<void>
   reintentar: () => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
@@ -125,6 +126,35 @@ export const useLoteStore = create<LoteState>((set, get) => {
       await procesarLoteApi(lote_id)
       set({ fase: 'procesando', procesadas: 0, totalProc: files.length })
       iniciarPoll(lote_id)
+    },
+
+    // Suma más fotos al MISMO lote en revisión, sin perder lo ya procesado.
+    // Sube las nuevas (quedan 'pendiente'), redispara el OCR (solo procesa las
+    // pendientes) y al volver a 'completado' la lista incluye viejas + nuevas.
+    agregarMas: async (files) => {
+      const loteId = get().loteId
+      if (!loteId || files.length === 0) return
+      detenerPoll()
+      set({ fase: 'subiendo', subidas: 0, totalSubir: files.length })
+
+      let idx = 0
+      const worker = async () => {
+        while (idx < files.length) {
+          const f = files[idx++]
+          try {
+            const comprimido = await comprimirImagen(f)
+            await subirFotoLote(loteId, comprimido)
+          } catch {
+            // foto que no se pudo subir: se omite
+          }
+          set((s) => ({ subidas: s.subidas + 1 }))
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
+
+      await procesarLoteApi(loteId)
+      set({ fase: 'procesando' })
+      iniciarPoll(loteId)
     },
 
     retomar: async (sesionId) => {
