@@ -76,7 +76,9 @@ MUY IMPORTANTE — el tablero/pizarra escrito a mano usa estas etiquetas (en esp
 - "PRECIO" (o "PRECIO:") → price_rmb. Ej: "PRECIO: 12.8" → 12.8
 - "CX" → qty_por_ctn (cantidad de piezas por caja). Ej: "CX: 100" → 100
 - "CBM" o "CMB" (a veces escriben las letras al revés, ambas significan lo mismo: el cubicaje/volumen por caja) → cbm_directo. Ej: "CMB: 0.072" → 0.072
-- "MQT" → cantidad_minima (mínima cantidad de CAJAS que pide el proveedor). Si dice "MQT: 10 CAJAS" extrae solo el número: 10
+- "MQT" o "MOQ" (sinónimos) → cantidad_minima (mínima cantidad de CAJAS que pide el proveedor). Si dice "MQT: 10 CAJAS" extrae solo el número: 10
+- "TIENDA" (o "TIENDA:") → supplier_nombre. Es el nombre o CÓDIGO de la tienda/proveedor tal como está escrito, aunque sea un código tipo "Fr-2406" o "F1-906". Va SIEMPRE en supplier_nombre, NUNCA en supplier_numero.
+- supplier_numero es solo el número de stand/booth si aparece aparte (distinto de la TIENDA). Si solo hay "TIENDA", deja supplier_numero en null.
 - A veces hay una tarjeta de visita del proveedor: usa su nombre para supplier_nombre y el número de stand/dirección para supplier_numero.
 
 Reglas:
