@@ -59,9 +59,9 @@ El JSON debe tener exactamente estas claves:
   "supplier_numero": "número de stand o booth (string o null)",
   "price_rmb": número decimal del PRECIO unitario en yuan/RMB o null,
   "qty_por_ctn": número entero de piezas por caja (CX / unidades por cartón) o null,
-  "largo_cm": número decimal del largo en cm o null,
-  "ancho_cm": número decimal del ancho en cm o null,
-  "alto_cm": número decimal del alto en cm o null,
+  "largo_cm": null (SIEMPRE null),
+  "ancho_cm": null (SIEMPRE null),
+  "alto_cm": null (SIEMPRE null),
   "cbm_directo": número decimal del CBM (cubicaje/volumen por caja) si la etiqueta lo trae ya calculado o null,
   "gw": número decimal del peso bruto por caja en kg o null,
   "colores": "colores disponibles como string separado por comas o null",
@@ -87,7 +87,8 @@ Reglas:
 - material y uso: infiérelos de la imagen aunque no estén escritos; si realmente no podés deducirlo, usa null.
 - Si un dato NUMÉRICO (precio, medidas, peso) no aparece, usa null; nunca inventes números.
 - Pero si en el tablero SÍ aparecen PRECIO, CX, CBM/CMB o MQT, DEBES extraerlos (no los dejes en null).
-- price_rmb, qty_por_ctn, largo_cm, ancho_cm, alto_cm, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
+- largo_cm, ancho_cm y alto_cm van SIEMPRE en null: NO corresponden a las medidas del producto sino a las de la CAJA FINAL, que se cargan a mano después. Aunque el cartel muestre medidas (ej "28x23x12"), NO las pongas en esos campos.
+- price_rmb, qty_por_ctn, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
 - confianza es obligatorio, nunca null.
 - legible es obligatorio, nunca null: evalúa SOLO la calidad de la foto para poder leerla, no si trae todos los datos. Si dudas por mala calidad de imagen, marca false.
 """
@@ -205,22 +206,14 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # 6. Post-procesamiento: asegurar tipos numéricos o None
     datos["price_rmb"] = _a_numero(datos["price_rmb"])
     datos["qty_por_ctn"] = _a_numero(datos["qty_por_ctn"], entero=True)
-    datos["largo_cm"] = _a_numero(datos["largo_cm"])
-    datos["ancho_cm"] = _a_numero(datos["ancho_cm"])
-    datos["alto_cm"] = _a_numero(datos["alto_cm"])
+    # largo/ancho/alto son las medidas de la CAJA FINAL, no del producto: el OCR
+    # nunca las completa, se cargan a mano más adelante. Siempre vacías.
+    datos["largo_cm"] = None
+    datos["ancho_cm"] = None
+    datos["alto_cm"] = None
     datos["cbm_directo"] = _a_numero(datos["cbm_directo"])
     datos["gw"] = _a_numero(datos["gw"])
     datos["cantidad_minima"] = _a_numero(datos["cantidad_minima"], entero=True)
-
-    # Calcular CBM a partir de las dimensiones si no vino directo
-    if datos["cbm_directo"] is None and None not in (
-        datos["largo_cm"],
-        datos["ancho_cm"],
-        datos["alto_cm"],
-    ):
-        datos["cbm_directo"] = round(
-            datos["largo_cm"] * datos["ancho_cm"] * datos["alto_cm"] / 1_000_000, 6
-        )
 
     # confianza es obligatorio, nunca null
     if not datos.get("confianza"):
