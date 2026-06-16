@@ -79,7 +79,25 @@
     "cancelar": "取消",
     "exitoAgregado": "产品已添加到装箱单",
     "errorProcesar": "无法处理该图片",
-    "tomarFoto": "拍照或上传图片"
+    "tomarFoto": "拍照或上传图片",
+    "cbm": "CBM (体积)",
+    "mqt": "MQT (最少箱数)",
+    "noLegibleTitulo": "照片不清晰 — 请重新拍摄",
+    "noLegibleImagen": "图片无法识别（{{motivo}}）。",
+    "noLegibleImagenSin": "图片无法清晰识别。",
+    "noLegibleFaltan": "未识别到以下数据：{{campos}}。",
+    "noLegibleInstruccion": "请在光线充足、无反光、无过曝、对焦清晰且能看到完整标签的情况下重新拍摄。",
+    "volverATomar": "重新拍照",
+    "motivos": {
+      "borrosa": "模糊",
+      "movida": "拍摄抖动",
+      "sobreexpuesta": "过曝",
+      "oscura": "过暗",
+      "reflejo": "反光",
+      "recortada": "被裁切",
+      "no_procesada": "无法处理",
+      "generico": "不够清晰"
+    }
   },
   "packing": {
     "exportar": "下载清单 (Excel)",
@@ -263,7 +281,8 @@
     "reintentar": "重试",
     "subiendo": "正在上传照片... {{hechas}} / {{total}}",
     "descartar": "放弃",
-    "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。"
+    "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。",
+    "noLegibles": "{{n}} 张照片不清晰。请重拍后才能添加这些产品。"
   },
   "roles": {
     "admin": "管理员",

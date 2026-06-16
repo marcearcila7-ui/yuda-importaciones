@@ -17,6 +17,9 @@ export interface OCRResultado {
   cantidad_minima: number | null
   notas: string | null
   confianza: 'alta' | 'media' | 'baja'
+  // Calidad de la foto evaluada por el modelo. Puede faltar en ítems viejos.
+  legible?: boolean
+  motivo_ilegible?: string | null
 }
 
 export interface OCRResponse {

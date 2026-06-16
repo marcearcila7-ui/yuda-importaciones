@@ -79,7 +79,25 @@
     "cancelar": "Cancel",
     "exitoAgregado": "Item added to Packing List",
     "errorProcesar": "Could not process the image",
-    "tomarFoto": "Take photo or upload image"
+    "tomarFoto": "Take photo or upload image",
+    "cbm": "CBM",
+    "mqt": "MQT (min. cartons)",
+    "noLegibleTitulo": "Photo not legible — please retake it",
+    "noLegibleImagen": "The image can't be read ({{motivo}}).",
+    "noLegibleImagenSin": "The image can't be read clearly.",
+    "noLegibleFaltan": "These fields were not detected: {{campos}}.",
+    "noLegibleInstruccion": "Retake the photo with good lighting, no glare or overexposure, in focus and with the full sign visible.",
+    "volverATomar": "Retake photo",
+    "motivos": {
+      "borrosa": "blurry",
+      "movida": "motion blur",
+      "sobreexpuesta": "overexposed",
+      "oscura": "too dark",
+      "reflejo": "glare",
+      "recortada": "cropped",
+      "no_procesada": "could not be processed",
+      "generico": "not clear enough"
+    }
   },
   "packing": {
     "exportar": "Download list (Excel)",
@@ -263,7 +281,8 @@
     "reintentar": "Retry",
     "subiendo": "Uploading photos... {{hechas}} of {{total}}",
     "descartar": "Discard",
-    "segundoPlano": "You can close the app: processing continues and you'll see the results when you return."
+    "segundoPlano": "You can close the app: processing continues and you'll see the results when you return.",
+    "noLegibles": "{{n}} photo(s) not legible. Retake them to add those products."
   },
   "roles": {
     "admin": "Administrator",

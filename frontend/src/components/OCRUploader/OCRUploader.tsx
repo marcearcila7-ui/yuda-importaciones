@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { Camera } from 'lucide-react'
 import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
+import { evaluarLegibilidad } from '../../lib/legibilidad'
+import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
 
 interface OCRUploaderProps {
@@ -123,6 +125,9 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
   }
 
   const chip = form ? chipConfianza(form.confianza) : null
+  // Legibilidad evaluada sobre lo que devolvió el modelo (no sobre ediciones manuales):
+  // si la foto no es legible o faltan datos obligatorios, se bloquea y hay que retomarla.
+  const legibilidad = resultado ? evaluarLegibilidad(resultado.datos_extraidos) : null
 
   return (
     <div className="w-full">
@@ -178,8 +183,30 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
         </div>
       )}
 
-      {/* SECCIÓN B — Panel de revisión (cuando hay resultado) */}
-      {resultado && form && (
+      {/* SECCIÓN B.1 — Foto NO legible: bloquea y obliga a volver a tomarla */}
+      {resultado && legibilidad && !legibilidad.ok && (
+        <div className="flex flex-col gap-4">
+          {preview && (
+            <img
+              src={preview}
+              alt="Vista previa"
+              className="max-h-[250px] w-full rounded-lg object-contain sm:max-h-[200px]"
+            />
+          )}
+          <AlertaNoLegible legibilidad={legibilidad} />
+          <button
+            type="button"
+            onClick={resetear}
+            className="min-h-[52px] w-full font-semibold text-white sm:min-h-[48px]"
+            style={{ backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+          >
+            {t('ocr.volverATomar')}
+          </button>
+        </div>
+      )}
+
+      {/* SECCIÓN B.2 — Panel de revisión (cuando la foto es legible) */}
+      {resultado && form && legibilidad && legibilidad.ok && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>{t('ocr.revisarDatos')}</h3>

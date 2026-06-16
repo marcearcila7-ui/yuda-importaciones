@@ -79,7 +79,25 @@
     "cancelar": "Cancelar",
     "exitoAgregado": "Ítem agregado al Packing List",
     "errorProcesar": "No se pudo procesar la imagen",
-    "tomarFoto": "Tomar foto o subir imagen"
+    "tomarFoto": "Tomar foto o subir imagen",
+    "cbm": "CBM",
+    "mqt": "MQT (mín. cajas)",
+    "noLegibleTitulo": "Foto no legible — vuelve a tomarla",
+    "noLegibleImagen": "La imagen no se puede leer ({{motivo}}).",
+    "noLegibleImagenSin": "La imagen no se puede leer con claridad.",
+    "noLegibleFaltan": "No se detectaron estos datos: {{campos}}.",
+    "noLegibleInstruccion": "Vuelve a tomar la foto con buena luz, sin reflejos ni sobreexposición, enfocada y con el cartel completo visible.",
+    "volverATomar": "Volver a tomar",
+    "motivos": {
+      "borrosa": "borrosa",
+      "movida": "movida",
+      "sobreexpuesta": "sobreexpuesta",
+      "oscura": "muy oscura",
+      "reflejo": "con reflejos",
+      "recortada": "recortada",
+      "no_procesada": "no se pudo procesar",
+      "generico": "no se ve con claridad"
+    }
   },
   "packing": {
     "exportar": "Descargar lista (Excel)",
@@ -263,7 +281,8 @@
     "reintentar": "Reintentar",
     "subiendo": "Subiendo fotos... {{hechas}} de {{total}}",
     "descartar": "Descartar",
-    "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados."
+    "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados.",
+    "noLegibles": "{{n}} foto(s) no legible(s). Vuelve a tomarlas para poder agregar esos productos."
   },
   "roles": {
     "admin": "Administrador",

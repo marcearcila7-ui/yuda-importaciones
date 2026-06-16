@@ -67,7 +67,9 @@ El JSON debe tener exactamente estas claves:
   "colores": "colores disponibles como string separado por comas o null",
   "cantidad_minima": número entero del MQT = mínima cantidad de CAJAS (cartones) que exige el proveedor para comprar o null,
   "notas": "cualquier otra información relevante o null",
-  "confianza": "alta, media o baja según tu certeza en la extracción"
+  "confianza": "alta, media o baja según tu certeza en la extracción",
+  "legible": true o false (booleano) — true SOLO si la foto se ve bien y se puede leer el cartel; false si la imagen está borrosa, movida, sobreexpuesta (quemada por la luz), muy oscura, con reflejos/sombras que tapan el texto, o si no se distingue el producto,
+  "motivo_ilegible": "si legible es false, describe brevemente el problema en una palabra o dos (ej: 'borrosa', 'sobreexpuesta', 'oscura', 'reflejo', 'recortada'); si legible es true, null"
 }
 
 MUY IMPORTANTE — el tablero/pizarra escrito a mano usa estas etiquetas (en español, manuscritas). Reconócelas SIEMPRE, aunque la letra sea irregular:
@@ -85,6 +87,7 @@ Reglas:
 - Pero si en el tablero SÍ aparecen PRECIO, CX, CBM/CMB o MQT, DEBES extraerlos (no los dejes en null).
 - price_rmb, qty_por_ctn, largo_cm, ancho_cm, alto_cm, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
 - confianza es obligatorio, nunca null.
+- legible es obligatorio, nunca null: evalúa SOLO la calidad de la foto para poder leerla, no si trae todos los datos. Si dudas por mala calidad de imagen, marca false.
 """
 
 
@@ -109,6 +112,10 @@ def _resultado_vacio() -> dict:
         "cantidad_minima": None,
         "notas": None,
         "confianza": "baja",
+        # Si no se pudo procesar la foto, se considera no legible: la vendedora
+        # deberá volver a tomarla.
+        "legible": False,
+        "motivo_ilegible": "no_procesada",
     }
 
 
@@ -216,6 +223,11 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # confianza es obligatorio, nunca null
     if not datos.get("confianza"):
         datos["confianza"] = "baja"
+
+    # legible debe ser booleano; ante cualquier valor raro, asumir no legible
+    datos["legible"] = datos.get("legible") is True
+    if datos["legible"]:
+        datos["motivo_ilegible"] = None
 
     # 7. Resultado final
     return datos

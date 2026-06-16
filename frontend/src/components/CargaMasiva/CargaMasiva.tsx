@@ -5,6 +5,8 @@ import toast from 'react-hot-toast'
 import { Images, RefreshCw, Trash2 } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
+import { evaluarLegibilidad } from '../../lib/legibilidad'
+import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
@@ -73,11 +75,15 @@ function CargaMasiva() {
     actualizarDato(id, campo, n !== null && Number.isNaN(n) ? null : n)
   }
 
+  // Solo los productos con foto legible y datos completos se pueden agregar.
+  const legibles = resultados.filter((r) => evaluarLegibilidad(r.datos).ok)
+  const noLegibles = resultados.length - legibles.length
+
   const agregarTodos = async () => {
-    if (resultados.length === 0) return
+    if (legibles.length === 0) return
     setAgregando(true)
-    const n = resultados.length
-    for (const r of resultados) {
+    const n = legibles.length
+    for (const r of legibles) {
       const d = r.datos
       const item: ItemCreate = {
         supplier_nombre: d.supplier_nombre ?? undefined,
@@ -191,10 +197,22 @@ function CargaMasiva() {
             </button>
           </div>
 
+          {noLegibles > 0 && (
+            <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
+              {t('lote.noLegibles', { n: noLegibles })}
+            </p>
+          )}
+
           {resultados.map((r) => {
             const chip = chipConfianza(r.datos.confianza, t)
+            const legibilidad = evaluarLegibilidad(r.datos)
             return (
-              <div key={r.id} className="flex gap-3 rounded-xl border border-gray-200 p-3">
+              <div
+                key={r.id}
+                className="flex flex-col gap-3 rounded-xl border p-3"
+                style={{ borderColor: legibilidad.ok ? '#E5E7EB' : '#FCA5A5' }}
+              >
+              <div className="flex gap-3">
                 {r.foto_url ? (
                   <img src={r.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
                 ) : (
@@ -225,17 +243,20 @@ function CargaMasiva() {
                   </button>
                 </div>
               </div>
+
+              {!legibilidad.ok && <AlertaNoLegible legibilidad={legibilidad} compacta />}
+              </div>
             )
           })}
 
           <button
             type="button"
             onClick={agregarTodos}
-            disabled={agregando}
+            disabled={agregando || legibles.length === 0}
             className="min-h-[52px] w-full rounded-lg font-semibold text-white disabled:opacity-60"
             style={{ backgroundColor: '#10B981', fontSize: 16 }}
           >
-            {agregando ? t('lote.agregando') : t('lote.agregarTodos', { n: resultados.length })}
+            {agregando ? t('lote.agregando') : t('lote.agregarTodos', { n: legibles.length })}
           </button>
         </div>
       )}

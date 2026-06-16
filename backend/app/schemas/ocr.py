@@ -20,6 +20,9 @@ class OCRResultado(BaseModel):
     descripcion_zh: Optional[str] = None
     notas: Optional[str] = None
     confianza: str = "baja"
+    # Calidad de la foto: si es False, la vendedora debe volver a tomarla
+    legible: bool = True
+    motivo_ilegible: Optional[str] = None
 
 
 class OCRResponse(BaseModel):
