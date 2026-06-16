@@ -33,8 +33,11 @@ export function evaluarLegibilidad(datos: OCRResultado): Legibilidad {
   // como ilegible y dejamos que mande la validación de datos obligatorios.
   const imagenIlegible = datos.legible === false
   const faltantes = CAMPOS_OBLIGATORIOS.filter((c) => falta(datos[c.clave])).map((c) => c.i18n)
+  // La regla es: si la foto trae los 5 datos mínimos (precio, CX, MQT, CBM, tienda)
+  // se puede procesar, aunque el modelo dude de la calidad de la imagen. Si una foto
+  // está realmente ilegible, esos campos saldrán vacíos y caerá igual por "faltantes".
   return {
-    ok: !imagenIlegible && faltantes.length === 0,
+    ok: faltantes.length === 0,
     imagenIlegible,
     motivo: datos.motivo_ilegible ?? null,
     faltantes,
