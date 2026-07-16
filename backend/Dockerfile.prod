@@ -48,5 +48,5 @@ USER appuser
 
 EXPOSE 8000
 
-# Sin --reload en producción
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Sin --reload en producción. Usa $PORT si Railway lo inyecta; 8000 como default local.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
