@@ -1,21 +1,52 @@
-## Checklist pre-deploy YUDA Importaciones
+# Runbook de deploy — YUDA Importaciones (Railway)
 
-### Servidor
-- [ ] El servidor tiene Docker y Docker Compose instalados
-- [ ] El servidor tiene al menos 1GB de RAM y 10GB de disco
-- [ ] El puerto 80 está abierto en el firewall
-- [ ] El dominio del backend apunta a la IP del servidor
+Arquitectura: 3 servicios en Railway (**PostgreSQL** + **backend** FastAPI + **frontend** nginx) + **Supabase** externo (almacenamiento de fotos).
 
-### Configuración
-- [ ] .env.prod existe y tiene todos los valores completados
-- [ ] SECRET_KEY tiene al menos 32 caracteres aleatorios
-- [ ] ANTHROPIC_API_KEY es válida y tiene créditos
-- [ ] CORS_ORIGINS tiene la URL exacta del frontend en Vercel (sin slash final)
-- [ ] VITE_API_URL tiene la URL exacta del backend (con https://)
+El repo ya trae `backend/railway.json` y `frontend/railway.json` que fijan `Dockerfile.prod`. Solo hay que fijar el **Root Directory** de cada servicio.
 
-### Deploy
-- [ ] docker compose -f docker-compose.prod.yml up -d --build corre sin errores
-- [ ] alembic upgrade head aplicó todas las migraciones
-- [ ] curl https://tu-backend/  retorna {"status":"ok","sistema":"YUDA Importaciones"}
-- [ ] El login funciona desde el navegador
-- [ ] Una vendedora puede subir una foto y el OCR responde
+## 1. Claves (rotar/generar antes)
+- [ ] Supabase **service_role** key (Settings → API) — va solo en el backend, nunca en el frontend
+- [ ] **ANTHROPIC_API_KEY** (console.anthropic.com)
+- [ ] **SECRET_KEY** ≥ 32 chars aleatorios: `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`
+
+## 2. Proyecto y base de datos
+- [ ] `railway login` y crear/seleccionar el proyecto
+- [ ] Agregar **PostgreSQL** (provee `DATABASE_URL`)
+
+## 3. Servicio backend
+- [ ] Root Directory = `backend`
+- [ ] Variables:
+  ```
+  DATABASE_URL=${{Postgres.DATABASE_URL}}
+  SECRET_KEY=<generada>
+  ANTHROPIC_API_KEY=<rotada>
+  SUPABASE_URL=https://<proyecto>.supabase.co
+  SUPABASE_SERVICE_KEY=<rotada>
+  TIPO_CAMBIO_USD=6.7
+  UPLOAD_DIR=/app/uploads
+  ACCESS_TOKEN_EXPIRE_HOURS=8
+  CORS_ORIGINS=<URL del frontend, se completa en el paso 5>
+  SEED_ADMIN_PASSWORD=<elegir>
+  SEED_VENDEDORA_PASSWORD=<elegir>
+  SEED_CONTADORA_PASSWORD=<elegir>
+  ```
+- [ ] Generar dominio público → **URL del backend**
+- [ ] En el contenedor: `alembic upgrade head` (crea las tablas 0001→0007)
+- [ ] En el contenedor: `python seed.py` (crea los usuarios con las contraseñas de las variables SEED_*)
+
+## 4. Servicio frontend
+- [ ] Root Directory = `frontend`
+- [ ] Variable `VITE_API_URL=<URL del backend>` (Vite la congela en el build → el backend debe existir antes)
+- [ ] Generar dominio público → **URL del frontend**
+
+## 5. Cerrar el círculo y verificar
+- [ ] Backend → `CORS_ORIGINS` = URL exacta del frontend (sin `/` final) → redeploy
+- [ ] `curl https://<backend>/` → `{"status":"ok","sistema":"YUDA Importaciones"}`
+- [ ] Login desde el navegador con un usuario del seed
+- [ ] Una vendedora sube una foto y el OCR responde
+
+## Notas
+- El backend **no arranca** si falta `SECRET_KEY` o `DATABASE_URL` (falla explícito, a propósito).
+- `USE_WORKER=false` (default): el OCR corre en el backend web, un solo servicio. Para separarlo, crear un servicio worker con start command `python -m app.worker` y `USE_WORKER=true` en el backend.
+- Las fotos van a Supabase (bucket público `fotos`/`pedidos`), no al disco → no hace falta volumen.
+- Si el frontend sirve un bundle viejo tras deploy: recarga forzada (Cmd+Shift+R).
