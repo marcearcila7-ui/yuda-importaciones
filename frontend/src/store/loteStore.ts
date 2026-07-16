@@ -18,7 +18,15 @@ export interface ResultadoLote {
   datos: OCRResultado
 }
 
-type Fase = 'idle' | 'subiendo' | 'procesando' | 'completado'
+// Foto elegida pero aún NO subida: se acumula en la fase de selección hasta que
+// la vendedora pulsa "Procesar". `preview` es un object URL para la miniatura.
+export interface FotoStaged {
+  id: string
+  file: File
+  preview: string
+}
+
+type Fase = 'idle' | 'seleccion' | 'subiendo' | 'procesando' | 'completado'
 
 const CONCURRENCIA = 4
 
@@ -26,6 +34,7 @@ interface LoteState {
   fase: Fase
   sesionId: string | null
   loteId: string | null
+  seleccionadas: FotoStaged[]
   subidas: number
   totalSubir: number
   procesadas: number
@@ -33,7 +42,10 @@ interface LoteState {
   resultados: ResultadoLote[]
   errores: number
   erroresSubida: number
-  iniciar: (sesionId: string, files: File[]) => Promise<void>
+  agregarSeleccion: (sesionId: string, files: File[]) => void
+  quitarSeleccion: (id: string) => void
+  cancelarSeleccion: () => void
+  procesarSeleccion: () => Promise<void>
   agregarMas: (files: File[]) => Promise<void>
   retomar: (sesionId: string) => Promise<void>
   reintentar: () => Promise<void>
@@ -50,10 +62,14 @@ const detenerPoll = () => {
   }
 }
 
+// Libera los object URLs de las miniaturas para no filtrar memoria
+const revocarPreviews = (fotos: FotoStaged[]) => fotos.forEach((f) => URL.revokeObjectURL(f.preview))
+
 const ESTADO_INICIAL = {
   fase: 'idle' as Fase,
   sesionId: null,
   loteId: null,
+  seleccionadas: [] as FotoStaged[],
   subidas: 0,
   totalSubir: 0,
   procesadas: 0,
@@ -90,12 +106,80 @@ export const useLoteStore = create<LoteState>((set, get) => {
     }, 3000)
   }
 
+  // Sube un conjunto de fotos (comprimidas) a un lote, en paralelo. Cuenta las
+  // que fallan en `erroresSubida` para no perderlas en silencio.
+  const subirFotos = async (loteId: string, files: File[]) => {
+    let idx = 0
+    const worker = async () => {
+      while (idx < files.length) {
+        const f = files[idx++]
+        let ok = false
+        try {
+          const comprimido = await comprimirImagen(f)
+          await subirFotoLote(loteId, comprimido)
+          ok = true
+        } catch {
+          // no se pudo subir esta foto (red/servidor): se cuenta como error
+        }
+        set((s) => ({
+          subidas: s.subidas + 1,
+          erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
+        }))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
+  }
+
   return {
     ...ESTADO_INICIAL,
 
-    iniciar: async (sesionId, files) => {
+    // Acumula fotos en la lista de selección (sin subir ni procesar todavía).
+    agregarSeleccion: (sesionId, files) => {
       if (files.length === 0) return
+      const nuevas: FotoStaged[] = files.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        preview: URL.createObjectURL(file),
+      }))
+      set((s) => ({
+        fase: 'seleccion',
+        sesionId: s.sesionId ?? sesionId,
+        seleccionadas: [...s.seleccionadas, ...nuevas],
+      }))
+    },
+
+    // Quita una foto de la selección (antes de procesar).
+    quitarSeleccion: (id) =>
+      set((s) => {
+        const obj = s.seleccionadas.find((x) => x.id === id)
+        if (obj) URL.revokeObjectURL(obj.preview)
+        return { seleccionadas: s.seleccionadas.filter((x) => x.id !== id) }
+      }),
+
+    // Descarta toda la selección y vuelve al inicio.
+    cancelarSeleccion: () =>
+      set((s) => {
+        revocarPreviews(s.seleccionadas)
+        return { ...ESTADO_INICIAL, sesionId: s.sesionId }
+      }),
+
+    // Sube TODAS las fotos seleccionadas y dispara el OCR de una vez.
+    procesarSeleccion: async () => {
+      const { seleccionadas, sesionId } = get()
+      if (!sesionId || seleccionadas.length === 0) return
       detenerPoll()
+      const files = seleccionadas.map((x) => x.file)
+      // Transición inmediata a "subiendo" para que la UI responda al toque
+      set({
+        fase: 'subiendo',
+        subidas: 0,
+        totalSubir: files.length,
+        procesadas: 0,
+        totalProc: 0,
+        resultados: [],
+        errores: 0,
+        erroresSubida: 0,
+      })
       // Limpiar un lote previo de la sesión, si quedó
       try {
         const prev = await loteActivo(sesionId)
@@ -103,33 +187,14 @@ export const useLoteStore = create<LoteState>((set, get) => {
       } catch {
         // sin lote previo
       }
-      set({ ...ESTADO_INICIAL, sesionId, fase: 'subiendo', totalSubir: files.length })
-
       const { lote_id } = await crearLote(sesionId)
       set({ loteId: lote_id })
 
-      // Subir las fotos (comprimidas) en paralelo
-      let idx = 0
-      const worker = async () => {
-        while (idx < files.length) {
-          const f = files[idx++]
-          let ok = false
-          try {
-            const comprimido = await comprimirImagen(f)
-            await subirFotoLote(lote_id, comprimido)
-            ok = true
-          } catch {
-            // no se pudo subir esta foto (red/servidor): se cuenta como error, no se pierde en silencio
-          }
-          set((s) => ({
-            subidas: s.subidas + 1,
-            erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
-          }))
-        }
-      }
-      await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
+      await subirFotos(lote_id, files)
+      // Ya subidas: liberar las miniaturas y vaciar la selección
+      revocarPreviews(seleccionadas)
+      set({ seleccionadas: [] })
 
-      // Disparar el OCR en segundo plano y empezar a consultar
       await procesarLoteApi(lote_id)
       set({ fase: 'procesando', procesadas: 0, totalProc: files.length })
       iniciarPoll(lote_id)
@@ -143,27 +208,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
       if (!loteId || files.length === 0) return
       detenerPoll()
       set({ fase: 'subiendo', subidas: 0, totalSubir: files.length, erroresSubida: 0 })
-
-      let idx = 0
-      const worker = async () => {
-        while (idx < files.length) {
-          const f = files[idx++]
-          let ok = false
-          try {
-            const comprimido = await comprimirImagen(f)
-            await subirFotoLote(loteId, comprimido)
-            ok = true
-          } catch {
-            // no se pudo subir esta foto (red/servidor): se cuenta como error, no se pierde en silencio
-          }
-          set((s) => ({
-            subidas: s.subidas + 1,
-            erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
-          }))
-        }
-      }
-      await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
-
+      await subirFotos(loteId, files)
       await procesarLoteApi(loteId)
       set({ fase: 'procesando' })
       iniciarPoll(loteId)
@@ -171,11 +216,12 @@ export const useLoteStore = create<LoteState>((set, get) => {
 
     retomar: async (sesionId) => {
       const actual = get()
-      // Si ya estamos mostrando el lote de ESTA misma cotización, no rehacer
+      // Si ya estamos mostrando/armando el lote de ESTA misma cotización, no rehacer
       if (actual.fase !== 'idle' && actual.sesionId === sesionId) return
       // Cambió de cotización (o primera vez): limpiar lo que haya quedado del
       // lote anterior (evita que se mezclen productos de otro cliente) y fijar la sesión
       detenerPoll()
+      revocarPreviews(actual.seleccionadas)
       set({ ...ESTADO_INICIAL, sesionId })
       let resp
       try {
@@ -228,6 +274,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
     finalizar: async () => {
       detenerPoll()
       const loteId = get().loteId
+      revocarPreviews(get().seleccionadas)
       if (loteId) {
         try {
           await borrarLote(loteId)

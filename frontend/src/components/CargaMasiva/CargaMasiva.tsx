@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Images, RefreshCw, Trash2 } from 'lucide-react'
+import { Images, Plus, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
@@ -28,6 +28,7 @@ function CargaMasiva() {
   const agregarItem = usePackingStore((s) => s.agregarItem)
   const {
     fase,
+    seleccionadas,
     subidas,
     totalSubir,
     procesadas,
@@ -35,7 +36,10 @@ function CargaMasiva() {
     resultados,
     errores,
     erroresSubida,
-    iniciar,
+    agregarSeleccion,
+    quitarSeleccion,
+    cancelarSeleccion,
+    procesarSeleccion,
     agregarMas,
     retomar,
     reintentar,
@@ -56,21 +60,23 @@ function CargaMasiva() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionId])
 
-  const handleSeleccion = (e: ChangeEvent<HTMLInputElement>) => {
-    const todos = Array.from(e.target.files ?? [])
+  // Elegir fotos: se AGREGAN a la selección (no se procesan hasta pulsar "Procesar")
+  const handleArchivos = (e: ChangeEvent<HTMLInputElement>) => {
+    const nuevas = Array.from(e.target.files ?? [])
     e.target.value = ''
-    if (todos.length === 0 || !sesionId) return
-    let lote = todos
-    if (todos.length > MAX_LOTE) {
+    if (nuevas.length === 0 || !sesionId) return
+    const cupo = Math.max(0, MAX_LOTE - seleccionadas.length)
+    let lote = nuevas
+    if (nuevas.length > cupo) {
       setAviso(t('lote.tope', { max: MAX_LOTE }))
-      lote = todos.slice(0, MAX_LOTE)
+      lote = nuevas.slice(0, cupo)
     } else {
       setAviso(null)
     }
-    iniciar(sesionId, lote)
+    if (lote.length > 0) agregarSeleccion(sesionId, lote)
   }
 
-  // Sumar más fotos a la tanda que ya está en revisión
+  // Sumar más fotos a la tanda que ya está en revisión (después de procesar)
   const handleAgregarMas = (e: ChangeEvent<HTMLInputElement>) => {
     const nuevas = Array.from(e.target.files ?? [])
     e.target.value = ''
@@ -151,7 +157,7 @@ function CargaMasiva() {
         type="file"
         accept="image/jpeg,image/png,image/webp"
         multiple
-        onChange={handleSeleccion}
+        onChange={handleArchivos}
         className="hidden"
       />
       <input
@@ -163,6 +169,7 @@ function CargaMasiva() {
         className="hidden"
       />
 
+      {/* Paso 1: elegir las primeras fotos */}
       {fase === 'idle' && (
         <button
           type="button"
@@ -181,6 +188,67 @@ function CargaMasiva() {
         <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
           {t('lote.fallidasSubida', { n: erroresSubida })}
         </p>
+      )}
+
+      {/* Paso 2: selección en curso — armar la tanda y luego procesar */}
+      {fase === 'seleccion' && (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm font-medium" style={{ color: '#0D0D0D' }}>
+            {t('lote.listas', { n: seleccionadas.length })}
+          </p>
+
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {seleccionadas.map((f) => (
+              <div
+                key={f.id}
+                className="relative aspect-square overflow-hidden rounded-xl border"
+                style={{ borderColor: '#E5E7EB' }}
+              >
+                <img src={f.preview} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => quitarSeleccion(f.id)}
+                  aria-label={t('lote.quitar')}
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full text-white"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+
+            {/* Tile "+" para agregar más fotos a la selección */}
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed"
+              style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+            >
+              <Plus size={24} />
+              <span className="text-xs font-semibold">{t('lote.agregar')}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={procesarSeleccion}
+              disabled={seleccionadas.length === 0}
+              className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+            >
+              <Sparkles size={18} /> {t('lote.procesar', { n: seleccionadas.length })}
+            </button>
+            <button
+              type="button"
+              onClick={cancelarSeleccion}
+              className="min-h-[52px] rounded-lg font-medium sm:px-6"
+              style={{ color: '#6B7280' }}
+            >
+              {t('lote.descartar')}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Progreso (subiendo o procesando) */}

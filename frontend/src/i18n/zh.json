@@ -284,7 +284,10 @@
     "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。",
     "noLegibles": "{{n}} 张照片不清晰。请重拍后才能添加这些产品。",
     "agregarMas": "添加更多照片",
-    "fallidasSubida": "{{n}} 张照片上传失败；请检查网络后重试。"
+    "fallidasSubida": "{{n}} 张照片上传失败；请检查网络后重试。",
+    "listas": "已准备 {{n}} 张照片。用 + 添加更多，或点击处理。",
+    "procesar": "处理 {{n}}",
+    "agregar": "添加"
   },
   "roles": {
     "admin": "管理员",

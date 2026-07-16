@@ -284,7 +284,10 @@
     "segundoPlano": "You can close the app: processing continues and you'll see the results when you return.",
     "noLegibles": "{{n}} photo(s) not legible. Retake them to add those products.",
     "agregarMas": "Add more photos",
-    "fallidasSubida": "{{n}} photo(s) could not be uploaded; check your connection and try again."
+    "fallidasSubida": "{{n}} photo(s) could not be uploaded; check your connection and try again.",
+    "listas": "{{n}} photo(s) ready. Add more with + or tap Process.",
+    "procesar": "Process {{n}}",
+    "agregar": "Add"
   },
   "roles": {
     "admin": "Administrator",
