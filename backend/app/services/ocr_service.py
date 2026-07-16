@@ -1,11 +1,14 @@
 import asyncio
 import base64
 import json
+import logging
 import re
 
 from anthropic import AsyncAnthropic
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Modelo de visión a utilizar
 MODELO = "claude-opus-4-5-20251101"
@@ -188,8 +191,8 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
                 ],
             )
         texto = response.content[0].text
-    except Exception as e:
-        print(f"Error llamando a la API de Anthropic: {e}")
+    except Exception:
+        logger.exception("Error llamando a la API de Anthropic")
         return _resultado_vacio()
 
     # 5. Parsear la respuesta

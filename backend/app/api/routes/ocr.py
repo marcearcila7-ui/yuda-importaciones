@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from app.api.dependencies import get_current_user
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.models.user import User
 from app.schemas.ocr import OCRResponse, OCRResultado
 from app.services.ocr_service import extraer_datos_etiqueta
@@ -51,20 +52,28 @@ async def extraer(
             detail="La imagen no debe superar 25MB",
         )
 
-    # a. Nombre único conservando la extensión original
+    # c. Validar el contenido REAL (magic bytes), no solo el content-type declarado
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen JPG, PNG o WEBP válida",
+        )
+
+    # d. Nombre único conservando la extensión original
     extension = os.path.splitext(foto.filename or "")[1]
     if not extension:
-        extension = TIPOS_PERMITIDOS[foto.content_type]
+        extension = TIPOS_PERMITIDOS[tipo_real]
     nombre_archivo = f"{uuid.uuid4()}{extension}"
 
-    # b. Subir la imagen a Supabase Storage (storage3 es síncrono → thread aparte)
+    # e. Subir la imagen a Supabase Storage (storage3 es síncrono → thread aparte)
     loop = asyncio.get_event_loop()
     foto_url = await loop.run_in_executor(
-        None, lambda: subir_foto(imagen_bytes, nombre_archivo, foto.content_type)
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
     )
 
-    # d. Extraer datos con Claude Vision
-    datos = await extraer_datos_etiqueta(imagen_bytes, foto.content_type)
+    # f. Extraer datos con Claude Vision
+    datos = await extraer_datos_etiqueta(imagen_bytes, tipo_real)
 
     # e. Respuesta
     return OCRResponse(foto_url=foto_url, datos_extraidos=OCRResultado(**datos))

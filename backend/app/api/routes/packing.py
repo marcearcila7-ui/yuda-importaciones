@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
@@ -290,12 +291,18 @@ async def subir_foto_final(
     imagen_bytes = await foto.read()
     if len(imagen_bytes) > _MAX_FOTO_BYTES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La imagen no debe superar 25MB")
+    # Validar el contenido REAL (magic bytes), no solo el content-type declarado
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in _TIPOS_FOTO:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "El archivo no es una imagen JPG, PNG o WEBP válida"
+        )
 
-    extension = os.path.splitext(foto.filename or "")[1] or _TIPOS_FOTO[foto.content_type]
+    extension = os.path.splitext(foto.filename or "")[1] or _TIPOS_FOTO[tipo_real]
     nombre_archivo = f"{uuid.uuid4()}{extension}"
     loop = asyncio.get_event_loop()
     url = await loop.run_in_executor(
-        None, lambda: subir_foto(imagen_bytes, nombre_archivo, foto.content_type)
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
     )
 
     item.foto_final_url = url

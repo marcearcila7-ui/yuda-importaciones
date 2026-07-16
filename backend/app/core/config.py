@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Cada cuánto el worker consulta la cola cuando está ocioso.
     WORKER_POLL_SECONDS: int = 3
 
+    # Nivel de logging (DEBUG, INFO, WARNING, ERROR).
+    LOG_LEVEL: str = "INFO"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(

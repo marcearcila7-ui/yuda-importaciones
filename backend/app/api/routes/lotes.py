@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
 from app.core.config import settings
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.lote import LoteItem, LoteOCR
 from app.models.sesion import Sesion
@@ -70,13 +71,20 @@ async def subir_foto_lote(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La imagen no debe superar 25MB",
         )
+    # Validar el contenido REAL (magic bytes), no solo el content-type declarado
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen JPG, PNG o WEBP válida",
+        )
 
-    extension = os.path.splitext(foto.filename or "")[1] or TIPOS_PERMITIDOS[foto.content_type]
+    extension = os.path.splitext(foto.filename or "")[1] or TIPOS_PERMITIDOS[tipo_real]
     nombre_archivo = f"{uuid.uuid4()}{extension}"
 
     loop = asyncio.get_event_loop()
     foto_url = await loop.run_in_executor(
-        None, lambda: subir_foto(imagen_bytes, nombre_archivo, foto.content_type)
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
     )
 
     item = LoteItem(lote_id=lote_id, foto_url=foto_url, estado="pendiente")

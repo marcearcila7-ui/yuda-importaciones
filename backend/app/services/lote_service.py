@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 import httpx
 
@@ -6,6 +7,8 @@ from app.core.config import settings
 from app.database import SessionLocal
 from app.models.lote import LoteItem, LoteOCR
 from app.services.ocr_service import extraer_datos_etiqueta
+
+logger = logging.getLogger(__name__)
 
 # Fotos en paralelo dentro de un mismo lote (acota memoria/descargas por job).
 # El tope GLOBAL de llamadas reales a Anthropic vive en ocr_service (semáforo global),
@@ -52,8 +55,8 @@ async def procesar_lote(lote_id: str) -> None:
                 if resp.status_code == 200:
                     datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url))
                     estado = "ok"
-            except Exception as e:
-                print(f"Error procesando ítem de lote {item_id}: {e}")
+            except Exception:
+                logger.exception("Error procesando ítem de lote %s", item_id)
             # Actualizar en una sesión propia (cada tarea con la suya)
             d = SessionLocal()
             try:

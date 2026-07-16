@@ -16,6 +16,9 @@ from app.api.routes import (
     portal,
 )
 from app.core.config import settings
+from app.core.logging_setup import configurar_logging
+
+configurar_logging()
 
 app = FastAPI(title="YUDA Importaciones")
 

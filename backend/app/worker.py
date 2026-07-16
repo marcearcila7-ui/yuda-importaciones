@@ -11,11 +11,15 @@ Requiere USE_WORKER=true en el servicio web (para que encole en vez de procesar
 en segundo plano). El worker procesa la cola independientemente del flag.
 """
 import asyncio
+import logging
 
 from app.core.config import settings
+from app.core.logging_setup import configurar_logging
 from app.database import SessionLocal
 from app.models.lote import LoteOCR
 from app.services.lote_service import procesar_lote
+
+logger = logging.getLogger("worker")
 
 
 def _requeue_huerfanos() -> int:
@@ -58,31 +62,32 @@ def _reclamar_lote() -> str | None:
 
 
 async def main() -> None:
-    print(f"[worker] iniciado · poll={settings.WORKER_POLL_SECONDS}s")
+    configurar_logging()
+    logger.info("iniciado · poll=%ss", settings.WORKER_POLL_SECONDS)
     try:
         requeued = _requeue_huerfanos()
         if requeued:
-            print(f"[worker] re-encolados {requeued} lote(s) huérfanos de un corte previo")
-    except Exception as e:  # noqa: BLE001
-        print(f"[worker] no se pudo re-encolar huérfanos: {e}")
+            logger.info("re-encolados %s lote(s) huérfanos de un corte previo", requeued)
+    except Exception:  # noqa: BLE001
+        logger.exception("no se pudo re-encolar huérfanos")
 
     while True:
         try:
             lote_id = _reclamar_lote()
-        except Exception as e:  # noqa: BLE001
-            print(f"[worker] error reclamando lote: {e}")
+        except Exception:  # noqa: BLE001
+            logger.exception("error reclamando lote")
             lote_id = None
 
         if lote_id is None:
             await asyncio.sleep(settings.WORKER_POLL_SECONDS)
             continue
 
-        print(f"[worker] procesando lote {lote_id}")
+        logger.info("procesando lote %s", lote_id)
         try:
             await procesar_lote(lote_id)
-            print(f"[worker] lote {lote_id} completado")
-        except Exception as e:  # noqa: BLE001
-            print(f"[worker] error procesando lote {lote_id}: {e}")
+            logger.info("lote %s completado", lote_id)
+        except Exception:  # noqa: BLE001
+            logger.exception("error procesando lote %s", lote_id)
 
 
 if __name__ == "__main__":

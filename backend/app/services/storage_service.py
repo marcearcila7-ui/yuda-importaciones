@@ -1,6 +1,10 @@
+import logging
+
 from storage3 import create_client
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def _storage():
@@ -22,8 +26,8 @@ def subir_foto(imagen_bytes: bytes, nombre_archivo: str, content_type: str) -> s
             {"content-type": content_type, "upsert": "true"},
         )
         return f"{settings.SUPABASE_URL}/storage/v1/object/public/fotos/{nombre_archivo}"
-    except Exception as e:
-        print(f"Error subiendo la foto a Supabase Storage: {e}")
+    except Exception:
+        logger.exception("Error subiendo la foto a Supabase Storage")
         raise
 
 
@@ -40,8 +44,8 @@ def subir_excel(archivo_bytes: bytes, nombre_archivo: str) -> str:
             },
         )
         return f"{settings.SUPABASE_URL}/storage/v1/object/public/pedidos/{nombre_archivo}"
-    except Exception as e:
-        print(f"Error subiendo el Excel a Supabase Storage: {e}")
+    except Exception:
+        logger.exception("Error subiendo el Excel a Supabase Storage")
         raise
 
 
@@ -55,6 +59,6 @@ def subir_pdf(archivo_bytes: bytes, nombre_archivo: str) -> str:
             {"content-type": "application/pdf", "upsert": "true"},
         )
         return f"{settings.SUPABASE_URL}/storage/v1/object/public/pedidos/{nombre_archivo}"
-    except Exception as e:
-        print(f"Error subiendo el PDF a Supabase Storage: {e}")
+    except Exception:
+        logger.exception("Error subiendo el PDF a Supabase Storage")
         raise
