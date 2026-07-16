@@ -67,6 +67,8 @@ function Clientes() {
   const [guardando, setGuardando] = useState(false)
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
   const [copiadoLink, setCopiadoLink] = useState(false)
+  // Contraseña recién generada por cliente (solo en memoria, para reenviarla)
+  const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
   const portalUrl = `${window.location.origin}/portal/login`
 
   // Expansión: cotizaciones del cliente + seguimiento
@@ -174,14 +176,30 @@ function Clientes() {
     }
   }
 
-  // Restablecer: genera una contraseña nueva y muestra el bloque compartible
-  // (link + correo + clave). Útil cuando la vendedora olvidó la contraseña.
+  // Copia el acceso del cliente (link + correo, y la clave si se acaba de generar)
+  const copiarCredenciales = async (c: Cliente) => {
+    const pass = nuevasPass[c.id]
+    let texto = `YUDA Importaciones — acceso a tu portal
+${t('clientes.portalLink')}: ${portalUrl}
+${t('clientes.email')}: ${c.email}`
+    if (pass) texto += `\n${t('clientes.password')}: ${pass}`
+    try {
+      await navigator.clipboard.writeText(texto)
+      toast.success(t('clientes.copiado'))
+    } catch {
+      toast.error(t('clientes.errorCopiar'))
+    }
+  }
+
+  // Restablecer: como la contraseña actual no se puede ver (está encriptada),
+  // genera una NUEVA y la revela en la ficha del cliente para reenviarla.
   const resetear = async (c: Cliente) => {
     if (!window.confirm(t('clientes.confirmarReset', { nombre: c.nombre }))) return
     const nueva = generarPassword()
     try {
       await resetPasswordCliente(c.id, nueva)
-      setCredenciales({ ...c, password_inicial: nueva })
+      setNuevasPass((m) => ({ ...m, [c.id]: nueva }))
+      setExpandido((s) => new Set(s).add(c.id))
       toast.success(t('clientes.passwordReseteada'))
     } catch {
       toast.error(t('clientes.errorActualizar'))
@@ -311,15 +329,6 @@ function Clientes() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => resetear(c)}
-                        title={t('clientes.resetPassword')}
-                        className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium"
-                        style={{ color: '#4B52E8' }}
-                      >
-                        <KeyRound size={14} /> {t('clientes.resetPassword')}
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => toggleActivo(c)}
                         className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium"
                         style={{ color: c.activo ? '#EF4444' : '#10B981' }}
@@ -341,6 +350,50 @@ function Clientes() {
                   {/* Cotizaciones del cliente + seguimiento */}
                   {abierto && (
                     <div className="border-t border-gray-100 p-3">
+                      {/* Acceso al portal de este cliente (para reenviar) */}
+                      <div className="mb-3 rounded-lg border p-3" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
+                        <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+                          {t('clientes.accesoTitulo')}
+                        </p>
+                        <div className="grid gap-1 text-sm" style={{ color: '#374151' }}>
+                          <p className="break-all">
+                            <strong>{t('clientes.portalLink')}:</strong>{' '}
+                            <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: '#4B52E8' }}>
+                              {portalUrl}
+                            </a>
+                          </p>
+                          <p className="break-all">
+                            <strong>{t('clientes.email')}:</strong> {c.email}
+                          </p>
+                          <p>
+                            <strong>{t('clientes.password')}:</strong>{' '}
+                            {nuevasPass[c.id] ? (
+                              <span style={{ fontFamily: 'monospace', color: '#0D0D0D' }}>{nuevasPass[c.id]}</span>
+                            ) : (
+                              <span style={{ color: '#9CA3AF' }}>{t('clientes.passwordOculta')}</span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => resetear(c)}
+                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
+                            style={{ color: '#4B52E8' }}
+                          >
+                            <KeyRound size={14} /> {t('clientes.resetPassword')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copiarCredenciales(c)}
+                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
+                            style={{ color: '#10B981' }}
+                          >
+                            <Copy size={14} /> {t('clientes.copiar')}
+                          </button>
+                        </div>
+                      </div>
+
                       {cots === undefined ? (
                         <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('equipo.cargando')}</p>
                       ) : cots.filter((s) => s.enviada_cliente).length === 0 ? (

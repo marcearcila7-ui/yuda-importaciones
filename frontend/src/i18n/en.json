@@ -330,6 +330,8 @@
     "portalTitulo": "Client portal link",
     "portalAyuda": "Share it with your clients so they can track their order. Each client's email is in their card; the password is generated when creating them or when reset.",
     "copiarLink": "Copy link",
+    "accesoTitulo": "Client portal access",
+    "passwordOculta": "•••••••• (can't be shown; generate a new one with \"Change password\")",
     "creado": "Client created",
     "errorCrear": "Could not create the client",
     "errorCargar": "Could not load the clients",

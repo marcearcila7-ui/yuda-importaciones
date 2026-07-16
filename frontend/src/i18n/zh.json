@@ -330,6 +330,8 @@
     "portalTitulo": "客户门户链接",
     "portalAyuda": "分享给客户以便他们跟踪订单状态。每位客户的邮箱在其资料中；密码在创建或重置时生成。",
     "copiarLink": "复制链接",
+    "accesoTitulo": "客户门户访问",
+    "passwordOculta": "••••••••（无法查看；用\"修改密码\"生成新密码）",
     "creado": "客户已创建",
     "errorCrear": "无法创建客户",
     "errorCargar": "无法加载客户",
