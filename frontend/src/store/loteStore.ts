@@ -32,6 +32,7 @@ interface LoteState {
   totalProc: number
   resultados: ResultadoLote[]
   errores: number
+  erroresSubida: number
   iniciar: (sesionId: string, files: File[]) => Promise<void>
   agregarMas: (files: File[]) => Promise<void>
   retomar: (sesionId: string) => Promise<void>
@@ -59,6 +60,7 @@ const ESTADO_INICIAL = {
   totalProc: 0,
   resultados: [] as ResultadoLote[],
   errores: 0,
+  erroresSubida: 0,
 }
 
 export const useLoteStore = create<LoteState>((set, get) => {
@@ -111,13 +113,18 @@ export const useLoteStore = create<LoteState>((set, get) => {
       const worker = async () => {
         while (idx < files.length) {
           const f = files[idx++]
+          let ok = false
           try {
             const comprimido = await comprimirImagen(f)
             await subirFotoLote(lote_id, comprimido)
+            ok = true
           } catch {
-            // foto que no se pudo subir: se omite
+            // no se pudo subir esta foto (red/servidor): se cuenta como error, no se pierde en silencio
           }
-          set((s) => ({ subidas: s.subidas + 1 }))
+          set((s) => ({
+            subidas: s.subidas + 1,
+            erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
+          }))
         }
       }
       await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))
@@ -135,19 +142,24 @@ export const useLoteStore = create<LoteState>((set, get) => {
       const loteId = get().loteId
       if (!loteId || files.length === 0) return
       detenerPoll()
-      set({ fase: 'subiendo', subidas: 0, totalSubir: files.length })
+      set({ fase: 'subiendo', subidas: 0, totalSubir: files.length, erroresSubida: 0 })
 
       let idx = 0
       const worker = async () => {
         while (idx < files.length) {
           const f = files[idx++]
+          let ok = false
           try {
             const comprimido = await comprimirImagen(f)
             await subirFotoLote(loteId, comprimido)
+            ok = true
           } catch {
-            // foto que no se pudo subir: se omite
+            // no se pudo subir esta foto (red/servidor): se cuenta como error, no se pierde en silencio
           }
-          set((s) => ({ subidas: s.subidas + 1 }))
+          set((s) => ({
+            subidas: s.subidas + 1,
+            erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
+          }))
         }
       }
       await Promise.all(Array.from({ length: Math.min(CONCURRENCIA, files.length) }, worker))

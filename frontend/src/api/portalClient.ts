@@ -16,4 +16,25 @@ portalClient.interceptors.request.use((config) => {
   return config
 })
 
+// Auto-logout ante sesión vencida del cliente: si el backend responde 401 a una
+// llamada autenticada, el token del portal ya no sirve. Lo limpiamos y mandamos
+// al login del portal (en vez de dejar la pantalla colgada como si siguiera dentro).
+// Se excluye /portal/login para no pisar el mensaje de "credenciales incorrectas".
+portalClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status
+    const url: string = error.config?.url ?? ''
+    const esLogin = url.includes('/portal/login')
+    if (status === 401 && !esLogin && localStorage.getItem('yuda_portal_token')) {
+      localStorage.removeItem('yuda_portal_token')
+      localStorage.removeItem('yuda_portal_cliente')
+      if (!window.location.pathname.startsWith('/portal/login')) {
+        window.location.href = '/portal/login'
+      }
+    }
+    return Promise.reject(error)
+  },
+)
+
 export default portalClient

@@ -34,6 +34,7 @@ function CargaMasiva() {
     totalProc,
     resultados,
     errores,
+    erroresSubida,
     iniciar,
     agregarMas,
     retomar,
@@ -174,6 +175,13 @@ function CargaMasiva() {
       )}
 
       {aviso && <p className="text-sm" style={{ color: '#B45309' }}>{aviso}</p>}
+
+      {/* Fotos que no llegaron a subir (red/servidor) — no se pierden en silencio */}
+      {erroresSubida > 0 && (
+        <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
+          {t('lote.fallidasSubida', { n: erroresSubida })}
+        </p>
+      )}
 
       {/* Progreso (subiendo o procesando) */}
       {enProgreso && (

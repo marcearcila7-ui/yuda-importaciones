@@ -283,7 +283,8 @@
     "descartar": "放弃",
     "segundoPlano": "可以关闭应用：处理会继续，返回后即可看到结果。",
     "noLegibles": "{{n}} 张照片不清晰。请重拍后才能添加这些产品。",
-    "agregarMas": "添加更多照片"
+    "agregarMas": "添加更多照片",
+    "fallidasSubida": "{{n}} 张照片上传失败；请检查网络后重试。"
   },
   "roles": {
     "admin": "管理员",

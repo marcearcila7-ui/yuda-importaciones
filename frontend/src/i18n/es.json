@@ -283,7 +283,8 @@
     "descartar": "Descartar",
     "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados.",
     "noLegibles": "{{n}} foto(s) no legible(s). Vuelve a tomarlas para poder agregar esos productos.",
-    "agregarMas": "Agregar más fotos"
+    "agregarMas": "Agregar más fotos",
+    "fallidasSubida": "No se pudieron subir {{n}} foto(s); revisa tu conexión e inténtalo de nuevo."
   },
   "roles": {
     "admin": "Administrador",
