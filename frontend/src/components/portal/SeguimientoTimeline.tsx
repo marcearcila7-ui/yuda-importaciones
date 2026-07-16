@@ -20,6 +20,21 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
     })
   }
 
+  // Sello automático fecha+hora de cuando se alcanzó la etapa (se convierte a la
+  // hora local del que mira). Es lo que se muestra por defecto en cada etapa.
+  const fmtFechaHora = (iso?: string | null) => {
+    if (!iso) return null
+    const dt = new Date(iso)
+    if (Number.isNaN(dt.getTime())) return null
+    return dt.toLocaleString(locale, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   const indiceActual = ESTADOS_ENVIO.indexOf(seguimiento.estado as (typeof ESTADOS_ENVIO)[number])
   const hitos = seguimiento.hitos ?? {}
   const tieneEnvio =
@@ -111,6 +126,8 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
             const actual = i === indiceActual
             const hito = hitos[k]
             const esUltimo = i === ESTADOS_ENVIO.length - 1
+            // Fecha+hora automática del hito; si es dato viejo sin sello, la fecha.
+            const cuando = fmtFechaHora(hito?.ts) ?? fmtFecha(hito?.fecha)
             return (
               <div key={k} className="flex gap-3">
                 {/* Punto + línea */}
@@ -143,9 +160,9 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                   >
                     {t(`seguimiento.estados.${k}`)}
                   </p>
-                  {hito?.fecha && (
+                  {cuando && (
                     <p className="text-xs" style={{ color: '#6B7280' }}>
-                      {fmtFecha(hito.fecha)}
+                      {cuando}
                     </p>
                   )}
                   {hito?.nota && (
