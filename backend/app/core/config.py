@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -48,6 +48,28 @@ class Settings(BaseSettings):
     def _limpiar_espacios(cls, v):
         """Limpia espacios accidentales al pegar valores en variables de entorno"""
         return v.strip() if isinstance(v, str) else v
+
+    @model_validator(mode="after")
+    def _validar_secretos_obligatorios(self):
+        """Falla el arranque si faltan secretos críticos, en vez de arrancar en un
+        estado inseguro. Con SECRET_KEY vacía los JWT se firmarían con "" y serían
+        falsificables; sin DATABASE_URL la app no puede operar."""
+        if not self.SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY es obligatoria y está vacía. Definí una cadena aleatoria "
+                "de al menos 32 caracteres en el entorno/.env antes de arrancar."
+            )
+        if len(self.SECRET_KEY) < 32:
+            raise ValueError(
+                f"SECRET_KEY es demasiado corta ({len(self.SECRET_KEY)} caracteres); "
+                "usá al menos 32 caracteres aleatorios."
+            )
+        if not self.DATABASE_URL:
+            raise ValueError(
+                "DATABASE_URL es obligatoria y está vacía. Configurá la conexión a "
+                "Postgres en el entorno/.env antes de arrancar."
+            )
+        return self
 
     @property
     def cors_origins_list(self) -> list[str]:
