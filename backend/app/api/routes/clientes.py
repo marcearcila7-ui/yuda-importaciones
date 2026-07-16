@@ -2,7 +2,7 @@ import asyncio
 import secrets
 import string
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from pydantic import BaseModel
@@ -248,10 +248,17 @@ def enviar_a_cliente(
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
+        ahora = datetime.now(timezone.utc)
         seg = SeguimientoPedido(
             sesion_id=sesion_id,
             estado=ESTADO_INICIAL,
-            hitos={ESTADO_INICIAL: {"fecha": datetime.now().date().isoformat(), "nota": None}},
+            hitos={
+                ESTADO_INICIAL: {
+                    "fecha": ahora.date().isoformat(),
+                    "nota": None,
+                    "ts": ahora.isoformat(),
+                }
+            },
         )
         db.add(seg)
 
@@ -314,7 +321,26 @@ def actualizar_seguimiento(
     seg.estado = datos.estado
     seg.novedades = datos.novedades
     if datos.hitos is not None:
-        seg.hitos = {k: v.model_dump() for k, v in datos.hitos.items()}
+        # Sella cada hito con fecha+hora la primera vez y conserva el sello original
+        # después: el historial de etapas (con sus archivos) se preserva SIEMPRE.
+        prev = seg.hitos or {}
+        ahora = datetime.now(timezone.utc).isoformat()
+        nuevos: dict = {}
+        for k, v in datos.hitos.items():
+            d = v.model_dump()
+            d.pop("ts", None)  # el sello lo maneja el servidor, no el cliente
+            d["ts"] = (prev.get(k) or {}).get("ts") or ahora
+            nuevos[k] = d
+        # La etapa actual siempre queda registrada, aunque no se haya cargado
+        # fecha/nota/archivo, para que el historial muestre cuándo se alcanzó.
+        if datos.estado not in nuevos:
+            nuevos[datos.estado] = {
+                "fecha": None,
+                "nota": None,
+                "adjuntos": None,
+                "ts": (prev.get(datos.estado) or {}).get("ts") or ahora,
+            }
+        seg.hitos = nuevos
 
     # Información de envío: solo Marcela (admin). La vendedora conserva lo cargado.
     if not es_vendedora:

@@ -326,6 +326,10 @@
     "promptPassword": "New password for {{nombre}}:",
     "passwordCorta": "The password must be at least 6 characters",
     "passwordReseteada": "Password updated",
+    "confirmarReset": "This generates a NEW password for {{nombre}}; the old one will stop working. Continue?",
+    "portalTitulo": "Client portal link",
+    "portalAyuda": "Share it with your clients so they can track their order. Each client's email is in their card; the password is generated when creating them or when reset.",
+    "copiarLink": "Copy link",
     "creado": "Client created",
     "errorCrear": "Could not create the client",
     "errorCargar": "Could not load the clients",
@@ -380,6 +384,7 @@
     "adjuntoSubido": "File attached",
     "errorAdjunto": "Could not attach the file",
     "archivo": "File",
+    "historialTitulo": "Order history",
     "quitarAdjunto": "Remove attachment"
   },
   "seguimiento": {

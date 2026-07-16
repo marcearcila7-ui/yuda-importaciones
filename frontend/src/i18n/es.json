@@ -326,6 +326,10 @@
     "promptPassword": "Nueva contraseña para {{nombre}}:",
     "passwordCorta": "La contraseña debe tener al menos 6 caracteres",
     "passwordReseteada": "Contraseña actualizada",
+    "confirmarReset": "Esto genera una contraseña NUEVA para {{nombre}}; la anterior dejará de funcionar. ¿Continuar?",
+    "portalTitulo": "Link del portal de clientes",
+    "portalAyuda": "Compártelo con tus clientes para que sigan el estado de su pedido. El correo de cada cliente está en su ficha; la contraseña se genera al crearlo o al restablecerla.",
+    "copiarLink": "Copiar link",
     "creado": "Cliente creado",
     "errorCrear": "No se pudo crear el cliente",
     "errorCargar": "No se pudieron cargar los clientes",
@@ -380,6 +384,7 @@
     "adjuntoSubido": "Archivo adjuntado",
     "errorAdjunto": "No se pudo adjuntar el archivo",
     "archivo": "Archivo",
+    "historialTitulo": "Historial del pedido",
     "quitarAdjunto": "Quitar adjunto"
   },
   "seguimiento": {

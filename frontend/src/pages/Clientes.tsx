@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { ChevronDown, ChevronRight, FileText, KeyRound, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, Trash2, UserPlus, Users } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -19,6 +19,14 @@ import type { Sesion } from '../types/packing'
 
 const numeroCot = (s: Sesion) =>
   `YUDA-${(s.fecha || '').replace(/-/g, '')}-${s.id.slice(0, 6).toUpperCase()}`
+
+// Genera una contraseña temporal legible (sin caracteres ambiguos) para reenviar
+function generarPassword(): string {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+  const arr = new Uint32Array(10)
+  crypto.getRandomValues(arr)
+  return Array.from(arr, (n) => abc[n % abc.length]).join('') + '*'
+}
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
@@ -58,6 +66,8 @@ function Clientes() {
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
+  const [copiadoLink, setCopiadoLink] = useState(false)
+  const portalUrl = `${window.location.origin}/portal/login`
 
   // Expansión: cotizaciones del cliente + seguimiento
   const [expandido, setExpandido] = useState<Set<string>>(new Set())
@@ -154,15 +164,24 @@ function Clientes() {
     }
   }
 
-  const resetear = async (c: Cliente) => {
-    const nueva = window.prompt(t('clientes.promptPassword', { nombre: c.nombre }))
-    if (!nueva) return
-    if (nueva.trim().length < 6) {
-      toast.error(t('clientes.passwordCorta'))
-      return
-    }
+  const copiarLink = async () => {
     try {
-      await resetPasswordCliente(c.id, nueva.trim())
+      await navigator.clipboard.writeText(portalUrl)
+      setCopiadoLink(true)
+      setTimeout(() => setCopiadoLink(false), 2500)
+    } catch {
+      toast.error(t('clientes.errorCopiar'))
+    }
+  }
+
+  // Restablecer: genera una contraseña nueva y muestra el bloque compartible
+  // (link + correo + clave). Útil cuando la vendedora olvidó la contraseña.
+  const resetear = async (c: Cliente) => {
+    if (!window.confirm(t('clientes.confirmarReset', { nombre: c.nombre }))) return
+    const nueva = generarPassword()
+    try {
+      await resetPasswordCliente(c.id, nueva)
+      setCredenciales({ ...c, password_inicial: nueva })
       toast.success(t('clientes.passwordReseteada'))
     } catch {
       toast.error(t('clientes.errorActualizar'))
@@ -185,6 +204,25 @@ function Clientes() {
           style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
         >
           <UserPlus size={18} /> {t('clientes.nuevo')}
+        </button>
+      </div>
+
+      {/* Link del portal, siempre a mano para compartir con los clientes */}
+      <div className="card flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p style={{ fontWeight: 700, fontSize: 15, color: '#0D0D0D' }}>{t('clientes.portalTitulo')}</p>
+          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: '#4B52E8' }}>
+            {portalUrl}
+          </a>
+          <p className="mt-1 text-xs" style={{ color: '#9CA3AF' }}>{t('clientes.portalAyuda')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={copiarLink}
+          className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+          style={{ color: '#4B52E8' }}
+        >
+          {copiadoLink ? <Check size={16} /> : <Copy size={16} />} {copiadoLink ? t('clientes.copiado') : t('clientes.copiarLink')}
         </button>
       </div>
 

@@ -13,6 +13,8 @@ import { useAuthStore } from '../store/authStore'
 import { ESTADOS_ENVIO, ESTADOS_VENDEDORA, NAVIERAS } from '../types/seguimiento'
 import type { Adjunto, Hito, Seguimiento } from '../types/seguimiento'
 
+const LOCALES: Record<string, string> = { es: 'es-CO', en: 'en-US', zh: 'zh-CN' }
+
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
@@ -23,7 +25,7 @@ const ESTADOS_VENDEDORA_SET: ReadonlySet<string> = new Set(ESTADOS_VENDEDORA)
 // La vendedora gestiona las etapas hasta "en bodega"; la info de envío (naviera,
 // tracking, BL) es exclusiva de Marcela (admin).
 function SeguimientoEditor({ sesionId }: { sesionId: string }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const esAdmin = useAuthStore((s) => s.usuario?.rol === 'admin')
   const [estado, setEstado] = useState<string>('cotizacion_enviada')
   const [novedades, setNovedades] = useState('')
@@ -74,6 +76,22 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
 
   // Adjuntos de la etapa seleccionada (los que el cliente verá en el tracking).
   const adjuntosEtapa = hitos[estado]?.adjuntos ?? []
+
+  // Una etapa cuenta para el historial si tiene sello, fecha, nota o archivos.
+  const tieneContenido = (h?: Hito) => !!h && !!(h.ts || h.fecha || h.nota || h.adjuntos?.length)
+
+  const fmtFechaHora = (iso?: string | null): string | null => {
+    if (!iso) return null
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toLocaleString(LOCALES[i18n.language] ?? 'es-CO', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
 
   const subirAdj = async (archivo: File) => {
     setSubiendoAdj(true)
@@ -142,6 +160,46 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Historial del pedido: se conserva SIEMPRE. Marcela lo ve por cada cliente. */}
+      {ESTADOS_ENVIO.some((k) => tieneContenido(hitos[k])) && (
+        <div className="rounded-xl border p-4" style={{ borderColor: '#E5E7EB' }}>
+          <p className="mb-3 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+            {t('envio.historialTitulo')}
+          </p>
+          <ol className="flex flex-col gap-3">
+            {ESTADOS_ENVIO.filter((k) => tieneContenido(hitos[k])).map((k) => {
+              const h = hitos[k]
+              const cuando = fmtFechaHora(h?.ts) ?? h?.fecha ?? null
+              return (
+                <li key={k} className="flex gap-3">
+                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: '#10B981' }} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium" style={{ color: '#0D0D0D' }}>
+                      {t(`seguimiento.estados.${k}`)}
+                    </p>
+                    {cuando && <p className="text-xs" style={{ color: '#6B7280' }}>{cuando}</p>}
+                    {h?.nota && <p className="text-xs" style={{ color: '#6B7280' }}>{h.nota}</p>}
+                    {h?.adjuntos?.map((a, i) => (
+                      <a
+                        key={`${a.url}-${i}`}
+                        href={a.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 flex items-center gap-1 text-xs"
+                        style={{ color: '#4B52E8' }}
+                      >
+                        {a.tipo === 'imagen' ? <ImageIcon size={13} /> : <FileText size={13} />}{' '}
+                        {a.nombre || t('envio.archivo')}
+                      </a>
+                    ))}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      )}
+
       {/* Paso 1: etapa actual + su fecha (lo principal para la vendedora) */}
       <div className="rounded-xl border p-4" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
         <p className="mb-1 text-sm font-semibold" style={{ color: '#0D0D0D' }}>

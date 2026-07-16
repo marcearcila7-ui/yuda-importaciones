@@ -55,6 +55,9 @@ export interface Hito {
   fecha?: string | null
   nota?: string | null
   adjuntos?: Adjunto[] | null
+  // Sello automático de fecha+hora (ISO) del momento en que se alcanzó la etapa.
+  // Lo pone el servidor y se conserva; el editor lo muestra pero no lo edita.
+  ts?: string | null
 }
 
 export interface Seguimiento {
