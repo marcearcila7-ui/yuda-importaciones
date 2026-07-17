@@ -195,7 +195,14 @@
     "ctns": "Cajas",
     "precioRmb": "Precio RMB",
     "envio": "Estado del envío",
-    "sinEnvio": "Todavía no hay información de envío"
+    "sinEnvio": "Todavía no hay información de envío",
+    "descargarTitulo": "Descargar la cotización",
+    "idioma": "Idioma",
+    "descargarPdf": "PDF",
+    "descargarExcel": "Excel",
+    "generando": "Generando…",
+    "errorDescargar": "No se pudo generar el archivo",
+    "editarPanel": "Editar en el panel"
   },
   "admin": {
     "titulo": "Administración",
@@ -339,6 +346,10 @@
     "faltanDatos": "Completa el nombre y el email",
     "seguimiento": "Ver/editar seguimiento",
     "sinCotizacionesEnviadas": "Este cliente aún no tiene cotizaciones enviadas.",
+    "sinCotizaciones": "Este cliente aún no tiene cotizaciones.",
+    "enviada": "Enviada",
+    "borrador": "Borrador",
+    "verDetalle": "Ver detalle",
     "eliminar": "Eliminar",
     "confirmarEliminar": "¿Eliminar a {{nombre}}? Esta acción no se puede deshacer.",
     "eliminado": "Cliente eliminado",

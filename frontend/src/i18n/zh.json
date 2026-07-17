@@ -195,7 +195,14 @@
     "ctns": "箱数",
     "precioRmb": "价格 RMB",
     "envio": "运输状态",
-    "sinEnvio": "暂无运输信息"
+    "sinEnvio": "暂无运输信息",
+    "descargarTitulo": "下载报价单",
+    "idioma": "语言",
+    "descargarPdf": "PDF",
+    "descargarExcel": "Excel",
+    "generando": "生成中…",
+    "errorDescargar": "无法生成文件",
+    "editarPanel": "在面板中编辑"
   },
   "admin": {
     "titulo": "管理",
@@ -339,6 +346,10 @@
     "faltanDatos": "请填写姓名和邮箱",
     "seguimiento": "查看/编辑跟踪",
     "sinCotizacionesEnviadas": "该客户还没有已发送的报价。",
+    "sinCotizaciones": "该客户还没有报价。",
+    "enviada": "已发送",
+    "borrador": "草稿",
+    "verDetalle": "查看详情",
     "eliminar": "删除",
     "confirmarEliminar": "确定删除 {{nombre}}？此操作无法撤销。",
     "eliminado": "客户已删除",

@@ -195,7 +195,14 @@
     "ctns": "Cartons",
     "precioRmb": "Price RMB",
     "envio": "Shipping status",
-    "sinEnvio": "No shipping information yet"
+    "sinEnvio": "No shipping information yet",
+    "descargarTitulo": "Download the quotation",
+    "idioma": "Language",
+    "descargarPdf": "PDF",
+    "descargarExcel": "Excel",
+    "generando": "Generating…",
+    "errorDescargar": "Could not generate the file",
+    "editarPanel": "Edit in dashboard"
   },
   "admin": {
     "titulo": "Administration",
@@ -339,6 +346,10 @@
     "faltanDatos": "Fill in the name and email",
     "seguimiento": "View/edit tracking",
     "sinCotizacionesEnviadas": "This client has no sent quotations yet.",
+    "sinCotizaciones": "This client has no quotations yet.",
+    "enviada": "Sent",
+    "borrador": "Draft",
+    "verDetalle": "View details",
     "eliminar": "Delete",
     "confirmarEliminar": "Delete {{nombre}}? This cannot be undone.",
     "eliminado": "Client deleted",

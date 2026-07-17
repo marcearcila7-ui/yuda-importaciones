@@ -194,11 +194,7 @@ function Historial() {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() =>
-                          esAdmin
-                            ? navigate('/dashboard', { state: { sesion_id: s.id } })
-                            : navigate(`/cotizacion/${s.id}`)
-                        }
+                        onClick={() => navigate(`/cotizacion/${s.id}`)}
                         className="rounded-lg px-3 py-1 text-sm font-medium"
                         style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
                       >

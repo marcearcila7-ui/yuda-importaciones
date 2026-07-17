@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
@@ -62,6 +63,7 @@ function Campo({
 
 function Clientes() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -396,21 +398,36 @@ ${t('clientes.email')}: ${c.email}`
 
                       {cots === undefined ? (
                         <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('equipo.cargando')}</p>
-                      ) : cots.filter((s) => s.enviada_cliente).length === 0 ? (
-                        <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('clientes.sinCotizacionesEnviadas')}</p>
+                      ) : cots.length === 0 ? (
+                        <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('clientes.sinCotizaciones')}</p>
                       ) : (
                         <div className="flex flex-col gap-2">
-                          {cots.filter((s) => s.enviada_cliente).map((s) => (
+                          {cots.map((s) => (
                             <div key={s.id} className="rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
                               <div className="flex flex-wrap items-center justify-between gap-2 p-2">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <FileText size={15} style={{ color: '#6B7280' }} />
                                   <span className="text-sm font-medium" style={{ color: '#0D0D0D' }}>{numeroCot(s)}</span>
                                   <span className="text-xs" style={{ color: '#9CA3AF' }}>{s.fecha}</span>
+                                  <span
+                                    className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                    style={
+                                      s.enviada_cliente
+                                        ? { backgroundColor: '#D1FAE5', color: '#10B981' }
+                                        : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                                    }
+                                  >
+                                    {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
+                                  </span>
                                 </div>
-                                <button type="button" onClick={() => toggleCot(s.id)} className="text-sm font-semibold" style={{ color: '#4B52E8' }}>
-                                  {t('clientes.seguimiento')}
-                                </button>
+                                <div className="flex items-center gap-3">
+                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                    {t('clientes.verDetalle')}
+                                  </button>
+                                  <button type="button" onClick={() => toggleCot(s.id)} className="text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                    {t('clientes.seguimiento')}
+                                  </button>
+                                </div>
                               </div>
                               {cotAbierta.has(s.id) && (
                                 <div className="border-t border-gray-100 p-3">
