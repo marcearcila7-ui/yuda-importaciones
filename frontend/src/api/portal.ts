@@ -2,6 +2,7 @@ import portalClient from './portalClient'
 import type {
   CotizacionDetalle,
   CotizacionResumen,
+  PortalPedidoInput,
   PortalTokenResponse,
 } from '../types/portal'
 
@@ -24,6 +25,11 @@ export async function getMisCotizaciones(): Promise<CotizacionResumen[]> {
 export async function getCotizacionDetalle(sesion_id: string): Promise<CotizacionDetalle> {
   const { data } = await portalClient.get<CotizacionDetalle>(`/portal/cotizaciones/${sesion_id}`)
   return data
+}
+
+// El cliente envía las cajas que desea de cada producto + notas.
+export async function enviarPedidoPortal(sesion_id: string, pedido: PortalPedidoInput): Promise<void> {
+  await portalClient.put(`/portal/cotizaciones/${sesion_id}/pedido`, pedido)
 }
 
 export async function descargarCotizacion(

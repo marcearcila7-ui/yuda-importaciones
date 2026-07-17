@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -24,6 +24,11 @@ class Sesion(Base):
     )
     enviada_cliente: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     fecha_envio_cliente: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Pedido del cliente desde el portal: notas/observaciones y cuándo lo envió.
+    notas_cliente: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pedido_recibido_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

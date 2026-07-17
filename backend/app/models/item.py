@@ -39,4 +39,7 @@ class Item(Base):
     # MQT: mínima cantidad de CAJAS que exige el proveedor (MOQ en cartones).
     moq_cajas: Mapped[int | None] = mapped_column(Integer, nullable=True)
     ctns: Mapped[int] = mapped_column(Integer, default=1)
+    # Cajas (CTNS) que el CLIENTE pidió desde su portal, para el pedido al
+    # proveedor. Null hasta que el cliente envíe su pedido.
+    cantidad_solicitada: Mapped[int | None] = mapped_column(Integer, nullable=True)
     orden: Mapped[int] = mapped_column(Integer, default=0)

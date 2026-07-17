@@ -454,7 +454,20 @@
     "cantidad": "Cantidad",
     "precioUnit": "Precio unitario",
     "total": "Total",
-    "seguimiento": "Seguimiento del envío"
+    "seguimiento": "Seguimiento del envío",
+    "miPedidoTitulo": "Mi pedido",
+    "miPedidoAyuda": "Indica cuántas cajas deseas de cada producto y agrega notas si lo necesitas. Tu vendedora usará esto para el pedido al proveedor.",
+    "cajasDeseadas": "Cajas que deseo",
+    "unidades": "unidades",
+    "porCaja": "{{n}} por caja",
+    "notasLabel": "Notas u observaciones",
+    "notasPlaceholder": "Ej.: prefiero colores oscuros, entregar antes de fin de mes…",
+    "enviarPedido": "Enviar mi pedido",
+    "actualizarPedido": "Actualizar mi pedido",
+    "enviando": "Enviando…",
+    "pedidoEnviado": "¡Pedido enviado! Tu vendedora ya lo recibió.",
+    "errorPedido": "No se pudo enviar el pedido. Intenta de nuevo.",
+    "pedidoRecibidoAviso": "Ya enviaste tu pedido. Puedes ajustarlo cuando quieras."
   },
   "notif": {
     "titulo": "Avisos",

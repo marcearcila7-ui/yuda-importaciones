@@ -454,7 +454,20 @@
     "cantidad": "数量",
     "precioUnit": "单价",
     "total": "总计",
-    "seguimiento": "发货跟踪"
+    "seguimiento": "发货跟踪",
+    "miPedidoTitulo": "我的订单",
+    "miPedidoAyuda": "填写每种产品想要的箱数，如需可添加备注。销售会据此向供应商下单。",
+    "cajasDeseadas": "我想要的箱数",
+    "unidades": "件",
+    "porCaja": "每箱 {{n}}",
+    "notasLabel": "备注或说明",
+    "notasPlaceholder": "例如：我偏好深色，请月底前交货……",
+    "enviarPedido": "发送我的订单",
+    "actualizarPedido": "更新我的订单",
+    "enviando": "发送中…",
+    "pedidoEnviado": "订单已发送！销售已收到。",
+    "errorPedido": "无法发送订单，请重试。",
+    "pedidoRecibidoAviso": "您已发送订单，可随时调整。"
   },
   "notif": {
     "titulo": "通知",

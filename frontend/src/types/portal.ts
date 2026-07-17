@@ -26,6 +26,7 @@ export interface CotizacionResumen {
 }
 
 export interface PortalItem {
+  item_id: string
   foto_url: string | null
   descripcion_es: string | null
   descripcion_en: string | null
@@ -37,6 +38,7 @@ export interface PortalItem {
   total_usd: number
   cbm: number
   t_cbm: number
+  cantidad_solicitada: number | null
 }
 
 export interface CotizacionDetalle {
@@ -48,4 +50,11 @@ export interface CotizacionDetalle {
   total_usd: number
   total_cbm: number
   seguimiento: Seguimiento
+  notas_cliente: string | null
+  pedido_recibido: boolean
+}
+
+export interface PortalPedidoInput {
+  items: { item_id: string; cantidad: number }[]
+  notas: string | null
 }

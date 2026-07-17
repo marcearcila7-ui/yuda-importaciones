@@ -454,7 +454,20 @@
     "cantidad": "Quantity",
     "precioUnit": "Unit price",
     "total": "Total",
-    "seguimiento": "Shipment tracking"
+    "seguimiento": "Shipment tracking",
+    "miPedidoTitulo": "My order",
+    "miPedidoAyuda": "Enter how many boxes you want of each product and add notes if needed. Your sales rep will use this for the supplier order.",
+    "cajasDeseadas": "Boxes I want",
+    "unidades": "units",
+    "porCaja": "{{n}} per box",
+    "notasLabel": "Notes or remarks",
+    "notasPlaceholder": "E.g.: I prefer dark colors, deliver before month-end…",
+    "enviarPedido": "Send my order",
+    "actualizarPedido": "Update my order",
+    "enviando": "Sending…",
+    "pedidoEnviado": "Order sent! Your sales rep received it.",
+    "errorPedido": "Could not send the order. Please try again.",
+    "pedidoRecibidoAviso": "You already sent your order. You can adjust it anytime."
   },
   "notif": {
     "titulo": "Notifications",

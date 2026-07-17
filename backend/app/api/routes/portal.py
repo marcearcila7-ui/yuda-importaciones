@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from app.schemas.portal import (
     PortalCotizacionDetalle,
     PortalCotizacionResumen,
     PortalItem,
+    PortalPedidoInput,
 )
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.cotizacion_service import (
@@ -124,6 +125,7 @@ def detalle_cotizacion(
         total_cbm += calc["t_cbm"]
         portal_items.append(
             PortalItem(
+                item_id=i.id,
                 foto_url=i.foto_url,
                 descripcion_es=i.descripcion_es,
                 descripcion_en=i.descripcion_en,
@@ -135,6 +137,7 @@ def detalle_cotizacion(
                 total_usd=calc["total_usd"],
                 cbm=calc["cbm"],
                 t_cbm=calc["t_cbm"],
+                cantidad_solicitada=i.cantidad_solicitada,
             )
         )
 
@@ -154,7 +157,32 @@ def detalle_cotizacion(
         total_usd=round(total_usd, 2),
         total_cbm=round(total_cbm, 6),
         seguimiento=seguimiento,
+        notas_cliente=sesion.notas_cliente,
+        pedido_recibido=sesion.pedido_recibido_at is not None,
     )
+
+
+@router.put("/cotizaciones/{sesion_id}/pedido")
+def enviar_pedido(
+    sesion_id: str,
+    datos: PortalPedidoInput,
+    cliente: Cliente = Depends(get_current_cliente),
+    db: Session = Depends(get_db),
+) -> dict:
+    """El cliente envía, desde su portal, las cajas que desea de cada producto
+    (para el pedido al proveedor) y sus notas. Solo puede tocar su propia
+    cotización enviada. Editable las veces que quiera."""
+    sesion = _sesion_del_cliente(db, sesion_id, cliente)
+    items = {i.id: i for i in db.query(Item).filter(Item.sesion_id == sesion_id).all()}
+    for linea in datos.items:
+        it = items.get(linea.item_id)
+        if it is None:
+            continue  # ignora ítems que no son de esta cotización
+        it.cantidad_solicitada = linea.cantidad if linea.cantidad and linea.cantidad > 0 else None
+    sesion.notas_cliente = (datos.notas or "").strip() or None
+    sesion.pedido_recibido_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"detail": "Pedido recibido"}
 
 
 @router.post("/cotizaciones/{sesion_id}/cotizacion-excel")
