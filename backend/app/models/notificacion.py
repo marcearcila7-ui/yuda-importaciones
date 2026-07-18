@@ -7,8 +7,14 @@ from sqlalchemy.sql import func
 
 from app.database import Base
 
-# Tipos de aviso para el equipo (por ahora solo el aviso de "listo para envío").
+# Tipos de aviso para el equipo.
 TIPO_LISTO_PARA_ENVIO = "listo_para_envio"
+# El cliente envió, desde su portal, las cajas que desea + notas de su cotización.
+TIPO_PEDIDO_CLIENTE = "pedido_cliente"
+# Marcela actualizó el envío (despachado / entregado): aviso para la vendedora dueña.
+TIPO_ENVIO_VENDEDORA = "envio_vendedora"
+# El cliente confirmó las cantidades finales: aviso para la vendedora dueña + Marcela.
+TIPO_PEDIDO_CONFIRMADO = "pedido_confirmado"
 
 
 class Notificacion(Base):
@@ -21,9 +27,11 @@ class Notificacion(Base):
     __tablename__ = "notificaciones"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    usuario_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    usuario_id: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id"), nullable=False, index=True
+    )
     sesion_id: Mapped[str | None] = mapped_column(
-        String, ForeignKey("sesiones.id"), nullable=True
+        String, ForeignKey("sesiones.id"), nullable=True, index=True
     )
     tipo: Mapped[str] = mapped_column(String, nullable=False)
     titulo: Mapped[str] = mapped_column(String, nullable=False)

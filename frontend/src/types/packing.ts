@@ -28,6 +28,7 @@ export interface ItemResponse extends ItemCreate {
   id: string
   sesion_id: string
   foto_url?: string
+  cantidad_solicitada?: number | null
   t_qty: number
   total_rmb: number
   price_usd: number
@@ -45,5 +46,9 @@ export interface Sesion {
   user_id: string
   cliente_id?: string | null
   enviada_cliente?: boolean
+  notas_cliente?: string | null
+  pedido_recibido_at?: string | null
+  pedido_estado?: string | null
+  pedido_confirmado_at?: string | null
   created_at: string
 }

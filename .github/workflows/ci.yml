@@ -1,0 +1,42 @@
+name: CI
+
+# Corre la batería de tests del backend en cada push y cada pull request.
+# Los tests usan SQLite en memoria (no tocan la base real) y el conftest inyecta
+# las variables de entorno que la config exige, así que no hacen falta secretos.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias de sistema de WeasyPrint
+        # WeasyPrint (genera los PDF) necesita Pango/Cairo/GDK-Pixbuf a nivel del SO;
+        # sin esto, importar la app falla al cargar el servicio de PDF.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
+            libffi-dev libcairo2 shared-mime-info
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Instalar dependencias de Python
+        run: pip install -r requirements-dev.txt
+
+      - name: Correr tests
+        run: pytest

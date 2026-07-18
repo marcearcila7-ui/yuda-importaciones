@@ -7,6 +7,7 @@ import { Download } from 'lucide-react'
 import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
 import { useAuthStore } from '../store/authStore'
+import { confirmar } from '../store/confirmStore'
 import type { SesionHistorial } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -79,7 +80,11 @@ function Historial() {
   }
 
   const handleEliminar = async (s: SesionHistorial) => {
-    const ok = window.confirm(t('historial.confirmarEliminar', { cliente: s.nombre_cliente }))
+    const ok = await confirmar({
+      mensaje: t('historial.confirmarEliminar', { cliente: s.nombre_cliente }),
+      peligro: true,
+      textoConfirmar: t('historial.eliminar'),
+    })
     if (!ok) return
     try {
       await eliminarSesion(s.id)
@@ -156,7 +161,7 @@ function Historial() {
         </p>
       ) : (
         <div className="card overflow-x-auto p-0">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.fecha')}</th>

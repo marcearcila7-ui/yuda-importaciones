@@ -30,9 +30,8 @@ function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    await login(email, password)
-    // Si el login fue exitoso, el store guardó el token
-    if (localStorage.getItem('yuda_token')) {
+    const ok = await login(email, password)
+    if (ok) {
       // La contadora no crea cotizaciones: su inicio es el historial.
       const rol = useAuthStore.getState().usuario?.rol
       navigate(rol === 'contadora' ? '/historial' : '/dashboard')
@@ -40,7 +39,7 @@ function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen">
+    <div className="relative flex min-h-screen items-center justify-center bg-white px-6">
       {/* Selector de idioma: visible siempre, arriba a la derecha */}
       <div className="absolute right-4 top-4 z-20 flex gap-1">
         {IDIOMAS.map((idi) => {
@@ -64,39 +63,28 @@ function Login() {
           )
         })}
       </div>
-      {/* Mitad izquierda (branding) — solo desktop */}
-      <div
-        className="hidden w-1/2 flex-col items-center justify-center md:flex"
-        style={{ backgroundColor: '#4B52E8' }}
-      >
-        <p style={{ fontWeight: 800, fontSize: 56, color: '#FFFFFF', lineHeight: 1 }}>YU·DA</p>
-        <p style={{ fontSize: 13, letterSpacing: 4, color: '#FFFFFF', marginTop: 8 }}>
-          IMPORTACIONES
-        </p>
-        <div style={{ width: 40, height: 2, backgroundColor: '#FFFFFF', margin: '24px 0' }} />
-        <p style={{ fontSize: 18, fontWeight: 400, color: '#FFFFFF' }}>
-          {t('login.tagline')}
-        </p>
-        <p style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.7, marginTop: 8 }}>
-          义乌市与达贸易有限公司
-        </p>
-      </div>
-
-      {/* Mitad derecha (formulario) */}
-      <div className="flex w-full items-center justify-center bg-white px-6 md:w-1/2">
-        <div className="w-full" style={{ maxWidth: 380 }}>
-          {/* Logo pequeño arriba — solo mobile */}
-          <p
-            className="mb-8 text-center md:hidden"
-            style={{ fontWeight: 800, fontSize: 28, color: '#4B52E8' }}
-          >
-            YU·DA
-          </p>
-
-          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('login.bienvenida')}</h1>
-          <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
-            {t('login.credenciales')}
-          </p>
+      {/* Formulario centrado (todo blanco) */}
+      <div className="w-full" style={{ maxWidth: 380 }}>
+          {/* Logo + distintivo del equipo, centrado */}
+          <img
+            src="/logoyuda.png"
+            alt="YUDA Importaciones"
+            style={{ height: 44, width: 'auto', margin: '0 auto 20px' }}
+          />
+          <div className="text-center">
+            <span
+              className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+              style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+            >
+              {t('login.accesoEquipo')}
+            </span>
+            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>
+              {t('login.bienvenida')}
+            </h1>
+            <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
+              {t('login.credenciales')}
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 32 }}>
             <label htmlFor="email" style={labelStyle}>
@@ -140,7 +128,6 @@ function Login() {
               <p style={{ color: '#EF4444', fontSize: 14, marginTop: 12 }}>{error}</p>
             )}
           </form>
-        </div>
       </div>
     </div>
   )

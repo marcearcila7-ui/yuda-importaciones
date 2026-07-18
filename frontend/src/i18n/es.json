@@ -3,10 +3,59 @@
     "cotizacion": "Cotización",
     "clientes": "Clientes",
     "equipo": "Equipo",
+    "ventas": "Ventas",
     "historial": "Historial",
     "administracion": "Administración",
     "admin": "Admin",
     "cerrarSesion": "Cerrar sesión"
+  },
+  "ventas": {
+    "titulo": "Ventas",
+    "subtitulo": "Montos vendidos, pedidos en tránsito, cotizaciones y contenedores.",
+    "tituloResumen": "Ventas",
+    "verDetalle": "Ver detalle",
+    "cargando": "Cargando…",
+    "sinDatos": "No hay datos para este período.",
+    "filtrarVendedora": "Vendedora",
+    "todasVendedoras": "Todas",
+    "porVendedora": "Por vendedora",
+    "despachos": "Despachos",
+    "exportarCsv": "Exportar .csv",
+    "sinVendedoras": "Sin vendedoras",
+    "sinDespachos": "No hay despachos en este período.",
+    "enVentas": "en ventas",
+    "contenedoresVendedoras": "{{v}} de {{total}} contenedores son de cotizaciones hechas por vendedoras",
+    "rango": {
+      "hoy": "Hoy",
+      "7": "7 días",
+      "30": "30 días",
+      "todo": "Todo",
+      "custom": "Personalizado"
+    },
+    "tarjetas": {
+      "ventas": "Ventas totales",
+      "ventasSub": "en el período",
+      "enTransito": "En tránsito",
+      "enTransitoSub": "pedidos en camino",
+      "cotizaciones": "Cotizaciones",
+      "cotizacionesSub": "enviadas",
+      "contenedores": "Contenedores",
+      "contenedoresSub": "{{n}} de vendedoras"
+    },
+    "tabla": {
+      "vendedora": "Vendedora",
+      "cotizaciones": "Cotizaciones",
+      "contenedores": "Contenedores",
+      "ventasUsd": "Ventas (USD)",
+      "numero": "Cotización",
+      "cliente": "Cliente",
+      "estado": "Estado",
+      "bl": "BL",
+      "naviera": "Naviera",
+      "montoUsd": "Monto (USD)",
+      "despachado": "Despachado",
+      "fechaCotizacion": "Fecha cotización"
+    }
   },
   "login": {
     "bienvenida": "Bienvenida",
@@ -16,7 +65,8 @@
     "ingresar": "Ingresar",
     "ingresando": "Iniciando sesión...",
     "error": "Credenciales incorrectas",
-    "tagline": "Conectamos China con tu éxito"
+    "tagline": "Conectamos China con tu éxito",
+    "accesoEquipo": "Acceso del equipo"
   },
   "dashboard": {
     "titulo": "Cotización",
@@ -80,8 +130,8 @@
     "exitoAgregado": "Ítem agregado al Packing List",
     "errorProcesar": "No se pudo procesar la imagen",
     "tomarFoto": "Tomar foto o subir imagen",
-    "cbm": "CBM",
-    "mqt": "MQT (mín. cajas)",
+    "cbm": "Volumen (m³)",
+    "mqt": "Mín. de cajas",
     "noLegibleTitulo": "Foto no legible — vuelve a tomarla",
     "noLegibleImagen": "La imagen no se puede leer ({{motivo}}).",
     "noLegibleImagenSin": "La imagen no se puede leer con claridad.",
@@ -97,7 +147,13 @@
       "recortada": "recortada",
       "no_procesada": "no se pudo procesar",
       "generico": "no se ve con claridad"
-    }
+    },
+    "descripcionEn": "Descripción (inglés)",
+    "material": "Material",
+    "uso": "Uso",
+    "verMas": "Ver todos los datos",
+    "verMenos": "Ver menos",
+    "revisarAyuda": "Corrige lo que el sistema haya leído mal. Cada campo indica qué dato es."
   },
   "packing": {
     "exportar": "Descargar lista (Excel)",
@@ -107,7 +163,7 @@
     "fProveedor": "Proveedor",
     "fDescripcion": "Descripción",
     "fCajas": "Cajas",
-    "fMqt": "MQT (mín. cajas)",
+    "fMqt": "Mín. cajas",
     "fUnidCaja": "Unid/caja",
     "fPrecioRmb": "Precio RMB",
     "fTotalUsd": "Total USD",
@@ -123,7 +179,7 @@
       "material": "MATERIAL",
       "uso": "USO",
       "ctns": "CAJAS",
-      "moq_cajas": "MQT",
+      "moq_cajas": "MÍN. CAJAS",
       "qty_por_ctn": "UNID/CAJA",
       "unit": "UNIDAD",
       "t_qty": "CANT. TOTAL",
@@ -134,8 +190,8 @@
       "largo_cm": "Largo cm",
       "ancho_cm": "Ancho cm",
       "alto_cm": "Alto cm",
-      "cbm": "CBM",
-      "t_cbm": "CBM TOTAL",
+      "cbm": "VOL. m³",
+      "t_cbm": "VOL. TOTAL",
       "gw": "PESO",
       "t_gw": "PESO TOTAL"
     },
@@ -149,6 +205,9 @@
     "generar": "Generar Pedidos",
     "generando": "Generando pedidos...",
     "confirmar": "¿Generar pedidos para {{cliente}}? Se creará un archivo Excel por cada proveedor.",
+    "generarCliente": "Generar con las cantidades del cliente",
+    "confirmarCliente": "¿Generar los pedidos con las cajas que pidió {{cliente}}? Se usarán las cantidades que el cliente envió desde su portal.",
+    "confirmarSinPedido": "El cliente todavía no confirmó sus cantidades. ¿Generar igual el pedido a proveedor con las cajas que cargaste?",
     "advertencias": "Advertencias:",
     "generados": "Pedidos generados:",
     "descargarExcel": "Descargar Excel",
@@ -181,6 +240,14 @@
     "errorEliminar": "No se pudo eliminar la cotización",
     "exportar": "Exportar CSV"
   },
+  "pedidoCliente": {
+    "titulo": "Pedido del cliente",
+    "recibidoEl": "Recibido el {{fecha}}",
+    "cajas": "{{n}} cajas",
+    "sinCantidad": "Sin cantidad",
+    "notas": "Notas del cliente",
+    "sinPedido": "El cliente aún no ha enviado su pedido desde el portal."
+  },
   "detalle": {
     "volver": "Volver al historial",
     "titulo": "Detalle de la cotización",
@@ -202,7 +269,14 @@
     "descargarExcel": "Excel",
     "generando": "Generando…",
     "errorDescargar": "No se pudo generar el archivo",
-    "editarPanel": "Editar en el panel"
+    "editarPanel": "Editar en el panel",
+    "pedidoClienteTitulo": "Pedido del cliente",
+    "pedidoRecibidoEl": "Recibido el {{fecha}}",
+    "cajasPedidas": "{{n}} cajas",
+    "sinCajas": "Sin cantidad",
+    "notasCliente": "Notas del cliente",
+    "sinPedidoCliente": "El cliente aún no ha enviado su pedido desde el portal.",
+    "volverClientes": "Volver a clientes"
   },
   "admin": {
     "titulo": "Administración",
@@ -294,7 +368,8 @@
     "fallidasSubida": "No se pudieron subir {{n}} foto(s); revisa tu conexión e inténtalo de nuevo.",
     "listas": "{{n}} foto(s) lista(s). Agrega más con + o pulsa Procesar.",
     "procesar": "Procesar {{n}}",
-    "agregar": "Agregar"
+    "agregar": "Agregar",
+    "confirmarDescartar": "¿Descartar los {{n}} productos revisados? Esta acción no se puede deshacer."
   },
   "roles": {
     "admin": "Administrador",
@@ -349,11 +424,16 @@
     "sinCotizaciones": "Este cliente aún no tiene cotizaciones.",
     "enviada": "Enviada",
     "borrador": "Borrador",
+    "pedidoRecibido": "Pedido recibido",
     "verDetalle": "Ver detalle",
     "eliminar": "Eliminar",
     "confirmarEliminar": "¿Eliminar a {{nombre}}? Esta acción no se puede deshacer.",
     "eliminado": "Cliente eliminado",
-    "errorEliminar": "No se pudo eliminar el cliente"
+    "ofrecerDesactivar": "No se puede eliminar a {{nombre}} porque tiene cotizaciones enviadas con seguimiento activo. ¿Querés desactivarlo? Queda marcado como inactivo y pierde el acceso al portal, pero se conservan sus cotizaciones y el tracking.",
+    "desactivado": "{{nombre}} fue desactivado",
+    "errorEliminar": "No se pudo eliminar el cliente",
+    "cargando": "Cargando…",
+    "reintentar": "Reintentar"
   },
   "envio": {
     "titulo": "Cliente y envío",
@@ -383,6 +463,9 @@
     "infoEnvioMarcela": "Información de envío (la gestiona Marcela)",
     "infoEnvioBloqueada": "Los datos del envío (naviera y BL) los gestiona Marcela.",
     "blNumero": "Número de BL",
+    "montoVenta": "Monto de la venta (USD)",
+    "montoVentaAyuda": "Obligatorio para marcar el pedido en tránsito. Alimenta el panel de ventas.",
+    "montoRequerido": "Ingresa el monto de la venta (USD) para marcar el pedido en tránsito.",
     "navieraSelecciona": "Selecciona una naviera",
     "navieraOtra": "Otra (escribir manualmente)",
     "navieraOtraPlaceholder": "Escribe el nombre de la naviera",
@@ -467,11 +550,46 @@
     "enviando": "Enviando…",
     "pedidoEnviado": "¡Pedido enviado! Tu vendedora ya lo recibió.",
     "errorPedido": "No se pudo enviar el pedido. Intenta de nuevo.",
-    "pedidoRecibidoAviso": "Ya enviaste tu pedido. Puedes ajustarlo cuando quieras."
+    "pedidoRecibidoAviso": "Ya enviaste tu pedido. Puedes ajustarlo cuando quieras.",
+    "porConfirmarAviso": "Tu vendedora te envió las cantidades finales. Revisa y confirma tu pedido, o propone cambios.",
+    "confirmadoAviso": "Confirmaste tu pedido. La vendedora continuará con tu compra.",
+    "confirmarPedido": "Confirmar pedido",
+    "confirmando": "Confirmando…",
+    "proponerCambios": "Proponer cambios",
+    "pedidoConfirmado": "¡Pedido confirmado!",
+    "errorConfirmar": "No se pudo confirmar el pedido",
+    "errorCarga": "No pudimos cargar tu información. Revisa tu conexión e intenta de nuevo.",
+    "reintentar": "Reintentar",
+    "errorDescarga": "No pudimos generar el archivo. Intenta de nuevo.",
+    "avisoModificar": "Si modificas el pedido, se cancelará tu confirmación y tu vendedora tendrá que revisarlo de nuevo. ¿Continuar?",
+    "modificarPedido": "Modificar pedido",
+    "enviarCambios": "Enviar cambios",
+    "accesoPortal": "Portal de clientes"
   },
   "notif": {
     "titulo": "Avisos",
     "marcarTodas": "Marcar todas leídas",
     "sinAvisos": "No tienes avisos"
+  },
+  "gestionPedido": {
+    "titulo": "Pedido del cliente",
+    "estadoRecibido": "Cliente propuso cantidades",
+    "estadoPorConfirmar": "Esperando confirmación",
+    "estadoConfirmado": "Confirmado por el cliente",
+    "cajas": "cajas",
+    "notas": "Notas del cliente",
+    "enviarAConfirmar": "Enviar al cliente para confirmar",
+    "reenviar": "Reenviar al cliente",
+    "enviando": "Enviando…",
+    "esperandoConfirmacion": "El cliente todavía no confirmó. Podés reenviar si ajustaste algo.",
+    "avisoGenerar": "Cuando el cliente confirme, vas a poder generar el pedido al proveedor aquí.",
+    "generarTitulo": "Generar pedido a proveedor",
+    "enviadoAConfirmar": "Enviado al cliente para confirmar",
+    "confirmadoOk": "El cliente confirmó las cantidades. Ya podés generar el pedido al proveedor.",
+    "error": "No se pudo enviar"
+  },
+  "comun": {
+    "confirmar": "Confirmar",
+    "cancelar": "Cancelar"
   }
 }

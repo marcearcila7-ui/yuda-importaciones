@@ -52,6 +52,8 @@ export interface CotizacionDetalle {
   seguimiento: Seguimiento
   notas_cliente: string | null
   pedido_recibido: boolean
+  pedido_estado: string | null
+  pedido_confirmado: boolean
 }
 
 export interface PortalPedidoInput {

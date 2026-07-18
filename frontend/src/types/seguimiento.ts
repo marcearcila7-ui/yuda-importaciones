@@ -69,6 +69,8 @@ export interface Seguimiento {
   fecha_eta?: string | null
   bl_numero?: string | null
   bl_pdf_url?: string | null
+  monto_venta?: number | null
+  despachado_at?: string | null
   hitos?: Record<string, Hito> | null
   updated_at?: string | null
 }
@@ -82,5 +84,6 @@ export interface SeguimientoUpdate {
   fecha_eta?: string | null
   bl_numero?: string | null
   bl_pdf_url?: string | null
+  monto_venta?: number | null
   hitos?: Record<string, Hito> | null
 }

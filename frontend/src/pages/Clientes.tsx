@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, Trash2, UserPlus, Users } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, RefreshCw, Trash2, UserPlus, Users } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -13,7 +13,9 @@ import {
   getCotizacionesCliente,
   resetPasswordCliente,
 } from '../api/clientes'
+import { confirmar } from '../store/confirmStore'
 import CredencialesCliente from '../components/CredencialesCliente'
+import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import SeguimientoEditor from '../components/SeguimientoEditor'
 import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
 import type { Sesion } from '../types/packing'
@@ -65,6 +67,8 @@ function Clientes() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [cargandoClientes, setCargandoClientes] = useState(true)
+  const [errorClientes, setErrorClientes] = useState(false)
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
@@ -95,16 +99,26 @@ function Clientes() {
     setExpandido(s)
   }
 
+  const recargarCotizaciones = (clienteId: string) => {
+    getCotizacionesCliente(clienteId)
+      .then((cots) => setCotizaciones((m) => ({ ...m, [clienteId]: cots })))
+      .catch(() => {})
+  }
+
   const toggleCot = (id: string) => {
     const s = new Set(cotAbierta)
     s.has(id) ? s.delete(id) : s.add(id)
     setCotAbierta(s)
   }
 
-  const cargar = () =>
+  const cargar = () => {
+    setCargandoClientes(true)
+    setErrorClientes(false)
     getClientes()
       .then(setClientes)
-      .catch(() => toast.error(t('clientes.errorCargar')))
+      .catch(() => setErrorClientes(true))
+      .finally(() => setCargandoClientes(false))
+  }
 
   useEffect(() => {
     cargar()
@@ -156,13 +170,32 @@ function Clientes() {
   }
 
   const eliminar = async (c: Cliente) => {
-    if (!window.confirm(t('clientes.confirmarEliminar', { nombre: c.nombre }))) return
+    const ok = await confirmar({
+      mensaje: t('clientes.confirmarEliminar', { nombre: c.nombre }),
+      peligro: true,
+      textoConfirmar: t('clientes.eliminar'),
+    })
+    if (!ok) return
     try {
       await eliminarCliente(c.id)
       toast.success(t('clientes.eliminado'))
       cargar()
     } catch (err) {
-      // 409: tiene cotizaciones enviadas → mostramos el mensaje del backend
+      const estado = axios.isAxiosError(err) ? err.response?.status : null
+      // 409: tiene cotizaciones enviadas y no se puede eliminar. En vez de dejar
+      // a la vendedora sin salida, le ofrecemos desactivarlo en un clic.
+      if (estado === 409) {
+        if (await confirmar({ mensaje: t('clientes.ofrecerDesactivar', { nombre: c.nombre }), textoConfirmar: t('clientes.desactivar') })) {
+          try {
+            await actualizarCliente(c.id, { activo: false })
+            toast.success(t('clientes.desactivado', { nombre: c.nombre }))
+            cargar()
+          } catch {
+            toast.error(t('clientes.errorActualizar'))
+          }
+        }
+        return
+      }
       const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
       toast.error(typeof detalle === 'string' ? detalle : t('clientes.errorEliminar'))
     }
@@ -196,7 +229,7 @@ ${t('clientes.email')}: ${c.email}`
   // Restablecer: como la contraseña actual no se puede ver (está encriptada),
   // genera una NUEVA y la revela en la ficha del cliente para reenviarla.
   const resetear = async (c: Cliente) => {
-    if (!window.confirm(t('clientes.confirmarReset', { nombre: c.nombre }))) return
+    if (!(await confirmar({ mensaje: t('clientes.confirmarReset', { nombre: c.nombre }) }))) return
     const nueva = generarPassword()
     try {
       await resetPasswordCliente(c.id, nueva)
@@ -234,7 +267,7 @@ ${t('clientes.email')}: ${c.email}`
           <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: '#4B52E8' }}>
             {portalUrl}
           </a>
-          <p className="mt-1 text-xs" style={{ color: '#9CA3AF' }}>{t('clientes.portalAyuda')}</p>
+          <p className="mt-1 text-xs" style={{ color: '#6B7280' }}>{t('clientes.portalAyuda')}</p>
         </div>
         <button
           type="button"
@@ -293,7 +326,21 @@ ${t('clientes.email')}: ${c.email}`
           <Users size={18} /> {t('clientes.listaTitulo')}
         </h2>
 
-        {clientes.length === 0 ? (
+        {cargandoClientes ? (
+          <p className="text-sm" style={{ color: '#6B7280' }}>{t('clientes.cargando')}</p>
+        ) : errorClientes ? (
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-sm" style={{ color: '#374151' }}>{t('clientes.errorCargar')}</p>
+            <button
+              type="button"
+              onClick={cargar}
+              className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
+              style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+            >
+              <RefreshCw size={16} /> {t('clientes.reintentar')}
+            </button>
+          </div>
+        ) : clientes.length === 0 ? (
           <p className="text-sm" style={{ color: '#6B7280' }}>
             {t('clientes.sinClientes')}
           </p>
@@ -306,11 +353,11 @@ ${t('clientes.email')}: ${c.email}`
                 <div key={c.id} className="rounded-xl border border-gray-200">
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                     <button type="button" onClick={() => toggleCliente(c)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                      {abierto ? <ChevronDown size={18} style={{ color: '#9CA3AF' }} /> : <ChevronRight size={18} style={{ color: '#9CA3AF' }} />}
+                      {abierto ? <ChevronDown size={18} style={{ color: '#6B7280' }} /> : <ChevronRight size={18} style={{ color: '#6B7280' }} />}
                       <div className="min-w-0">
                         <p className="font-semibold" style={{ color: '#0D0D0D' }}>
                           {c.nombre}
-                          {c.empresa ? <span style={{ color: '#9CA3AF' }}> · {c.empresa}</span> : null}
+                          {c.empresa ? <span style={{ color: '#6B7280' }}> · {c.empresa}</span> : null}
                         </p>
                         <p className="text-sm" style={{ color: '#6B7280' }}>
                           {c.email}
@@ -332,7 +379,7 @@ ${t('clientes.email')}: ${c.email}`
                       <button
                         type="button"
                         onClick={() => toggleActivo(c)}
-                        className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium"
+                        className="flex min-h-[40px] items-center rounded-lg border border-gray-200 px-3 text-xs font-medium"
                         style={{ color: c.activo ? '#EF4444' : '#10B981' }}
                       >
                         {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
@@ -341,7 +388,7 @@ ${t('clientes.email')}: ${c.email}`
                         type="button"
                         onClick={() => eliminar(c)}
                         title={t('clientes.eliminar')}
-                        className="flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
+                        className="flex min-h-[40px] items-center gap-1 rounded-lg border px-3 text-xs font-medium"
                         style={{ borderColor: '#FCA5A5', color: '#EF4444' }}
                       >
                         <Trash2 size={14} /> {t('clientes.eliminar')}
@@ -372,7 +419,7 @@ ${t('clientes.email')}: ${c.email}`
                             {nuevasPass[c.id] ? (
                               <span style={{ fontFamily: 'monospace', color: '#0D0D0D' }}>{nuevasPass[c.id]}</span>
                             ) : (
-                              <span style={{ color: '#9CA3AF' }}>{t('clientes.passwordOculta')}</span>
+                              <span style={{ color: '#6B7280' }}>{t('clientes.passwordOculta')}</span>
                             )}
                           </p>
                         </div>
@@ -397,9 +444,9 @@ ${t('clientes.email')}: ${c.email}`
                       </div>
 
                       {cots === undefined ? (
-                        <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('equipo.cargando')}</p>
+                        <p className="text-sm" style={{ color: '#6B7280' }}>{t('equipo.cargando')}</p>
                       ) : cots.length === 0 ? (
-                        <p className="text-sm" style={{ color: '#9CA3AF' }}>{t('clientes.sinCotizaciones')}</p>
+                        <p className="text-sm" style={{ color: '#6B7280' }}>{t('clientes.sinCotizaciones')}</p>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {cots.map((s) => (
@@ -408,7 +455,7 @@ ${t('clientes.email')}: ${c.email}`
                                 <div className="flex flex-wrap items-center gap-2">
                                   <FileText size={15} style={{ color: '#6B7280' }} />
                                   <span className="text-sm font-medium" style={{ color: '#0D0D0D' }}>{numeroCot(s)}</span>
-                                  <span className="text-xs" style={{ color: '#9CA3AF' }}>{s.fecha}</span>
+                                  <span className="text-xs" style={{ color: '#6B7280' }}>{s.fecha}</span>
                                   <span
                                     className="rounded-full px-2 py-0.5 text-xs font-semibold"
                                     style={
@@ -419,16 +466,29 @@ ${t('clientes.email')}: ${c.email}`
                                   >
                                     {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
                                   </span>
+                                  {s.pedido_recibido_at && (
+                                    <span
+                                      className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                      style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                                    >
+                                      {t('clientes.pedidoRecibido')}
+                                    </span>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                <div className="flex flex-shrink-0 items-center gap-1">
+                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: '#4B52E8' }}>
                                     {t('clientes.verDetalle')}
                                   </button>
-                                  <button type="button" onClick={() => toggleCot(s.id)} className="text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                  <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: '#4B52E8' }}>
                                     {t('clientes.seguimiento')}
                                   </button>
                                 </div>
                               </div>
+                              {s.pedido_recibido_at && (
+                                <div className="px-2 pb-2">
+                                  <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
+                                </div>
+                              )}
                               {cotAbierta.has(s.id) && (
                                 <div className="border-t border-gray-100 p-3">
                                   <SeguimientoEditor sesionId={s.id} />

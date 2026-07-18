@@ -1,20 +1,34 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import ConfirmDialog from './components/ConfirmDialog'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import PortalProtectedRoute from './components/portal/PortalProtectedRoute'
-import Admin from './pages/Admin'
+// Camino común del equipo: se cargan de entrada.
 import Clientes from './pages/Clientes'
-import CotizacionDetalle from './pages/CotizacionDetalle'
 import Dashboard from './pages/Dashboard'
-import Equipo from './pages/Equipo'
-import Historial from './pages/Historial'
 import Login from './pages/Login'
-import PortalCotizaciones from './pages/portal/PortalCotizaciones'
-import PortalDetalle from './pages/portal/PortalDetalle'
-import PortalLogin from './pages/portal/PortalLogin'
 import { useAuthStore } from './store/authStore'
 import { usePortalStore } from './store/portalStore'
+
+// Páginas de admin y del portal: se cargan bajo demanda (code-splitting) para
+// aligerar el bundle inicial de las vendedoras.
+const Admin = lazy(() => import('./pages/Admin'))
+const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
+const Equipo = lazy(() => import('./pages/Equipo'))
+const Historial = lazy(() => import('./pages/Historial'))
+const Ventas = lazy(() => import('./pages/Ventas'))
+const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'))
+const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
+const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
+
+function Cargando() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+      Cargando…
+    </div>
+  )
+}
 
 function App() {
   const initFromStorage = useAuthStore((state) => state.initFromStorage)
@@ -28,6 +42,8 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ConfirmDialog />
+      <Suspense fallback={<Cargando />}>
       <Routes>
         {/* ── Portal de clientes ── */}
         <Route path="/portal/login" element={<PortalLogin />} />
@@ -53,17 +69,24 @@ function App() {
         <Route element={<ProtectedRoute roles={['admin']} />}>
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           <Route path="/equipo" element={<Layout><Equipo /></Layout>} />
+          <Route path="/ventas" element={<Layout><Ventas /></Layout>} />
         </Route>
 
-        {/* Historial y detalle de cotización (solo lectura): admin y contadora */}
+        {/* Historial: solo admin y contadora */}
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/historial" element={<Layout><Historial /></Layout>} />
+        </Route>
+
+        {/* Detalle de cotización (solo lectura): admin, contadora y la vendedora
+            dueña. El backend limita los datos a las cotizaciones propias. */}
+        <Route element={<ProtectedRoute roles={['admin', 'contadora', 'vendedora']} />}>
           <Route path="/cotizacion/:id" element={<Layout><CotizacionDetalle /></Layout>} />
         </Route>
 
         {/* Cualquier otra ruta redirige al dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

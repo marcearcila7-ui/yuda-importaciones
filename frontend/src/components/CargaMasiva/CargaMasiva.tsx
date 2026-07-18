@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Images, Plus, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Images, Plus, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
+import { confirmar } from '../../store/confirmStore'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import type { OCRResultado } from '../../types/ocr'
@@ -15,6 +16,35 @@ const MAX_LOTE = 100
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none'
+
+// Campo con etiqueta VISIBLE siempre (no placeholder que desaparece al llenarse),
+// para que se sepa qué dato es cada uno.
+function CampoLote({
+  label,
+  valor,
+  tipo = 'text',
+  onChange,
+  ancho,
+}: {
+  label: string
+  valor: string | number | null | undefined
+  tipo?: 'text' | 'number'
+  onChange: (v: string) => void
+  ancho?: string
+}) {
+  return (
+    <label className={`flex flex-col gap-0.5 text-xs ${ancho ?? ''}`} style={{ color: '#374151' }}>
+      <span className="font-medium">{label}</span>
+      <input
+        type={tipo}
+        value={valor ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        style={inputStyle}
+        className={inputClase}
+      />
+    </label>
+  )
+}
 
 function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   if (c === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, texto: t('ocr.confianzaAlta') }
@@ -52,6 +82,14 @@ function CargaMasiva() {
 
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+  // Fotos con el detalle completo desplegado (para revisar/editar todos los datos).
+  const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
+  const toggleExpandido = (id: string) =>
+    setExpandidos((s) => {
+      const n = new Set(s)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
   const sesionId = sesionActual?.id
 
   // Al entrar, retomar un lote en curso de esta sesión (si la vendedora cerró y volvió)
@@ -291,10 +329,25 @@ function CargaMasiva() {
       {fase === 'completado' && resultados.length > 0 && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
-              {t('lote.revisar', { n: resultados.length })}
-            </h3>
-            <button type="button" onClick={finalizar} className="text-sm font-medium" style={{ color: '#6B7280' }}>
+            <div>
+              <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
+                {t('lote.revisar', { n: resultados.length })}
+              </h3>
+              <p className="text-xs" style={{ color: '#6B7280' }}>{t('ocr.revisarAyuda')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await confirmar({
+                  mensaje: t('lote.confirmarDescartar', { n: resultados.length }),
+                  peligro: true,
+                  textoConfirmar: t('lote.descartar'),
+                })
+                if (ok) finalizar()
+              }}
+              className="text-sm font-medium"
+              style={{ color: '#6B7280' }}
+            >
               {t('lote.descartar')}
             </button>
           </div>
@@ -314,37 +367,69 @@ function CargaMasiva() {
                 className="flex flex-col gap-3 rounded-xl border p-3"
                 style={{ borderColor: legibilidad.ok ? '#E5E7EB' : '#FCA5A5' }}
               >
-              <div className="flex gap-3">
+              {/* Fila: foto + confianza + quitar */}
+              <div className="flex items-center gap-3">
                 {r.foto_url ? (
                   <img src={r.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
                 ) : (
                   <div style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                 )}
-
-                <div className="grid flex-1 grid-cols-2 gap-2">
-                  <input style={inputStyle} className={`${inputClase} col-span-2`} placeholder={t('ocr.proveedor')}
-                    value={(r.datos.supplier_nombre as string | null) ?? ''}
-                    onChange={(e) => actualizarTexto(r.id, 'supplier_nombre', e.target.value)} />
-                  <input style={inputStyle} className={`${inputClase} col-span-2`} placeholder={t('packing.fDescripcion')}
-                    value={(r.datos.descripcion_es as string | null) ?? ''}
-                    onChange={(e) => actualizarTexto(r.id, 'descripcion_es', e.target.value)} />
-                  <input type="number" style={inputStyle} className={inputClase} placeholder={t('ocr.precioRMB')}
-                    value={(r.datos.price_rmb as number | null) ?? ''}
-                    onChange={(e) => actualizarNumero(r.id, 'price_rmb', e.target.value)} />
-                  <input type="number" style={inputStyle} className={inputClase} placeholder={t('ocr.unidPorCaja')}
-                    value={(r.datos.qty_por_ctn as number | null) ?? ''}
-                    onChange={(e) => actualizarNumero(r.id, 'qty_por_ctn', e.target.value)} />
-                </div>
-
-                <div className="flex flex-shrink-0 flex-col items-end justify-between">
-                  <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chip.style}>
-                    {chip.texto}
-                  </span>
-                  <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} style={{ color: '#EF4444' }}>
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chip.style}>
+                  {chip.texto}
+                </span>
+                <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} className="ml-auto" style={{ color: '#EF4444' }}>
+                  <Trash2 size={18} />
+                </button>
               </div>
+
+              {/* Campos principales a ancho completo (más cómodos en celular) */}
+              <div className="grid grid-cols-2 gap-2">
+                <CampoLote ancho="col-span-2" label={t('ocr.proveedor')} valor={r.datos.supplier_nombre}
+                  onChange={(v) => actualizarTexto(r.id, 'supplier_nombre', v)} />
+                <CampoLote ancho="col-span-2" label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
+                  onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
+                <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number"
+                  onChange={(v) => actualizarNumero(r.id, 'price_rmb', v)} />
+                <CampoLote label={t('ocr.unidPorCaja')} valor={r.datos.qty_por_ctn} tipo="number"
+                  onChange={(v) => actualizarNumero(r.id, 'qty_por_ctn', v)} />
+                <CampoLote label={t('ocr.mqt')} valor={r.datos.cantidad_minima} tipo="number"
+                  onChange={(v) => actualizarNumero(r.id, 'cantidad_minima', v)} />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => toggleExpandido(r.id)}
+                className="flex items-center gap-1 self-start text-xs font-semibold"
+                style={{ color: '#4B52E8' }}
+              >
+                {expandidos.has(r.id) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                {expandidos.has(r.id) ? t('ocr.verMenos') : t('ocr.verMas')}
+              </button>
+
+              {expandidos.has(r.id) && (
+                <div className="grid grid-cols-2 gap-2 rounded-lg bg-white p-2">
+                  <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero}
+                    onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
+                  <CampoLote label={t('ocr.colores')} valor={r.datos.colores}
+                    onChange={(v) => actualizarTexto(r.id, 'colores', v)} />
+                  <CampoLote ancho="col-span-2" label={t('ocr.descripcionEn')} valor={r.datos.descripcion_en}
+                    onChange={(v) => actualizarTexto(r.id, 'descripcion_en', v)} />
+                  <CampoLote ancho="col-span-2" label={t('ocr.descripcionZh')} valor={r.datos.descripcion_zh}
+                    onChange={(v) => actualizarTexto(r.id, 'descripcion_zh', v)} />
+                  <CampoLote label={t('ocr.material')} valor={r.datos.material}
+                    onChange={(v) => actualizarTexto(r.id, 'material', v)} />
+                  <CampoLote label={t('ocr.uso')} valor={r.datos.uso}
+                    onChange={(v) => actualizarTexto(r.id, 'uso', v)} />
+                  <CampoLote label={t('ocr.largoCm')} valor={r.datos.largo_cm} tipo="number"
+                    onChange={(v) => actualizarNumero(r.id, 'largo_cm', v)} />
+                  <CampoLote label={t('ocr.anchoCm')} valor={r.datos.ancho_cm} tipo="number"
+                    onChange={(v) => actualizarNumero(r.id, 'ancho_cm', v)} />
+                  <CampoLote label={t('ocr.altoCm')} valor={r.datos.alto_cm} tipo="number"
+                    onChange={(v) => actualizarNumero(r.id, 'alto_cm', v)} />
+                  <CampoLote label={t('ocr.pesoKg')} valor={r.datos.gw} tipo="number"
+                    onChange={(v) => actualizarNumero(r.id, 'gw', v)} />
+                </div>
+              )}
 
               {!legibilidad.ok && <AlertaNoLegible legibilidad={legibilidad} compacta />}
               </div>

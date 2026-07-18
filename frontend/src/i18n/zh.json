@@ -3,10 +3,59 @@
     "cotizacion": "报价",
     "clientes": "客户",
     "equipo": "团队",
+    "ventas": "销售",
     "historial": "历史记录",
     "administracion": "管理",
     "admin": "管理",
     "cerrarSesion": "退出登录"
+  },
+  "ventas": {
+    "titulo": "销售",
+    "subtitulo": "销售金额、在途订单、报价和集装箱。",
+    "tituloResumen": "销售",
+    "verDetalle": "查看明细",
+    "cargando": "加载中…",
+    "sinDatos": "该时段暂无数据。",
+    "filtrarVendedora": "销售员",
+    "todasVendedoras": "全部",
+    "porVendedora": "按销售员",
+    "despachos": "发货",
+    "exportarCsv": "导出 .csv",
+    "sinVendedoras": "暂无销售员",
+    "sinDespachos": "该时段暂无发货。",
+    "enVentas": "销售额",
+    "contenedoresVendedoras": "{{total}} 个集装箱中有 {{v}} 个来自销售员的报价",
+    "rango": {
+      "hoy": "今天",
+      "7": "7 天",
+      "30": "30 天",
+      "todo": "全部",
+      "custom": "自定义"
+    },
+    "tarjetas": {
+      "ventas": "销售总额",
+      "ventasSub": "本时段",
+      "enTransito": "在途",
+      "enTransitoSub": "在途订单",
+      "cotizaciones": "报价",
+      "cotizacionesSub": "已发送",
+      "contenedores": "集装箱",
+      "contenedoresSub": "{{n}} 个来自销售员"
+    },
+    "tabla": {
+      "vendedora": "销售员",
+      "cotizaciones": "报价",
+      "contenedores": "集装箱",
+      "ventasUsd": "销售 (USD)",
+      "numero": "报价单",
+      "cliente": "客户",
+      "estado": "状态",
+      "bl": "提单",
+      "naviera": "船公司",
+      "montoUsd": "金额 (USD)",
+      "despachado": "已发货",
+      "fechaCotizacion": "报价日期"
+    }
   },
   "login": {
     "bienvenida": "欢迎",
@@ -16,7 +65,8 @@
     "ingresar": "登录",
     "ingresando": "正在登录...",
     "error": "账号或密码错误",
-    "tagline": "连接中国与您的成功"
+    "tagline": "连接中国与您的成功",
+    "accesoEquipo": "团队登录"
   },
   "dashboard": {
     "titulo": "报价",
@@ -80,8 +130,8 @@
     "exitoAgregado": "产品已添加到装箱单",
     "errorProcesar": "无法处理该图片",
     "tomarFoto": "拍照或上传图片",
-    "cbm": "CBM (体积)",
-    "mqt": "MQT (最少箱数)",
+    "cbm": "体积 (m³)",
+    "mqt": "最少箱数",
     "noLegibleTitulo": "照片不清晰 — 请重新拍摄",
     "noLegibleImagen": "图片无法识别（{{motivo}}）。",
     "noLegibleImagenSin": "图片无法清晰识别。",
@@ -97,7 +147,13 @@
       "recortada": "被裁切",
       "no_procesada": "无法处理",
       "generico": "不够清晰"
-    }
+    },
+    "descripcionEn": "描述（英文）",
+    "material": "材质",
+    "uso": "用途",
+    "verMas": "查看全部数据",
+    "verMenos": "收起",
+    "revisarAyuda": "如有识别错误请修正。每个字段都有标签。"
   },
   "packing": {
     "exportar": "下载清单 (Excel)",
@@ -107,7 +163,7 @@
     "fProveedor": "供应商",
     "fDescripcion": "描述",
     "fCajas": "箱数",
-    "fMqt": "起订量(箱)",
+    "fMqt": "最少箱数",
     "fUnidCaja": "每箱数量",
     "fPrecioRmb": "单价(RMB)",
     "fTotalUsd": "总额 USD",
@@ -123,7 +179,7 @@
       "material": "材质",
       "uso": "用途",
       "ctns": "箱数",
-      "moq_cajas": "起订量",
+      "moq_cajas": "最少箱数",
       "qty_por_ctn": "每箱数量",
       "unit": "单位",
       "t_qty": "总数量",
@@ -134,7 +190,7 @@
       "largo_cm": "长 cm",
       "ancho_cm": "宽 cm",
       "alto_cm": "高 cm",
-      "cbm": "体积",
+      "cbm": "体积 m³",
       "t_cbm": "总体积",
       "gw": "毛重",
       "t_gw": "总毛重"
@@ -149,6 +205,9 @@
     "generar": "生成订单",
     "generando": "正在生成订单...",
     "confirmar": "确定为 {{cliente}} 生成订单吗？将为每个供应商创建一个 Excel 文件。",
+    "generarCliente": "按客户数量生成",
+    "confirmarCliente": "确定按 {{cliente}} 所请求的箱数生成订单吗？将使用客户从门户提交的数量。",
+    "confirmarSinPedido": "客户尚未确认数量。仍要用你录入的箱数生成供应商订单吗？",
     "advertencias": "提示：",
     "generados": "已生成的订单：",
     "descargarExcel": "下载 Excel",
@@ -181,6 +240,14 @@
     "errorEliminar": "无法删除报价",
     "exportar": "导出 CSV"
   },
+  "pedidoCliente": {
+    "titulo": "客户订单",
+    "recibidoEl": "接收于 {{fecha}}",
+    "cajas": "{{n}} 箱",
+    "sinCantidad": "无数量",
+    "notas": "客户备注",
+    "sinPedido": "客户尚未从门户提交订单。"
+  },
   "detalle": {
     "volver": "返回历史记录",
     "titulo": "报价详情",
@@ -202,7 +269,14 @@
     "descargarExcel": "Excel",
     "generando": "生成中…",
     "errorDescargar": "无法生成文件",
-    "editarPanel": "在面板中编辑"
+    "editarPanel": "在面板中编辑",
+    "pedidoClienteTitulo": "客户订单",
+    "pedidoRecibidoEl": "接收于 {{fecha}}",
+    "cajasPedidas": "{{n}} 箱",
+    "sinCajas": "无数量",
+    "notasCliente": "客户备注",
+    "sinPedidoCliente": "客户尚未从门户提交订单。",
+    "volverClientes": "返回客户"
   },
   "admin": {
     "titulo": "管理",
@@ -294,7 +368,8 @@
     "fallidasSubida": "{{n}} 张照片上传失败；请检查网络后重试。",
     "listas": "已准备 {{n}} 张照片。用 + 添加更多，或点击处理。",
     "procesar": "处理 {{n}}",
-    "agregar": "添加"
+    "agregar": "添加",
+    "confirmarDescartar": "放弃已审核的 {{n}} 个产品吗？此操作无法撤销。"
   },
   "roles": {
     "admin": "管理员",
@@ -349,11 +424,16 @@
     "sinCotizaciones": "该客户还没有报价。",
     "enviada": "已发送",
     "borrador": "草稿",
+    "pedidoRecibido": "已收到订单",
     "verDetalle": "查看详情",
     "eliminar": "删除",
     "confirmarEliminar": "确定删除 {{nombre}}？此操作无法撤销。",
     "eliminado": "客户已删除",
-    "errorEliminar": "无法删除客户"
+    "ofrecerDesactivar": "无法删除 {{nombre}}，因为它有已发送且跟踪中的报价。改为停用吗？将被标记为停用并失去门户访问权限，但会保留其报价和跟踪记录。",
+    "desactivado": "{{nombre}} 已停用",
+    "errorEliminar": "无法删除客户",
+    "cargando": "加载中…",
+    "reintentar": "重试"
   },
   "envio": {
     "titulo": "客户与发货",
@@ -383,6 +463,9 @@
     "infoEnvioMarcela": "运输信息（由 Marcela 管理）",
     "infoEnvioBloqueada": "运输信息（船公司和提单）由 Marcela 管理。",
     "blNumero": "提单号",
+    "montoVenta": "销售金额 (USD)",
+    "montoVentaAyuda": "标记订单为在途所必需。用于销售面板统计。",
+    "montoRequerido": "请输入销售金额 (USD) 以将订单标记为在途。",
     "navieraSelecciona": "选择船公司",
     "navieraOtra": "其他（手动输入）",
     "navieraOtraPlaceholder": "输入船公司名称",
@@ -467,11 +550,46 @@
     "enviando": "发送中…",
     "pedidoEnviado": "订单已发送！销售已收到。",
     "errorPedido": "无法发送订单，请重试。",
-    "pedidoRecibidoAviso": "您已发送订单，可随时调整。"
+    "pedidoRecibidoAviso": "您已发送订单，可随时调整。",
+    "porConfirmarAviso": "销售员已向您发送最终数量。请查看并确认订单，或提出修改。",
+    "confirmadoAviso": "您已确认订单。销售员将继续处理您的采购。",
+    "confirmarPedido": "确认订单",
+    "confirmando": "确认中…",
+    "proponerCambios": "提出修改",
+    "pedidoConfirmado": "订单已确认！",
+    "errorConfirmar": "无法确认订单",
+    "errorCarga": "无法加载您的信息。请检查网络后重试。",
+    "reintentar": "重试",
+    "errorDescarga": "无法生成文件，请重试。",
+    "avisoModificar": "若修改订单，您的确认将被取消，销售员需重新审核。是否继续？",
+    "modificarPedido": "修改订单",
+    "enviarCambios": "发送修改",
+    "accesoPortal": "客户门户"
   },
   "notif": {
     "titulo": "通知",
     "marcarTodas": "全部标为已读",
     "sinAvisos": "暂无通知"
+  },
+  "gestionPedido": {
+    "titulo": "客户订单",
+    "estadoRecibido": "客户提出数量",
+    "estadoPorConfirmar": "等待确认",
+    "estadoConfirmado": "客户已确认",
+    "cajas": "箱",
+    "notas": "客户备注",
+    "enviarAConfirmar": "发送给客户确认",
+    "reenviar": "重新发送给客户",
+    "enviando": "发送中…",
+    "esperandoConfirmacion": "客户尚未确认。如有调整可重新发送。",
+    "avisoGenerar": "客户确认后，您可在此生成供应商订单。",
+    "generarTitulo": "生成供应商订单",
+    "enviadoAConfirmar": "已发送给客户确认",
+    "confirmadoOk": "客户已确认数量。您现在可以生成供应商订单。",
+    "error": "发送失败"
+  },
+  "comun": {
+    "confirmar": "确认",
+    "cancelar": "取消"
   }
 }

@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Bell, Check } from 'lucide-react'
 import { getNotificaciones, marcarLeida, marcarTodasLeidas } from '../api/notificaciones'
+import { useAuthStore } from '../store/authStore'
 import type { Notificacion } from '../types/notificacion'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
 // Campana de avisos para Marcela: muestra las cotizaciones listas para cargar BL.
 // Refresca cada 60s para no requerir recargar la página.
-function NotificacionesBell() {
+// posicion: hacia dónde abre el panel. 'arriba' (sidebar de escritorio) o
+// 'abajo' (TopBar móvil).
+function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'abajo' }) {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const rol = useAuthStore((s) => s.usuario?.rol)
   const [items, setItems] = useState<Notificacion[]>([])
   const [abierto, setAbierto] = useState(false)
   const cajaRef = useRef<HTMLDivElement>(null)
@@ -37,13 +43,17 @@ function NotificacionesBell() {
   const noLeidas = items.filter((n) => !n.leida).length
   const locale = LOCALES[i18n.language] || 'es-ES'
 
+  // Al tocar un aviso: lo marca leído y lleva a la ficha de la cotización, donde
+  // Marcela ve el tracking del cliente. La vendedora va a su lista de clientes
+  // (no tiene acceso a la ficha de detalle).
   const leerUna = async (n: Notificacion) => {
-    if (n.leida) return
-    setItems((xs) => xs.map((x) => (x.id === n.id ? { ...x, leida: true } : x)))
-    try {
-      await marcarLeida(n.id)
-    } catch {
-      cargar()
+    setAbierto(false)
+    if (!n.leida) {
+      setItems((xs) => xs.map((x) => (x.id === n.id ? { ...x, leida: true } : x)))
+      marcarLeida(n.id).catch(() => cargar())
+    }
+    if (n.sesion_id) {
+      navigate(rol === 'admin' ? `/cotizacion/${n.sesion_id}` : '/clientes')
     }
   }
 
@@ -62,7 +72,7 @@ function NotificacionesBell() {
         type="button"
         onClick={() => setAbierto((v) => !v)}
         className="relative flex h-9 w-9 items-center justify-center rounded-full"
-        style={{ backgroundColor: '#1F1F1F', color: '#FFFFFF' }}
+        style={{ backgroundColor: '#F3F4F6', color: '#374151' }}
         aria-label={t('notif.titulo')}
       >
         <Bell size={18} />
@@ -78,7 +88,9 @@ function NotificacionesBell() {
 
       {abierto && (
         <div
-          className="absolute bottom-12 left-0 z-50 w-80 overflow-hidden rounded-xl bg-white"
+          className={`absolute z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl bg-white ${
+            posicion === 'abajo' ? 'right-0 top-12' : 'bottom-12 left-0'
+          }`}
           style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -98,7 +110,7 @@ function NotificacionesBell() {
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm" style={{ color: '#9CA3AF' }}>
+              <p className="px-4 py-6 text-center text-sm" style={{ color: '#6B7280' }}>
                 {t('notif.sinAvisos')}
               </p>
             ) : (
@@ -123,7 +135,7 @@ function NotificacionesBell() {
                       {n.mensaje}
                     </span>
                   )}
-                  <span className="text-xs" style={{ color: '#9CA3AF' }}>
+                  <span className="text-xs" style={{ color: '#6B7280' }}>
                     {new Date(n.created_at).toLocaleString(locale)}
                   </span>
                 </button>

@@ -36,6 +36,15 @@ class Settings(BaseSettings):
     # Nivel de logging (DEBUG, INFO, WARNING, ERROR).
     LOG_LEVEL: str = "INFO"
 
+    # Monitoreo de errores (Sentry). Si SENTRY_DSN está vacío, Sentry NO se inicia
+    # (comportamiento por defecto en local y tests). En producción, poné el DSN del
+    # proyecto para recibir el stack trace de cada error al instante.
+    SENTRY_DSN: str = ""
+    # Etiqueta el entorno en Sentry (production / staging / etc.).
+    SENTRY_ENVIRONMENT: str = "production"
+    # Muestreo de trazas de performance (0.0 = solo errores, sin costo de tracing).
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.0
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @field_validator(
@@ -45,6 +54,7 @@ class Settings(BaseSettings):
         "CORS_ORIGINS",
         "SUPABASE_URL",
         "SUPABASE_SERVICE_KEY",
+        "SENTRY_DSN",
         mode="before",
     )
     @classmethod

@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import json
 import logging
@@ -7,6 +6,7 @@ import re
 from anthropic import AsyncAnthropic
 
 from app.core.config import settings
+from app.core.ocr_limiter import slot_ocr
 
 logger = logging.getLogger(__name__)
 
@@ -17,12 +17,6 @@ MODELO = "claude-opus-4-5-20251101"
 # max_retries: el SDK reintenta con backoff exponencial ante 429 / 5xx / errores de red.
 _client: AsyncAnthropic | None = None
 
-# Tope GLOBAL de llamadas de visión en simultáneo en todo el proceso.
-# Aunque 20 vendedoras disparen lotes a la vez, nunca habrá más de N llamadas
-# concurrentes a Anthropic: el resto se encola. Protege rate limits y conexiones.
-_ocr_semaphore: asyncio.Semaphore | None = None
-
-
 def _get_client() -> AsyncAnthropic:
     global _client
     if _client is None:
@@ -31,14 +25,6 @@ def _get_client() -> AsyncAnthropic:
             max_retries=settings.OCR_MAX_RETRIES,
         )
     return _client
-
-
-def _get_semaphore() -> asyncio.Semaphore:
-    # Se crea de forma perezosa dentro del event loop en ejecución.
-    global _ocr_semaphore
-    if _ocr_semaphore is None:
-        _ocr_semaphore = asyncio.Semaphore(settings.OCR_CONCURRENCIA_GLOBAL)
-    return _ocr_semaphore
 
 # Prompt fijo enviado a Claude Vision (no configurable desde la UI)
 PROMPT = """
@@ -172,10 +158,11 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # 1. Imagen a base64
     base64_string = base64.standard_b64encode(imagen_bytes).decode("utf-8")
 
-    # 2-4. Llamada a la API de Anthropic (cliente único + tope global de concurrencia)
+    # 2-4. Llamada a la API de Anthropic (cliente único + tope global de concurrencia
+    # respaldado por Postgres, válido aun con varias réplicas).
     try:
         client = _get_client()
-        async with _get_semaphore():
+        async with slot_ocr():
             response = await client.messages.create(
                 model=MODELO,
                 max_tokens=1024,

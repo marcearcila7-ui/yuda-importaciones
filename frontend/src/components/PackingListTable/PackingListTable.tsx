@@ -130,9 +130,9 @@ function CeldaEditable({
         setEditando(true)
       }}
       style={fondo}
-      className={`min-h-[28px] cursor-pointer px-1 py-1 ${guardando ? 'opacity-50' : ''} ${
-        meta.ctns ? 'border border-blue-300' : ''
-      }`}
+      className={`min-h-[28px] cursor-pointer rounded px-1 py-1 transition-colors hover:bg-[#EEF0FD] ${
+        guardando ? 'opacity-50' : ''
+      } ${meta.ctns ? 'border border-blue-300' : 'border-b border-dashed border-gray-300'}`}
       title={t('packing.tocaEditar')}
     >
       {guardando ? '…' : valorActual == null || valorActual === '' ? '—' : String(valorActual)}
@@ -390,7 +390,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
       {/* Vista móvil: tarjetas */}
       <div className="flex flex-col gap-3 sm:hidden">
         {items.length === 0 ? (
-          <p className="py-4 text-center text-sm" style={{ color: '#9CA3AF' }}>
+          <p className="py-4 text-center text-sm" style={{ color: '#6B7280' }}>
             {t('packing.sinProductos')}
           </p>
         ) : (

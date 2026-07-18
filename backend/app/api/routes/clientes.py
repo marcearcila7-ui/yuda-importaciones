@@ -15,10 +15,12 @@ from app.models.seguimiento import (
     CAMPOS_SOLO_ADMIN,
     ESTADO_DISPARA_AVISO,
     ESTADO_INICIAL,
+    ESTADOS_ENVIO,
     ESTADOS_VENDEDORA,
     SeguimientoPedido,
 )
-from app.models.sesion import Sesion
+from app.models.item import Item
+from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
 from app.models.user import User
 from app.schemas.cliente import (
     ClienteCreado,
@@ -27,9 +29,12 @@ from app.schemas.cliente import (
     ClienteUpdate,
     ResetPasswordRequest,
 )
-from app.schemas.packing import SesionResponse
+from app.schemas.packing import EnviarAConfirmarInput, SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
-from app.services.notificacion_service import avisar_listo_para_envio
+from app.services.notificacion_service import (
+    avisar_envio_a_vendedora,
+    avisar_listo_para_envio,
+)
 from app.services.storage_service import subir_foto, subir_pdf
 from app.core.security import hash_password
 
@@ -267,6 +272,32 @@ def enviar_a_cliente(
     return seg
 
 
+@router.put("/sesiones/{sesion_id}/enviar-a-confirmar", response_model=SesionResponse)
+def enviar_a_confirmar(
+    sesion_id: str,
+    datos: EnviarAConfirmarInput,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Sesion:
+    """La vendedora ajusta las cantidades y le devuelve al cliente la cotización
+    para su confirmación final (estado "por confirmar"). El cliente confirma desde
+    el portal; recién ahí se puede generar el pedido al proveedor."""
+    sesion = _sesion_autorizada(db, sesion_id, usuario)
+    items = {i.id: i for i in db.query(Item).filter(Item.sesion_id == sesion_id).all()}
+    for linea in datos.items:
+        it = items.get(linea.item_id)
+        if it is None:
+            continue
+        it.cantidad_solicitada = linea.cantidad if linea.cantidad and linea.cantidad > 0 else None
+    sesion.pedido_estado = PEDIDO_POR_CONFIRMAR
+    sesion.pedido_confirmado_at = None
+    if sesion.pedido_recibido_at is None:
+        sesion.pedido_recibido_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(sesion)
+    return sesion
+
+
 @router.get("/sesiones/{sesion_id}/seguimiento", response_model=SeguimientoResponse)
 def obtener_seguimiento(
     sesion_id: str,
@@ -344,17 +375,42 @@ def actualizar_seguimiento(
 
     # Información de envío: solo Marcela (admin). La vendedora conserva lo cargado.
     if not es_vendedora:
+        # De "en tránsito" en adelante el contenedor ya está despachado.
+        en_transito_o_mas = ESTADOS_ENVIO.index(datos.estado) >= ESTADOS_ENVIO.index("en_transito")
+
+        # El monto de la venta (USD) es obligatorio para despachar. Se conserva el
+        # ya guardado si esta edición no lo reenvía.
+        monto_final = datos.monto_venta if datos.monto_venta is not None else seg.monto_venta
+        if en_transito_o_mas and (monto_final is None or monto_final <= 0):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Ingresa el monto de la venta (USD) para marcar el pedido en tránsito",
+            )
+
         seg.numero_tracking = datos.numero_tracking
         seg.naviera = datos.naviera
         seg.url_tracking = datos.url_tracking
         seg.fecha_eta = datos.fecha_eta
         seg.bl_numero = datos.bl_numero
         seg.bl_pdf_url = datos.bl_pdf_url
+        if datos.monto_venta is not None:
+            seg.monto_venta = datos.monto_venta
+
+        # Sella el despacho la primera vez que el pedido entra a "en tránsito".
+        if en_transito_o_mas and seg.despachado_at is None:
+            seg.despachado_at = datetime.now(timezone.utc)
+
+    numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
 
     # Aviso a Marcela cuando la cotización llega a "en bodega" (lista para envío)
     if datos.estado == ESTADO_DISPARA_AVISO and estado_anterior != ESTADO_DISPARA_AVISO:
-        numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
-        avisar_listo_para_envio(db, sesion_id, numero, sesion.nombre_cliente)
+        avisar_listo_para_envio(db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id)
+
+    # Aviso a la vendedora dueña cuando Marcela despacha o entrega su cotización
+    if datos.estado in ("en_transito", "entregado") and datos.estado != estado_anterior:
+        avisar_envio_a_vendedora(
+            db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id, datos.estado
+        )
 
     db.commit()
     db.refresh(seg)

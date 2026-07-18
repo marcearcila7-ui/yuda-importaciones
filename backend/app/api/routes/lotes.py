@@ -26,10 +26,24 @@ TIPOS_PERMITIDOS = {
 MAX_BYTES = 25 * 1024 * 1024
 
 
-def _obtener_lote(db: Session, lote_id: str) -> LoteOCR:
+def _verificar_dueno(db: Session, sesion_id: str, usuario: User) -> None:
+    """Una vendedora solo puede operar sobre cotizaciones propias (403 si no);
+    admin y contadora, sobre cualquiera."""
+    if usuario.rol.value != "vendedora":
+        return
+    sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
+    if sesion is None or sesion.user_id != usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sin permisos sobre esta cotización",
+        )
+
+
+def _obtener_lote(db: Session, lote_id: str, usuario: User) -> LoteOCR:
     lote = db.query(LoteOCR).filter(LoteOCR.id == lote_id).first()
     if lote is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado")
+    _verificar_dueno(db, lote.sesion_id, usuario)
     return lote
 
 
@@ -43,6 +57,7 @@ def crear_lote(
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sesión no encontrada")
+    _verificar_dueno(db, sesion_id, usuario)
     lote = LoteOCR(sesion_id=sesion_id, estado="cargando")
     db.add(lote)
     db.commit()
@@ -58,7 +73,7 @@ async def subir_foto_lote(
     db: Session = Depends(get_db),
 ) -> dict:
     """Sube una foto al lote (la guarda en Supabase y la deja pendiente de OCR)"""
-    _obtener_lote(db, lote_id)
+    _obtener_lote(db, lote_id, usuario)
 
     if foto.content_type not in TIPOS_PERMITIDOS:
         raise HTTPException(
@@ -102,7 +117,7 @@ def procesar(
     db: Session = Depends(get_db),
 ) -> dict:
     """Dispara el OCR del lote: lo encola para el worker, o lo corre en segundo plano"""
-    lote = _obtener_lote(db, lote_id)
+    lote = _obtener_lote(db, lote_id, usuario)
     if settings.USE_WORKER:
         # La cola vive en la base; el worker aparte lo toma y procesa.
         lote.estado = "encolado"
@@ -122,7 +137,7 @@ def reprocesar(
     db: Session = Depends(get_db),
 ) -> dict:
     """Vuelve a procesar solo las fotos que habían fallado"""
-    lote = _obtener_lote(db, lote_id)
+    lote = _obtener_lote(db, lote_id, usuario)
     db.query(LoteItem).filter(
         LoteItem.lote_id == lote_id, LoteItem.estado == "error"
     ).update({LoteItem.estado: "pendiente"})
@@ -143,7 +158,7 @@ def estado_lote(
     db: Session = Depends(get_db),
 ) -> LoteEstado:
     """Devuelve el estado y los resultados del lote (para consultar el avance)"""
-    lote = _obtener_lote(db, lote_id)
+    lote = _obtener_lote(db, lote_id, usuario)
     items = (
         db.query(LoteItem)
         .filter(LoteItem.lote_id == lote_id)
@@ -168,6 +183,7 @@ def lote_activo(
     db: Session = Depends(get_db),
 ) -> LoteActivo:
     """Devuelve el último lote de la sesión (para retomar al volver), o vacío"""
+    _verificar_dueno(db, sesion_id, usuario)
     lote = (
         db.query(LoteOCR)
         .filter(LoteOCR.sesion_id == sesion_id)
@@ -186,6 +202,7 @@ def borrar_lote(
     db: Session = Depends(get_db),
 ) -> dict:
     """Borra el lote y sus ítems (al terminar de agregar o al descartar)"""
+    _obtener_lote(db, lote_id, usuario)  # 404 si no existe / 403 si no es la dueña
     db.query(LoteItem).filter(LoteItem.lote_id == lote_id).delete()
     db.query(LoteOCR).filter(LoteOCR.id == lote_id).delete()
     db.commit()

@@ -8,7 +8,7 @@ interface AuthState {
   token: string | null
   isLoading: boolean
   error: string | null
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   initFromStorage: () => void
   clearError: () => void
@@ -28,13 +28,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('yuda_token', data.access_token)
       localStorage.setItem('yuda_usuario', JSON.stringify(data.usuario))
       set({ usuario: data.usuario, token: data.access_token, isLoading: false })
+      return true
     } catch (err) {
-      // Toma el mensaje del backend si existe; si no, uno genérico en español
+      // Login fallido: limpiar CUALQUIER sesión previa para no quedar logueado con
+      // otra cuenta (bug crítico si el token viejo seguía en localStorage).
+      localStorage.removeItem('yuda_token')
+      localStorage.removeItem('yuda_usuario')
       let mensaje = 'No se pudo iniciar sesión'
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         mensaje = err.response.data.detail
       }
-      set({ error: mensaje, isLoading: false })
+      set({ usuario: null, token: null, error: mensaje, isLoading: false })
+      return false
     }
   },
 

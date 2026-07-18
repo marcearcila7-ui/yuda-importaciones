@@ -62,6 +62,7 @@ class ItemResponse(ItemCreate):
     id: str
     sesion_id: str
     foto_url: Optional[str] = None
+    cantidad_solicitada: Optional[int] = None  # cajas que pidió el cliente en su portal
     t_qty: int
     total_rmb: float
     price_usd: float
@@ -92,6 +93,10 @@ class SesionResponse(BaseModel):
     user_id: str
     cliente_id: str | None = None
     enviada_cliente: bool = False
+    notas_cliente: str | None = None  # observaciones que dejó el cliente en su pedido
+    pedido_recibido_at: datetime | None = None  # cuándo el cliente envió su pedido
+    pedido_estado: str | None = None  # recibido / por_confirmar / confirmado
+    pedido_confirmado_at: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -102,3 +107,16 @@ class ReordenarItem(BaseModel):
 
     id: str
     orden: int
+
+
+class CantidadClienteLinea(BaseModel):
+    """Cajas que se piden de un producto (cantidad final del cliente)"""
+
+    item_id: str
+    cantidad: int
+
+
+class EnviarAConfirmarInput(BaseModel):
+    """La vendedora ajusta las cantidades y las envía al cliente a confirmar"""
+
+    items: list[CantidadClienteLinea]

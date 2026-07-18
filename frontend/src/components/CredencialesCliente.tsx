@@ -41,7 +41,7 @@ ${t('clientes.password')}: ${cliente.password_inicial}`
       <div className="grid gap-1 text-sm" style={{ color: '#374151' }}>
         <p>
           <strong>{t('clientes.portalLink')}:</strong>{' '}
-          <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: '#4B52E8' }}>
+          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all" style={{ color: '#4B52E8' }}>
             {portalUrl}
           </a>
         </p>

@@ -8,7 +8,7 @@ import type { EquipoCotizacion, EquipoResponse } from '../types/equipo'
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
 function chipEstado(estado: string | null) {
-  if (!estado) return { backgroundColor: '#F3F4F6', color: '#9CA3AF' }
+  if (!estado) return { backgroundColor: '#F3F4F6', color: '#6B7280' }
   if (estado === 'entregado') return { backgroundColor: '#D1FAE5', color: '#10B981' }
   return { backgroundColor: '#EEF0FD', color: '#4B52E8' }
 }
@@ -134,14 +134,14 @@ function Equipo() {
                       </p>
                     </div>
                   </div>
-                  {abierta ? <ChevronDown size={20} style={{ color: '#9CA3AF' }} /> : <ChevronRight size={20} style={{ color: '#9CA3AF' }} />}
+                  {abierta ? <ChevronDown size={20} style={{ color: '#6B7280' }} /> : <ChevronRight size={20} style={{ color: '#6B7280' }} />}
                 </button>
 
                 {/* Clientes de la vendedora */}
                 {abierta && (
                   <div className="border-t border-gray-100 px-4 pb-4">
                     {v.clientes.length === 0 ? (
-                      <p className="py-3 text-sm" style={{ color: '#9CA3AF' }}>
+                      <p className="py-3 text-sm" style={{ color: '#6B7280' }}>
                         {t('equipo.sinClientes')}
                       </p>
                     ) : (
@@ -160,7 +160,7 @@ function Equipo() {
                                   <span className="font-medium" style={{ color: '#0D0D0D' }}>
                                     {c.nombre}
                                   </span>
-                                  {c.empresa && <span className="text-sm" style={{ color: '#9CA3AF' }}>· {c.empresa}</span>}
+                                  {c.empresa && <span className="text-sm" style={{ color: '#6B7280' }}>· {c.empresa}</span>}
                                 </div>
                                 <span className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
                                   {c.cotizaciones.length}
@@ -172,7 +172,7 @@ function Equipo() {
                               {cAbierto && (
                                 <div className="border-t border-gray-100 px-3 pb-3">
                                   {c.cotizaciones.length === 0 ? (
-                                    <p className="py-2 text-sm" style={{ color: '#9CA3AF' }}>
+                                    <p className="py-2 text-sm" style={{ color: '#6B7280' }}>
                                       {t('equipo.sinCotizaciones')}
                                     </p>
                                   ) : (
@@ -184,14 +184,14 @@ function Equipo() {
                                             <button
                                               type="button"
                                               onClick={() => toggle(cotAbierta, setCotAbierta, cot.sesion_id)}
-                                              className="flex w-full items-center justify-between gap-2 p-2 text-left"
+                                              className="flex w-full flex-wrap items-center justify-between gap-2 p-2 text-left"
                                             >
-                                              <div className="flex items-center gap-2">
-                                                <FileText size={15} style={{ color: '#6B7280' }} />
-                                                <span className="text-sm font-medium" style={{ color: '#0D0D0D' }}>
+                                              <div className="flex min-w-0 items-center gap-2">
+                                                <FileText size={15} className="flex-shrink-0" style={{ color: '#6B7280' }} />
+                                                <span className="truncate text-sm font-medium" style={{ color: '#0D0D0D' }}>
                                                   {cot.numero}
                                                 </span>
-                                                <span className="text-xs" style={{ color: '#9CA3AF' }}>{fmtFecha(cot.fecha)}</span>
+                                                <span className="text-xs" style={{ color: '#6B7280' }}>{fmtFecha(cot.fecha)}</span>
                                               </div>
                                               <div className="flex items-center gap-2">
                                                 {cot.pendiente_bl && (
@@ -210,7 +210,7 @@ function Equipo() {
                                             {coAbierta && (
                                               <div className="border-t border-gray-100 p-3">
                                                 {!cot.enviada ? (
-                                                  <p className="text-sm" style={{ color: '#9CA3AF' }}>
+                                                  <p className="text-sm" style={{ color: '#6B7280' }}>
                                                     {t('equipo.noEnviadaDetalle')}
                                                   </p>
                                                 ) : (

@@ -32,6 +32,7 @@ class SeguimientoUpdate(BaseModel):
     fecha_eta: date | None = None
     bl_numero: str | None = None
     bl_pdf_url: str | None = None
+    monto_venta: float | None = None
     hitos: dict[str, HitoInput] | None = None
 
     @field_validator("estado")
@@ -63,6 +64,8 @@ class SeguimientoResponse(BaseModel):
     fecha_eta: date | None = None
     bl_numero: str | None = None
     bl_pdf_url: str | None = None
+    monto_venta: float | None = None
+    despachado_at: datetime | None = None
     hitos: dict | None = None
     updated_at: datetime | None = None
 

@@ -8,11 +8,11 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import exigir_roles, get_current_user
 from app.database import get_db
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
-from app.models.sesion import Sesion
+from app.models.sesion import PEDIDO_CONFIRMADO, Sesion
 from app.models.user import User
 from app.schemas.pedidos import (
     GenerarPedidosResponse,
@@ -26,22 +26,19 @@ from app.services.storage_service import subir_excel, subir_pdf
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
 
-def _exigir_roles(usuario: User, *roles: str) -> None:
-    """Lanza 403 si el rol del usuario no está entre los permitidos"""
-    if usuario.rol.value not in roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sin permisos para esta acción",
-        )
-
-
-def _obtener_sesion(db: Session, sesion_id: str) -> Sesion:
-    """Devuelve la sesión o lanza 404"""
+def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
+    """Devuelve la sesión o lanza 404. Una vendedora solo puede acceder a las
+    suyas (403 en caso contrario); admin y contadora ven todas."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada",
+        )
+    if usuario.rol.value == "vendedora" and sesion.user_id != usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sin permisos sobre esta cotización",
         )
     return sesion
 
@@ -51,17 +48,36 @@ def _sanitizar(texto: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "_", texto).strip("_")
 
 
+class _ItemCajasCliente:
+    """Envuelve un ítem usando las cajas que pidió el cliente (cantidad_solicitada)
+    en lugar de las CTNS internas, sin tocar el valor en la base de datos. Los
+    generadores de Excel/PDF leen `.ctns`, así que solo reemplazamos ese campo y
+    delegamos todo lo demás al ítem original."""
+
+    def __init__(self, item: Item, ctns: int) -> None:
+        self._item = item
+        self.ctns = ctns
+
+    def __getattr__(self, nombre: str):  # solo se invoca para atributos no propios
+        return getattr(self._item, nombre)
+
+
 @router.post("/{sesion_id}/generar", response_model=GenerarPedidosResponse)
 def generar_pedidos(
     sesion_id: str,
+    usar_cantidades_cliente: bool = False,
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> GenerarPedidosResponse:
-    """Genera un Excel de Formato Pedido por cada proveedor de la sesión"""
-    _exigir_roles(usuario, "admin", "vendedora")
+    """Genera un Excel de Formato Pedido por cada proveedor de la sesión.
+
+    Si `usar_cantidades_cliente` es true, usa las cajas que pidió el cliente
+    desde su portal (cantidad_solicitada) en lugar de las CTNS internas.
+    """
+    exigir_roles(usuario, "admin", "vendedora")
 
     # a. La sesión debe existir
-    _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
 
     # b. Ítems ordenados por orden
     items = (
@@ -78,18 +94,37 @@ def generar_pedidos(
             detail="La sesión no tiene ítems",
         )
 
-    # d. Advertencias por ítems con CTNS=0
     warnings: list[str] = []
-    for item in items:
-        if not item.ctns or item.ctns == 0:
-            codigo = item.item_no or "sin código"
-            proveedor = item.supplier_nombre or "Sin proveedor"
-            warnings.append(
-                f"Ítem {codigo} del proveedor {proveedor} tiene CTNS=0 y no se incluirá en el pedido"
-            )
 
-    # e. Solo ítems con CTNS > 0
-    items_validos = [item for item in items if item.ctns and item.ctns > 0]
+    if usar_cantidades_cliente:
+        # El cliente debe haber confirmado las cantidades finales en el portal
+        if sesion.pedido_estado != PEDIDO_CONFIRMADO:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El cliente aún no ha confirmado las cantidades finales del pedido",
+            )
+        # d/e. Usar las cajas que pidió el cliente; avisar de las que dejó en 0
+        items_validos = []
+        for item in items:
+            cajas = item.cantidad_solicitada or 0
+            if cajas <= 0:
+                nombre = item.descripcion_es or item.item_no or "sin código"
+                warnings.append(
+                    f"El cliente no pidió cajas de «{nombre}»; no se incluye en el pedido"
+                )
+                continue
+            items_validos.append(_ItemCajasCliente(item, cajas))
+    else:
+        # d. Advertencias por ítems con CTNS=0
+        for item in items:
+            if not item.ctns or item.ctns == 0:
+                codigo = item.item_no or "sin código"
+                proveedor = item.supplier_nombre or "Sin proveedor"
+                warnings.append(
+                    f"Ítem {codigo} del proveedor {proveedor} tiene CTNS=0 y no se incluirá en el pedido"
+                )
+        # e. Solo ítems con CTNS > 0
+        items_validos = [item for item in items if item.ctns and item.ctns > 0]
 
     # f. Agrupar por proveedor
     grupos = agrupar_items_por_supplier(items_validos)
@@ -163,7 +198,7 @@ def listar_pedidos(
     db: Session = Depends(get_db),
 ) -> list[PedidoGenerado]:
     """Lista los pedidos generados de la sesión (más recientes primero)"""
-    _obtener_sesion(db, sesion_id)
+    _obtener_sesion(db, sesion_id, usuario)
     return (
         db.query(PedidoGenerado)
         .filter(PedidoGenerado.sesion_id == sesion_id)
@@ -179,7 +214,7 @@ def descargar_zip(
     db: Session = Depends(get_db),
 ) -> Response:
     """Empaqueta todos los xlsx de la sesión en un ZIP en memoria"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
 
     pedidos = (
         db.query(PedidoGenerado)

@@ -54,7 +54,7 @@ function MetricCard({
         <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
           {titulo}
         </p>
-        {subtitulo && <p className="mt-0.5 text-xs text-gray-400">{subtitulo}</p>}
+        {subtitulo && <p className="mt-0.5 text-xs" style={{ color: '#6B7280' }}>{subtitulo}</p>}
       </div>
     </div>
   )

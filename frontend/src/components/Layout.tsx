@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import BottomNav from './BottomNav'
+import NotificacionesBell from './NotificacionesBell'
 import Sidebar from './Sidebar'
 
 const IDIOMAS = [
@@ -32,7 +33,7 @@ function SelectorIdiomaMobile() {
             style={{
               borderRadius: 6,
               backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#9CA3AF',
+              color: activo ? '#FFFFFF' : '#6B7280',
               padding: '3px 8px',
               fontSize: 12,
               fontWeight: 600,
@@ -68,9 +69,13 @@ export default function Layout({ children }: { children: ReactNode }) {
         className="fixed left-0 right-0 top-0 z-30 flex items-center justify-between bg-white px-4 md:hidden"
         style={{ height: 56, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
       >
-        <span style={{ fontWeight: 800, fontSize: 20, color: '#4B52E8' }}>YU·DA</span>
+        {/* En la barra compacta va el ícono (el logo completo no entra con los demás controles) */}
+        <img src="/favicon.png" alt="YUDA" style={{ height: 30, width: 30 }} />
         <div className="flex items-center gap-2">
           <SelectorIdiomaMobile />
+          {(usuario?.rol === 'admin' || usuario?.rol === 'vendedora') && (
+            <NotificacionesBell posicion="abajo" />
+          )}
           <span className="max-w-[80px] truncate" style={{ fontSize: 14, color: '#6B7280' }}>
             {usuario?.nombre}
           </span>

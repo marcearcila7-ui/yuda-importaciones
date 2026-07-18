@@ -43,7 +43,7 @@ function BottomNav() {
             style={{
               borderRadius: 12,
               backgroundColor: activo ? '#EEF0FD' : 'transparent',
-              color: activo ? '#4B52E8' : '#9CA3AF',
+              color: activo ? '#4B52E8' : '#6B7280',
               textDecoration: 'none',
             }}
           >

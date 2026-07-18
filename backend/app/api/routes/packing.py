@@ -6,11 +6,13 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import exigir_roles, get_current_user
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
+from app.models.lote import LoteItem, LoteOCR
+from app.models.notificacion import Notificacion
 from app.models.pedido import PedidoGenerado
 from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
@@ -31,7 +33,7 @@ from app.services.cotizacion_service import (
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
-from app.services.storage_service import subir_foto
+from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_foto
 
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
 router = APIRouter(tags=["packing"])
@@ -39,15 +41,6 @@ router = APIRouter(tags=["packing"])
 # Tipos de imagen permitidos para la foto final del producto
 _TIPOS_FOTO = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
 _MAX_FOTO_BYTES = 25 * 1024 * 1024
-
-
-def _exigir_roles(usuario: User, *roles: str) -> None:
-    """Lanza 403 si el rol del usuario no está entre los permitidos"""
-    if usuario.rol.value not in roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sin permisos para esta acción",
-        )
 
 
 def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse:
@@ -74,18 +67,25 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         alto_cm=item.alto_cm,
         moq_cajas=item.moq_cajas,
         ctns=item.ctns,
+        cantidad_solicitada=item.cantidad_solicitada,
         orden=item.orden,
         **calculados,
     )
 
 
-def _obtener_sesion(db: Session, sesion_id: str) -> Sesion:
-    """Devuelve la sesión o lanza 404"""
+def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
+    """Devuelve la sesión o lanza 404. Una vendedora solo puede acceder a las
+    suyas (403 en caso contrario); admin y contadora ven todas."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada",
+        )
+    if usuario.rol.value == "vendedora" and sesion.user_id != usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sin permisos sobre esta cotización",
         )
     return sesion
 
@@ -112,7 +112,7 @@ def crear_sesion(
     db: Session = Depends(get_db),
 ) -> Sesion:
     """Crea una sesión asociada al usuario actual (solo admin y vendedora)"""
-    _exigir_roles(usuario, "admin", "vendedora")
+    exigir_roles(usuario, "admin", "vendedora")
 
     nombre = datos.nombre_cliente
     # Si se crea para un cliente del portal, validar y usar su nombre
@@ -144,15 +144,45 @@ def eliminar_sesion(
     db: Session = Depends(get_db),
 ) -> dict:
     """Elimina una cotización con sus ítems y pedidos (solo admin)"""
-    _exigir_roles(usuario, "admin")
-    _obtener_sesion(db, sesion_id)
+    exigir_roles(usuario, "admin")
+    _obtener_sesion(db, sesion_id, usuario)
+
+    # Recolectar las URLs de archivos para borrarlos del storage tras el commit.
+    lote_ids = [
+        lid for (lid,) in db.query(LoteOCR.id).filter(LoteOCR.sesion_id == sesion_id).all()
+    ]
+    fotos_urls: list[str | None] = []
+    for foto_url, foto_final in db.query(Item.foto_url, Item.foto_final_url).filter(
+        Item.sesion_id == sesion_id
+    ):
+        fotos_urls.extend([foto_url, foto_final])
+    if lote_ids:
+        fotos_urls.extend(
+            u for (u,) in db.query(LoteItem.foto_url).filter(LoteItem.lote_id.in_(lote_ids))
+        )
+    pedidos_urls: list[str | None] = []
+    for xlsx, pdf in db.query(PedidoGenerado.archivo_xlsx_url, PedidoGenerado.archivo_pdf_url).filter(
+        PedidoGenerado.sesion_id == sesion_id
+    ):
+        pedidos_urls.extend([xlsx, pdf])
 
     # Borrar primero los registros que dependen de la sesión (FK)
     db.query(Item).filter(Item.sesion_id == sesion_id).delete()
     db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).delete()
     db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).delete()
+    # Avisos internos que referencian esta cotización (FK notificaciones.sesion_id)
+    db.query(Notificacion).filter(Notificacion.sesion_id == sesion_id).delete()
+    # Lotes de OCR (carga masiva): primero las fotos (LoteItem) y luego los lotes,
+    # respetando las FK lote_items.lote_id -> lotes_ocr.id -> sesiones.id
+    if lote_ids:
+        db.query(LoteItem).filter(LoteItem.lote_id.in_(lote_ids)).delete(synchronize_session=False)
+        db.query(LoteOCR).filter(LoteOCR.sesion_id == sesion_id).delete(synchronize_session=False)
     db.query(Sesion).filter(Sesion.id == sesion_id).delete()
     db.commit()
+
+    # Limpieza best-effort del storage (no bloquea si falla): fotos y pedidos.
+    borrar_archivos("fotos", [ruta_desde_url(u, "fotos") for u in fotos_urls])
+    borrar_archivos("pedidos", [ruta_desde_url(u, "pedidos") for u in pedidos_urls])
     return {"detail": "Cotización eliminada"}
 
 
@@ -166,7 +196,7 @@ def listar_items(
     db: Session = Depends(get_db),
 ) -> list[ItemResponse]:
     """Lista los ítems de una sesión con sus campos calculados"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     items = (
         db.query(Item)
         .filter(Item.sesion_id == sesion_id)
@@ -188,8 +218,8 @@ def crear_item(
     db: Session = Depends(get_db),
 ) -> ItemResponse:
     """Agrega un ítem a la sesión (solo admin y vendedora)"""
-    _exigir_roles(usuario, "admin", "vendedora")
-    sesion = _obtener_sesion(db, sesion_id)
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
 
     # orden = máximo actual + 1; si no hay ítems, 1
     max_orden = (
@@ -217,8 +247,8 @@ def reordenar_items(
     db: Session = Depends(get_db),
 ) -> dict:
     """Actualiza el campo orden de varios ítems en una sola transacción"""
-    _exigir_roles(usuario, "admin", "vendedora")
-    _obtener_sesion(db, sesion_id)
+    exigir_roles(usuario, "admin", "vendedora")
+    _obtener_sesion(db, sesion_id, usuario)
 
     for entrada in nuevos_ordenes:
         db.query(Item).filter(
@@ -237,8 +267,8 @@ def actualizar_item(
     db: Session = Depends(get_db),
 ) -> ItemResponse:
     """Actualiza parcialmente un ítem (solo admin y vendedora)"""
-    _exigir_roles(usuario, "admin", "vendedora")
-    sesion = _obtener_sesion(db, sesion_id)
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
 
     item = (
         db.query(Item)
@@ -273,8 +303,8 @@ async def subir_foto_final(
     Esta foto solo se muestra en los documentos del cliente y del proveedor;
     el OCR sigue usando la foto de datos (foto_url). Solo admin y vendedora.
     """
-    _exigir_roles(usuario, "admin", "vendedora")
-    sesion = _obtener_sesion(db, sesion_id)
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
 
     item = (
         db.query(Item)
@@ -319,7 +349,7 @@ def eliminar_item(
     db: Session = Depends(get_db),
 ) -> dict:
     """Elimina un ítem (solo admin)"""
-    _exigir_roles(usuario, "admin")
+    exigir_roles(usuario, "admin")
 
     item = (
         db.query(Item)
@@ -347,7 +377,7 @@ def exportar_packing_excel(
     db: Session = Depends(get_db),
 ) -> Response:
     """Genera y descarga el Packing List en Excel"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     items = (
         db.query(Item)
         .filter(Item.sesion_id == sesion_id)
@@ -376,7 +406,7 @@ def exportar_packing_pdf(
     db: Session = Depends(get_db),
 ) -> Response:
     """Genera y descarga el Packing List en PDF (con fotos)"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     items = (
         db.query(Item)
         .filter(Item.sesion_id == sesion_id)
@@ -406,7 +436,7 @@ def exportar_cotizacion_excel(
     db: Session = Depends(get_db),
 ) -> Response:
     """Genera la cotización para el cliente en Excel (multiidioma)"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     items = (
         db.query(Item)
         .filter(Item.sesion_id == sesion_id)
@@ -434,7 +464,7 @@ def exportar_cotizacion_pdf(
     db: Session = Depends(get_db),
 ) -> Response:
     """Genera la cotización para el cliente en PDF (multiidioma)"""
-    sesion = _obtener_sesion(db, sesion_id)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     items = (
         db.query(Item)
         .filter(Item.sesion_id == sesion_id)

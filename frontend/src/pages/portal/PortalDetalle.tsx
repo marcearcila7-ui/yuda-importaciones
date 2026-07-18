@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ArrowLeft, FileSpreadsheet, FileText, Send } from 'lucide-react'
+import axios from 'axios'
+import { ArrowLeft, CheckCircle2, FileSpreadsheet, FileText, Pencil, RefreshCw, Send } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import SeguimientoTimeline from '../../components/portal/SeguimientoTimeline'
-import { descargarCotizacion, enviarPedidoPortal, getCotizacionDetalle } from '../../api/portal'
+import { confirmarPedidoPortal, descargarCotizacion, enviarPedidoPortal, getCotizacionDetalle } from '../../api/portal'
+import { confirmar as pedirConfirmacion } from '../../store/confirmStore'
 import type { CotizacionDetalle, PortalItem } from '../../types/portal'
 
 function descripcion(item: PortalItem, idioma: string): string {
@@ -19,15 +21,23 @@ function PortalDetalle() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const [detalle, setDetalle] = useState<CotizacionDetalle | null>(null)
+  const [cargando, setCargando] = useState(true)
   const [noEncontrada, setNoEncontrada] = useState(false)
+  const [errorCarga, setErrorCarga] = useState(false)
   const [descargando, setDescargando] = useState<'excel' | 'pdf' | null>(null)
   // Pedido del cliente: cajas por producto (item_id -> texto) y notas.
   const [cantidades, setCantidades] = useState<Record<string, string>>({})
   const [notas, setNotas] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [confirmando, setConfirmando] = useState(false)
+  // Para modificar un pedido ya confirmado hace falta una acción explícita.
+  const [editando, setEditando] = useState(false)
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     if (!sesionId) return
+    setCargando(true)
+    setNoEncontrada(false)
+    setErrorCarga(false)
     getCotizacionDetalle(sesionId)
       .then((d) => {
         setDetalle(d)
@@ -38,8 +48,17 @@ function PortalDetalle() {
         setCantidades(init)
         setNotas(d.notas_cliente ?? '')
       })
-      .catch(() => setNoEncontrada(true))
+      .catch((err) => {
+        // Distinguir "no existe" (404) de un error de red/servidor.
+        if (axios.isAxiosError(err) && err.response?.status === 404) setNoEncontrada(true)
+        else setErrorCarga(true)
+      })
+      .finally(() => setCargando(false))
   }, [sesionId])
+
+  useEffect(() => {
+    cargar()
+  }, [cargar])
 
   const descargar = async (tipo: 'excel' | 'pdf') => {
     if (!sesionId) return
@@ -61,6 +80,7 @@ function PortalDetalle() {
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch {
       ventana?.close()
+      toast.error(t('portal.errorDescarga'))
     } finally {
       setDescargando(null)
     }
@@ -75,7 +95,15 @@ function PortalDetalle() {
         cantidad: Number(cantidades[it.item_id] || 0),
       }))
       await enviarPedidoPortal(sesionId, { items, notas: notas.trim() || null })
-      setDetalle({ ...detalle, pedido_recibido: true, notas_cliente: notas.trim() || null })
+      // Proponer cantidades (o cambios) devuelve el pedido a "recibido".
+      setDetalle({
+        ...detalle,
+        pedido_recibido: true,
+        pedido_estado: 'recibido',
+        pedido_confirmado: false,
+        notas_cliente: notas.trim() || null,
+      })
+      setEditando(false)
       toast.success(t('portal.pedidoEnviado'))
     } catch {
       toast.error(t('portal.errorPedido'))
@@ -83,6 +111,29 @@ function PortalDetalle() {
       setEnviando(false)
     }
   }
+
+  const confirmar = async () => {
+    if (!sesionId || !detalle) return
+    setConfirmando(true)
+    try {
+      await confirmarPedidoPortal(sesionId)
+      setDetalle({ ...detalle, pedido_estado: 'confirmado', pedido_confirmado: true })
+      toast.success(t('portal.pedidoConfirmado'))
+    } catch {
+      toast.error(t('portal.errorConfirmar'))
+    } finally {
+      setConfirmando(false)
+    }
+  }
+
+  // Pedir confirmación explícita antes de reabrir un pedido ya confirmado.
+  const modificarConfirmado = async () => {
+    if (await pedirConfirmacion(t('portal.avisoModificar'))) setEditando(true)
+  }
+
+  const confirmado = detalle?.pedido_estado === 'confirmado'
+  // Con el pedido confirmado los campos quedan bloqueados hasta "Modificar pedido".
+  const bloqueado = confirmado && !editando
 
   return (
     <PortalLayout>
@@ -95,23 +146,35 @@ function PortalDetalle() {
         <ArrowLeft size={16} /> {t('portal.volver')}
       </button>
 
-      {noEncontrada ? (
+      {cargando ? (
+        <p className="text-sm" style={{ color: '#6B7280' }}>
+          {t('portal.cargando')}
+        </p>
+      ) : errorCarga ? (
+        <div className="card flex flex-col items-start gap-3">
+          <p className="text-sm" style={{ color: '#374151' }}>{t('portal.errorCarga')}</p>
+          <button
+            type="button"
+            onClick={cargar}
+            className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
+            style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+          >
+            <RefreshCw size={16} /> {t('portal.reintentar')}
+          </button>
+        </div>
+      ) : noEncontrada || !detalle ? (
         <div className="card">
           <p className="text-sm" style={{ color: '#6B7280' }}>
             {t('portal.noEncontrada')}
           </p>
         </div>
-      ) : !detalle ? (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
-          {t('portal.cargando')}
-        </p>
       ) : (
         <div className="flex flex-col gap-6">
           {/* Encabezado */}
           <div>
             <h1 style={{ fontWeight: 700, fontSize: 24, color: '#0D0D0D' }}>{detalle.numero}</h1>
             <p className="text-sm" style={{ color: '#6B7280' }}>
-              {t('portal.productos', { n: detalle.items.length })} · {t('portal.totalEstimado')}: ${' '}
+              {t('portal.productos', { n: detalle.items.length })} · {t('portal.totalEstimado')}: US${' '}
               {detalle.total_usd.toLocaleString('es-ES')}
             </p>
           </div>
@@ -146,8 +209,18 @@ function PortalDetalle() {
             <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
               {t('portal.miPedidoAyuda')}
             </p>
-            {detalle.pedido_recibido && (
-              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+            {detalle.pedido_estado === 'por_confirmar' && (
+              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF3C7', color: '#B45309' }}>
+                {t('portal.porConfirmarAviso')}
+              </p>
+            )}
+            {detalle.pedido_estado === 'confirmado' && (
+              <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                <CheckCircle2 size={16} /> {t('portal.confirmadoAviso')}
+              </p>
+            )}
+            {detalle.pedido_estado === 'recibido' && (
+              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}>
                 {t('portal.pedidoRecibidoAviso')}
               </p>
             )}
@@ -173,7 +246,7 @@ function PortalDetalle() {
                           {descripcion(item, i18n.language) || '—'}
                         </p>
                         <p className="text-sm" style={{ color: '#6B7280' }}>
-                          {t('portal.precioUnit')}: $ {item.price_usd.toLocaleString('es-ES')}
+                          {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
                           {item.qty_por_ctn > 0 ? ` · ${t('portal.porCaja', { n: item.qty_por_ctn })}` : ''}
                         </p>
                       </div>
@@ -188,11 +261,12 @@ function PortalDetalle() {
                         inputMode="numeric"
                         value={cantidades[item.item_id] ?? ''}
                         onChange={(e) => setCantidades((c) => ({ ...c, [item.item_id]: e.target.value }))}
-                        className="w-24 rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none"
+                        disabled={bloqueado}
+                        className="min-h-[44px] w-24 rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
                         style={{ fontSize: 16 }}
                       />
                       {item.qty_por_ctn > 0 && cajas > 0 && (
-                        <span className="text-xs" style={{ color: '#9CA3AF' }}>
+                        <span className="text-xs" style={{ color: '#6B7280' }}>
                           ≈ {(cajas * item.qty_por_ctn).toLocaleString('es-ES')} {t('portal.unidades')}
                         </span>
                       )}
@@ -209,25 +283,60 @@ function PortalDetalle() {
                 onChange={(e) => setNotas(e.target.value)}
                 rows={3}
                 placeholder={t('portal.notasPlaceholder')}
-                className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none"
+                disabled={bloqueado}
+                className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 style={{ fontSize: 16 }}
               />
             </label>
 
-            <button
-              type="button"
-              onClick={enviarPedido}
-              disabled={enviando}
-              className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
-            >
-              <Send size={18} />{' '}
-              {enviando
-                ? t('portal.enviando')
-                : detalle.pedido_recibido
-                  ? t('portal.actualizarPedido')
-                  : t('portal.enviarPedido')}
-            </button>
+            {detalle.pedido_estado === 'por_confirmar' ? (
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={confirmar}
+                  disabled={confirmando || enviando}
+                  className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: '#10B981', fontSize: 16 }}
+                >
+                  <CheckCircle2 size={18} /> {confirmando ? t('portal.confirmando') : t('portal.confirmarPedido')}
+                </button>
+                <button
+                  type="button"
+                  onClick={enviarPedido}
+                  disabled={enviando || confirmando}
+                  className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg border font-semibold disabled:opacity-60"
+                  style={{ borderColor: '#4B52E8', color: '#4B52E8', fontSize: 16 }}
+                >
+                  <Send size={18} /> {enviando ? t('portal.enviando') : t('portal.proponerCambios')}
+                </button>
+              </div>
+            ) : confirmado && !editando ? (
+              <button
+                type="button"
+                onClick={modificarConfirmado}
+                className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border font-semibold"
+                style={{ borderColor: '#4B52E8', color: '#4B52E8', fontSize: 16 }}
+              >
+                <Pencil size={18} /> {t('portal.modificarPedido')}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={enviarPedido}
+                disabled={enviando}
+                className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+              >
+                <Send size={18} />{' '}
+                {enviando
+                  ? t('portal.enviando')
+                  : editando
+                    ? t('portal.enviarCambios')
+                    : detalle.pedido_recibido
+                      ? t('portal.actualizarPedido')
+                      : t('portal.enviarPedido')}
+              </button>
+            )}
           </div>
 
           {/* Productos (resumen con totales de la cotización) */}
@@ -253,12 +362,12 @@ function PortalDetalle() {
                       {descripcion(item, i18n.language) || '—'}
                     </p>
                     <p className="text-sm" style={{ color: '#6B7280' }}>
-                      {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: $ {item.price_usd.toLocaleString('es-ES')}
+                      {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-right">
                     <p className="font-semibold" style={{ color: '#0D0D0D' }}>
-                      $ {item.total_usd.toLocaleString('es-ES')}
+                      US$ {item.total_usd.toLocaleString('es-ES')}
                     </p>
                   </div>
                 </div>
@@ -266,7 +375,7 @@ function PortalDetalle() {
             </div>
             <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
               <p style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
-                {t('portal.total')}: $ {detalle.total_usd.toLocaleString('es-ES')}
+                {t('portal.total')}: US$ {detalle.total_usd.toLocaleString('es-ES')}
               </p>
             </div>
           </div>

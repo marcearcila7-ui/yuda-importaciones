@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { Plus, UserPlus } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { crearCliente, getClientes } from '../../api/clientes'
+import { getConfiguracion } from '../../api/admin'
 import CredencialesCliente from '../CredencialesCliente'
 import type { Cliente, ClienteCreado } from '../../types/cliente'
 
@@ -38,6 +39,11 @@ function SesionSelector() {
   useEffect(() => {
     getClientes()
       .then(setClientes)
+      .catch(() => undefined)
+    // Precargar el tipo de cambio que configuró la admin (evita cotizar con una
+    // tasa vieja); si falla, queda el valor por defecto.
+    getConfiguracion()
+      .then((c) => setTipoCambio(String(c.tipo_cambio_usd)))
       .catch(() => undefined)
   }, [])
 
@@ -200,7 +206,7 @@ function SesionSelector() {
       {/* MODO LIBRE */}
       {modo === 'libre' && (
         <div className="mt-4 flex flex-col gap-2">
-          <p className="text-sm" style={{ color: '#9CA3AF' }}>
+          <p className="text-sm" style={{ color: '#6B7280' }}>
             {t('dashboard.libreAyuda')}
           </p>
           <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -56,6 +56,14 @@ class SeguimientoPedido(Base):
     # BL (Bill of Lading): lo carga Marcela cuando el contenedor está en tránsito.
     bl_numero: Mapped[str | None] = mapped_column(String, nullable=True)
     bl_pdf_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Monto de la venta en USD, que Marcela ingresa al despachar (obligatorio al
+    # pasar a "en tránsito"). Alimenta el panel de ventas del dashboard.
+    monto_venta: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    # Sello de cuándo el pedido pasó a "en tránsito" (despacho del contenedor),
+    # para filtrar las ventas por fecha en el panel de Marcela.
+    despachado_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
     # { estado_key: { "fecha": "YYYY-MM-DD", "nota": "..." } }
     hitos: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(

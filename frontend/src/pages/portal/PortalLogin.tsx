@@ -30,8 +30,8 @@ function PortalLogin() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     clearError()
-    await login(email.trim().toLowerCase(), password)
-    if (localStorage.getItem('yuda_portal_token')) {
+    const ok = await login(email.trim().toLowerCase(), password)
+    if (ok) {
       navigate('/portal')
     }
   }
@@ -55,7 +55,7 @@ function PortalLogin() {
               style={{
                 borderRadius: 6,
                 backgroundColor: activo ? '#4B52E8' : 'transparent',
-                color: activo ? '#FFFFFF' : '#9CA3AF',
+                color: activo ? '#FFFFFF' : '#6B7280',
                 padding: '4px 10px',
                 fontSize: 13,
                 fontWeight: 600,
@@ -69,15 +69,23 @@ function PortalLogin() {
 
       <div className="flex flex-1 items-center justify-center px-6">
         <div className="w-full" style={{ maxWidth: 380 }}>
-          <p className="mb-2 text-center" style={{ fontWeight: 800, fontSize: 32, color: '#4B52E8' }}>
-            YU·DA
-          </p>
-          <p className="mb-8 text-center" style={{ fontSize: 13, letterSpacing: 2, color: '#9CA3AF' }}>
-            {t('portal.titulo').toUpperCase()}
-          </p>
-
-          <h1 style={{ fontWeight: 700, fontSize: 26, color: '#0D0D0D' }}>{t('portal.bienvenida')}</h1>
-          <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>{t('portal.credenciales')}</p>
+          <img
+            src="/logoyuda.png"
+            alt="YUDA Importaciones"
+            style={{ height: 48, width: 'auto', margin: '0 auto 20px' }}
+          />
+          <div className="text-center">
+            <span
+              className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
+              style={{ backgroundColor: '#D1FAE5', color: '#047857' }}
+            >
+              {t('portal.accesoPortal')}
+            </span>
+            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 26, color: '#0D0D0D' }}>
+              {t('portal.bienvenida')}
+            </h1>
+            <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>{t('portal.credenciales')}</p>
+          </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 28 }}>
             <label htmlFor="email" style={labelStyle}>

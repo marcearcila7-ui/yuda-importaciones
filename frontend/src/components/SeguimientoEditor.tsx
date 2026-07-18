@@ -37,6 +37,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const [eta, setEta] = useState('')
   const [blNumero, setBlNumero] = useState('')
   const [blPdfUrl, setBlPdfUrl] = useState('')
+  const [monto, setMonto] = useState('')
   const [hitos, setHitos] = useState<Record<string, Hito>>({})
   const [trabajando, setTrabajando] = useState(false)
   const [subiendoBl, setSubiendoBl] = useState(false)
@@ -54,6 +55,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     setEta(s.fecha_eta ?? '')
     setBlNumero(s.bl_numero ?? '')
     setBlPdfUrl(s.bl_pdf_url ?? '')
+    setMonto(s.monto_venta != null ? String(s.monto_venta) : '')
     setHitos(s.hitos ?? {})
   }
 
@@ -124,7 +126,18 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     }
   }
 
+  // De "en tránsito" en adelante el contenedor ya está despachado.
+  const esTransito =
+    (ESTADOS_ENVIO as readonly string[]).indexOf(estado) >= ESTADOS_ENVIO.indexOf('en_transito')
+  const montoNum = Number(monto)
+  const montoValido = !!monto && !Number.isNaN(montoNum) && montoNum > 0
+
   const guardar = async () => {
+    // El monto de la venta es obligatorio para despachar (marcar en tránsito).
+    if (esAdmin && esTransito && !montoValido) {
+      toast.error(t('envio.montoRequerido'))
+      return
+    }
     setTrabajando(true)
     const limpios: Record<string, Hito> = {}
     for (const k of ESTADOS_ENVIO) {
@@ -147,6 +160,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
         fecha_eta: eta || null,
         bl_numero: blNumero || null,
         bl_pdf_url: blPdfUrl || null,
+        monto_venta: montoValido ? montoNum : null,
         hitos: limpios,
       })
       cargar(s)
@@ -284,7 +298,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                         type="button"
                         onClick={() => quitarAdj(i)}
                         aria-label={t('envio.quitarAdjunto')}
-                        style={{ color: '#9CA3AF' }}
+                        style={{ color: '#6B7280' }}
                       >
                         <X size={16} />
                       </button>
@@ -385,6 +399,26 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
             <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
               {t('envio.blNumero')}
               <input value={blNumero} onChange={(e) => setBlNumero(e.target.value)} style={inputStyle} className={inputClase} />
+            </label>
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2" style={{ color: '#6B7280' }}>
+              <span className="font-medium" style={{ color: '#0D0D0D' }}>
+                💰 {t('envio.montoVenta')} <span style={{ color: '#EF4444' }}>*</span>
+              </span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                inputMode="decimal"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                placeholder="0.00"
+                style={inputStyle}
+                className={inputClase}
+                aria-invalid={esTransito && !montoValido}
+              />
+              <span className="text-xs" style={{ color: esTransito && !montoValido ? '#EF4444' : '#6B7280' }}>
+                {t('envio.montoVentaAyuda')}
+              </span>
             </label>
             <div className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
               {t('envio.blPdf')}

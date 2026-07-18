@@ -8,7 +8,7 @@ interface PortalState {
   token: string | null
   isLoading: boolean
   error: string | null
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
   initFromStorage: () => void
   clearError: () => void
@@ -27,12 +27,17 @@ export const usePortalStore = create<PortalState>((set) => ({
       localStorage.setItem('yuda_portal_token', data.access_token)
       localStorage.setItem('yuda_portal_cliente', JSON.stringify(data.cliente))
       set({ cliente: data.cliente, token: data.access_token, isLoading: false })
+      return true
     } catch (err) {
+      // Login fallido: limpiar cualquier sesión previa para no quedar como otro cliente.
+      localStorage.removeItem('yuda_portal_token')
+      localStorage.removeItem('yuda_portal_cliente')
       let mensaje = 'No se pudo iniciar sesión'
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         mensaje = err.response.data.detail
       }
-      set({ error: mensaje, isLoading: false })
+      set({ cliente: null, token: null, error: mensaje, isLoading: false })
+      return false
     }
   },
 

@@ -1,5 +1,6 @@
-from datetime import date, datetime
+from datetime import date, datetime, time, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -12,7 +13,7 @@ from app.models.cliente import Cliente
 from app.models.configuracion import Configuracion
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
-from app.models.seguimiento import SeguimientoPedido
+from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import RolUsuario, User
 from app.schemas.admin import (
@@ -129,10 +130,11 @@ def reset_password(
 
 @router.get("/configuracion", response_model=ConfiguracionResponse)
 def obtener_configuracion(
-    usuario: User = Depends(require_roles("admin")),
+    usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
 ) -> ConfiguracionResponse:
-    """Devuelve el tipo de cambio actual (o el default de settings)"""
+    """Devuelve el tipo de cambio actual (o el default de settings). Lo leen tanto
+    la admin como las vendedoras (para precargarlo al crear una cotización)."""
     registro = (
         db.query(Configuracion).filter(Configuracion.clave == CLAVE_TIPO_CAMBIO).first()
     )
@@ -286,6 +288,143 @@ def metricas_vendedoras(
         )
 
     return {"vendedoras": resultado}
+
+
+# Etapas en las que el contenedor ya está despachado (en tránsito en adelante).
+ESTADOS_DESPACHADO = tuple(ESTADOS_ENVIO[ESTADOS_ENVIO.index("en_transito"):])
+BOGOTA = ZoneInfo("America/Bogota")
+
+
+def _rango_utc(desde: date | None, hasta: date | None) -> tuple[datetime | None, datetime | None]:
+    """Convierte un rango de fechas en hora Bogotá a límites en UTC (para comparar
+    contra los timestamps guardados). `hasta` incluye todo el día."""
+    ini = (
+        datetime.combine(desde, time.min).replace(tzinfo=BOGOTA).astimezone(timezone.utc)
+        if desde
+        else None
+    )
+    fin = (
+        datetime.combine(hasta, time.max).replace(tzinfo=BOGOTA).astimezone(timezone.utc)
+        if hasta
+        else None
+    )
+    return ini, fin
+
+
+def _numero_cotizacion(sesion: Sesion) -> str:
+    return f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+
+
+@router.get("/ventas")
+def panel_ventas(
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    vendedora_id: str | None = Query(None),
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Panel de ventas de Marcela (solo admin).
+
+    Devuelve montos vendidos, pedidos en tránsito, cotizaciones enviadas y
+    contenedores despachados, con el desglose por vendedora y el detalle de cada
+    despacho. Filtra por rango de fechas (hora Bogotá) y por vendedora. Alimenta
+    el resumen del dashboard, la pestaña Ventas y la exportación a CSV.
+    """
+    ini, fin = _rango_utc(desde, hasta)
+
+    # ---- Despachos: contenedores en tránsito en adelante ----
+    q = (
+        db.query(SeguimientoPedido, Sesion, User)
+        .join(Sesion, SeguimientoPedido.sesion_id == Sesion.id)
+        .join(User, Sesion.user_id == User.id)
+        .filter(SeguimientoPedido.estado.in_(ESTADOS_DESPACHADO))
+    )
+    if ini is not None:
+        q = q.filter(SeguimientoPedido.despachado_at >= ini)
+    if fin is not None:
+        q = q.filter(SeguimientoPedido.despachado_at <= fin)
+    if vendedora_id:
+        q = q.filter(Sesion.user_id == vendedora_id)
+    filas = q.order_by(SeguimientoPedido.despachado_at.desc().nullslast()).all()
+
+    despachos: list[dict] = []
+    ventas_total = 0.0
+    ventas_vendedoras = 0.0
+    contenedores_vendedoras = 0
+    en_transito = 0
+    agg_vend: dict[str, dict] = {}
+    for seg, ses, creador in filas:
+        monto = float(seg.monto_venta) if seg.monto_venta is not None else 0.0
+        ventas_total += monto
+        es_vend = creador.rol == RolUsuario.vendedora
+        if es_vend:
+            ventas_vendedoras += monto
+            contenedores_vendedoras += 1
+            a = agg_vend.setdefault(creador.id, {"contenedores": 0, "ventas": 0.0})
+            a["contenedores"] += 1
+            a["ventas"] += monto
+        if seg.estado == "en_transito":
+            en_transito += 1
+        despachos.append(
+            {
+                "sesion_id": ses.id,
+                "numero": _numero_cotizacion(ses),
+                "cliente": ses.nombre_cliente,
+                "vendedora": creador.nombre,
+                "es_vendedora": es_vend,
+                "estado": seg.estado,
+                "bl_numero": seg.bl_numero,
+                "naviera": seg.naviera,
+                "monto_venta": round(monto, 2),
+                "despachado_at": seg.despachado_at.isoformat() if seg.despachado_at else None,
+                "fecha_cotizacion": ses.fecha.isoformat(),
+            }
+        )
+
+    # ---- Cotizaciones enviadas (archivos enviados al cliente) ----
+    qc = db.query(Sesion.user_id).filter(Sesion.enviada_cliente.is_(True))
+    if ini is not None:
+        qc = qc.filter(Sesion.created_at >= ini)
+    if fin is not None:
+        qc = qc.filter(Sesion.created_at <= fin)
+    if vendedora_id:
+        qc = qc.filter(Sesion.user_id == vendedora_id)
+    cot_por_user: dict[str, int] = {}
+    for (uid,) in qc.all():
+        cot_por_user[uid] = cot_por_user.get(uid, 0) + 1
+    cotizaciones_hechas = sum(cot_por_user.values())
+
+    # ---- Desglose por vendedora ----
+    vendedoras = (
+        db.query(User).filter(User.rol == RolUsuario.vendedora).order_by(User.nombre.asc()).all()
+    )
+    por_vendedora = []
+    for v in vendedoras:
+        if vendedora_id and v.id != vendedora_id:
+            continue
+        a = agg_vend.get(v.id, {"contenedores": 0, "ventas": 0.0})
+        por_vendedora.append(
+            {
+                "vendedora_id": v.id,
+                "nombre": v.nombre,
+                "cotizaciones": cot_por_user.get(v.id, 0),
+                "contenedores": a["contenedores"],
+                "ventas": round(a["ventas"], 2),
+            }
+        )
+
+    return {
+        "desde": desde.isoformat() if desde else None,
+        "hasta": hasta.isoformat() if hasta else None,
+        "ventas_total": round(ventas_total, 2),
+        "pedidos_en_transito": en_transito,
+        "cotizaciones_hechas": cotizaciones_hechas,
+        "contenedores_total": len(despachos),
+        "contenedores_vendedoras": contenedores_vendedoras,
+        "ventas_vendedoras": round(ventas_vendedoras, 2),
+        "por_vendedora": por_vendedora,
+        "despachos": despachos,
+    }
 
 
 @router.get("/equipo")

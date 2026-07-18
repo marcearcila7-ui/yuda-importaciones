@@ -15,6 +15,7 @@ import SesionSelector from '../components/SesionSelector/SesionSelector'
 import { exportarPackingExcel, exportarPackingPDF } from '../api/packing'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
+import PanelVentas from '../components/ventas/PanelVentas'
 import { usePackingStore } from '../store/packingStore'
 import type { MetricasDashboard } from '../types/admin'
 
@@ -62,7 +63,7 @@ function SectionCard({ titulo, children }: { titulo: string; children: ReactNode
 function GroupHeading({ texto }: { texto: string }) {
   return (
     <div className="mt-2 flex items-center gap-3">
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: '#9CA3AF' }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: '#6B7280' }}>
         {texto.toUpperCase()}
       </span>
       <span className="h-px flex-1" style={{ backgroundColor: '#E5E7EB' }} />
@@ -171,6 +172,7 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+      {esAdmin && <PanelVentas />}
       <PageHeader
         titulo={t('dashboard.titulo')}
         accesorio={
@@ -281,6 +283,7 @@ function Dashboard() {
             <GenerarPedidos
               sesion_id={sesionActual.id}
               nombre_cliente={sesionActual.nombre_cliente}
+              pedidoConfirmado={sesionActual.pedido_estado === 'confirmado'}
             />
           </SectionCard>
 

@@ -12,7 +12,9 @@ class Item(Base):
     __tablename__ = "items"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    sesion_id: Mapped[str] = mapped_column(String, ForeignKey("sesiones.id"), nullable=False)
+    sesion_id: Mapped[str] = mapped_column(
+        String, ForeignKey("sesiones.id"), nullable=False, index=True
+    )
     # Todos los campos de texto son nullable
     supplier_nombre: Mapped[str | None] = mapped_column(String, nullable=True)
     supplier_numero: Mapped[str | None] = mapped_column(String, nullable=True)

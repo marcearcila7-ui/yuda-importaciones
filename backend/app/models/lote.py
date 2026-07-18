@@ -14,7 +14,9 @@ class LoteOCR(Base):
     __tablename__ = "lotes_ocr"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    sesion_id: Mapped[str] = mapped_column(String, ForeignKey("sesiones.id"), nullable=False)
+    sesion_id: Mapped[str] = mapped_column(
+        String, ForeignKey("sesiones.id"), nullable=False, index=True
+    )
     # cargando -> procesando -> completado
     estado: Mapped[str] = mapped_column(String, default="cargando", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -26,7 +28,9 @@ class LoteItem(Base):
     __tablename__ = "lote_items"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    lote_id: Mapped[str] = mapped_column(String, ForeignKey("lotes_ocr.id"), nullable=False)
+    lote_id: Mapped[str] = mapped_column(
+        String, ForeignKey("lotes_ocr.id"), nullable=False, index=True
+    )
     foto_url: Mapped[str] = mapped_column(String, nullable=False)
     # pendiente -> ok | error
     estado: Mapped[str] = mapped_column(String, default="pendiente", nullable=False)

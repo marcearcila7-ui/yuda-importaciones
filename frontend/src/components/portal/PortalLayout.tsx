@@ -27,11 +27,11 @@ function SelectorIdioma() {
             type="button"
             onClick={() => cambiar(idi.code)}
             style={{
-              borderRadius: 6,
+              borderRadius: 8,
               backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#9CA3AF',
-              padding: '3px 8px',
-              fontSize: 12,
+              color: activo ? '#FFFFFF' : '#6B7280',
+              padding: '8px 12px',
+              fontSize: 14,
               fontWeight: 600,
             }}
           >
@@ -62,20 +62,7 @@ function PortalLayout({ children }: { children: ReactNode }) {
         className="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 sm:px-8"
         style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
       >
-        <div className="flex items-center gap-2">
-          <span
-            className="flex h-8 w-8 items-center justify-center rounded-full font-extrabold text-white"
-            style={{ backgroundColor: '#4B52E8' }}
-          >
-            Y
-          </span>
-          <div>
-            <p className="font-bold leading-none" style={{ fontSize: 16, color: '#0D0D0D' }}>
-              YU·DA
-            </p>
-            <p style={{ color: '#9CA3AF', fontSize: 10 }}>{t('portal.titulo')}</p>
-          </div>
-        </div>
+        <img src="/logoyuda.png" alt="YUDA Importaciones" className="h-9 w-auto sm:h-12" />
 
         <div className="flex items-center gap-3">
           <SelectorIdioma />

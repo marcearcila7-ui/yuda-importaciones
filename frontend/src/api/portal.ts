@@ -32,6 +32,11 @@ export async function enviarPedidoPortal(sesion_id: string, pedido: PortalPedido
   await portalClient.put(`/portal/cotizaciones/${sesion_id}/pedido`, pedido)
 }
 
+// El cliente confirma las cantidades finales que le envió la vendedora.
+export async function confirmarPedidoPortal(sesion_id: string): Promise<void> {
+  await portalClient.post(`/portal/cotizaciones/${sesion_id}/confirmar`)
+}
+
 export async function descargarCotizacion(
   sesion_id: string,
   idioma: string,

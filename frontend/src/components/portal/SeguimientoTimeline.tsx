@@ -156,7 +156,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                 <div className="pb-4">
                   <p
                     className="text-sm"
-                    style={{ fontWeight: actual ? 700 : 500, color: alcanzado ? '#0D0D0D' : '#9CA3AF' }}
+                    style={{ fontWeight: actual ? 700 : 500, color: alcanzado ? '#0D0D0D' : '#6B7280' }}
                   >
                     {t(`seguimiento.estados.${k}`)}
                   </p>

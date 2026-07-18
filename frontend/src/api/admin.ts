@@ -8,6 +8,7 @@ import type {
   UsuarioCreate,
 } from '../types/admin'
 import type { EquipoResponse } from '../types/equipo'
+import type { PanelVentas } from '../types/ventas'
 
 // Adjunta el token de localStorage en cada request
 apiClient.interceptors.request.use((config) => {
@@ -20,6 +21,14 @@ apiClient.interceptors.request.use((config) => {
 
 export async function getUsuarios(): Promise<UsuarioAdmin[]> {
   const { data } = await apiClient.get<UsuarioAdmin[]>('/admin/usuarios')
+  return data
+}
+
+// Panel de ventas de Marcela: filtra por rango de fechas y por vendedora.
+export async function getPanelVentas(
+  params: { desde?: string; hasta?: string; vendedora_id?: string } = {},
+): Promise<PanelVentas> {
+  const { data } = await apiClient.get<PanelVentas>('/admin/ventas', { params })
   return data
 }
 

@@ -9,4 +9,9 @@ uploads/
 !.env.example
 !.env.prod.example
 .DS_Store
-.DS_Store
+
+# Respaldos de la base (pueden contener datos sensibles; no van al repo)
+backups/
+# Temporales de tooling
+.railway-config-pull-*/
+frontend/vite.config.ts.timestamp-*.mjs

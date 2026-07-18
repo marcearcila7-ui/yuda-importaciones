@@ -72,6 +72,16 @@ export async function guardarSeguimiento(
   return data
 }
 
+// La vendedora ajusta las cantidades del cliente y le devuelve la cotización a
+// confirmar (estado "por confirmar"). Devuelve la sesión actualizada.
+export async function enviarAConfirmar(
+  sesion_id: string,
+  items: Array<{ item_id: string; cantidad: number }>,
+): Promise<Sesion> {
+  const { data } = await apiClient.put<Sesion>(`/sesiones/${sesion_id}/enviar-a-confirmar`, { items })
+  return data
+}
+
 // Sube el PDF del BL (solo admin) y devuelve su URL pública
 export async function subirBlPdf(sesion_id: string, archivo: File): Promise<string> {
   const form = new FormData()

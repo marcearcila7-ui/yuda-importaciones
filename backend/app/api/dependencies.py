@@ -73,15 +73,21 @@ def get_current_cliente(
     return cliente
 
 
+def exigir_roles(usuario: User, *roles: str) -> None:
+    """Lanza 403 si el rol del usuario no está entre los permitidos (uso imperativo,
+    dentro del cuerpo de un endpoint). Es la contraparte de `require_roles`."""
+    if usuario.rol.value not in roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sin permisos para esta acción",
+        )
+
+
 def require_roles(*roles: str):
     """Genera una dependencia que exige que el usuario tenga uno de los roles dados"""
 
     def dependency(user: User = Depends(get_current_user)) -> User:
-        if user.rol.value not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Sin permisos para esta acción",
-            )
+        exigir_roles(user, *roles)
         return user
 
     return dependency

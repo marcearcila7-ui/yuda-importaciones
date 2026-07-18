@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronRight, FileText, PackageSearch } from 'lucide-react'
+import { ChevronRight, FileText, PackageSearch, RefreshCw } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import { getMisCotizaciones } from '../../api/portal'
 import { usePortalStore } from '../../store/portalStore'
@@ -14,12 +14,19 @@ function PortalCotizaciones() {
   const { t, i18n } = useTranslation()
   const { cliente } = usePortalStore()
   const [cotizaciones, setCotizaciones] = useState<CotizacionResumen[] | null>(null)
+  const [error, setError] = useState(false)
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
+    setError(false)
+    setCotizaciones(null)
     getMisCotizaciones()
       .then(setCotizaciones)
-      .catch(() => setCotizaciones([]))
+      .catch(() => setError(true))
   }, [])
+
+  useEffect(() => {
+    cargar()
+  }, [cargar])
 
   const fmtFecha = (s: string) => {
     const [y, m, d] = s.split('-').map(Number)
@@ -45,13 +52,25 @@ function PortalCotizaciones() {
         {t('portal.subtitulo')}
       </p>
 
-      {cotizaciones === null ? (
+      {error ? (
+        <div className="card flex flex-col items-start gap-3">
+          <p className="text-sm" style={{ color: '#374151' }}>{t('portal.errorCarga')}</p>
+          <button
+            type="button"
+            onClick={cargar}
+            className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
+            style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+          >
+            <RefreshCw size={16} /> {t('portal.reintentar')}
+          </button>
+        </div>
+      ) : cotizaciones === null ? (
         <p className="text-sm" style={{ color: '#6B7280' }}>
           {t('portal.cargando')}
         </p>
       ) : cotizaciones.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 py-10 text-center">
-          <PackageSearch size={40} style={{ color: '#9CA3AF' }} />
+          <PackageSearch size={40} style={{ color: '#6B7280' }} />
           <p className="text-sm" style={{ color: '#6B7280' }}>
             {t('portal.sinCotizaciones')}
           </p>
@@ -77,7 +96,7 @@ function PortalCotizaciones() {
                     {c.numero}
                   </p>
                   <p className="text-sm" style={{ color: '#6B7280' }}>
-                    {fmtFecha(c.fecha)} · {t('portal.productos', { n: c.total_items })} · $ {c.total_usd.toLocaleString('es-ES')}
+                    {fmtFecha(c.fecha)} · {t('portal.productos', { n: c.total_items })} · US$ {c.total_usd.toLocaleString('es-ES')}
                   </p>
                 </div>
               </div>
@@ -85,7 +104,7 @@ function PortalCotizaciones() {
                 <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chipEstado(c.estado)}>
                   {t(`seguimiento.estados.${c.estado}`)}
                 </span>
-                <ChevronRight size={18} style={{ color: '#9CA3AF' }} />
+                <ChevronRight size={18} style={{ color: '#6B7280' }} />
               </div>
             </button>
           ))}

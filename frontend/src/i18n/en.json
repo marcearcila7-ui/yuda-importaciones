@@ -3,10 +3,59 @@
     "cotizacion": "Quotation",
     "clientes": "Clients",
     "equipo": "Team",
+    "ventas": "Sales",
     "historial": "History",
     "administracion": "Administration",
     "admin": "Admin",
     "cerrarSesion": "Log out"
+  },
+  "ventas": {
+    "titulo": "Sales",
+    "subtitulo": "Amounts sold, orders in transit, quotations and containers.",
+    "tituloResumen": "Sales",
+    "verDetalle": "View detail",
+    "cargando": "Loading…",
+    "sinDatos": "No data for this period.",
+    "filtrarVendedora": "Salesperson",
+    "todasVendedoras": "All",
+    "porVendedora": "By salesperson",
+    "despachos": "Dispatches",
+    "exportarCsv": "Export .csv",
+    "sinVendedoras": "No salespeople",
+    "sinDespachos": "No dispatches in this period.",
+    "enVentas": "in sales",
+    "contenedoresVendedoras": "{{v}} of {{total}} containers are from quotations made by salespeople",
+    "rango": {
+      "hoy": "Today",
+      "7": "7 days",
+      "30": "30 days",
+      "todo": "All",
+      "custom": "Custom"
+    },
+    "tarjetas": {
+      "ventas": "Total sales",
+      "ventasSub": "in the period",
+      "enTransito": "In transit",
+      "enTransitoSub": "orders on the way",
+      "cotizaciones": "Quotations",
+      "cotizacionesSub": "sent",
+      "contenedores": "Containers",
+      "contenedoresSub": "{{n}} from salespeople"
+    },
+    "tabla": {
+      "vendedora": "Salesperson",
+      "cotizaciones": "Quotations",
+      "contenedores": "Containers",
+      "ventasUsd": "Sales (USD)",
+      "numero": "Quotation",
+      "cliente": "Client",
+      "estado": "Status",
+      "bl": "BL",
+      "naviera": "Carrier",
+      "montoUsd": "Amount (USD)",
+      "despachado": "Dispatched",
+      "fechaCotizacion": "Quotation date"
+    }
   },
   "login": {
     "bienvenida": "Welcome",
@@ -16,7 +65,8 @@
     "ingresar": "Sign in",
     "ingresando": "Signing in...",
     "error": "Incorrect credentials",
-    "tagline": "We connect China with your success"
+    "tagline": "We connect China with your success",
+    "accesoEquipo": "Team access"
   },
   "dashboard": {
     "titulo": "Quotation",
@@ -80,8 +130,8 @@
     "exitoAgregado": "Item added to Packing List",
     "errorProcesar": "Could not process the image",
     "tomarFoto": "Take photo or upload image",
-    "cbm": "CBM",
-    "mqt": "MQT (min. cartons)",
+    "cbm": "Volume (m³)",
+    "mqt": "Min. boxes",
     "noLegibleTitulo": "Photo not legible — please retake it",
     "noLegibleImagen": "The image can't be read ({{motivo}}).",
     "noLegibleImagenSin": "The image can't be read clearly.",
@@ -97,7 +147,13 @@
       "recortada": "cropped",
       "no_procesada": "could not be processed",
       "generico": "not clear enough"
-    }
+    },
+    "descripcionEn": "Description (English)",
+    "material": "Material",
+    "uso": "Use",
+    "verMas": "Show all data",
+    "verMenos": "Show less",
+    "revisarAyuda": "Fix anything the system misread. Each field is labeled."
   },
   "packing": {
     "exportar": "Download list (Excel)",
@@ -107,7 +163,7 @@
     "fProveedor": "Supplier",
     "fDescripcion": "Description",
     "fCajas": "Boxes",
-    "fMqt": "MOQ (min. boxes)",
+    "fMqt": "Min. boxes",
     "fUnidCaja": "Units/box",
     "fPrecioRmb": "Price RMB",
     "fTotalUsd": "Total USD",
@@ -123,7 +179,7 @@
       "material": "MATERIAL",
       "uso": "USE",
       "ctns": "CARTONS",
-      "moq_cajas": "MOQ",
+      "moq_cajas": "MIN. BOXES",
       "qty_por_ctn": "QTY/CTN",
       "unit": "UNIT",
       "t_qty": "TOTAL QTY",
@@ -134,8 +190,8 @@
       "largo_cm": "L cm",
       "ancho_cm": "W cm",
       "alto_cm": "H cm",
-      "cbm": "CBM",
-      "t_cbm": "T.CBM",
+      "cbm": "VOL. m³",
+      "t_cbm": "TOTAL VOL",
       "gw": "G.W",
       "t_gw": "T.G.W"
     },
@@ -149,6 +205,9 @@
     "generar": "Generate Orders",
     "generando": "Generating orders...",
     "confirmar": "Generate orders for {{cliente}}? An Excel file will be created for each supplier.",
+    "generarCliente": "Generate with the client's quantities",
+    "confirmarCliente": "Generate the orders with the boxes {{cliente}} requested? The quantities the client submitted from their portal will be used.",
+    "confirmarSinPedido": "The client hasn't confirmed their quantities yet. Generate the supplier order anyway with the boxes you loaded?",
     "advertencias": "Warnings:",
     "generados": "Generated orders:",
     "descargarExcel": "Download Excel",
@@ -181,6 +240,14 @@
     "errorEliminar": "Could not delete the quotation",
     "exportar": "Export CSV"
   },
+  "pedidoCliente": {
+    "titulo": "Client's order",
+    "recibidoEl": "Received on {{fecha}}",
+    "cajas": "{{n}} boxes",
+    "sinCantidad": "No quantity",
+    "notas": "Client's notes",
+    "sinPedido": "The client has not submitted an order from the portal yet."
+  },
   "detalle": {
     "volver": "Back to history",
     "titulo": "Quotation detail",
@@ -202,7 +269,14 @@
     "descargarExcel": "Excel",
     "generando": "Generating…",
     "errorDescargar": "Could not generate the file",
-    "editarPanel": "Edit in dashboard"
+    "editarPanel": "Edit in dashboard",
+    "pedidoClienteTitulo": "Client's order",
+    "pedidoRecibidoEl": "Received on {{fecha}}",
+    "cajasPedidas": "{{n}} boxes",
+    "sinCajas": "No quantity",
+    "notasCliente": "Client's notes",
+    "sinPedidoCliente": "The client has not submitted an order from the portal yet.",
+    "volverClientes": "Back to clients"
   },
   "admin": {
     "titulo": "Administration",
@@ -294,7 +368,8 @@
     "fallidasSubida": "{{n}} photo(s) could not be uploaded; check your connection and try again.",
     "listas": "{{n}} photo(s) ready. Add more with + or tap Process.",
     "procesar": "Process {{n}}",
-    "agregar": "Add"
+    "agregar": "Add",
+    "confirmarDescartar": "Discard the {{n}} reviewed products? This can't be undone."
   },
   "roles": {
     "admin": "Administrator",
@@ -349,11 +424,16 @@
     "sinCotizaciones": "This client has no quotations yet.",
     "enviada": "Sent",
     "borrador": "Draft",
+    "pedidoRecibido": "Order received",
     "verDetalle": "View details",
     "eliminar": "Delete",
     "confirmarEliminar": "Delete {{nombre}}? This cannot be undone.",
     "eliminado": "Client deleted",
-    "errorEliminar": "Could not delete the client"
+    "ofrecerDesactivar": "{{nombre}} can't be deleted because it has sent quotations with active tracking. Deactivate instead? It stays marked as inactive and loses portal access, but its quotations and tracking are kept.",
+    "desactivado": "{{nombre}} was deactivated",
+    "errorEliminar": "Could not delete the client",
+    "cargando": "Loading…",
+    "reintentar": "Retry"
   },
   "envio": {
     "titulo": "Client and shipment",
@@ -383,6 +463,9 @@
     "infoEnvioMarcela": "Shipping details (managed by Marcela)",
     "infoEnvioBloqueada": "Shipping details (carrier and BL) are managed by Marcela.",
     "blNumero": "BL number",
+    "montoVenta": "Sale amount (USD)",
+    "montoVentaAyuda": "Required to mark the order in transit. Feeds the sales panel.",
+    "montoRequerido": "Enter the sale amount (USD) to mark the order in transit.",
     "navieraSelecciona": "Select a shipping line",
     "navieraOtra": "Other (type manually)",
     "navieraOtraPlaceholder": "Type the shipping line name",
@@ -467,11 +550,46 @@
     "enviando": "Sending…",
     "pedidoEnviado": "Order sent! Your sales rep received it.",
     "errorPedido": "Could not send the order. Please try again.",
-    "pedidoRecibidoAviso": "You already sent your order. You can adjust it anytime."
+    "pedidoRecibidoAviso": "You already sent your order. You can adjust it anytime.",
+    "porConfirmarAviso": "Your salesperson sent you the final quantities. Review and confirm your order, or propose changes.",
+    "confirmadoAviso": "You confirmed your order. The salesperson will continue with your purchase.",
+    "confirmarPedido": "Confirm order",
+    "confirmando": "Confirming…",
+    "proponerCambios": "Propose changes",
+    "pedidoConfirmado": "Order confirmed!",
+    "errorConfirmar": "Could not confirm the order",
+    "errorCarga": "We couldn't load your information. Check your connection and try again.",
+    "reintentar": "Retry",
+    "errorDescarga": "We couldn't generate the file. Please try again.",
+    "avisoModificar": "If you modify the order, your confirmation will be canceled and your salesperson will have to review it again. Continue?",
+    "modificarPedido": "Modify order",
+    "enviarCambios": "Send changes",
+    "accesoPortal": "Client portal"
   },
   "notif": {
     "titulo": "Notifications",
     "marcarTodas": "Mark all read",
     "sinAvisos": "No notifications"
+  },
+  "gestionPedido": {
+    "titulo": "Client's order",
+    "estadoRecibido": "Client proposed quantities",
+    "estadoPorConfirmar": "Waiting for confirmation",
+    "estadoConfirmado": "Confirmed by the client",
+    "cajas": "boxes",
+    "notas": "Client's notes",
+    "enviarAConfirmar": "Send to client for confirmation",
+    "reenviar": "Resend to client",
+    "enviando": "Sending…",
+    "esperandoConfirmacion": "The client hasn't confirmed yet. You can resend if you adjusted something.",
+    "avisoGenerar": "Once the client confirms, you'll be able to generate the supplier order here.",
+    "generarTitulo": "Generate supplier order",
+    "enviadoAConfirmar": "Sent to the client for confirmation",
+    "confirmadoOk": "The client confirmed the quantities. You can now generate the supplier order.",
+    "error": "Could not send"
+  },
+  "comun": {
+    "confirmar": "Confirm",
+    "cancelar": "Cancel"
   }
 }

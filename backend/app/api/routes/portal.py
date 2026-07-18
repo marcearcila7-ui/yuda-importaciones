@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
+
+from app.core.rate_limit import esta_bloqueado, ip_del_request, limpiar, registrar_fallo
 
 from app.api.dependencies import get_current_cliente
 from app.core.security import create_access_token, verify_password
@@ -9,9 +11,18 @@ from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
 from app.models.seguimiento import ESTADO_INICIAL, SeguimientoPedido
-from app.models.sesion import Sesion
+from app.models.sesion import (
+    PEDIDO_CONFIRMADO,
+    PEDIDO_POR_CONFIRMAR,
+    PEDIDO_RECIBIDO,
+    Sesion,
+)
 from app.schemas.cliente import ClienteLogin, ClientePublic, ClienteTokenResponse
 from app.schemas.cotizacion import CotizacionRequest
+from app.services.notificacion_service import (
+    avisar_pedido_cliente,
+    avisar_pedido_confirmado,
+)
 from app.schemas.portal import (
     PortalCotizacionDetalle,
     PortalCotizacionResumen,
@@ -49,16 +60,28 @@ def _sesion_del_cliente(db: Session, sesion_id: str, cliente: Cliente) -> Sesion
 
 
 @router.post("/login", response_model=ClienteTokenResponse)
-def login_cliente(datos: ClienteLogin, db: Session = Depends(get_db)) -> ClienteTokenResponse:
+def login_cliente(
+    datos: ClienteLogin, request: Request, db: Session = Depends(get_db)
+) -> ClienteTokenResponse:
     """Login del portal de clientes"""
     email = datos.email.strip().lower()
+    clave_email = f"portal:email:{email}"
+    clave_ip = f"portal:ip:{ip_del_request(request)}"
+    if esta_bloqueado(clave_email, 5, 15 * 60) or esta_bloqueado(clave_ip, 20, 15 * 60):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.",
+        )
     cliente = db.query(Cliente).filter(Cliente.email == email).first()
 
     if cliente is None or not verify_password(datos.password, cliente.hashed_password):
+        registrar_fallo(clave_email, 15 * 60)
+        registrar_fallo(clave_ip, 15 * 60)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Credenciales incorrectas")
     if not cliente.activo:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Cuenta inactiva")
 
+    limpiar(clave_email)
     token = create_access_token({"sub": cliente.id, "tipo": "cliente"})
     return ClienteTokenResponse(
         access_token=token,
@@ -159,6 +182,8 @@ def detalle_cotizacion(
         seguimiento=seguimiento,
         notas_cliente=sesion.notas_cliente,
         pedido_recibido=sesion.pedido_recibido_at is not None,
+        pedido_estado=sesion.pedido_estado,
+        pedido_confirmado=sesion.pedido_confirmado_at is not None,
     )
 
 
@@ -181,8 +206,36 @@ def enviar_pedido(
         it.cantidad_solicitada = linea.cantidad if linea.cantidad and linea.cantidad > 0 else None
     sesion.notas_cliente = (datos.notas or "").strip() or None
     sesion.pedido_recibido_at = datetime.now(timezone.utc)
+    # El cliente propone (o re-propone) cantidades → vuelve a "recibido" para que
+    # la vendedora las revise. Se limpia cualquier confirmación previa.
+    sesion.pedido_estado = PEDIDO_RECIBIDO
+    sesion.pedido_confirmado_at = None
+    # Avisa a la vendedora dueña y a Marcela que el cliente ya envió su pedido.
+    avisar_pedido_cliente(db, sesion.id, _numero(sesion), sesion.nombre_cliente, sesion.user_id)
     db.commit()
     return {"detail": "Pedido recibido"}
+
+
+@router.post("/cotizaciones/{sesion_id}/confirmar")
+def confirmar_pedido(
+    sesion_id: str,
+    cliente: Cliente = Depends(get_current_cliente),
+    db: Session = Depends(get_db),
+) -> dict:
+    """El cliente confirma las cantidades finales que le envió la vendedora. Solo
+    se puede confirmar cuando el pedido está "por confirmar". Al confirmar, la
+    vendedora ya puede generar el pedido al proveedor."""
+    sesion = _sesion_del_cliente(db, sesion_id, cliente)
+    if sesion.pedido_estado != PEDIDO_POR_CONFIRMAR:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este pedido no está pendiente de tu confirmación.",
+        )
+    sesion.pedido_estado = PEDIDO_CONFIRMADO
+    sesion.pedido_confirmado_at = datetime.now(timezone.utc)
+    avisar_pedido_confirmado(db, sesion.id, _numero(sesion), sesion.nombre_cliente, sesion.user_id)
+    db.commit()
+    return {"detail": "Pedido confirmado"}
 
 
 @router.post("/cotizaciones/{sesion_id}/cotizacion-excel")

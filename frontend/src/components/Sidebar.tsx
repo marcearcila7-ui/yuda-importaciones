@@ -1,22 +1,11 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, LogOut, Network, Package, Settings, Users } from 'lucide-react'
+import { ClipboardList, LogOut, Network, Package, Settings, TrendingUp, Users } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import NotificacionesBell from './NotificacionesBell'
 
 // Logo circular YUDA (círculo azul con "Y" blanca)
-function LogoYuda({ size = 36 }: { size?: number }) {
-  return (
-    <span
-      className="flex flex-shrink-0 items-center justify-center rounded-full font-extrabold text-white"
-      style={{ width: size, height: size, backgroundColor: '#4B52E8', fontSize: size * 0.5 }}
-    >
-      Y
-    </span>
-  )
-}
-
 const IDIOMAS = [
   { code: 'es', label: 'ES' },
   { code: 'en', label: 'EN' },
@@ -42,16 +31,16 @@ function SelectorIdioma() {
             style={{
               borderRadius: 6,
               backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#9CA3AF',
+              color: activo ? '#FFFFFF' : '#6B7280',
               padding: '4px 10px',
               fontSize: 13,
               fontWeight: 600,
             }}
             onMouseEnter={(e) => {
-              if (!activo) e.currentTarget.style.color = '#FFFFFF'
+              if (!activo) e.currentTarget.style.color = '#4B52E8'
             }}
             onMouseLeave={(e) => {
-              if (!activo) e.currentTarget.style.color = '#9CA3AF'
+              if (!activo) e.currentTarget.style.color = '#6B7280'
             }}
           >
             {idi.label}
@@ -73,6 +62,7 @@ const LINKS: ItemNav[] = [
   { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion', roles: ['admin', 'vendedora'] },
   { to: '/clientes', icono: <Users size={18} />, clave: 'clientes', roles: ['admin', 'vendedora'] },
   { to: '/equipo', icono: <Network size={18} />, clave: 'equipo', roles: ['admin'] },
+  { to: '/ventas', icono: <TrendingUp size={18} />, clave: 'ventas', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
   { to: '/admin', icono: <Settings size={18} />, clave: 'administracion', roles: ['admin'] },
 ]
@@ -93,16 +83,10 @@ function Sidebar() {
 
   // Contenido del sidebar (compartido entre desktop y drawer mobile)
   const contenido = (
-    <div className="flex h-full flex-col" style={{ backgroundColor: '#0D0D0D' }}>
+    <div className="flex h-full flex-col border-r border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-6">
-        <LogoYuda />
-        <div>
-          <p className="font-bold leading-none text-white" style={{ fontSize: 20 }}>
-            YU·DA
-          </p>
-          <p style={{ color: '#9CA3AF', fontSize: 11 }}>Importaciones</p>
-        </div>
+      <div className="px-5 py-6">
+        <img src="/logoyuda.png" alt="YUDA Importaciones" style={{ height: 36, width: 'auto' }} />
       </div>
 
       {/* Navegación */}
@@ -117,10 +101,10 @@ function Sidebar() {
               style={{
                 borderRadius: 8,
                 backgroundColor: activo ? '#4B52E8' : 'transparent',
-                color: activo ? '#FFFFFF' : '#9CA3AF',
+                color: activo ? '#FFFFFF' : '#374151',
               }}
               onMouseEnter={(e) => {
-                if (!activo) e.currentTarget.style.backgroundColor = '#1F1F1F'
+                if (!activo) e.currentTarget.style.backgroundColor = '#EEF0FD'
               }}
               onMouseLeave={(e) => {
                 if (!activo) e.currentTarget.style.backgroundColor = 'transparent'
@@ -134,7 +118,7 @@ function Sidebar() {
       </nav>
 
       {/* Selector de idioma + usuario */}
-      <div className="border-t border-white/10 px-4 py-4">
+      <div className="border-t border-gray-200 px-4 py-4">
         <div className="mb-3">
           <SelectorIdioma />
         </div>
@@ -146,18 +130,18 @@ function Sidebar() {
             {usuario?.nombre?.charAt(0).toUpperCase() ?? '?'}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{usuario?.nombre}</p>
-            <p className="truncate text-xs" style={{ color: '#9CA3AF' }}>
+            <p className="truncate text-sm font-semibold" style={{ color: '#0D0D0D' }}>{usuario?.nombre}</p>
+            <p className="truncate text-xs" style={{ color: '#6B7280' }}>
               {usuario?.rol ? t(`roles.${usuario.rol}`) : ''}
             </p>
           </div>
-          {rol === 'admin' && <NotificacionesBell />}
+          {(rol === 'admin' || rol === 'vendedora') && <NotificacionesBell />}
         </div>
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-white"
-          style={{ backgroundColor: '#1F1F1F', borderRadius: 8 }}
+          className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-medium"
+          style={{ backgroundColor: '#F3F4F6', color: '#374151', borderRadius: 8 }}
         >
           <LogOut size={18} /> {t('nav.cerrarSesion')}
         </button>

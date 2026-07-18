@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Store } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
+import PedidoCliente from '../components/PedidoCliente'
 import SeguimientoTimeline from '../components/portal/SeguimientoTimeline'
 import { exportarCotizacionExcel, exportarCotizacionPDF, getItems, getSesiones } from '../api/packing'
 import { getCliente, getSeguimiento } from '../api/clientes'
@@ -18,6 +19,7 @@ const IDIOMAS = [
   { code: 'zh', label: '中文' },
 ]
 
+
 // Vista de solo lectura de una cotización para la contadora y el admin (desde el
 // historial). Muestra los productos, los totales, la ficha del cliente y el
 // estado del envío (tracking/BL, con la evidencia de cada etapa). Marcela puede
@@ -26,7 +28,10 @@ function CotizacionDetalle() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const esAdmin = useAuthStore((s) => s.usuario?.rol === 'admin')
+  const rol = useAuthStore((s) => s.usuario?.rol)
+  const esAdmin = rol === 'admin'
+  // La vendedora llega desde Clientes; admin/contadora desde el Historial.
+  const volverA = rol === 'vendedora' ? '/clientes' : '/historial'
   const [sesion, setSesion] = useState<Sesion | null>(null)
   const [items, setItems] = useState<ItemResponse[]>([])
   const [cliente, setCliente] = useState<Cliente | null>(null)
@@ -102,11 +107,11 @@ function CotizacionDetalle() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
-          onClick={() => navigate('/historial')}
+          onClick={() => navigate(volverA)}
           className="flex items-center gap-2 text-sm font-medium"
           style={{ color: '#4B52E8' }}
         >
-          <ArrowLeft size={16} /> {t('detalle.volver')}
+          <ArrowLeft size={16} /> {rol === 'vendedora' ? t('detalle.volverClientes') : t('detalle.volver')}
         </button>
         {esAdmin && sesion && (
           <button
@@ -202,24 +207,27 @@ function CotizacionDetalle() {
               </h2>
               <div className="grid gap-2 text-sm sm:grid-cols-2" style={{ color: '#374151' }}>
                 <p className="flex items-center gap-2">
-                  <Building2 size={15} style={{ color: '#9CA3AF' }} />
+                  <Building2 size={15} style={{ color: '#6B7280' }} />
                   <strong>{cliente.nombre}</strong>
                   {cliente.empresa ? ` · ${cliente.empresa}` : ''}
                 </p>
                 {cliente.email && (
                   <p className="flex items-center gap-2">
-                    <Mail size={15} style={{ color: '#9CA3AF' }} /> {cliente.email}
+                    <Mail size={15} style={{ color: '#6B7280' }} /> {cliente.email}
                   </p>
                 )}
                 {cliente.telefono && (
                   <p className="flex items-center gap-2">
-                    <Phone size={15} style={{ color: '#9CA3AF' }} /> {cliente.telefono}
+                    <Phone size={15} style={{ color: '#6B7280' }} /> {cliente.telefono}
                   </p>
                 )}
                 {cliente.pais && <p className="flex items-center gap-2">📍 {cliente.pais}</p>}
               </div>
             </section>
           )}
+
+          {/* Pedido del cliente: cajas que pidió y sus notas (componente compartido) */}
+          {items.length > 0 && <PedidoCliente sesion={sesion} items={items} mostrarVacio />}
 
           {/* Productos (solo lectura) */}
           <section className="card overflow-x-auto p-0">

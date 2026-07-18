@@ -268,7 +268,7 @@ function Admin() {
             {t('admin.tipoCambioActual')}{' '}
             <span className="font-bold">{config?.tipo_cambio_usd ?? '—'}</span> RMB/USD
           </p>
-          <p className="mb-4 text-xs text-gray-400">
+          <p className="mb-4 text-xs text-gray-500">
             {t('admin.ultimaModificacion')}{' '}
             {config?.updated_at ? new Date(config.updated_at).toLocaleString() : t('admin.sinRegistro')}
           </p>
@@ -293,7 +293,7 @@ function Admin() {
 
       {/* ──────── MODAL CREAR ──────── */}
       {modalCrear && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
             <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>{t('admin.nuevoUsuario')}</h2>
             <div className="flex flex-col gap-3">
@@ -321,7 +321,7 @@ function Admin() {
 
       {/* ──────── MODAL EDITAR ──────── */}
       {editando && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
             <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>{t('admin.editarUsuario')}</h2>
             <div className="flex flex-col gap-3">
@@ -350,7 +350,7 @@ function Admin() {
 
       {/* ──────── MODAL RESET CONTRASEÑA ──────── */}
       {reseteando && (
-        <div className="absolute inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4">
           <div className="w-full max-w-md bg-white p-6" style={{ borderRadius: 16, boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
             <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18 }}>
               {t('admin.nuevaContrasena')} · {reseteando.nombre}

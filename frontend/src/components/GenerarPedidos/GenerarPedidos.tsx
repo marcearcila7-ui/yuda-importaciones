@@ -2,13 +2,15 @@ import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Download, FileText } from 'lucide-react'
+import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos } from '../../api/pedidos'
+import { confirmar } from '../../store/confirmStore'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
 interface GenerarPedidosProps {
   sesion_id: string
   nombre_cliente: string
+  pedidoConfirmado?: boolean
 }
 
 const btnPrimario: CSSProperties = {
@@ -20,21 +22,29 @@ const btnPrimario: CSSProperties = {
   fontWeight: 600,
 }
 
-function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
+function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }: GenerarPedidosProps) {
   const { t } = useTranslation()
-  const [generando, setGenerando] = useState(false)
+  const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
 
-  const handleGenerar = async () => {
-    const confirmado = window.confirm(t('pedidos.confirmar', { cliente: nombre_cliente }))
-    if (!confirmado) return
+  const handleGenerar = async (usarCantidadesCliente = false) => {
+    let mensajeConfirm: string
+    if (usarCantidadesCliente) {
+      mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
+    } else if (!pedidoConfirmado) {
+      // Botón normal (CTNS internas) cuando el cliente todavía no confirmó: advierte.
+      mensajeConfirm = t('pedidos.confirmarSinPedido', { cliente: nombre_cliente })
+    } else {
+      mensajeConfirm = t('pedidos.confirmar', { cliente: nombre_cliente })
+    }
+    if (!(await confirmar(mensajeConfirm))) return
 
     setError(null)
-    setGenerando(true)
+    setGenerando(usarCantidadesCliente ? 'cliente' : 'normal')
     try {
-      const data = await generarPedidos(sesion_id)
+      const data = await generarPedidos(sesion_id, usarCantidadesCliente)
       setResultado(data)
     } catch (err) {
       let mensaje = t('pedidos.errorGenerar')
@@ -74,15 +84,15 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* SECCIÓN A — Botón principal */}
+      {/* SECCIÓN A — Botón principal (CTNS internas del packing) */}
       <button
         type="button"
-        onClick={handleGenerar}
-        disabled={generando}
+        onClick={() => handleGenerar(false)}
+        disabled={generando !== false}
         className="flex w-full items-center justify-center gap-2 disabled:opacity-60"
         style={btnPrimario}
       >
-        {generando ? (
+        {generando === 'normal' ? (
           t('pedidos.generando')
         ) : (
           <>
@@ -90,6 +100,25 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
           </>
         )}
       </button>
+
+      {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
+      {pedidoConfirmado && (
+        <button
+          type="button"
+          onClick={() => handleGenerar(true)}
+          disabled={generando !== false}
+          className="flex w-full items-center justify-center gap-2 disabled:opacity-60"
+          style={{ ...btnPrimario, backgroundColor: '#10B981' }}
+        >
+          {generando === 'cliente' ? (
+            t('pedidos.generando')
+          ) : (
+            <>
+              <UserCheck size={18} /> {t('pedidos.generarCliente')}
+            </>
+          )}
+        </button>
+      )}
 
       {/* SECCIÓN B — Advertencias */}
       {resultado && resultado.warnings.length > 0 && (
@@ -112,18 +141,18 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
           {resultado.pedidos.map((pedido) => (
             <div
               key={pedido.supplier}
-              className="flex items-center justify-between rounded-xl p-3"
+              className="flex flex-col gap-2 rounded-xl p-3 sm:flex-row sm:items-center sm:justify-between"
               style={{ backgroundColor: '#F9F9F7', border: '1px solid #E5E7EB' }}
             >
-              <span className="text-sm" style={{ color: '#0D0D0D' }}>
+              <span className="min-w-0 truncate text-sm" style={{ color: '#0D0D0D' }}>
                 {pedido.supplier}{' '}
-                <span style={{ color: '#9CA3AF' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
+                <span style={{ color: '#6B7280' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
               </span>
               <div className="flex flex-shrink-0 gap-2">
                 <button
                   type="button"
                   onClick={() => window.open(pedido.url_descarga, '_blank')}
-                  className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
+                  className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-lg px-3 text-sm font-medium text-white sm:flex-none"
                   style={{ backgroundColor: '#10B981' }}
                 >
                   <Download size={16} /> {t('pedidos.descargarExcel')}
@@ -132,7 +161,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente }: GenerarPedidosProps) {
                   <button
                     type="button"
                     onClick={() => window.open(pedido.url_pdf as string, '_blank')}
-                    className="flex items-center gap-1 rounded-lg px-3 py-1 text-sm font-medium text-white"
+                    className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-lg px-3 text-sm font-medium text-white sm:flex-none"
                     style={{ backgroundColor: '#4B52E8' }}
                   >
                     <FileText size={16} /> {t('pedidos.descargarPdf')}

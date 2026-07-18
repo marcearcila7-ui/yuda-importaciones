@@ -51,6 +51,9 @@ class PortalCotizacionDetalle(BaseModel):
     # Pedido del cliente (cantidades + notas) enviado desde el portal.
     notas_cliente: str | None = None
     pedido_recibido: bool = False
+    # Circuito de confirmación: recibido / por_confirmar / confirmado (null = sin pedido)
+    pedido_estado: str | None = None
+    pedido_confirmado: bool = False
 
 
 class PortalPedidoLinea(BaseModel):

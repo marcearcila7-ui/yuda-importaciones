@@ -10,8 +10,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-export async function generarPedidos(sesion_id: string): Promise<GenerarPedidosResponse> {
-  const { data } = await apiClient.post<GenerarPedidosResponse>(`/pedidos/${sesion_id}/generar`)
+// usarCantidadesCliente: usa las cajas que pidió el cliente en su portal (Fase 3).
+export async function generarPedidos(
+  sesion_id: string,
+  usarCantidadesCliente = false,
+): Promise<GenerarPedidosResponse> {
+  const { data } = await apiClient.post<GenerarPedidosResponse>(
+    `/pedidos/${sesion_id}/generar`,
+    null,
+    { params: { usar_cantidades_cliente: usarCantidadesCliente } },
+  )
   return data
 }
 
