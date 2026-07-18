@@ -82,7 +82,9 @@ def login_cliente(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Cuenta inactiva")
 
     limpiar(clave_email)
-    token = create_access_token({"sub": cliente.id, "tipo": "cliente"})
+    token = create_access_token(
+        {"sub": cliente.id, "tipo": "cliente", "tv": cliente.token_version}
+    )
     return ClienteTokenResponse(
         access_token=token,
         cliente=ClientePublic.model_validate(cliente),

@@ -172,3 +172,31 @@ def test_historial_paginacion(client, crear_usuario, crear_sesion, token_staff):
     assert len(client.get(f"{base}?limit=2&offset=0", headers=h).json()) == 2
     # Segunda página: queda 1
     assert len(client.get(f"{base}?limit=2&offset=2", headers=h).json()) == 1
+
+
+# ─────────── Revocación de sesiones (token_version) ───────────
+
+
+def test_reset_password_revoca_token_viejo(client, crear_usuario, crear_sesion, token_staff):
+    crear_usuario("a@y.com", RolUsuario.admin)
+    v = crear_usuario("v@y.com", RolUsuario.vendedora)
+    tok_viejo = token_staff("v@y.com")
+    h = _h(tok_viejo)
+    # El token recién emitido funciona
+    assert client.get("/api/v1/sesiones", headers=h).status_code == 200
+
+    # La admin resetea la contraseña de v -> sube token_version
+    ha = _h(token_staff("a@y.com"))
+    r = client.post(
+        f"/api/v1/admin/usuarios/{v.id}/reset-password",
+        headers=ha,
+        json={"nueva_password": "NuevaClave1"},
+    )
+    assert r.status_code == 200
+
+    # El token viejo queda revocado
+    assert client.get("/api/v1/sesiones", headers=h).status_code == 401
+    # Con la nueva contraseña se puede volver a entrar
+    r = client.post(LOGIN, json={"email": "v@y.com", "password": "NuevaClave1"})
+    assert r.status_code == 200
+    assert client.get("/api/v1/sesiones", headers=_h(r.json()["access_token"])).status_code == 200

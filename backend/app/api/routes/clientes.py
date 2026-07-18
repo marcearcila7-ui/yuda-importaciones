@@ -200,6 +200,8 @@ def reset_password_cliente(
     if len(nueva) < 6:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La contraseña debe tener al menos 6 caracteres")
     cliente.hashed_password = hash_password(nueva)
+    # Invalida las sesiones abiertas del cliente con la contraseña vieja.
+    cliente.token_version = (cliente.token_version or 0) + 1
     db.commit()
     return {"detail": "Contraseña actualizada"}
 

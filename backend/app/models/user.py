@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -29,4 +29,9 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     rol: Mapped[RolUsuario] = mapped_column(SAEnum(RolUsuario), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Versión de token para revocación: al subirla se invalidan todos los JWT
+    # emitidos antes (p. ej. al resetear la contraseña).
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

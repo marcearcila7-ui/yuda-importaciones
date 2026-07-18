@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -23,4 +23,8 @@ class Cliente(Base):
     # Vendedora dueña del cliente
     vendedora_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Versión de token para revocación (ver User.token_version).
+    token_version: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

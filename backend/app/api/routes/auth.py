@@ -52,7 +52,13 @@ def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) 
 
     # El payload del token lleva email (sub), id y rol
     token = create_access_token(
-        {"sub": user.email, "user_id": user.id, "rol": user.rol.value, "tipo": "staff"}
+        {
+            "sub": user.email,
+            "user_id": user.id,
+            "rol": user.rol.value,
+            "tipo": "staff",
+            "tv": user.token_version,
+        }
     )
 
     return TokenResponse(

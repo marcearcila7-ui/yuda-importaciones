@@ -42,6 +42,13 @@ def get_current_user(
     if user is None or not user.activo:
         raise no_autenticado
 
+    # Revocación: si el token trae 'tv' y no coincide con la versión actual del
+    # usuario, fue invalidado (p. ej. tras un reset de contraseña). Los tokens
+    # viejos sin 'tv' se aceptan hasta que expiren (compatibilidad).
+    tv = payload.get("tv")
+    if tv is not None and tv != user.token_version:
+        raise no_autenticado
+
     return user
 
 
@@ -68,6 +75,11 @@ def get_current_cliente(
 
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if cliente is None or not cliente.activo:
+        raise no_autenticado
+
+    # Revocación (ver get_current_user).
+    tv = payload.get("tv")
+    if tv is not None and tv != cliente.token_version:
         raise no_autenticado
 
     return cliente

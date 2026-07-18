@@ -121,6 +121,8 @@ def reset_password(
             status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado"
         )
     objetivo.hashed_password = hash_password(nueva_password)
+    # Invalida las sesiones abiertas del usuario con la contraseña vieja.
+    objetivo.token_version = (objetivo.token_version or 0) + 1
     db.commit()
     return {"detail": "Contraseña actualizada"}
 
