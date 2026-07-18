@@ -33,7 +33,7 @@ function generarPassword(): string {
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
+  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
 
 function Campo({
   label,
@@ -49,7 +49,7 @@ function Campo({
   placeholder?: string
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+    <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
       {label}
       <input
         type={type}
@@ -245,8 +245,8 @@ ${t('clientes.email')}: ${c.email}`
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('clientes.titulo')}</h1>
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{t('clientes.titulo')}</h1>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('clientes.subtitulo')}
           </p>
         </div>
@@ -254,7 +254,7 @@ ${t('clientes.email')}: ${c.email}`
           type="button"
           onClick={() => setMostrarForm((v) => !v)}
           className="flex items-center gap-2 font-semibold text-white"
-          style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+          style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
         >
           <UserPlus size={18} /> {t('clientes.nuevo')}
         </button>
@@ -263,17 +263,17 @@ ${t('clientes.email')}: ${c.email}`
       {/* Link del portal, siempre a mano para compartir con los clientes */}
       <div className="card flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p style={{ fontWeight: 700, fontSize: 15, color: '#0D0D0D' }}>{t('clientes.portalTitulo')}</p>
-          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: '#4B52E8' }}>
+          <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>{t('clientes.portalTitulo')}</p>
+          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: 'var(--yuda-primary)' }}>
             {portalUrl}
           </a>
-          <p className="mt-1 text-xs" style={{ color: '#6B7280' }}>{t('clientes.portalAyuda')}</p>
+          <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.portalAyuda')}</p>
         </div>
         <button
           type="button"
           onClick={copiarLink}
           className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
-          style={{ color: '#4B52E8' }}
+          style={{ color: 'var(--yuda-primary)' }}
         >
           {copiadoLink ? <Check size={16} /> : <Copy size={16} />} {copiadoLink ? t('clientes.copiado') : t('clientes.copiarLink')}
         </button>
@@ -289,7 +289,7 @@ ${t('clientes.email')}: ${c.email}`
       {/* Formulario nuevo cliente */}
       {mostrarForm && (
         <div className="card flex flex-col gap-4">
-          <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('clientes.nuevo')}</h2>
+          <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('clientes.nuevo')}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <Campo label={t('clientes.nombre')} value={form.nombre} onChange={(v) => setCampo('nombre', v)} />
             <Campo label={t('clientes.email')} type="email" value={form.email} onChange={(v) => setCampo('email', v)} placeholder="cliente@correo.com" />
@@ -304,7 +304,7 @@ ${t('clientes.email')}: ${c.email}`
               onClick={handleCrear}
               disabled={guardando}
               className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
-              style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+              style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
             >
               <Plus size={18} /> {guardando ? t('clientes.creando') : t('clientes.crear')}
             </button>
@@ -312,7 +312,7 @@ ${t('clientes.email')}: ${c.email}`
               type="button"
               onClick={() => setMostrarForm(false)}
               className="rounded-lg px-4 text-sm font-medium"
-              style={{ color: '#6B7280' }}
+              style={{ color: 'var(--yuda-text-secondary)' }}
             >
               {t('clientes.cancelar')}
             </button>
@@ -322,26 +322,26 @@ ${t('clientes.email')}: ${c.email}`
 
       {/* Lista de clientes */}
       <div className="card">
-        <h2 className="mb-4 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+        <h2 className="mb-4 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
           <Users size={18} /> {t('clientes.listaTitulo')}
         </h2>
 
         {cargandoClientes ? (
-          <p className="text-sm" style={{ color: '#6B7280' }}>{t('clientes.cargando')}</p>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.cargando')}</p>
         ) : errorClientes ? (
           <div className="flex flex-col items-start gap-3">
-            <p className="text-sm" style={{ color: '#374151' }}>{t('clientes.errorCargar')}</p>
+            <p className="text-sm" style={{ color: 'var(--yuda-text)' }}>{t('clientes.errorCargar')}</p>
             <button
               type="button"
               onClick={cargar}
               className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
-              style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+              style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
             >
               <RefreshCw size={16} /> {t('clientes.reintentar')}
             </button>
           </div>
         ) : clientes.length === 0 ? (
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('clientes.sinClientes')}
           </p>
         ) : (
@@ -353,13 +353,13 @@ ${t('clientes.email')}: ${c.email}`
                 <div key={c.id} className="rounded-xl border border-gray-200">
                   <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                     <button type="button" onClick={() => toggleCliente(c)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                      {abierto ? <ChevronDown size={18} style={{ color: '#6B7280' }} /> : <ChevronRight size={18} style={{ color: '#6B7280' }} />}
+                      {abierto ? <ChevronDown size={18} style={{ color: 'var(--yuda-text-secondary)' }} /> : <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)' }} />}
                       <div className="min-w-0">
-                        <p className="font-semibold" style={{ color: '#0D0D0D' }}>
+                        <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                           {c.nombre}
-                          {c.empresa ? <span style={{ color: '#6B7280' }}> · {c.empresa}</span> : null}
+                          {c.empresa ? <span style={{ color: 'var(--yuda-text-secondary)' }}> · {c.empresa}</span> : null}
                         </p>
-                        <p className="text-sm" style={{ color: '#6B7280' }}>
+                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                           {c.email}
                           {c.pais ? ` · ${c.pais}` : ''}
                         </p>
@@ -370,8 +370,8 @@ ${t('clientes.email')}: ${c.email}`
                         className="rounded-full px-2 py-0.5 text-xs font-semibold"
                         style={
                           c.activo
-                            ? { backgroundColor: '#D1FAE5', color: '#10B981' }
-                            : { backgroundColor: '#FEE2E2', color: '#EF4444' }
+                            ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                            : { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }
                         }
                       >
                         {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
@@ -380,7 +380,7 @@ ${t('clientes.email')}: ${c.email}`
                         type="button"
                         onClick={() => toggleActivo(c)}
                         className="flex min-h-[40px] items-center rounded-lg border border-gray-200 px-3 text-xs font-medium"
-                        style={{ color: c.activo ? '#EF4444' : '#10B981' }}
+                        style={{ color: c.activo ? 'var(--yuda-error)' : 'var(--yuda-success)' }}
                       >
                         {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
                       </button>
@@ -389,7 +389,7 @@ ${t('clientes.email')}: ${c.email}`
                         onClick={() => eliminar(c)}
                         title={t('clientes.eliminar')}
                         className="flex min-h-[40px] items-center gap-1 rounded-lg border px-3 text-xs font-medium"
-                        style={{ borderColor: '#FCA5A5', color: '#EF4444' }}
+                        style={{ borderColor: '#FCA5A5', color: 'var(--yuda-error)' }}
                       >
                         <Trash2 size={14} /> {t('clientes.eliminar')}
                       </button>
@@ -400,14 +400,14 @@ ${t('clientes.email')}: ${c.email}`
                   {abierto && (
                     <div className="border-t border-gray-100 p-3">
                       {/* Acceso al portal de este cliente (para reenviar) */}
-                      <div className="mb-3 rounded-lg border p-3" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
-                        <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+                      <div className="mb-3 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)', backgroundColor: '#F9FAFB' }}>
+                        <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                           {t('clientes.accesoTitulo')}
                         </p>
-                        <div className="grid gap-1 text-sm" style={{ color: '#374151' }}>
+                        <div className="grid gap-1 text-sm" style={{ color: 'var(--yuda-text)' }}>
                           <p className="break-all">
                             <strong>{t('clientes.portalLink')}:</strong>{' '}
-                            <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: '#4B52E8' }}>
+                            <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--yuda-primary)' }}>
                               {portalUrl}
                             </a>
                           </p>
@@ -417,9 +417,9 @@ ${t('clientes.email')}: ${c.email}`
                           <p>
                             <strong>{t('clientes.password')}:</strong>{' '}
                             {nuevasPass[c.id] ? (
-                              <span style={{ fontFamily: 'monospace', color: '#0D0D0D' }}>{nuevasPass[c.id]}</span>
+                              <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
                             ) : (
-                              <span style={{ color: '#6B7280' }}>{t('clientes.passwordOculta')}</span>
+                              <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
                             )}
                           </p>
                         </div>
@@ -428,7 +428,7 @@ ${t('clientes.email')}: ${c.email}`
                             type="button"
                             onClick={() => resetear(c)}
                             className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
-                            style={{ color: '#4B52E8' }}
+                            style={{ color: 'var(--yuda-primary)' }}
                           >
                             <KeyRound size={14} /> {t('clientes.resetPassword')}
                           </button>
@@ -436,7 +436,7 @@ ${t('clientes.email')}: ${c.email}`
                             type="button"
                             onClick={() => copiarCredenciales(c)}
                             className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
-                            style={{ color: '#10B981' }}
+                            style={{ color: 'var(--yuda-success)' }}
                           >
                             <Copy size={14} /> {t('clientes.copiar')}
                           </button>
@@ -444,24 +444,24 @@ ${t('clientes.email')}: ${c.email}`
                       </div>
 
                       {cots === undefined ? (
-                        <p className="text-sm" style={{ color: '#6B7280' }}>{t('equipo.cargando')}</p>
+                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('equipo.cargando')}</p>
                       ) : cots.length === 0 ? (
-                        <p className="text-sm" style={{ color: '#6B7280' }}>{t('clientes.sinCotizaciones')}</p>
+                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.sinCotizaciones')}</p>
                       ) : (
                         <div className="flex flex-col gap-2">
                           {cots.map((s) => (
                             <div key={s.id} className="rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
                               <div className="flex flex-wrap items-center justify-between gap-2 p-2">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <FileText size={15} style={{ color: '#6B7280' }} />
-                                  <span className="text-sm font-medium" style={{ color: '#0D0D0D' }}>{numeroCot(s)}</span>
-                                  <span className="text-xs" style={{ color: '#6B7280' }}>{s.fecha}</span>
+                                  <FileText size={15} style={{ color: 'var(--yuda-text-secondary)' }} />
+                                  <span className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
+                                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</span>
                                   <span
                                     className="rounded-full px-2 py-0.5 text-xs font-semibold"
                                     style={
                                       s.enviada_cliente
-                                        ? { backgroundColor: '#D1FAE5', color: '#10B981' }
-                                        : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                                        ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                                        : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
                                     }
                                   >
                                     {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
@@ -469,17 +469,17 @@ ${t('clientes.email')}: ${c.email}`
                                   {s.pedido_recibido_at && (
                                     <span
                                       className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                      style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
                                     >
                                       {t('clientes.pedidoRecibido')}
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex flex-shrink-0 items-center gap-1">
-                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
                                     {t('clientes.verDetalle')}
                                   </button>
-                                  <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: '#4B52E8' }}>
+                                  <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
                                     {t('clientes.seguimiento')}
                                   </button>
                                 </div>

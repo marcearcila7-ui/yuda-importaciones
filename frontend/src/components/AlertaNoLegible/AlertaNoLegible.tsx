@@ -32,9 +32,9 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
       role="alert"
     >
       <div className="flex items-start gap-2">
-        <AlertTriangle size={compacta ? 16 : 20} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
+        <AlertTriangle size={compacta ? 16 : 20} style={{ color: 'var(--yuda-error)', flexShrink: 0, marginTop: 1 }} />
         <div className="flex flex-col gap-1">
-          <p className="font-semibold" style={{ color: '#B91C1C', fontSize: compacta ? 13 : 15 }}>
+          <p className="font-semibold" style={{ color: 'var(--yuda-error-dark)', fontSize: compacta ? 13 : 15 }}>
             {t('ocr.noLegibleTitulo')}
           </p>
 

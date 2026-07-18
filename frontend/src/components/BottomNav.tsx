@@ -42,8 +42,8 @@ function BottomNav() {
             className="mx-1 my-2 flex flex-1 flex-col items-center justify-center gap-1"
             style={{
               borderRadius: 12,
-              backgroundColor: activo ? '#EEF0FD' : 'transparent',
-              color: activo ? '#4B52E8' : '#6B7280',
+              backgroundColor: activo ? 'var(--yuda-primary-soft)' : 'transparent',
+              color: activo ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
               textDecoration: 'none',
             }}
           >

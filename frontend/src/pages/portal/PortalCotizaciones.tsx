@@ -40,38 +40,38 @@ function PortalCotizaciones() {
 
   const chipEstado = (estado: string) =>
     estado === 'entregado'
-      ? { backgroundColor: '#D1FAE5', color: '#10B981' }
-      : { backgroundColor: '#EEF0FD', color: '#4B52E8' }
+      ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+      : { backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
 
   return (
     <PortalLayout>
-      <h1 style={{ fontWeight: 700, fontSize: 26, color: '#0D0D0D' }}>
+      <h1 style={{ fontWeight: 700, fontSize: 26, color: 'var(--yuda-accent)' }}>
         {t('portal.saludo', { nombre: cliente?.nombre ?? '' })}
       </h1>
-      <p className="mb-6 text-sm" style={{ color: '#6B7280' }}>
+      <p className="mb-6 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('portal.subtitulo')}
       </p>
 
       {error ? (
         <div className="card flex flex-col items-start gap-3">
-          <p className="text-sm" style={{ color: '#374151' }}>{t('portal.errorCarga')}</p>
+          <p className="text-sm" style={{ color: 'var(--yuda-text)' }}>{t('portal.errorCarga')}</p>
           <button
             type="button"
             onClick={cargar}
             className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
-            style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+            style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
           >
             <RefreshCw size={16} /> {t('portal.reintentar')}
           </button>
         </div>
       ) : cotizaciones === null ? (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('portal.cargando')}
         </p>
       ) : cotizaciones.length === 0 ? (
         <div className="card flex flex-col items-center gap-2 py-10 text-center">
-          <PackageSearch size={40} style={{ color: '#6B7280' }} />
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <PackageSearch size={40} style={{ color: 'var(--yuda-text-secondary)' }} />
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('portal.sinCotizaciones')}
           </p>
         </div>
@@ -87,15 +87,15 @@ function PortalCotizaciones() {
               <div className="flex items-center gap-3">
                 <span
                   className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                  style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
                 >
                   <FileText size={22} />
                 </span>
                 <div className="min-w-0">
-                  <p className="font-semibold" style={{ color: '#0D0D0D' }}>
+                  <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                     {c.numero}
                   </p>
-                  <p className="text-sm" style={{ color: '#6B7280' }}>
+                  <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                     {fmtFecha(c.fecha)} · {t('portal.productos', { n: c.total_items })} · US$ {c.total_usd.toLocaleString('es-ES')}
                   </p>
                 </div>
@@ -104,7 +104,7 @@ function PortalCotizaciones() {
                 <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chipEstado(c.estado)}>
                   {t(`seguimiento.estados.${c.estado}`)}
                 </span>
-                <ChevronRight size={18} style={{ color: '#6B7280' }} />
+                <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
               </div>
             </button>
           ))}

@@ -42,10 +42,10 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const porConfirmar = estado === 'por_confirmar'
 
   const badge = confirmado
-    ? { txt: t('gestionPedido.estadoConfirmado'), bg: '#D1FAE5', fg: '#065F46', icon: <CheckCircle2 size={13} /> }
+    ? { txt: t('gestionPedido.estadoConfirmado'), bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success-dark)', icon: <CheckCircle2 size={13} /> }
     : porConfirmar
-      ? { txt: t('gestionPedido.estadoPorConfirmar'), bg: '#FEF3C7', fg: '#B45309', icon: <Clock size={13} /> }
-      : { txt: t('gestionPedido.estadoRecibido'), bg: '#EEF0FD', fg: '#4B52E8', icon: <Package size={13} /> }
+      ? { txt: t('gestionPedido.estadoPorConfirmar'), bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)', icon: <Clock size={13} /> }
+      : { txt: t('gestionPedido.estadoRecibido'), bg: 'var(--yuda-primary-soft)', fg: 'var(--yuda-primary)', icon: <Package size={13} /> }
 
   const enviar = async () => {
     setEnviando(true)
@@ -66,7 +66,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     <div className="rounded-xl border" style={{ borderColor: '#C7CBF7', backgroundColor: '#F5F6FE' }}>
       {/* Encabezado + estado */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5" style={{ borderColor: '#E0E2FA' }}>
-        <p className="flex items-center gap-2 text-sm font-bold" style={{ color: '#4B52E8' }}>
+        <p className="flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--yuda-primary)' }}>
           <Package size={16} /> {t('gestionPedido.titulo')}
         </p>
         <span
@@ -78,12 +78,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       </div>
 
       {/* Cantidades por producto (editables salvo cuando ya está confirmado) */}
-      <div className="flex flex-col divide-y" style={{ borderColor: '#E5E7EB' }}>
+      <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
         {items.map((it) => (
           <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-            <span className="min-w-0 flex-1" style={{ color: '#0D0D0D' }}>{descripcion(it)}</span>
+            <span className="min-w-0 flex-1" style={{ color: 'var(--yuda-accent)' }}>{descripcion(it)}</span>
             {confirmado ? (
-              <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: '#10B981' }}>
+              <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: 'var(--yuda-success)' }}>
                 {cantidades[it.id] || 0} {t('gestionPedido.cajas')}
               </span>
             ) : (
@@ -94,10 +94,10 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                   inputMode="numeric"
                   value={cantidades[it.id] ?? ''}
                   onChange={(e) => setCantidades((c) => ({ ...c, [it.id]: e.target.value }))}
-                  className="w-20 rounded-lg border border-gray-200 px-2 py-1 text-right focus:border-[#4B52E8] focus:outline-none"
+                  className="w-20 rounded-lg border border-gray-200 px-2 py-1 text-right focus:border-[var(--yuda-primary)] focus:outline-none"
                   style={{ fontSize: 16 }}
                 />
-                <span className="text-xs" style={{ color: '#6B7280' }}>{t('gestionPedido.cajas')}</span>
+                <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('gestionPedido.cajas')}</span>
               </div>
             )}
           </div>
@@ -105,7 +105,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       </div>
 
       {sesion.notas_cliente && (
-        <div className="border-t px-4 py-2.5 text-sm" style={{ borderColor: '#E0E2FA', color: '#374151' }}>
+        <div className="border-t px-4 py-2.5 text-sm" style={{ borderColor: '#E0E2FA', color: 'var(--yuda-text)' }}>
           <span className="font-semibold">📝 {t('gestionPedido.notas')}:</span> {sesion.notas_cliente}
         </div>
       )}
@@ -114,26 +114,26 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       <div className="border-t px-4 py-3" style={{ borderColor: '#E0E2FA' }}>
         {confirmado ? (
           <div className="flex flex-col gap-3">
-            <p className="flex items-center gap-2 text-sm font-medium" style={{ color: '#065F46' }}>
+            <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
               <CheckCircle2 size={16} /> {t('gestionPedido.confirmadoOk')}
             </p>
-            <p className="text-xs font-semibold" style={{ color: '#0D0D0D' }}>{t('gestionPedido.generarTitulo')}</p>
+            <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>{t('gestionPedido.generarTitulo')}</p>
             <GenerarPedidos sesion_id={sesion.id} nombre_cliente={sesion.nombre_cliente} pedidoConfirmado />
           </div>
         ) : (
           <div className="flex flex-col gap-2">
             {porConfirmar && (
-              <p className="flex items-center gap-2 text-sm" style={{ color: '#B45309' }}>
+              <p className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
                 <Clock size={15} /> {t('gestionPedido.esperandoConfirmacion')}
               </p>
             )}
-            <p className="text-xs" style={{ color: '#6B7280' }}>{t('gestionPedido.avisoGenerar')}</p>
+            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('gestionPedido.avisoGenerar')}</p>
             <button
               type="button"
               onClick={enviar}
               disabled={enviando}
               className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: '#4B52E8', fontSize: 15 }}
+              style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
             >
               <Send size={16} />{' '}
               {enviando

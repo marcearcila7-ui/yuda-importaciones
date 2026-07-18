@@ -24,12 +24,12 @@ function MetricCard({
   valor,
   subtitulo,
   icono,
-  color = '#4B52E8',
+  color = 'var(--yuda-primary)',
   tendencia,
   porcentaje,
 }: MetricCardProps) {
   const colorTendencia =
-    tendencia === 'up' ? '#10B981' : tendencia === 'down' ? '#EF4444' : '#6B7280'
+    tendencia === 'up' ? 'var(--yuda-success)' : tendencia === 'down' ? 'var(--yuda-error)' : 'var(--yuda-text-secondary)'
   const flecha = tendencia === 'up' ? '↑' : tendencia === 'down' ? '↓' : '→'
 
   return (
@@ -48,13 +48,13 @@ function MetricCard({
         )}
       </div>
       <div>
-        <p className="text-2xl sm:text-[32px]" style={{ fontWeight: 700, color: '#0D0D0D', lineHeight: 1.1 }}>
+        <p className="text-2xl sm:text-[32px]" style={{ fontWeight: 700, color: 'var(--yuda-accent)', lineHeight: 1.1 }}>
           {valor}
         </p>
-        <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
+        <p className="mt-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {titulo}
         </p>
-        {subtitulo && <p className="mt-0.5 text-xs" style={{ color: '#6B7280' }}>{subtitulo}</p>}
+        {subtitulo && <p className="mt-0.5 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{subtitulo}</p>}
       </div>
     </div>
   )

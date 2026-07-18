@@ -37,11 +37,11 @@ function ConfirmDialog() {
         onClick={(e) => e.stopPropagation()}
       >
         {opts.titulo && (
-          <h2 className="mb-2" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+          <h2 className="mb-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
             {opts.titulo}
           </h2>
         )}
-        <p className="text-sm" style={{ color: '#374151', lineHeight: 1.5 }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text)', lineHeight: 1.5 }}>
           {opts.mensaje}
         </p>
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -49,7 +49,7 @@ function ConfirmDialog() {
             type="button"
             onClick={() => responder(false)}
             className="rounded-lg border font-semibold"
-            style={{ minHeight: 44, padding: '0 18px', borderColor: '#E5E7EB', color: '#374151', fontSize: 15 }}
+            style={{ minHeight: 44, padding: '0 18px', borderColor: 'var(--yuda-border)', color: 'var(--yuda-text)', fontSize: 15 }}
           >
             {opts.textoCancelar ?? t('comun.cancelar')}
           </button>
@@ -61,7 +61,7 @@ function ConfirmDialog() {
             style={{
               minHeight: 44,
               padding: '0 18px',
-              backgroundColor: peligro ? '#EF4444' : '#4B52E8',
+              backgroundColor: peligro ? 'var(--yuda-error)' : 'var(--yuda-primary)',
               fontSize: 15,
             }}
           >

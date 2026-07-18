@@ -7,8 +7,8 @@ import { useAuthStore } from '../store/authStore'
 // font-size 16 evita el zoom automático en iOS
 const inputBase: CSSProperties = { padding: '12px 0', fontSize: 16 }
 const inputClase =
-  'w-full border-0 border-b border-[#E5E7EB] bg-transparent focus:border-[#4B52E8] focus:outline-none'
-const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: '#374151', display: 'block' }
+  'w-full border-0 border-b border-[var(--yuda-border)] bg-transparent focus:border-[var(--yuda-primary)] focus:outline-none'
+const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: 'var(--yuda-text)', display: 'block' }
 
 const IDIOMAS = [
   { code: 'es', label: 'ES' },
@@ -51,8 +51,8 @@ function Login() {
               onClick={() => cambiarIdioma(idi.code)}
               style={{
                 borderRadius: 6,
-                backgroundColor: activo ? '#4B52E8' : '#EEF0FD',
-                color: activo ? '#FFFFFF' : '#4B52E8',
+                backgroundColor: activo ? 'var(--yuda-primary)' : 'var(--yuda-primary-soft)',
+                color: activo ? 'var(--yuda-white)' : 'var(--yuda-primary)',
                 padding: '4px 10px',
                 fontSize: 13,
                 fontWeight: 600,
@@ -74,14 +74,14 @@ function Login() {
           <div className="text-center">
             <span
               className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
-              style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+              style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
             >
               {t('login.accesoEquipo')}
             </span>
-            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>
+            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>
               {t('login.bienvenida')}
             </h1>
-            <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>
+            <p style={{ fontSize: 14, color: 'var(--yuda-text-secondary)', marginTop: 4 }}>
               {t('login.credenciales')}
             </p>
           </div>
@@ -118,14 +118,14 @@ function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-8 w-full rounded-lg bg-[#4B52E8] font-semibold text-white hover:bg-[#3840C7] disabled:opacity-60"
+              className="mt-8 w-full rounded-lg bg-[var(--yuda-primary)] font-semibold text-white hover:bg-[var(--yuda-primary-dark)] disabled:opacity-60"
               style={{ height: 52, fontSize: 16 }}
             >
               {isLoading ? t('login.ingresando') : t('login.ingresar')}
             </button>
 
             {error && (
-              <p style={{ color: '#EF4444', fontSize: 14, marginTop: 12 }}>{error}</p>
+              <p style={{ color: 'var(--yuda-error)', fontSize: 14, marginTop: 12 }}>{error}</p>
             )}
           </form>
       </div>

@@ -1,25 +1,16 @@
 import { useState } from 'react'
-import type { CSSProperties } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
+import Button from '../ui/Button'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
 interface GenerarPedidosProps {
   sesion_id: string
   nombre_cliente: string
   pedidoConfirmado?: boolean
-}
-
-const btnPrimario: CSSProperties = {
-  minHeight: 48,
-  backgroundColor: '#4B52E8',
-  color: '#fff',
-  borderRadius: 8,
-  fontSize: 16,
-  fontWeight: 600,
 }
 
 function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }: GenerarPedidosProps) {
@@ -85,13 +76,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
   return (
     <div className="flex w-full flex-col gap-4">
       {/* SECCIÓN A — Botón principal (CTNS internas del packing) */}
-      <button
-        type="button"
-        onClick={() => handleGenerar(false)}
-        disabled={generando !== false}
-        className="flex w-full items-center justify-center gap-2 disabled:opacity-60"
-        style={btnPrimario}
-      >
+      <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
         {generando === 'normal' ? (
           t('pedidos.generando')
         ) : (
@@ -99,17 +84,11 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
             <FileText size={18} /> {t('pedidos.generar')}
           </>
         )}
-      </button>
+      </Button>
 
       {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
       {pedidoConfirmado && (
-        <button
-          type="button"
-          onClick={() => handleGenerar(true)}
-          disabled={generando !== false}
-          className="flex w-full items-center justify-center gap-2 disabled:opacity-60"
-          style={{ ...btnPrimario, backgroundColor: '#10B981' }}
-        >
+        <Button variant="success" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
           {generando === 'cliente' ? (
             t('pedidos.generando')
           ) : (
@@ -117,16 +96,16 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
               <UserCheck size={18} /> {t('pedidos.generarCliente')}
             </>
           )}
-        </button>
+        </Button>
       )}
 
       {/* SECCIÓN B — Advertencias */}
       {resultado && resultado.warnings.length > 0 && (
-        <div className="rounded-xl p-4" style={{ backgroundColor: '#FEF3C7', border: '1px solid #F59E0B' }}>
-          <p className="flex items-center gap-2 font-bold" style={{ color: '#B45309' }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--yuda-warning-soft)', border: '1px solid var(--yuda-warning)' }}>
+          <p className="flex items-center gap-2 font-bold" style={{ color: 'var(--yuda-warning-dark)' }}>
             <AlertTriangle size={18} /> {t('pedidos.advertencias')}
           </p>
-          <ul className="mt-2 list-disc pl-5 text-sm" style={{ color: '#B45309' }}>
+          <ul className="mt-2 list-disc pl-5 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
             {resultado.warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -137,23 +116,23 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
       {/* SECCIÓN C — Resultado */}
       {resultado && (
         <div className="flex flex-col gap-3">
-          <p className="font-bold" style={{ color: '#0D0D0D' }}>{t('pedidos.generados')}</p>
+          <p className="font-bold" style={{ color: 'var(--yuda-accent)' }}>{t('pedidos.generados')}</p>
           {resultado.pedidos.map((pedido) => (
             <div
               key={pedido.supplier}
               className="flex flex-col gap-2 rounded-xl p-3 sm:flex-row sm:items-center sm:justify-between"
-              style={{ backgroundColor: '#F9F9F7', border: '1px solid #E5E7EB' }}
+              style={{ backgroundColor: '#F9F9F7', border: '1px solid var(--yuda-border)' }}
             >
-              <span className="min-w-0 truncate text-sm" style={{ color: '#0D0D0D' }}>
+              <span className="min-w-0 truncate text-sm" style={{ color: 'var(--yuda-accent)' }}>
                 {pedido.supplier}{' '}
-                <span style={{ color: '#6B7280' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
+                <span style={{ color: 'var(--yuda-text-secondary)' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
               </span>
               <div className="flex flex-shrink-0 gap-2">
                 <button
                   type="button"
                   onClick={() => window.open(pedido.url_descarga, '_blank')}
                   className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-lg px-3 text-sm font-medium text-white sm:flex-none"
-                  style={{ backgroundColor: '#10B981' }}
+                  style={{ backgroundColor: 'var(--yuda-success)' }}
                 >
                   <Download size={16} /> {t('pedidos.descargarExcel')}
                 </button>
@@ -162,7 +141,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
                     type="button"
                     onClick={() => window.open(pedido.url_pdf as string, '_blank')}
                     className="flex min-h-[40px] flex-1 items-center justify-center gap-1 rounded-lg px-3 text-sm font-medium text-white sm:flex-none"
-                    style={{ backgroundColor: '#4B52E8' }}
+                    style={{ backgroundColor: 'var(--yuda-primary)' }}
                   >
                     <FileText size={16} /> {t('pedidos.descargarPdf')}
                   </button>
@@ -172,21 +151,15 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
           ))}
 
           {resultado.pedidos.length > 1 && (
-            <button
-              type="button"
-              onClick={handleDescargarZip}
-              disabled={descargandoZip}
-              className="w-full font-semibold text-white disabled:opacity-60"
-              style={{ minHeight: 48, backgroundColor: '#0D0D0D', borderRadius: 8, fontSize: 16 }}
-            >
+            <Button variant="dark" size="lg" fullWidth onClick={handleDescargarZip} disabled={descargandoZip}>
               {descargandoZip ? t('pedidos.preparandoZip') : t('pedidos.descargarZip')}
-            </button>
+            </Button>
           )}
         </div>
       )}
 
       {/* SECCIÓN D — Error */}
-      {error && <p className="text-center text-sm" style={{ color: '#EF4444' }}>{error}</p>}
+      {error && <p className="text-center text-sm" style={{ color: 'var(--yuda-error)' }}>{error}</p>}
     </div>
   )
 }

@@ -141,30 +141,30 @@ function PortalDetalle() {
         type="button"
         onClick={() => navigate('/portal')}
         className="mb-4 flex items-center gap-1 text-sm font-medium"
-        style={{ color: '#4B52E8' }}
+        style={{ color: 'var(--yuda-primary)' }}
       >
         <ArrowLeft size={16} /> {t('portal.volver')}
       </button>
 
       {cargando ? (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('portal.cargando')}
         </p>
       ) : errorCarga ? (
         <div className="card flex flex-col items-start gap-3">
-          <p className="text-sm" style={{ color: '#374151' }}>{t('portal.errorCarga')}</p>
+          <p className="text-sm" style={{ color: 'var(--yuda-text)' }}>{t('portal.errorCarga')}</p>
           <button
             type="button"
             onClick={cargar}
             className="flex items-center gap-2 rounded-lg px-4 font-semibold text-white"
-            style={{ minHeight: 44, backgroundColor: '#4B52E8', fontSize: 15 }}
+            style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
           >
             <RefreshCw size={16} /> {t('portal.reintentar')}
           </button>
         </div>
       ) : noEncontrada || !detalle ? (
         <div className="card">
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('portal.noEncontrada')}
           </p>
         </div>
@@ -172,8 +172,8 @@ function PortalDetalle() {
         <div className="flex flex-col gap-6">
           {/* Encabezado */}
           <div>
-            <h1 style={{ fontWeight: 700, fontSize: 24, color: '#0D0D0D' }}>{detalle.numero}</h1>
-            <p className="text-sm" style={{ color: '#6B7280' }}>
+            <h1 style={{ fontWeight: 700, fontSize: 24, color: 'var(--yuda-accent)' }}>{detalle.numero}</h1>
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.productos', { n: detalle.items.length })} · {t('portal.totalEstimado')}: US${' '}
               {detalle.total_usd.toLocaleString('es-ES')}
             </p>
@@ -186,7 +186,7 @@ function PortalDetalle() {
               onClick={() => descargar('pdf')}
               disabled={descargando !== null}
               className="flex flex-1 items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-              style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+              style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
             >
               <FileText size={18} /> {descargando === 'pdf' ? t('cotizacion.generando') : t('portal.descargarPDF')}
             </button>
@@ -195,7 +195,7 @@ function PortalDetalle() {
               onClick={() => descargar('excel')}
               disabled={descargando !== null}
               className="flex flex-1 items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-              style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, fontSize: 16 }}
+              style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, fontSize: 16 }}
             >
               <FileSpreadsheet size={18} /> {descargando === 'excel' ? t('cotizacion.generando') : t('portal.descargarExcel')}
             </button>
@@ -203,24 +203,24 @@ function PortalDetalle() {
 
           {/* Mi pedido: cajas por producto + notas */}
           <div className="card">
-            <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('portal.miPedidoTitulo')}
             </h2>
-            <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
+            <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.miPedidoAyuda')}
             </p>
             {detalle.pedido_estado === 'por_confirmar' && (
-              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF3C7', color: '#B45309' }}>
+              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}>
                 {t('portal.porConfirmarAviso')}
               </p>
             )}
             {detalle.pedido_estado === 'confirmado' && (
-              <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+              <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }}>
                 <CheckCircle2 size={16} /> {t('portal.confirmadoAviso')}
               </p>
             )}
             {detalle.pedido_estado === 'recibido' && (
-              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}>
+              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
                 {t('portal.pedidoRecibidoAviso')}
               </p>
             )}
@@ -242,17 +242,17 @@ function PortalDetalle() {
                         <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium" style={{ color: '#0D0D0D' }}>
+                        <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
                           {descripcion(item, i18n.language) || '—'}
                         </p>
-                        <p className="text-sm" style={{ color: '#6B7280' }}>
+                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                           {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
                           {item.qty_por_ctn > 0 ? ` · ${t('portal.porCaja', { n: item.qty_por_ctn })}` : ''}
                         </p>
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-2">
-                      <label className="text-sm font-medium" style={{ color: '#374151' }}>
+                      <label className="text-sm font-medium" style={{ color: 'var(--yuda-text)' }}>
                         {t('portal.cajasDeseadas')}:
                       </label>
                       <input
@@ -262,11 +262,11 @@ function PortalDetalle() {
                         value={cantidades[item.item_id] ?? ''}
                         onChange={(e) => setCantidades((c) => ({ ...c, [item.item_id]: e.target.value }))}
                         disabled={bloqueado}
-                        className="min-h-[44px] w-24 rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                        className="min-h-[44px] w-24 rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
                         style={{ fontSize: 16 }}
                       />
                       {item.qty_por_ctn > 0 && cajas > 0 && (
-                        <span className="text-xs" style={{ color: '#6B7280' }}>
+                        <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                           ≈ {(cajas * item.qty_por_ctn).toLocaleString('es-ES')} {t('portal.unidades')}
                         </span>
                       )}
@@ -276,7 +276,7 @@ function PortalDetalle() {
               })}
             </div>
 
-            <label className="mt-4 flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="mt-4 flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.notasLabel')}
               <textarea
                 value={notas}
@@ -284,7 +284,7 @@ function PortalDetalle() {
                 rows={3}
                 placeholder={t('portal.notasPlaceholder')}
                 disabled={bloqueado}
-                className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
+                className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
                 style={{ fontSize: 16 }}
               />
             </label>
@@ -296,7 +296,7 @@ function PortalDetalle() {
                   onClick={confirmar}
                   disabled={confirmando || enviando}
                   className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: '#10B981', fontSize: 16 }}
+                  style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16 }}
                 >
                   <CheckCircle2 size={18} /> {confirmando ? t('portal.confirmando') : t('portal.confirmarPedido')}
                 </button>
@@ -305,7 +305,7 @@ function PortalDetalle() {
                   onClick={enviarPedido}
                   disabled={enviando || confirmando}
                   className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg border font-semibold disabled:opacity-60"
-                  style={{ borderColor: '#4B52E8', color: '#4B52E8', fontSize: 16 }}
+                  style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', fontSize: 16 }}
                 >
                   <Send size={18} /> {enviando ? t('portal.enviando') : t('portal.proponerCambios')}
                 </button>
@@ -315,7 +315,7 @@ function PortalDetalle() {
                 type="button"
                 onClick={modificarConfirmado}
                 className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border font-semibold"
-                style={{ borderColor: '#4B52E8', color: '#4B52E8', fontSize: 16 }}
+                style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', fontSize: 16 }}
               >
                 <Pencil size={18} /> {t('portal.modificarPedido')}
               </button>
@@ -325,7 +325,7 @@ function PortalDetalle() {
                 onClick={enviarPedido}
                 disabled={enviando}
                 className="mt-4 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+                style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16 }}
               >
                 <Send size={18} />{' '}
                 {enviando
@@ -341,7 +341,7 @@ function PortalDetalle() {
 
           {/* Productos (resumen con totales de la cotización) */}
           <div className="card">
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('portal.productos', { n: detalle.items.length })}
             </h2>
             <div className="flex flex-col gap-3">
@@ -358,15 +358,15 @@ function PortalDetalle() {
                     <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium" style={{ color: '#0D0D0D' }}>
+                    <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
                       {descripcion(item, i18n.language) || '—'}
                     </p>
-                    <p className="text-sm" style={{ color: '#6B7280' }}>
+                    <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                       {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-right">
-                    <p className="font-semibold" style={{ color: '#0D0D0D' }}>
+                    <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                       US$ {item.total_usd.toLocaleString('es-ES')}
                     </p>
                   </div>
@@ -374,7 +374,7 @@ function PortalDetalle() {
               ))}
             </div>
             <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
-              <p style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+              <p style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
                 {t('portal.total')}: US$ {detalle.total_usd.toLocaleString('es-ES')}
               </p>
             </div>
@@ -382,7 +382,7 @@ function PortalDetalle() {
 
           {/* Seguimiento */}
           <div className="card">
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('portal.seguimiento')}
             </h2>
             <SeguimientoTimeline seguimiento={detalle.seguimiento} />

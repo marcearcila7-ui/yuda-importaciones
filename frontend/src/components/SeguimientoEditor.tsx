@@ -17,7 +17,7 @@ const LOCALES: Record<string, string> = { es: 'es-CO', en: 'en-US', zh: 'zh-CN' 
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
+  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
 
 const ESTADOS_VENDEDORA_SET: ReadonlySet<string> = new Set(ESTADOS_VENDEDORA)
 
@@ -176,8 +176,8 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     <div className="flex flex-col gap-4">
       {/* Historial del pedido: se conserva SIEMPRE. Marcela lo ve por cada cliente. */}
       {ESTADOS_ENVIO.some((k) => tieneContenido(hitos[k])) && (
-        <div className="rounded-xl border p-4" style={{ borderColor: '#E5E7EB' }}>
-          <p className="mb-3 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+        <div className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>
+          <p className="mb-3 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
             {t('envio.historialTitulo')}
           </p>
           <ol className="flex flex-col gap-3">
@@ -186,13 +186,13 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
               const cuando = fmtFechaHora(h?.ts) ?? h?.fecha ?? null
               return (
                 <li key={k} className="flex gap-3">
-                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: '#10B981' }} />
+                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-success)' }} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium" style={{ color: '#0D0D0D' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
                       {t(`seguimiento.estados.${k}`)}
                     </p>
-                    {cuando && <p className="text-xs" style={{ color: '#6B7280' }}>{cuando}</p>}
-                    {h?.nota && <p className="text-xs" style={{ color: '#6B7280' }}>{h.nota}</p>}
+                    {cuando && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{cuando}</p>}
+                    {h?.nota && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{h.nota}</p>}
                     {h?.adjuntos?.map((a, i) => (
                       <a
                         key={`${a.url}-${i}`}
@@ -200,7 +200,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                         target="_blank"
                         rel="noreferrer"
                         className="mt-1 flex items-center gap-1 text-xs"
-                        style={{ color: '#4B52E8' }}
+                        style={{ color: 'var(--yuda-primary)' }}
                       >
                         {a.tipo === 'imagen' ? <ImageIcon size={13} /> : <FileText size={13} />}{' '}
                         {a.nombre || t('envio.archivo')}
@@ -215,19 +215,19 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
       )}
 
       {/* Paso 1: etapa actual + su fecha (lo principal para la vendedora) */}
-      <div className="rounded-xl border p-4" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
-        <p className="mb-1 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+      <div className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)', backgroundColor: '#F9FAFB' }}>
+        <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
           {t('envio.enQueEtapa')}
         </p>
         {bloqueadaVendedora ? (
           <>
             <div
               className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
-              style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', color: '#0D0D0D', minHeight: 44 }}
+              style={{ borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-white)', color: 'var(--yuda-accent)', minHeight: 44 }}
             >
               {t(`seguimiento.estados.${estado}`)}
             </div>
-            <p className="mt-3 flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
+            <p className="mt-3 flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               <Lock size={15} /> {t('envio.enTransitoMarcela')}
             </p>
           </>
@@ -246,7 +246,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
               ))}
             </select>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('envio.fechaDeEtapa')}
                 <input
                   type="date"
@@ -256,7 +256,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                   className={inputClase}
                 />
               </label>
-              <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('seguimiento.notaOpcional')}
                 <input
                   value={hitos[estado]?.nota ?? ''}
@@ -269,7 +269,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
 
             {/* Adjuntos de la etapa: el cliente los recibe en el tracking */}
             <div className="mt-3">
-              <p className="mb-1 text-sm" style={{ color: '#6B7280' }}>
+              <p className="mb-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('envio.adjuntosEtapa')}
               </p>
               {adjuntosEtapa.length > 0 && (
@@ -278,19 +278,19 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                     <div
                       key={`${a.url}-${i}`}
                       className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm"
-                      style={{ borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' }}
+                      style={{ borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-white)' }}
                     >
                       {a.tipo === 'imagen' ? (
-                        <ImageIcon size={15} style={{ color: '#4B52E8' }} />
+                        <ImageIcon size={15} style={{ color: 'var(--yuda-primary)' }} />
                       ) : (
-                        <FileText size={15} style={{ color: '#4B52E8' }} />
+                        <FileText size={15} style={{ color: 'var(--yuda-primary)' }} />
                       )}
                       <a
                         href={a.url}
                         target="_blank"
                         rel="noreferrer"
                         className="flex-1 truncate"
-                        style={{ color: '#0D0D0D' }}
+                        style={{ color: 'var(--yuda-accent)' }}
                       >
                         {a.nombre || t('envio.archivo')}
                       </a>
@@ -298,7 +298,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                         type="button"
                         onClick={() => quitarAdj(i)}
                         aria-label={t('envio.quitarAdjunto')}
-                        style={{ color: '#6B7280' }}
+                        style={{ color: 'var(--yuda-text-secondary)' }}
                       >
                         <X size={16} />
                       </button>
@@ -321,7 +321,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                 onClick={() => adjRef.current?.click()}
                 disabled={subiendoAdj}
                 className="flex min-h-[40px] items-center gap-2 rounded-lg border border-dashed px-3 text-sm font-medium disabled:opacity-60"
-                style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+                style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
               >
                 <Paperclip size={16} /> {subiendoAdj ? t('envio.subiendo') : t('envio.adjuntarArchivo')}
               </button>
@@ -331,25 +331,25 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
       </div>
 
       {/* Novedades para el cliente */}
-      <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+      <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('seguimiento.novedades')}
         <textarea
           value={novedades}
           onChange={(e) => setNovedades(e.target.value)}
           rows={2}
           style={inputStyle}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none"
         />
       </label>
 
       {/* Información de envío y BL: solo Marcela (admin) */}
       {esAdmin ? (
-        <div className="rounded-xl border p-4" style={{ borderColor: '#C7CBF7', backgroundColor: '#EEF0FD' }}>
-          <p className="mb-3 flex items-center gap-2 text-sm font-semibold" style={{ color: '#4B52E8' }}>
+        <div className="rounded-xl border p-4" style={{ borderColor: '#C7CBF7', backgroundColor: 'var(--yuda-primary-soft)' }}>
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
             <Ship size={16} /> {t('envio.infoEnvioMarcela')}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('seguimiento.naviera')}
               <select
                 value={navieraOtra ? '__otra__' : naviera}
@@ -384,25 +384,25 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                 />
               )}
             </label>
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('seguimiento.numeroTracking')}
               <input value={tracking} onChange={(e) => setTracking(e.target.value)} style={inputStyle} className={inputClase} />
             </label>
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('seguimiento.urlTracking')}
               <input value={urlTracking} onChange={(e) => setUrlTracking(e.target.value)} placeholder="https://..." style={inputStyle} className={inputClase} />
             </label>
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('seguimiento.eta')}
               <input type="date" value={eta} onChange={(e) => setEta(e.target.value)} style={inputStyle} className={inputClase} />
             </label>
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('envio.blNumero')}
               <input value={blNumero} onChange={(e) => setBlNumero(e.target.value)} style={inputStyle} className={inputClase} />
             </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2" style={{ color: '#6B7280' }}>
-              <span className="font-medium" style={{ color: '#0D0D0D' }}>
-                💰 {t('envio.montoVenta')} <span style={{ color: '#EF4444' }}>*</span>
+            <label className="flex flex-col gap-1 text-sm sm:col-span-2" style={{ color: 'var(--yuda-text-secondary)' }}>
+              <span className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                💰 {t('envio.montoVenta')} <span style={{ color: 'var(--yuda-error)' }}>*</span>
               </span>
               <input
                 type="number"
@@ -416,11 +416,11 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                 className={inputClase}
                 aria-invalid={esTransito && !montoValido}
               />
-              <span className="text-xs" style={{ color: esTransito && !montoValido ? '#EF4444' : '#6B7280' }}>
+              <span className="text-xs" style={{ color: esTransito && !montoValido ? 'var(--yuda-error)' : 'var(--yuda-text-secondary)' }}>
                 {t('envio.montoVentaAyuda')}
               </span>
             </label>
-            <div className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <div className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('envio.blPdf')}
               <div className="flex items-center gap-2">
                 <input
@@ -437,8 +437,8 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={subiendoBl}
-                  className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-[#4B52E8] px-3 text-sm font-medium disabled:opacity-60"
-                  style={{ color: '#4B52E8' }}
+                  className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--yuda-primary)] px-3 text-sm font-medium disabled:opacity-60"
+                  style={{ color: 'var(--yuda-primary)' }}
                 >
                   <Upload size={16} /> {subiendoBl ? t('envio.subiendo') : t('envio.subirBl')}
                 </button>
@@ -448,7 +448,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-1 text-sm font-medium"
-                    style={{ color: '#4B52E8' }}
+                    style={{ color: 'var(--yuda-primary)' }}
                   >
                     <FileText size={16} /> {t('envio.verBl')}
                   </a>
@@ -458,7 +458,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl border border-dashed p-3 text-sm" style={{ borderColor: '#D1D5DB', color: '#6B7280' }}>
+        <div className="flex items-center gap-2 rounded-xl border border-dashed p-3 text-sm" style={{ borderColor: '#D1D5DB', color: 'var(--yuda-text-secondary)' }}>
           <Lock size={15} /> {t('envio.infoEnvioBloqueada')}
         </div>
       )}
@@ -468,7 +468,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
         onClick={guardar}
         disabled={trabajando}
         className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-        style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+        style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
       >
         <Save size={18} /> {t('envio.guardarSeguimiento')}
       </button>

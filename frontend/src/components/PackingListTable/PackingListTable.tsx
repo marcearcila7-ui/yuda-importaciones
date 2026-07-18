@@ -101,7 +101,7 @@ function CeldaEditable({
     onItemActualizado()
   }
 
-  const fondo = meta.ctns ? { backgroundColor: '#EEF0FD' } : undefined
+  const fondo = meta.ctns ? { backgroundColor: 'var(--yuda-primary-soft)' } : undefined
 
   if (editando) {
     return (
@@ -130,7 +130,7 @@ function CeldaEditable({
         setEditando(true)
       }}
       style={fondo}
-      className={`min-h-[28px] cursor-pointer rounded px-1 py-1 transition-colors hover:bg-[#EEF0FD] ${
+      className={`min-h-[28px] cursor-pointer rounded px-1 py-1 transition-colors hover:bg-[var(--yuda-primary-soft)] ${
         guardando ? 'opacity-50' : ''
       } ${meta.ctns ? 'border border-blue-300' : 'border-b border-dashed border-gray-300'}`}
       title={t('packing.tocaEditar')}
@@ -161,7 +161,7 @@ function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta })
   return (
     <div
       className="px-1 py-1 text-right"
-      style={meta.usd ? { color: '#EF4444' } : undefined}
+      style={meta.usd ? { color: 'var(--yuda-error)' } : undefined}
     >
       {valor == null ? '—' : String(valor)}
     </div>
@@ -215,14 +215,14 @@ function CeldaFotoFinal({
         disabled={subiendo}
         title={t(item.foto_final_url ? 'packing.fotoFinalCambiar' : 'packing.fotoFinalSubir')}
         className="rounded border border-dashed disabled:opacity-50"
-        style={{ borderColor: '#4B52E8', padding: item.foto_final_url ? 0 : '8px 6px' }}
+        style={{ borderColor: 'var(--yuda-primary)', padding: item.foto_final_url ? 0 : '8px 6px' }}
       >
         {subiendo ? (
-          <span className="block px-2 py-3 text-xs" style={{ color: '#4B52E8' }}>…</span>
+          <span className="block px-2 py-3 text-xs" style={{ color: 'var(--yuda-primary)' }}>…</span>
         ) : item.foto_final_url ? (
           <img src={item.foto_final_url} alt="foto final" style={{ width: 40, height: 40 }} className="rounded object-cover" />
         ) : (
-          <span className="block text-xs font-medium" style={{ color: '#4B52E8' }}>
+          <span className="block text-xs font-medium" style={{ color: 'var(--yuda-primary)' }}>
             + {t('packing.fotoFinalSubir')}
           </span>
         )}
@@ -269,7 +269,7 @@ function CampoMovil({
   }
 
   return (
-    <label className="flex flex-col gap-1 text-xs" style={{ color: '#6B7280' }}>
+    <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
       {label}
       <input
         type={tipo === 'text' ? 'text' : 'number'}
@@ -277,7 +277,7 @@ function CampoMovil({
         onChange={(e) => setValor(e.target.value)}
         onBlur={guardar}
         style={{ ...inputStyle, opacity: guardando ? 0.5 : 1 }}
-        className="rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-[#4B52E8] focus:outline-none"
+        className="rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-[var(--yuda-primary)] focus:outline-none"
       />
     </label>
   )
@@ -306,7 +306,7 @@ function TarjetaMovil({
 
       <CampoMovil item={item} campo="descripcion_es" label={t('packing.fDescripcion')} tipo="text" onSaved={onItemActualizado} />
 
-      <div className="flex items-center justify-between gap-2 text-xs" style={{ color: '#6B7280' }}>
+      <div className="flex items-center justify-between gap-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
         <span>{t('packing.fFotoFinal')}</span>
         <CeldaFotoFinal item={item} sesionId={item.sesion_id} onItemActualizado={onItemActualizado} />
       </div>
@@ -319,8 +319,8 @@ function TarjetaMovil({
       </div>
 
       <div className="flex justify-between border-t border-gray-100 pt-2 text-sm">
-        <span style={{ color: '#6B7280' }}>{t('packing.fTotalUsd')}</span>
-        <span style={{ fontWeight: 700, color: '#0D0D0D' }}>$ {(item.total_usd || 0).toFixed(2)}</span>
+        <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('packing.fTotalUsd')}</span>
+        <span style={{ fontWeight: 700, color: 'var(--yuda-accent)' }}>$ {(item.total_usd || 0).toFixed(2)}</span>
       </div>
     </div>
   )
@@ -380,7 +380,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
       base.position = 'sticky'
       base.left = meta.stickyLeft
       base.zIndex = esHeader ? 30 : 20
-      base.backgroundColor = esHeader ? '#0D0D0D' : '#ffffff'
+      base.backgroundColor = esHeader ? 'var(--yuda-accent)' : 'var(--yuda-white)'
     }
     return base
   }
@@ -390,7 +390,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
       {/* Vista móvil: tarjetas */}
       <div className="flex flex-col gap-3 sm:hidden">
         {items.length === 0 ? (
-          <p className="py-4 text-center text-sm" style={{ color: '#6B7280' }}>
+          <p className="py-4 text-center text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('packing.sinProductos')}
           </p>
         ) : (
@@ -398,7 +398,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
             {items.map((it) => (
               <TarjetaMovil key={it.id} item={it} onItemActualizado={onItemActualizado} />
             ))}
-            <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: '#0D0D0D' }}>
+            <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: 'var(--yuda-accent)' }}>
               <span className="text-sm font-bold text-white">
                 {t('packing.totales')} · {totales.ctns} {t('packing.fCajas').toLowerCase()}
               </span>
@@ -413,7 +413,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
       <table className="border-collapse text-sm">
         <thead>
           {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id} style={{ backgroundColor: '#0D0D0D' }}>
+            <tr key={hg.id} style={{ backgroundColor: 'var(--yuda-accent)' }}>
               {hg.headers.map((header) => {
                 const meta = header.column.columnDef.meta as ColMeta
                 return (
@@ -431,7 +431,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
         </thead>
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="bg-white even:bg-gray-50 hover:bg-[#F5F5F0]">
+            <tr key={row.id} className="bg-white even:bg-gray-50 hover:bg-[var(--yuda-bg)]">
               {row.getVisibleCells().map((cell) => {
                 const meta = cell.column.columnDef.meta as ColMeta
                 return (
@@ -448,7 +448,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
           ))}
         </tbody>
         <tfoot className="sticky bottom-0">
-          <tr style={{ backgroundColor: '#0D0D0D' }} className="font-bold">
+          <tr style={{ backgroundColor: 'var(--yuda-accent)' }} className="font-bold">
             {COLUMNAS.map((col) => {
               let contenido = ''
               if (col.id === 'supplier_nombre') contenido = `${t('packing.totales')}:`
@@ -458,7 +458,7 @@ function PackingListTable({ items, sesion_id, onItemActualizado }: PackingListTa
               else if (col.id === 't_cbm') contenido = totales.t_cbm.toFixed(6)
               const meta = col.meta
               const estilo = estiloCelda(meta, false)
-              estilo.backgroundColor = '#0D0D0D'
+              estilo.backgroundColor = 'var(--yuda-accent)'
               return (
                 <td
                   key={col.id}

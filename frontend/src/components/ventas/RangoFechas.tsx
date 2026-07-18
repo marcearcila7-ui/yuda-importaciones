@@ -30,7 +30,7 @@ function rangoDePreset(p: Preset, desde: string, hasta: string): Rango {
 }
 
 const inputClase =
-  'rounded-lg border border-gray-200 px-2 py-1.5 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-2 py-1.5 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 function RangoFechas({
   onChange,
@@ -54,8 +54,8 @@ function RangoFechas({
 
   const chip = (activo: boolean): CSSProperties =>
     activo
-      ? { borderColor: '#4B52E8', backgroundColor: '#EEF0FD', color: '#4B52E8' }
-      : { borderColor: '#E5E7EB', color: '#6B7280' }
+      ? { borderColor: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
+      : { borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -71,7 +71,7 @@ function RangoFechas({
         </button>
       ))}
       {preset === 'custom' && (
-        <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
+        <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           <input
             type="date"
             value={desde}

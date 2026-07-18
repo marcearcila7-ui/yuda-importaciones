@@ -24,19 +24,19 @@ function MetricasVendedoras() {
 
   return (
     <section className="card">
-      <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+      <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
         {t('metricas.porVendedora')}
       </h2>
 
       {filas.length === 0 ? (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('metricas.sinVendedoras')}
         </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ color: '#6B7280' }}>
+              <tr style={{ color: 'var(--yuda-text-secondary)' }}>
                 <th className="px-3 py-2 text-left font-semibold">{t('metricas.vendedora')}</th>
                 <th className="px-3 py-2 text-right font-semibold">{t('metricas.cotizaciones')}</th>
                 <th className="px-3 py-2 text-right font-semibold">{t('historial.items')}</th>
@@ -46,20 +46,20 @@ function MetricasVendedoras() {
             </thead>
             <tbody>
               {filas.map((f) => (
-                <tr key={f.user_id} style={{ borderTop: '1px solid #EEF0FD' }}>
-                  <td className="px-3 py-2 font-medium" style={{ color: '#0D0D0D' }}>{f.nombre}</td>
-                  <td className="px-3 py-2 text-right" style={{ color: '#0D0D0D' }}>{f.total_sesiones}</td>
-                  <td className="px-3 py-2 text-right" style={{ color: '#0D0D0D' }}>{f.total_items}</td>
-                  <td className="px-3 py-2 text-right" style={{ color: '#0D0D0D' }}>¥ {fmt(f.total_rmb)}</td>
-                  <td className="px-3 py-2 text-right" style={{ color: '#0D0D0D' }}>$ {fmt(f.total_usd)}</td>
+                <tr key={f.user_id} style={{ borderTop: '1px solid var(--yuda-primary-soft)' }}>
+                  <td className="px-3 py-2 font-medium" style={{ color: 'var(--yuda-accent)' }}>{f.nombre}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>{f.total_sesiones}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>{f.total_items}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>¥ {fmt(f.total_rmb)}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>$ {fmt(f.total_usd)}</td>
                 </tr>
               ))}
-              <tr style={{ borderTop: '2px solid #4B52E8' }}>
-                <td className="px-3 py-2 font-bold" style={{ color: '#4B52E8' }}>{t('metricas.totalGeneral')}</td>
-                <td className="px-3 py-2 text-right font-bold" style={{ color: '#4B52E8' }}>{totalCotizaciones}</td>
-                <td className="px-3 py-2 text-right font-bold" style={{ color: '#4B52E8' }}>{totalItems}</td>
-                <td className="px-3 py-2 text-right font-bold" style={{ color: '#4B52E8' }}>¥ {fmt(totalRmb)}</td>
-                <td className="px-3 py-2 text-right font-bold" style={{ color: '#4B52E8' }}>$ {fmt(totalUsd)}</td>
+              <tr style={{ borderTop: '2px solid var(--yuda-primary)' }}>
+                <td className="px-3 py-2 font-bold" style={{ color: 'var(--yuda-primary)' }}>{t('metricas.totalGeneral')}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>{totalCotizaciones}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>{totalItems}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>¥ {fmt(totalRmb)}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>$ {fmt(totalUsd)}</td>
               </tr>
             </tbody>
           </table>

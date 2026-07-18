@@ -31,17 +31,17 @@ ${t('clientes.password')}: ${cliente.password_inicial}`
   }
 
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: '#F5F5F0', border: '1px solid #10B981' }}>
-      <p className="mb-1" style={{ fontWeight: 700, fontSize: 15, color: '#0D0D0D' }}>
+    <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--yuda-bg)', border: '1px solid var(--yuda-success)' }}>
+      <p className="mb-1" style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>
         {t('clientes.credencialesTitulo')}
       </p>
-      <p className="mb-3 text-sm" style={{ color: '#6B7280' }}>
+      <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('clientes.credencialesAviso')}
       </p>
-      <div className="grid gap-1 text-sm" style={{ color: '#374151' }}>
+      <div className="grid gap-1 text-sm" style={{ color: 'var(--yuda-text)' }}>
         <p>
           <strong>{t('clientes.portalLink')}:</strong>{' '}
-          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all" style={{ color: '#4B52E8' }}>
+          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all" style={{ color: 'var(--yuda-primary)' }}>
             {portalUrl}
           </a>
         </p>
@@ -58,13 +58,13 @@ ${t('clientes.password')}: ${cliente.password_inicial}`
           type="button"
           onClick={copiar}
           className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
-          style={{ backgroundColor: '#10B981' }}
+          style={{ backgroundColor: 'var(--yuda-success)' }}
         >
           {copiado ? <Check size={16} /> : <Copy size={16} />}{' '}
           {copiado ? t('clientes.copiado') : t('clientes.copiar')}
         </button>
         {onCerrar && (
-          <button type="button" onClick={onCerrar} className="rounded-lg px-3 py-2 text-sm font-medium" style={{ color: '#6B7280' }}>
+          <button type="button" onClick={onCerrar} className="rounded-lg px-3 py-2 text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('clientes.cerrar')}
           </button>
         )}

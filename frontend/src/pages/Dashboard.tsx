@@ -36,9 +36,9 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{titulo}</h1>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{titulo}</h1>
         {/* La fecha en mobile se muestra en el saludo personalizado */}
-        <p className="hidden text-sm sm:block" style={{ color: '#6B7280' }}>
+        <p className="hidden text-sm sm:block" style={{ color: 'var(--yuda-text-secondary)' }}>
           {fechaCap}
         </p>
       </div>
@@ -51,7 +51,7 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
 function SectionCard({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section className="card">
-      <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+      <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
         {titulo}
       </h2>
       {children}
@@ -63,10 +63,10 @@ function SectionCard({ titulo, children }: { titulo: string; children: ReactNode
 function GroupHeading({ texto }: { texto: string }) {
   return (
     <div className="mt-2 flex items-center gap-3">
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: '#6B7280' }}>
+      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: 'var(--yuda-text-secondary)' }}>
         {texto.toUpperCase()}
       </span>
-      <span className="h-px flex-1" style={{ backgroundColor: '#E5E7EB' }} />
+      <span className="h-px flex-1" style={{ backgroundColor: 'var(--yuda-border)' }} />
     </div>
   )
 }
@@ -179,7 +179,7 @@ function Dashboard() {
           sesionActual ? (
             <span
               className="rounded-full px-4 py-2 text-sm font-semibold text-white"
-              style={{ backgroundColor: '#4B52E8' }}
+              style={{ backgroundColor: 'var(--yuda-primary)' }}
             >
               {sesionActual.nombre_cliente}
             </span>
@@ -190,10 +190,10 @@ function Dashboard() {
       {/* Saludo personalizado: solo mobile */}
       {usuario && (
         <div className="sm:hidden">
-          <h2 style={{ fontWeight: 700, fontSize: 20, color: '#0D0D0D' }}>
+          <h2 style={{ fontWeight: 700, fontSize: 20, color: 'var(--yuda-accent)' }}>
             {t('dashboard.saludo', { nombre: usuario.nombre })}
           </h2>
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {saludoFecha}
           </p>
         </div>
@@ -202,12 +202,12 @@ function Dashboard() {
       {/* Métricas del mes (solo Marcela / admin) */}
       {esAdmin && metricas && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono={<ShoppingBag size={20} />} color="#4B52E8" />
-          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono={<Coins size={20} />} color="#F59E0B" />
-          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono={<DollarSign size={20} />} color="#10B981" />
-          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono={<Package size={20} />} color="#4B52E8" />
-          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono={<Store size={20} />} color="#0D0D0D" />
-          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono={<FileText size={20} />} color="#4B52E8" />
+          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono={<ShoppingBag size={20} />} color="var(--yuda-primary)" />
+          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
+          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono={<DollarSign size={20} />} color="var(--yuda-success)" />
+          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono={<Package size={20} />} color="var(--yuda-primary)" />
+          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono={<Store size={20} />} color="var(--yuda-accent)" />
+          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono={<FileText size={20} />} color="var(--yuda-primary)" />
         </div>
       )}
 
@@ -223,9 +223,9 @@ function Dashboard() {
           {/* Barra de la cotización abierta: cuál es + cerrarla */}
           <div
             className="flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-3"
-            style={{ backgroundColor: '#EEF0FD' }}
+            style={{ backgroundColor: 'var(--yuda-primary-soft)' }}
           >
-            <p className="text-sm" style={{ color: '#4B52E8' }}>
+            <p className="text-sm" style={{ color: 'var(--yuda-primary)' }}>
               {t('dashboard.cotizacionAbierta')}{' '}
               <strong>{sesionActual.nombre_cliente}</strong>
             </p>
@@ -233,7 +233,7 @@ function Dashboard() {
               type="button"
               onClick={volverAlInicio}
               className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
-              style={{ borderColor: '#4B52E8', color: '#4B52E8', backgroundColor: '#FFFFFF' }}
+              style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
             >
               <X size={15} /> {t('dashboard.cerrarCotizacion')}
             </button>
@@ -277,7 +277,7 @@ function Dashboard() {
           <GroupHeading texto={t('dashboard.grupoProveedores')} />
 
           <SectionCard titulo={t('dashboard.generarPedidos')}>
-            <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
+            <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('dashboard.generarPedidosAyuda')}
             </p>
             <GenerarPedidos
@@ -291,7 +291,7 @@ function Dashboard() {
           <GroupHeading texto={t('dashboard.grupoInterno')} />
 
           <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
-            <p className="mb-4 text-sm" style={{ color: '#6B7280' }}>
+            <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('dashboard.exportarPackingAyuda')}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -299,7 +299,7 @@ function Dashboard() {
                 type="button"
                 onClick={() => descargarPacking('excel')}
                 className="flex items-center justify-center gap-2 font-semibold text-white"
-                style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px' }}
+                style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
               >
                 <Download size={18} /> {t('dashboard.exportarPacking')}
               </button>
@@ -307,7 +307,7 @@ function Dashboard() {
                 type="button"
                 onClick={() => descargarPacking('pdf')}
                 className="flex items-center justify-center gap-2 font-semibold text-white"
-                style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px' }}
+                style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
               >
                 <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
               </button>

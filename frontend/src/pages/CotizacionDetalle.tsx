@@ -109,7 +109,7 @@ function CotizacionDetalle() {
           type="button"
           onClick={() => navigate(volverA)}
           className="flex items-center gap-2 text-sm font-medium"
-          style={{ color: '#4B52E8' }}
+          style={{ color: 'var(--yuda-primary)' }}
         >
           <ArrowLeft size={16} /> {rol === 'vendedora' ? t('detalle.volverClientes') : t('detalle.volver')}
         </button>
@@ -118,7 +118,7 @@ function CotizacionDetalle() {
             type="button"
             onClick={() => navigate('/dashboard', { state: { sesion_id: id } })}
             className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium"
-            style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+            style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
           >
             <Pencil size={15} /> {t('detalle.editarPanel')}
           </button>
@@ -126,40 +126,40 @@ function CotizacionDetalle() {
       </div>
 
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>
           {sesion?.nombre_cliente ?? t('detalle.titulo')}
         </h1>
         {sesion && (
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {sesion.fecha} · {t('detalle.tipoCambio')}: {sesion.tipo_cambio_usd}
           </p>
         )}
       </div>
 
       {cargando ? (
-        <p className="text-center" style={{ color: '#6B7280' }}>
+        <p className="text-center" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('detalle.cargando')}
         </p>
       ) : !sesion ? (
-        <p className="text-center" style={{ color: '#6B7280' }}>
+        <p className="text-center" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('detalle.noEncontrada')}
         </p>
       ) : (
         <>
           {/* Totales */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <MetricCard titulo={t('historial.items')} valor={items.length} icono={<Package size={20} />} color="#4B52E8" />
-            <MetricCard titulo={t('historial.totalRmb')} valor={`¥ ${fmt(totales.totalRmb)}`} icono={<Coins size={20} />} color="#F59E0B" />
-            <MetricCard titulo={t('historial.totalUsd')} valor={`$ ${fmt(totales.totalUsd)}`} icono={<DollarSign size={20} />} color="#10B981" />
-            <MetricCard titulo={t('historial.proveedores')} valor={totales.proveedores} icono={<Store size={20} />} color="#0D0D0D" />
+            <MetricCard titulo={t('historial.items')} valor={items.length} icono={<Package size={20} />} color="var(--yuda-primary)" />
+            <MetricCard titulo={t('historial.totalRmb')} valor={`¥ ${fmt(totales.totalRmb)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
+            <MetricCard titulo={t('historial.totalUsd')} valor={`$ ${fmt(totales.totalUsd)}`} icono={<DollarSign size={20} />} color="var(--yuda-success)" />
+            <MetricCard titulo={t('historial.proveedores')} valor={totales.proveedores} icono={<Store size={20} />} color="var(--yuda-accent)" />
           </div>
 
           {/* Descargar la cotización (PDF / Excel) — para Marcela y la contadora */}
           {items.length > 0 && (
             <section className="card flex flex-col gap-3">
-              <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('detalle.descargarTitulo')}</h2>
+              <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('detalle.descargarTitulo')}</h2>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm" style={{ color: '#6B7280' }}>{t('detalle.idioma')}:</span>
+                <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.idioma')}:</span>
                 {IDIOMAS.map((op) => (
                   <button
                     key={op.code}
@@ -168,8 +168,8 @@ function CotizacionDetalle() {
                     className="rounded-lg border px-3 py-1.5 text-sm font-medium"
                     style={
                       idioma === op.code
-                        ? { borderColor: '#4B52E8', backgroundColor: '#EEF0FD', color: '#4B52E8' }
-                        : { borderColor: '#E5E7EB', color: '#6B7280' }
+                        ? { borderColor: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
+                        : { borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }
                     }
                   >
                     {op.label}
@@ -182,7 +182,7 @@ function CotizacionDetalle() {
                   onClick={() => descargar('pdf')}
                   disabled={generando !== null}
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: '#4B52E8', fontSize: 16, padding: '0 20px' }}
+                  style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
                 >
                   <FileText size={18} /> {generando === 'pdf' ? t('detalle.generando') : t('detalle.descargarPdf')}
                 </button>
@@ -191,7 +191,7 @@ function CotizacionDetalle() {
                   onClick={() => descargar('excel')}
                   disabled={generando !== null}
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: '#10B981', fontSize: 16, padding: '0 20px' }}
+                  style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16, padding: '0 20px' }}
                 >
                   <FileSpreadsheet size={18} /> {generando === 'excel' ? t('detalle.generando') : t('detalle.descargarExcel')}
                 </button>
@@ -202,23 +202,23 @@ function CotizacionDetalle() {
           {/* Ficha del cliente (solo lectura) */}
           {cliente && (
             <section className="card">
-              <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+              <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
                 {t('detalle.cliente')}
               </h2>
-              <div className="grid gap-2 text-sm sm:grid-cols-2" style={{ color: '#374151' }}>
+              <div className="grid gap-2 text-sm sm:grid-cols-2" style={{ color: 'var(--yuda-text)' }}>
                 <p className="flex items-center gap-2">
-                  <Building2 size={15} style={{ color: '#6B7280' }} />
+                  <Building2 size={15} style={{ color: 'var(--yuda-text-secondary)' }} />
                   <strong>{cliente.nombre}</strong>
                   {cliente.empresa ? ` · ${cliente.empresa}` : ''}
                 </p>
                 {cliente.email && (
                   <p className="flex items-center gap-2">
-                    <Mail size={15} style={{ color: '#6B7280' }} /> {cliente.email}
+                    <Mail size={15} style={{ color: 'var(--yuda-text-secondary)' }} /> {cliente.email}
                   </p>
                 )}
                 {cliente.telefono && (
                   <p className="flex items-center gap-2">
-                    <Phone size={15} style={{ color: '#6B7280' }} /> {cliente.telefono}
+                    <Phone size={15} style={{ color: 'var(--yuda-text-secondary)' }} /> {cliente.telefono}
                   </p>
                 )}
                 {cliente.pais && <p className="flex items-center gap-2">📍 {cliente.pais}</p>}
@@ -231,16 +231,16 @@ function CotizacionDetalle() {
 
           {/* Productos (solo lectura) */}
           <section className="card overflow-x-auto p-0">
-            <h2 className="px-4 pt-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            <h2 className="px-4 pt-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('detalle.productos')}
             </h2>
             {items.length === 0 ? (
-              <p className="px-4 py-6 text-center" style={{ color: '#6B7280' }}>
+              <p className="px-4 py-6 text-center" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('detalle.sinProductos')}
               </p>
             ) : (
               <table className="mt-3 w-full text-sm">
-                <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
+                <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold">{t('detalle.descripcion')}</th>
                     <th className="px-4 py-3 text-left font-semibold">{t('detalle.proveedor')}</th>
@@ -252,7 +252,7 @@ function CotizacionDetalle() {
                 </thead>
                 <tbody>
                   {items.map((item, i) => (
-                    <tr key={item.id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                    <tr key={item.id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                       <td className="px-4 py-3 font-medium">
                         {item.descripcion_es || item.descripcion_en || item.item_no || '—'}
                       </td>
@@ -270,13 +270,13 @@ function CotizacionDetalle() {
 
           {/* Estado del envío / tracking (solo lectura, con la evidencia por etapa) */}
           <section className="card">
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('detalle.envio')}
             </h2>
             {seguimiento ? (
               <SeguimientoTimeline seguimiento={seguimiento} />
             ) : (
-              <p className="text-sm" style={{ color: '#6B7280' }}>
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('detalle.sinEnvio')}
               </p>
             )}

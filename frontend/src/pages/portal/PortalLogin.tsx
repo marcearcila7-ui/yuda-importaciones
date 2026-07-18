@@ -6,8 +6,8 @@ import { usePortalStore } from '../../store/portalStore'
 
 const inputBase: CSSProperties = { padding: '12px 0', fontSize: 16 }
 const inputClase =
-  'w-full border-0 border-b border-[#E5E7EB] bg-transparent focus:border-[#4B52E8] focus:outline-none'
-const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: '#374151', display: 'block' }
+  'w-full border-0 border-b border-[var(--yuda-border)] bg-transparent focus:border-[var(--yuda-primary)] focus:outline-none'
+const labelStyle: CSSProperties = { fontSize: 14, fontWeight: 500, color: 'var(--yuda-text)', display: 'block' }
 
 const IDIOMAS = [
   { code: 'es', label: 'ES' },
@@ -54,8 +54,8 @@ function PortalLogin() {
               onClick={() => cambiarIdioma(idi.code)}
               style={{
                 borderRadius: 6,
-                backgroundColor: activo ? '#4B52E8' : 'transparent',
-                color: activo ? '#FFFFFF' : '#6B7280',
+                backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+                color: activo ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
                 padding: '4px 10px',
                 fontSize: 13,
                 fontWeight: 600,
@@ -77,14 +77,14 @@ function PortalLogin() {
           <div className="text-center">
             <span
               className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
-              style={{ backgroundColor: '#D1FAE5', color: '#047857' }}
+              style={{ backgroundColor: 'var(--yuda-success-soft)', color: '#047857' }}
             >
               {t('portal.accesoPortal')}
             </span>
-            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 26, color: '#0D0D0D' }}>
+            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 26, color: 'var(--yuda-accent)' }}>
               {t('portal.bienvenida')}
             </h1>
-            <p style={{ fontSize: 14, color: '#6B7280', marginTop: 4 }}>{t('portal.credenciales')}</p>
+            <p style={{ fontSize: 14, color: 'var(--yuda-text-secondary)', marginTop: 4 }}>{t('portal.credenciales')}</p>
           </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 28 }}>
@@ -119,13 +119,13 @@ function PortalLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-8 w-full rounded-lg bg-[#4B52E8] font-semibold text-white hover:bg-[#3840C7] disabled:opacity-60"
+              className="mt-8 w-full rounded-lg bg-[var(--yuda-primary)] font-semibold text-white hover:bg-[var(--yuda-primary-dark)] disabled:opacity-60"
               style={{ height: 52, fontSize: 16 }}
             >
               {isLoading ? t('login.ingresando') : t('login.ingresar')}
             </button>
 
-            {error && <p style={{ color: '#EF4444', fontSize: 14, marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ color: 'var(--yuda-error)', fontSize: 14, marginTop: 12 }}>{error}</p>}
           </form>
         </div>
       </div>

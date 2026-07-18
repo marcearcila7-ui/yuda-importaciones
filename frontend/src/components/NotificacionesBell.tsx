@@ -72,14 +72,14 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
         type="button"
         onClick={() => setAbierto((v) => !v)}
         className="relative flex h-9 w-9 items-center justify-center rounded-full"
-        style={{ backgroundColor: '#F3F4F6', color: '#374151' }}
+        style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-text)' }}
         aria-label={t('notif.titulo')}
       >
         <Bell size={18} />
         {noLeidas > 0 && (
           <span
             className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-xs font-bold text-white"
-            style={{ backgroundColor: '#EF4444' }}
+            style={{ backgroundColor: 'var(--yuda-error)' }}
           >
             {noLeidas > 9 ? '9+' : noLeidas}
           </span>
@@ -94,7 +94,7 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
           style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <p className="text-sm font-bold" style={{ color: '#0D0D0D' }}>
+            <p className="text-sm font-bold" style={{ color: 'var(--yuda-accent)' }}>
               {t('notif.titulo')}
             </p>
             {noLeidas > 0 && (
@@ -102,7 +102,7 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
                 type="button"
                 onClick={leerTodas}
                 className="flex items-center gap-1 text-xs font-medium"
-                style={{ color: '#4B52E8' }}
+                style={{ color: 'var(--yuda-primary)' }}
               >
                 <Check size={14} /> {t('notif.marcarTodas')}
               </button>
@@ -110,7 +110,7 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm" style={{ color: '#6B7280' }}>
+              <p className="px-4 py-6 text-center text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('notif.sinAvisos')}
               </p>
             ) : (
@@ -120,22 +120,22 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
                   type="button"
                   onClick={() => leerUna(n)}
                   className="flex w-full flex-col gap-1 border-b border-gray-50 px-4 py-3 text-left"
-                  style={{ backgroundColor: n.leida ? '#FFFFFF' : '#EEF0FD' }}
+                  style={{ backgroundColor: n.leida ? 'var(--yuda-white)' : 'var(--yuda-primary-soft)' }}
                 >
                   <div className="flex items-center gap-2">
                     {!n.leida && (
-                      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: '#4B52E8' }} />
+                      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-primary)' }} />
                     )}
-                    <span className="text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+                    <span className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                       {n.titulo}
                     </span>
                   </div>
                   {n.mensaje && (
-                    <span className="text-xs" style={{ color: '#6B7280' }}>
+                    <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                       {n.mensaje}
                     </span>
                   )}
-                  <span className="text-xs" style={{ color: '#6B7280' }}>
+                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                     {new Date(n.created_at).toLocaleString(locale)}
                   </span>
                 </button>

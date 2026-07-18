@@ -76,8 +76,8 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
 
   return (
     <div className="card flex flex-col gap-4">
-      <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('cotizacion.titulo')}</h2>
-      <p className="text-sm" style={{ color: '#6B7280' }}>{t('cotizacion.ayuda')}</p>
+      <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('cotizacion.titulo')}</h2>
+      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('cotizacion.ayuda')}</p>
 
       {/* Selector de idioma */}
       <div className="flex gap-1">
@@ -90,8 +90,8 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
               onClick={() => setIdioma(idi.code)}
               style={{
                 borderRadius: 6,
-                backgroundColor: activo ? '#4B52E8' : 'transparent',
-                color: activo ? '#FFFFFF' : '#6B7280',
+                backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+                color: activo ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
                 padding: '6px 14px',
                 fontSize: 14,
                 fontWeight: 600,
@@ -104,39 +104,39 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
       </div>
 
       {/* Antes de generar: confirmar extracción y fotos según su propósito */}
-      <div className="rounded-xl border p-3" style={{ borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}>
-        <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+      <div className="rounded-xl border p-3" style={{ borderColor: 'var(--yuda-border)', backgroundColor: '#F9FAFB' }}>
+        <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
           {t('cotizacion.confirmTitulo')}
         </p>
         {sinProductos ? (
-          <p className="flex items-center gap-2 text-sm" style={{ color: '#B45309' }}>
+          <p className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
             <AlertTriangle size={15} /> {t('cotizacion.sinProductos')}
           </p>
         ) : (
           <div className="flex flex-col gap-1.5 text-sm">
-            <p style={{ color: '#6B7280' }}>{t('cotizacion.prodCount', { n: items.length })}</p>
+            <p style={{ color: 'var(--yuda-text-secondary)' }}>{t('cotizacion.prodCount', { n: items.length })}</p>
             {/* Foto de datos (obligatoria) */}
             {sinFotoDatos > 0 ? (
-              <p className="flex items-center gap-2" style={{ color: '#EF4444' }}>
+              <p className="flex items-center gap-2" style={{ color: 'var(--yuda-error)' }}>
                 <AlertTriangle size={15} /> {t('cotizacion.faltaFotoDatos', { n: sinFotoDatos })}
               </p>
             ) : (
-              <p className="flex items-center gap-2" style={{ color: '#10B981' }}>
+              <p className="flex items-center gap-2" style={{ color: 'var(--yuda-success)' }}>
                 <CheckCircle2 size={15} /> {t('cotizacion.fotoDatosOk')}
               </p>
             )}
             {/* Extracción de datos */}
             {sinDatos > 0 && (
-              <p className="flex items-center gap-2" style={{ color: '#B45309' }}>
+              <p className="flex items-center gap-2" style={{ color: 'var(--yuda-warning-dark)' }}>
                 <AlertTriangle size={15} /> {t('cotizacion.revisarDatos', { n: sinDatos })}
               </p>
             )}
             {/* Foto final (opcional, con respaldo) */}
-            <p style={{ color: '#6B7280' }}>
+            <p style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('cotizacion.fotoFinalResumen', { con: conFotoFinal, sin: items.length - conFotoFinal })}
             </p>
             {/* Confirmación explícita */}
-            <label className="mt-1 flex items-start gap-2" style={{ color: '#0D0D0D' }}>
+            <label className="mt-1 flex items-start gap-2" style={{ color: 'var(--yuda-accent)' }}>
               <input
                 type="checkbox"
                 checked={confirmado}
@@ -155,7 +155,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           onClick={() => descargar('excel')}
           disabled={generando !== null || bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
-          style={{ ...btnDescarga, backgroundColor: '#10B981' }}
+          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-success)' }}
         >
           {generando === 'excel' ? (
             t('cotizacion.generando')
@@ -170,7 +170,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           onClick={() => descargar('pdf')}
           disabled={generando !== null || bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
-          style={{ ...btnDescarga, backgroundColor: '#4B52E8' }}
+          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-primary)' }}
         >
           {generando === 'pdf' ? (
             t('cotizacion.generando')
@@ -182,7 +182,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
         </button>
       </div>
 
-      {error && <p className="text-center text-sm" style={{ color: '#EF4444' }}>{error}</p>}
+      {error && <p className="text-center text-sm" style={{ color: 'var(--yuda-error)' }}>{error}</p>}
     </div>
   )
 }

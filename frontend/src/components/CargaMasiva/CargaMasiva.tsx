@@ -15,7 +15,7 @@ const MAX_LOTE = 100
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'rounded-lg border border-gray-200 px-2 py-1 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-2 py-1 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 // Campo con etiqueta VISIBLE siempre (no placeholder que desaparece al llenarse),
 // para que se sepa qué dato es cada uno.
@@ -33,7 +33,7 @@ function CampoLote({
   ancho?: string
 }) {
   return (
-    <label className={`flex flex-col gap-0.5 text-xs ${ancho ?? ''}`} style={{ color: '#374151' }}>
+    <label className={`flex flex-col gap-0.5 text-xs ${ancho ?? ''}`} style={{ color: 'var(--yuda-text)' }}>
       <span className="font-medium">{label}</span>
       <input
         type={tipo}
@@ -47,9 +47,9 @@ function CampoLote({
 }
 
 function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
-  if (c === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, texto: t('ocr.confianzaAlta') }
-  if (c === 'media') return { style: { backgroundColor: '#FEF3C7', color: '#B45309' }, texto: t('ocr.confianzaMedia') }
-  return { style: { backgroundColor: '#FEE2E2', color: '#EF4444' }, texto: t('ocr.confianzaBaja') }
+  if (c === 'alta') return { style: { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }, texto: t('ocr.confianzaAlta') }
+  if (c === 'media') return { style: { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }, texto: t('ocr.confianzaMedia') }
+  return { style: { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }, texto: t('ocr.confianzaBaja') }
 }
 
 function CargaMasiva() {
@@ -186,7 +186,7 @@ function CargaMasiva() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <p className="text-sm" style={{ color: '#6B7280' }}>
+      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('lote.instruccion', { max: MAX_LOTE })}
       </p>
 
@@ -213,17 +213,17 @@ function CargaMasiva() {
           type="button"
           onClick={() => inputRef.current?.click()}
           className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white"
-          style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+          style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16 }}
         >
           <Images size={18} /> {t('lote.seleccionar')}
         </button>
       )}
 
-      {aviso && <p className="text-sm" style={{ color: '#B45309' }}>{aviso}</p>}
+      {aviso && <p className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>{aviso}</p>}
 
       {/* Fotos que no llegaron a subir (red/servidor) — no se pierden en silencio */}
       {erroresSubida > 0 && (
-        <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
+        <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }}>
           {t('lote.fallidasSubida', { n: erroresSubida })}
         </p>
       )}
@@ -231,7 +231,7 @@ function CargaMasiva() {
       {/* Paso 2: selección en curso — armar la tanda y luego procesar */}
       {fase === 'seleccion' && (
         <div className="flex flex-col gap-4">
-          <p className="text-sm font-medium" style={{ color: '#0D0D0D' }}>
+          <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
             {t('lote.listas', { n: seleccionadas.length })}
           </p>
 
@@ -240,7 +240,7 @@ function CargaMasiva() {
               <div
                 key={f.id}
                 className="relative aspect-square overflow-hidden rounded-xl border"
-                style={{ borderColor: '#E5E7EB' }}
+                style={{ borderColor: 'var(--yuda-border)' }}
               >
                 <img src={f.preview} alt="" className="h-full w-full object-cover" />
                 <button
@@ -260,7 +260,7 @@ function CargaMasiva() {
               type="button"
               onClick={() => inputRef.current?.click()}
               className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed"
-              style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+              style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
             >
               <Plus size={24} />
               <span className="text-xs font-semibold">{t('lote.agregar')}</span>
@@ -273,7 +273,7 @@ function CargaMasiva() {
               onClick={procesarSeleccion}
               disabled={seleccionadas.length === 0}
               className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+              style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16 }}
             >
               <Sparkles size={18} /> {t('lote.procesar', { n: seleccionadas.length })}
             </button>
@@ -281,7 +281,7 @@ function CargaMasiva() {
               type="button"
               onClick={cancelarSeleccion}
               className="min-h-[52px] rounded-lg font-medium sm:px-6"
-              style={{ color: '#6B7280' }}
+              style={{ color: 'var(--yuda-text-secondary)' }}
             >
               {t('lote.descartar')}
             </button>
@@ -292,16 +292,16 @@ function CargaMasiva() {
       {/* Progreso (subiendo o procesando) */}
       {enProgreso && (
         <div>
-          <p className="mb-2 text-sm font-medium" style={{ color: '#0D0D0D' }}>
+          <p className="mb-2 text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
             {fase === 'subiendo'
               ? t('lote.subiendo', { hechas: subidas, total: totalSubir })
               : t('lote.procesando', { hechas: procesadas, total: totalProc })}
           </p>
-          <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: '#EEF0FD' }}>
-            <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#4B52E8' }} />
+          <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+            <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: 'var(--yuda-primary)' }} />
           </div>
           {fase === 'procesando' && (
-            <p className="mt-2 text-xs" style={{ color: '#6B7280' }}>
+            <p className="mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('lote.segundoPlano')}
             </p>
           )}
@@ -310,15 +310,15 @@ function CargaMasiva() {
 
       {/* Fotos que fallaron (con reintento) */}
       {fase === 'completado' && errores > 0 && (
-        <div className="rounded-xl p-3" style={{ backgroundColor: '#FEE2E2' }}>
-          <p className="mb-2 text-sm font-semibold" style={{ color: '#EF4444' }}>
+        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-error-soft)' }}>
+          <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-error)' }}>
             {t('lote.fallidasTitulo', { n: errores })}
           </p>
           <button
             type="button"
             onClick={reintentar}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
-            style={{ backgroundColor: '#EF4444' }}
+            style={{ backgroundColor: 'var(--yuda-error)' }}
           >
             <RefreshCw size={16} /> {t('lote.reintentar')}
           </button>
@@ -330,10 +330,10 @@ function CargaMasiva() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>
+              <h3 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
                 {t('lote.revisar', { n: resultados.length })}
               </h3>
-              <p className="text-xs" style={{ color: '#6B7280' }}>{t('ocr.revisarAyuda')}</p>
+              <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ocr.revisarAyuda')}</p>
             </div>
             <button
               type="button"
@@ -346,14 +346,14 @@ function CargaMasiva() {
                 if (ok) finalizar()
               }}
               className="text-sm font-medium"
-              style={{ color: '#6B7280' }}
+              style={{ color: 'var(--yuda-text-secondary)' }}
             >
               {t('lote.descartar')}
             </button>
           </div>
 
           {noLegibles > 0 && (
-            <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: '#B91C1C' }}>
+            <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }}>
               {t('lote.noLegibles', { n: noLegibles })}
             </p>
           )}
@@ -365,7 +365,7 @@ function CargaMasiva() {
               <div
                 key={r.id}
                 className="flex flex-col gap-3 rounded-xl border p-3"
-                style={{ borderColor: legibilidad.ok ? '#E5E7EB' : '#FCA5A5' }}
+                style={{ borderColor: legibilidad.ok ? 'var(--yuda-border)' : '#FCA5A5' }}
               >
               {/* Fila: foto + confianza + quitar */}
               <div className="flex items-center gap-3">
@@ -377,7 +377,7 @@ function CargaMasiva() {
                 <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chip.style}>
                   {chip.texto}
                 </span>
-                <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} className="ml-auto" style={{ color: '#EF4444' }}>
+                <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} className="ml-auto" style={{ color: 'var(--yuda-error)' }}>
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -400,7 +400,7 @@ function CargaMasiva() {
                 type="button"
                 onClick={() => toggleExpandido(r.id)}
                 className="flex items-center gap-1 self-start text-xs font-semibold"
-                style={{ color: '#4B52E8' }}
+                style={{ color: 'var(--yuda-primary)' }}
               >
                 {expandidos.has(r.id) ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 {expandidos.has(r.id) ? t('ocr.verMenos') : t('ocr.verMas')}
@@ -441,7 +441,7 @@ function CargaMasiva() {
             onClick={() => inputMasRef.current?.click()}
             disabled={agregando}
             className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold disabled:opacity-60"
-            style={{ backgroundColor: '#EEF0FD', color: '#4B52E8', fontSize: 16 }}
+            style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)', fontSize: 16 }}
           >
             <Images size={18} /> {t('lote.agregarMas')}
           </button>
@@ -451,7 +451,7 @@ function CargaMasiva() {
             onClick={agregarTodos}
             disabled={agregando || legibles.length === 0}
             className="min-h-[52px] w-full rounded-lg font-semibold text-white disabled:opacity-60"
-            style={{ backgroundColor: '#10B981', fontSize: 16 }}
+            style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16 }}
           >
             {agregando ? t('lote.agregando') : t('lote.agregarTodos', { n: legibles.length })}
           </button>

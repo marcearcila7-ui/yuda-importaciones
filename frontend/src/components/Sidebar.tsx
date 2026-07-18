@@ -30,17 +30,17 @@ function SelectorIdioma() {
             onClick={() => cambiar(idi.code)}
             style={{
               borderRadius: 6,
-              backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#6B7280',
+              backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+              color: activo ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
               padding: '4px 10px',
               fontSize: 13,
               fontWeight: 600,
             }}
             onMouseEnter={(e) => {
-              if (!activo) e.currentTarget.style.color = '#4B52E8'
+              if (!activo) e.currentTarget.style.color = 'var(--yuda-primary)'
             }}
             onMouseLeave={(e) => {
-              if (!activo) e.currentTarget.style.color = '#6B7280'
+              if (!activo) e.currentTarget.style.color = 'var(--yuda-text-secondary)'
             }}
           >
             {idi.label}
@@ -83,7 +83,7 @@ function Sidebar() {
 
   // Contenido del sidebar (compartido entre desktop y drawer mobile)
   const contenido = (
-    <div className="flex h-full flex-col border-r border-gray-200" style={{ backgroundColor: '#FFFFFF' }}>
+    <div className="flex h-full flex-col border-r border-gray-200" style={{ backgroundColor: 'var(--yuda-white)' }}>
       {/* Logo */}
       <div className="px-5 py-6">
         <img src="/logoyuda.png" alt="YUDA Importaciones" style={{ height: 36, width: 'auto' }} />
@@ -100,11 +100,11 @@ function Sidebar() {
               className="flex items-center gap-3 px-3 py-3 text-sm font-medium transition-colors"
               style={{
                 borderRadius: 8,
-                backgroundColor: activo ? '#4B52E8' : 'transparent',
-                color: activo ? '#FFFFFF' : '#374151',
+                backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+                color: activo ? 'var(--yuda-white)' : 'var(--yuda-text)',
               }}
               onMouseEnter={(e) => {
-                if (!activo) e.currentTarget.style.backgroundColor = '#EEF0FD'
+                if (!activo) e.currentTarget.style.backgroundColor = 'var(--yuda-primary-soft)'
               }}
               onMouseLeave={(e) => {
                 if (!activo) e.currentTarget.style.backgroundColor = 'transparent'
@@ -125,13 +125,13 @@ function Sidebar() {
         <div className="flex items-center gap-3">
           <span
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full font-bold text-white"
-            style={{ backgroundColor: '#4B52E8' }}
+            style={{ backgroundColor: 'var(--yuda-primary)' }}
           >
             {usuario?.nombre?.charAt(0).toUpperCase() ?? '?'}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold" style={{ color: '#0D0D0D' }}>{usuario?.nombre}</p>
-            <p className="truncate text-xs" style={{ color: '#6B7280' }}>
+            <p className="truncate text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>{usuario?.nombre}</p>
+            <p className="truncate text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
               {usuario?.rol ? t(`roles.${usuario.rol}`) : ''}
             </p>
           </div>
@@ -141,7 +141,7 @@ function Sidebar() {
           type="button"
           onClick={handleLogout}
           className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-medium"
-          style={{ backgroundColor: '#F3F4F6', color: '#374151', borderRadius: 8 }}
+          style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-text)', borderRadius: 8 }}
         >
           <LogOut size={18} /> {t('nav.cerrarSesion')}
         </button>

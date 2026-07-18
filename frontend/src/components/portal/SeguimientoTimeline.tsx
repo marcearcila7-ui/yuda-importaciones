@@ -48,8 +48,8 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
     <div className="flex flex-col gap-5">
       {/* Novedades destacadas */}
       {seguimiento.novedades && (
-        <div className="rounded-xl p-4" style={{ backgroundColor: '#FEF3C7' }}>
-          <p className="mb-1 text-sm font-semibold" style={{ color: '#B45309' }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
+          <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
             {t('seguimiento.novedades')}
           </p>
           <p className="text-sm" style={{ color: '#92400E', whiteSpace: 'pre-line' }}>
@@ -60,11 +60,11 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
 
       {/* Datos del envío */}
       {tieneEnvio && (
-        <div className="rounded-xl p-4" style={{ backgroundColor: '#EEF0FD' }}>
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: '#4B52E8' }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+          <p className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
             <Ship size={16} /> {t('seguimiento.datosEnvio')}
           </p>
-          <div className="grid gap-1 text-sm" style={{ color: '#374151' }}>
+          <div className="grid gap-1 text-sm" style={{ color: 'var(--yuda-text)' }}>
             {seguimiento.naviera && (
               <p>
                 <strong>{t('seguimiento.naviera')}:</strong> {seguimiento.naviera}
@@ -95,7 +95,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white"
-                style={{ backgroundColor: '#4B52E8' }}
+                style={{ backgroundColor: 'var(--yuda-primary)' }}
               >
                 <ExternalLink size={16} /> {t('seguimiento.consultarTracking')}
               </a>
@@ -106,7 +106,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
-                style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+                style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
               >
                 <FileText size={16} /> {t('seguimiento.verBl')}
               </a>
@@ -117,7 +117,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
 
       {/* Línea de tiempo */}
       <div>
-        <p className="mb-3 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+        <p className="mb-3 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
           {t('seguimiento.estadoEnvio')}
         </p>
         <div className="flex flex-col">
@@ -137,7 +137,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                     style={{
                       width: 18,
                       height: 18,
-                      backgroundColor: alcanzado ? '#4B52E8' : '#E5E7EB',
+                      backgroundColor: alcanzado ? 'var(--yuda-primary)' : 'var(--yuda-border)',
                       border: actual ? '3px solid #C7CBF7' : 'none',
                     }}
                   />
@@ -147,7 +147,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                         width: 2,
                         flex: 1,
                         minHeight: 28,
-                        backgroundColor: i < indiceActual ? '#4B52E8' : '#E5E7EB',
+                        backgroundColor: i < indiceActual ? 'var(--yuda-primary)' : 'var(--yuda-border)',
                       }}
                     />
                   )}
@@ -156,17 +156,17 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                 <div className="pb-4">
                   <p
                     className="text-sm"
-                    style={{ fontWeight: actual ? 700 : 500, color: alcanzado ? '#0D0D0D' : '#6B7280' }}
+                    style={{ fontWeight: actual ? 700 : 500, color: alcanzado ? 'var(--yuda-accent)' : 'var(--yuda-text-secondary)' }}
                   >
                     {t(`seguimiento.estados.${k}`)}
                   </p>
                   {cuando && (
-                    <p className="text-xs" style={{ color: '#6B7280' }}>
+                    <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                       {cuando}
                     </p>
                   )}
                   {hito?.nota && (
-                    <p className="text-xs" style={{ color: '#6B7280' }}>
+                    <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                       {hito.nota}
                     </p>
                   )}
@@ -179,7 +179,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                               src={a.url}
                               alt={a.nombre || ''}
                               className="rounded-lg border object-cover"
-                              style={{ width: 64, height: 64, borderColor: '#E5E7EB' }}
+                              style={{ width: 64, height: 64, borderColor: 'var(--yuda-border)' }}
                             />
                           </a>
                         ) : (
@@ -189,7 +189,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
-                            style={{ borderColor: '#4B52E8', color: '#4B52E8' }}
+                            style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
                           >
                             <FileText size={14} /> {a.nombre || t('envio.archivo')}
                           </a>

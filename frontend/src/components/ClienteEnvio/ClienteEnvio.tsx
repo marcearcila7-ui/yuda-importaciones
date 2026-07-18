@@ -17,7 +17,7 @@ interface Props {
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[#4B52E8] focus:outline-none'
+  'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
 
 function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClienteSesion }: Props) {
   const { t } = useTranslation()
@@ -124,7 +124,7 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm" style={{ color: '#6B7280' }}>
+      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('envio.intro')}
       </p>
 
@@ -134,7 +134,7 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
           {!creandoForm ? (
             <>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+                <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                   {t('envio.elegirCliente')}
                   <select
                     value={seleccion}
@@ -155,7 +155,7 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
                   onClick={asignar}
                   disabled={trabajando || !seleccion}
                   className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-                  style={{ minHeight: 44, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+                  style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
                 >
                   <LinkIcon size={18} /> {t('envio.asignar')}
                 </button>
@@ -167,14 +167,14 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
                   setCreandoForm(true)
                 }}
                 className="flex items-center gap-2 self-start text-sm font-semibold"
-                style={{ color: '#4B52E8' }}
+                style={{ color: 'var(--yuda-primary)' }}
               >
                 <UserPlus size={16} /> {t('dashboard.crearClienteNuevo')}
               </button>
             </>
           ) : (
             <div className="rounded-xl border border-gray-200 p-3">
-              <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+              <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                 {t('clientes.nuevo')}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -188,11 +188,11 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
                   onClick={crearClienteInline}
                   disabled={guardandoCliente}
                   className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
-                  style={{ minHeight: 40, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+                  style={{ minHeight: 40, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
                 >
                   <Plus size={16} /> {guardandoCliente ? t('clientes.creando') : t('clientes.crear')}
                 </button>
-                <button type="button" onClick={() => setCreandoForm(false)} className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                <button type="button" onClick={() => setCreandoForm(false)} className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
                   {t('clientes.cancelar')}
                 </button>
               </div>
@@ -202,18 +202,18 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
           {credenciales && <CredencialesCliente cliente={credenciales} onCerrar={() => setCredenciales(null)} />}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3" style={{ backgroundColor: '#EEF0FD' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
           <div className="flex items-center gap-2">
-            <UserCheck size={18} style={{ color: '#4B52E8' }} />
-            <span className="font-semibold" style={{ color: '#0D0D0D' }}>
+            <UserCheck size={18} style={{ color: 'var(--yuda-primary)' }} />
+            <span className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
               {clienteActual.nombre}
             </span>
-            <span className="text-sm" style={{ color: '#6B7280' }}>
+            <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {clienteActual.email}
             </span>
           </div>
           {!enviada && (
-            <button type="button" onClick={desvincular} className="text-sm font-medium" style={{ color: '#EF4444' }}>
+            <button type="button" onClick={desvincular} className="text-sm font-medium" style={{ color: 'var(--yuda-error)' }}>
               {t('envio.cambiar')}
             </button>
           )}
@@ -227,7 +227,7 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
           onClick={enviar}
           disabled={trabajando}
           className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-          style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, fontSize: 16 }}
+          style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, fontSize: 16 }}
         >
           <Send size={18} /> {t('envio.enviarBtn')}
         </button>
@@ -235,7 +235,7 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
 
       {/* Ya enviada: el seguimiento se gestiona en Clientes */}
       {clienteActual && enviada && (
-        <div className="rounded-xl p-3 text-sm" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+        <div className="rounded-xl p-3 text-sm" style={{ backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }}>
           <p className="flex items-center gap-2 font-semibold">
             <UserCheck size={16} /> {t('envio.yaEnviada')}
           </p>

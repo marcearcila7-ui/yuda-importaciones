@@ -36,12 +36,12 @@ class ErrorBoundary extends Component<Props, State> {
           padding: 24,
           textAlign: 'center',
           backgroundColor: '#F9F9F7',
-          color: '#0D0D0D',
+          color: 'var(--yuda-accent)',
         }}
       >
         <div style={{ fontSize: 40 }}>😕</div>
         <h1 style={{ fontWeight: 700, fontSize: 22 }}>Algo salió mal</h1>
-        <p style={{ color: '#6B7280', maxWidth: 360 }}>
+        <p style={{ color: 'var(--yuda-text-secondary)', maxWidth: 360 }}>
           Ocurrió un error inesperado. Recargá la página; si el problema sigue, avisá al equipo.
         </p>
         <button
@@ -50,7 +50,7 @@ class ErrorBoundary extends Component<Props, State> {
           style={{
             minHeight: 48,
             padding: '0 24px',
-            backgroundColor: '#4B52E8',
+            backgroundColor: 'var(--yuda-primary)',
             color: '#fff',
             border: 'none',
             borderRadius: 8,

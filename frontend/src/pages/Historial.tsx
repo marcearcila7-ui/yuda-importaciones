@@ -12,7 +12,7 @@ import type { SesionHistorial } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
@@ -114,23 +114,23 @@ function Historial() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('historial.titulo')}</h1>
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{t('historial.titulo')}</h1>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {fechaHoyTexto}
         </p>
       </div>
 
       {/* Filtros */}
       <div className="card flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+        <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('historial.fechaDesde')}
           <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
-        <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+        <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('historial.fechaHasta')}
           <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
-        <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+        <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('historial.cliente')}
           <input type="text" value={nombreCliente} onChange={(e) => setNombreCliente(e.target.value)} style={inputStyle} className={inputClase} />
         </label>
@@ -139,7 +139,7 @@ function Historial() {
           onClick={buscar}
           disabled={cargando}
           className="font-semibold text-white disabled:opacity-60"
-          style={{ minHeight: 48, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
+          style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
         >
           {t('historial.buscar')}
         </button>
@@ -148,7 +148,7 @@ function Historial() {
           onClick={exportarCsv}
           disabled={sesiones.length === 0}
           className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-          style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
+          style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
         >
           <Download size={18} /> {t('historial.exportar')}
         </button>
@@ -156,13 +156,13 @@ function Historial() {
 
       {/* Tabla */}
       {sesiones.length === 0 ? (
-        <p className="mt-6 text-center" style={{ color: '#6B7280' }}>
+        <p className="mt-6 text-center" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('historial.sinResultados')}
         </p>
       ) : (
         <div className="card overflow-x-auto p-0">
           <table className="w-full min-w-[720px] text-sm">
-            <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
+            <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.fecha')}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.cliente')}</th>
@@ -176,7 +176,7 @@ function Historial() {
             </thead>
             <tbody>
               {sesiones.map((s, i) => (
-                <tr key={s.id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                <tr key={s.id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                   <td className="px-4 py-3">{s.fecha}</td>
                   <td className="px-4 py-3 font-medium">{s.nombre_cliente}</td>
                   <td className="px-4 py-3 text-right">{s.total_items}</td>
@@ -188,8 +188,8 @@ function Historial() {
                       className="rounded-full px-3 py-1 text-xs font-semibold"
                       style={
                         s.tiene_pedidos
-                          ? { backgroundColor: '#D1FAE5', color: '#065F46' }
-                          : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                          ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }
+                          : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
                       }
                     >
                       {s.tiene_pedidos ? t('historial.conPedidos') : t('historial.sinPedidos')}
@@ -201,7 +201,7 @@ function Historial() {
                         type="button"
                         onClick={() => navigate(`/cotizacion/${s.id}`)}
                         className="rounded-lg px-3 py-1 text-sm font-medium"
-                        style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                        style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
                       >
                         {t('historial.verDetalle')}
                       </button>
@@ -210,7 +210,7 @@ function Historial() {
                           type="button"
                           onClick={() => handleEliminar(s)}
                           className="rounded-lg px-3 py-1 text-sm font-medium"
-                          style={{ backgroundColor: '#FEE2E2', color: '#EF4444' }}
+                          style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
                         >
                           {t('historial.eliminar')}
                         </button>

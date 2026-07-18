@@ -28,8 +28,8 @@ function SelectorIdioma() {
             onClick={() => cambiar(idi.code)}
             style={{
               borderRadius: 8,
-              backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#6B7280',
+              backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+              color: activo ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
               padding: '8px 12px',
               fontSize: 14,
               fontWeight: 600,
@@ -54,7 +54,7 @@ function PortalLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F0' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--yuda-bg)' }}>
       <Toaster position="top-right" />
 
       {/* Encabezado */}
@@ -66,14 +66,14 @@ function PortalLayout({ children }: { children: ReactNode }) {
 
         <div className="flex items-center gap-3">
           <SelectorIdioma />
-          <span className="hidden max-w-[140px] truncate sm:inline" style={{ fontSize: 14, color: '#6B7280' }}>
+          <span className="hidden max-w-[140px] truncate sm:inline" style={{ fontSize: 14, color: 'var(--yuda-text-secondary)' }}>
             {cliente?.nombre}
           </span>
           <button
             type="button"
             onClick={salir}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-sm font-medium"
-            style={{ color: '#6B7280' }}
+            style={{ color: 'var(--yuda-text-secondary)' }}
           >
             <LogOut size={16} /> <span className="hidden sm:inline">{t('portal.salir')}</span>
           </button>

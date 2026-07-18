@@ -24,14 +24,14 @@ function PanelVentas() {
   }, [])
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border p-4 sm:p-6" style={{ borderColor: '#E5E7EB' }}>
+    <section className="flex flex-col gap-4 rounded-2xl border p-4 sm:p-6" style={{ borderColor: 'var(--yuda-border)' }}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 style={{ fontWeight: 700, fontSize: 20, color: '#0D0D0D' }}>💰 {t('ventas.tituloResumen')}</h2>
+        <h2 style={{ fontWeight: 700, fontSize: 20, color: 'var(--yuda-accent)' }}>💰 {t('ventas.tituloResumen')}</h2>
         <button
           type="button"
           onClick={() => navigate('/ventas')}
           className="flex items-center gap-1 text-sm font-semibold"
-          style={{ color: '#4B52E8' }}
+          style={{ color: 'var(--yuda-primary)' }}
         >
           {t('ventas.verDetalle')} <ArrowRight size={15} />
         </button>
@@ -40,7 +40,7 @@ function PanelVentas() {
       {data ? (
         <TarjetasVentas data={data} />
       ) : (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {cargando ? t('ventas.cargando') : t('ventas.sinDatos')}
         </p>
       )}

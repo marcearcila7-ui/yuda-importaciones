@@ -95,19 +95,19 @@ function Ventas() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>💰 {t('ventas.titulo')}</h1>
-        <p className="text-sm" style={{ color: '#6B7280' }}>{t('ventas.subtitulo')}</p>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>💰 {t('ventas.titulo')}</h1>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ventas.subtitulo')}</p>
       </div>
 
       {/* Filtros */}
       <div className="flex flex-col gap-3">
         <RangoFechas onChange={setRango} inicial="30" />
-        <div className="flex items-center gap-2 text-sm" style={{ color: '#6B7280' }}>
+        <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           <span>{t('ventas.filtrarVendedora')}:</span>
           <select
             value={vendedoraId}
             onChange={(e) => setVendedoraId(e.target.value)}
-            className="rounded-lg border border-gray-200 px-2 py-1.5 focus:border-[#4B52E8] focus:outline-none"
+            className="rounded-lg border border-gray-200 px-2 py-1.5 focus:border-[var(--yuda-primary)] focus:outline-none"
             style={{ fontSize: 16 }}
           >
             <option value="">{t('ventas.todasVendedoras')}</option>
@@ -119,7 +119,7 @@ function Ventas() {
       </div>
 
       {!data ? (
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {cargando ? t('ventas.cargando') : t('ventas.sinDatos')}
         </p>
       ) : (
@@ -128,7 +128,7 @@ function Ventas() {
 
           {/* Aporte de las vendedoras */}
           <div className="card flex flex-col gap-2">
-            <p className="text-sm" style={{ color: '#374151' }}>
+            <p className="text-sm" style={{ color: 'var(--yuda-text)' }}>
               {t('ventas.contenedoresVendedoras', {
                 v: data.contenedores_vendedoras,
                 total: data.contenedores_total,
@@ -140,13 +140,13 @@ function Ventas() {
           {/* Por vendedora */}
           <section className="card overflow-x-auto p-0">
             <div className="flex items-center justify-between px-4 pt-4">
-              <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('ventas.porVendedora')}</h2>
-              <button type="button" onClick={exportarVendedoras} className={btnCsv} style={{ borderColor: '#10B981', color: '#10B981' }}>
+              <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('ventas.porVendedora')}</h2>
+              <button type="button" onClick={exportarVendedoras} className={btnCsv} style={{ borderColor: 'var(--yuda-success)', color: 'var(--yuda-success)' }}>
                 <Download size={15} /> {t('ventas.exportarCsv')}
               </button>
             </div>
             <table className="mt-3 w-full min-w-[520px] text-sm">
-              <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
+              <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">{t('ventas.tabla.vendedora')}</th>
                   <th className="px-4 py-3 text-right font-semibold">{t('ventas.tabla.cotizaciones')}</th>
@@ -156,7 +156,7 @@ function Ventas() {
               </thead>
               <tbody>
                 {data.por_vendedora.map((v, i) => (
-                  <tr key={v.vendedora_id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                  <tr key={v.vendedora_id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                     <td className="px-4 py-3 font-medium">{v.nombre}</td>
                     <td className="px-4 py-3 text-right">{v.cotizaciones}</td>
                     <td className="px-4 py-3 text-right">{v.contenedores}</td>
@@ -164,7 +164,7 @@ function Ventas() {
                   </tr>
                 ))}
                 {data.por_vendedora.length === 0 && (
-                  <tr><td colSpan={4} className="px-4 py-6 text-center" style={{ color: '#6B7280' }}>{t('ventas.sinVendedoras')}</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-6 text-center" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ventas.sinVendedoras')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -173,15 +173,15 @@ function Ventas() {
           {/* Detalle de despachos */}
           <section className="card overflow-x-auto p-0">
             <div className="flex items-center justify-between px-4 pt-4">
-              <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
-                <Ship size={18} style={{ color: '#4B52E8' }} /> {t('ventas.despachos')}
+              <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
+                <Ship size={18} style={{ color: 'var(--yuda-primary)' }} /> {t('ventas.despachos')}
               </h2>
-              <button type="button" onClick={exportarDespachos} className={btnCsv} style={{ borderColor: '#10B981', color: '#10B981' }}>
+              <button type="button" onClick={exportarDespachos} className={btnCsv} style={{ borderColor: 'var(--yuda-success)', color: 'var(--yuda-success)' }}>
                 <Download size={15} /> {t('ventas.exportarCsv')}
               </button>
             </div>
             <table className="mt-3 w-full min-w-[760px] text-sm">
-              <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
+              <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">{t('ventas.tabla.numero')}</th>
                   <th className="px-4 py-3 text-left font-semibold">{t('ventas.tabla.cliente')}</th>
@@ -194,18 +194,18 @@ function Ventas() {
               </thead>
               <tbody>
                 {data.despachos.map((d, i) => (
-                  <tr key={d.sesion_id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                  <tr key={d.sesion_id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                     <td className="px-4 py-3 font-medium">{d.numero}</td>
                     <td className="px-4 py-3">{d.cliente}</td>
                     <td className="px-4 py-3">{d.vendedora}</td>
                     <td className="px-4 py-3">{estadoLabel(d.estado)}</td>
                     <td className="px-4 py-3">{d.bl_numero ?? '—'}</td>
                     <td className="px-4 py-3 text-right font-semibold">{fmtUSD(d.monto_venta)}</td>
-                    <td className="px-4 py-3" style={{ color: '#6B7280' }}>{fmtFechaHora(d.despachado_at)}</td>
+                    <td className="px-4 py-3" style={{ color: 'var(--yuda-text-secondary)' }}>{fmtFechaHora(d.despachado_at)}</td>
                   </tr>
                 ))}
                 {data.despachos.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-6 text-center" style={{ color: '#6B7280' }}>{t('ventas.sinDespachos')}</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-6 text-center" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ventas.sinDespachos')}</td></tr>
                 )}
               </tbody>
             </table>

@@ -15,28 +15,28 @@ function TarjetasVentas({ data }: { data: PanelVentas }) {
         valor={fmtUSD(data.ventas_total)}
         subtitulo={t('ventas.tarjetas.ventasSub')}
         icono={<DollarSign size={20} />}
-        color="#10B981"
+        color="var(--yuda-success)"
       />
       <MetricCard
         titulo={t('ventas.tarjetas.enTransito')}
         valor={data.pedidos_en_transito}
         subtitulo={t('ventas.tarjetas.enTransitoSub')}
         icono={<Ship size={20} />}
-        color="#4B52E8"
+        color="var(--yuda-primary)"
       />
       <MetricCard
         titulo={t('ventas.tarjetas.cotizaciones')}
         valor={data.cotizaciones_hechas}
         subtitulo={t('ventas.tarjetas.cotizacionesSub')}
         icono={<FileText size={20} />}
-        color="#F59E0B"
+        color="var(--yuda-warning)"
       />
       <MetricCard
         titulo={t('ventas.tarjetas.contenedores')}
         valor={data.contenedores_total}
         subtitulo={t('ventas.tarjetas.contenedoresSub', { n: data.contenedores_vendedoras })}
         icono={<Package size={20} />}
-        color="#0D0D0D"
+        color="var(--yuda-accent)"
       />
     </div>
   )

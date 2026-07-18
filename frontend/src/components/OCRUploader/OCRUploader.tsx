@@ -16,7 +16,7 @@ interface OCRUploaderProps {
 // Requisitos críticos de mobile
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 // Campos numéricos editables (clave del dato + clave de traducción)
 const CAMPOS_NUMERO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
@@ -37,9 +37,9 @@ const CAMPOS_TEXTO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
 ]
 
 function chipConfianza(confianza: OCRResultado['confianza']): { style: CSSProperties; i18n: string } {
-  if (confianza === 'alta') return { style: { backgroundColor: '#D1FAE5', color: '#10B981' }, i18n: 'confianzaAlta' }
-  if (confianza === 'media') return { style: { backgroundColor: '#FEF3C7', color: '#B45309' }, i18n: 'confianzaMedia' }
-  return { style: { backgroundColor: '#FEE2E2', color: '#EF4444' }, i18n: 'confianzaBaja' }
+  if (confianza === 'alta') return { style: { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }, i18n: 'confianzaAlta' }
+  if (confianza === 'media') return { style: { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }, i18n: 'confianzaMedia' }
+  return { style: { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }, i18n: 'confianzaBaja' }
 }
 
 function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
@@ -138,7 +138,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             {...getRootProps()}
             style={{
               fontSize: 16,
-              borderColor: '#4B52E8',
+              borderColor: 'var(--yuda-primary)',
               backgroundColor: isDragActive ? '#F0F1FD' : 'transparent',
             }}
             className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center sm:min-h-[150px]"
@@ -153,8 +153,8 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             ) : (
               <>
                 <Camera size={32} />
-                <p className="mt-3 text-lg font-semibold sm:mt-2 sm:text-base sm:font-medium" style={{ color: '#0D0D0D' }}>{t('ocr.instruccion')}</p>
-                <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{t('ocr.formatos')}</p>
+                <p className="mt-3 text-lg font-semibold sm:mt-2 sm:text-base sm:font-medium" style={{ color: 'var(--yuda-accent)' }}>{t('ocr.instruccion')}</p>
+                <p className="mt-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ocr.formatos')}</p>
               </>
             )}
           </div>
@@ -165,7 +165,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
               type="button"
               onClick={open}
               className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white sm:hidden"
-              style={{ backgroundColor: '#4B52E8', fontSize: 16 }}
+              style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16 }}
             >
               <Camera size={16} /> {t('ocr.tomarFoto')}
             </button>
@@ -176,7 +176,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             onClick={handleExtraer}
             disabled={!archivo || cargando}
             className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:min-h-[48px]"
-            style={{ backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+            style={{ backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
           >
             {cargando ? t('ocr.analizando') : t('ocr.extraer')}
           </button>
@@ -198,7 +198,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             type="button"
             onClick={resetear}
             className="min-h-[52px] w-full font-semibold text-white sm:min-h-[48px]"
-            style={{ backgroundColor: '#4B52E8', borderRadius: 8, fontSize: 16 }}
+            style={{ backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
           >
             {t('ocr.volverATomar')}
           </button>
@@ -209,7 +209,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
       {resultado && form && legibilidad && legibilidad.ok && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0D0D0D' }}>{t('ocr.revisarDatos')}</h3>
+            <h3 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>{t('ocr.revisarDatos')}</h3>
             {chip && (
               <span className="rounded-full px-3 py-1 text-sm font-semibold" style={chip.style}>
                 {t(`ocr.${chip.i18n}`)}
@@ -219,7 +219,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {CAMPOS_TEXTO.map(({ clave, i18n }) => (
-              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t(`ocr.${i18n}`)}
                 <input
                   type="text"
@@ -231,7 +231,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
               </label>
             ))}
             {CAMPOS_NUMERO.map(({ clave, i18n }) => (
-              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t(`ocr.${i18n}`)}
                 <input
                   type="number"
@@ -249,7 +249,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
               type="button"
               onClick={handleConfirmar}
               className="flex-1 font-semibold text-white"
-              style={{ minHeight: 48, backgroundColor: '#10B981', borderRadius: 8, fontSize: 16 }}
+              style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, fontSize: 16 }}
             >
               {t('ocr.agregarPacking')}
             </button>
@@ -257,7 +257,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
               type="button"
               onClick={resetear}
               className="flex-1 font-semibold"
-              style={{ minHeight: 48, backgroundColor: '#F3F4F6', color: '#0D0D0D', borderRadius: 8, fontSize: 16 }}
+              style={{ minHeight: 48, backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)', borderRadius: 8, fontSize: 16 }}
             >
               {t('ocr.cancelar')}
             </button>
@@ -266,7 +266,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
       )}
 
       {/* SECCIÓN C — Error */}
-      {error && <p className="mt-4 text-center text-sm" style={{ color: '#EF4444' }}>{error}</p>}
+      {error && <p className="mt-4 text-center text-sm" style={{ color: 'var(--yuda-error)' }}>{error}</p>}
     </div>
   )
 }

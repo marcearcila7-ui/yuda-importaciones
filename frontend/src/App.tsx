@@ -24,7 +24,7 @@ const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
 
 function Cargando() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6B7280' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--yuda-text-secondary)' }}>
       Cargando…
     </div>
   )

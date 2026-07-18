@@ -32,8 +32,8 @@ function SelectorIdiomaMobile() {
             onClick={() => cambiar(idi.code)}
             style={{
               borderRadius: 6,
-              backgroundColor: activo ? '#4B52E8' : 'transparent',
-              color: activo ? '#FFFFFF' : '#6B7280',
+              backgroundColor: activo ? 'var(--yuda-primary)' : 'transparent',
+              color: activo ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
               padding: '3px 8px',
               fontSize: 12,
               fontWeight: 600,
@@ -58,7 +58,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F5F0' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--yuda-bg)' }}>
       <Toaster position="top-right" />
 
       {/* Sidebar: solo desktop */}
@@ -76,7 +76,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           {(usuario?.rol === 'admin' || usuario?.rol === 'vendedora') && (
             <NotificacionesBell posicion="abajo" />
           )}
-          <span className="max-w-[80px] truncate" style={{ fontSize: 14, color: '#6B7280' }}>
+          <span className="max-w-[80px] truncate" style={{ fontSize: 14, color: 'var(--yuda-text-secondary)' }}>
             {usuario?.nombre}
           </span>
           <button
@@ -85,7 +85,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             aria-label={t('nav.cerrarSesion')}
             title={t('nav.cerrarSesion')}
             className="flex items-center justify-center rounded-lg"
-            style={{ width: 40, height: 40, color: '#EF4444' }}
+            style={{ width: 40, height: 40, color: 'var(--yuda-error)' }}
           >
             <LogOut size={20} />
           </button>

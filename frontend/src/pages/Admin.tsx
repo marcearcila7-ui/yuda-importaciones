@@ -15,7 +15,7 @@ import type { ConfiguracionResponse, UsuarioAdmin } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 type Rol = 'admin' | 'vendedora' | 'contadora'
 
@@ -29,7 +29,7 @@ function mensajeError(err: unknown, generico: string): string {
 
 const btnPrimario: CSSProperties = {
   minHeight: 48,
-  backgroundColor: '#4B52E8',
+  backgroundColor: 'var(--yuda-primary)',
   color: '#fff',
   borderRadius: 8,
   padding: '0 20px',
@@ -39,7 +39,7 @@ const btnPrimario: CSSProperties = {
 const btnSecundario: CSSProperties = {
   minHeight: 48,
   backgroundColor: '#F3F4F6',
-  color: '#0D0D0D',
+  color: 'var(--yuda-accent)',
   borderRadius: 8,
   padding: '0 20px',
   fontSize: 16,
@@ -159,16 +159,16 @@ function Admin() {
     marginRight: 24,
     fontWeight: 600,
     fontSize: 15,
-    color: activo ? '#4B52E8' : '#6B7280',
-    borderBottom: activo ? '3px solid #4B52E8' : '3px solid transparent',
+    color: activo ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
+    borderBottom: activo ? '3px solid var(--yuda-primary)' : '3px solid transparent',
     cursor: 'pointer',
   })
 
   return (
     <div className="relative flex flex-col gap-6">
       <div>
-        <h1 style={{ fontWeight: 700, fontSize: 28, color: '#0D0D0D' }}>{t('admin.titulo')}</h1>
-        <p className="text-sm" style={{ color: '#6B7280' }}>
+        <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{t('admin.titulo')}</h1>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('admin.subtitulo')}
         </p>
       </div>
@@ -187,7 +187,7 @@ function Admin() {
       {tab === 'usuarios' && (
         <section className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('admin.gestionUsuarios')}</h2>
+            <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('admin.gestionUsuarios')}</h2>
             <button
               type="button"
               onClick={() => { setErrorCrear(null); setModalCrear(true) }}
@@ -201,7 +201,7 @@ function Admin() {
 
           <div className="card overflow-x-auto p-0">
             <table className="w-full text-sm">
-              <thead style={{ backgroundColor: '#0D0D0D', color: '#FFFFFF' }}>
+              <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">{t('admin.nombre')}</th>
                   <th className="px-4 py-3 text-left font-semibold">{t('admin.email')}</th>
@@ -212,7 +212,7 @@ function Admin() {
               </thead>
               <tbody>
                 {usuarios.map((u, i) => (
-                  <tr key={u.id} style={{ backgroundColor: i % 2 === 0 ? '#FFFFFF' : '#F9F9F7' }}>
+                  <tr key={u.id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                     <td className="px-4 py-3 font-medium">{u.nombre}</td>
                     <td className="px-4 py-3">{u.email}</td>
                     <td className="px-4 py-3">{t(`roles.${u.rol}`)}</td>
@@ -221,8 +221,8 @@ function Admin() {
                         className="rounded-full px-3 py-1 text-xs font-semibold"
                         style={
                           u.activo
-                            ? { backgroundColor: '#D1FAE5', color: '#065F46' }
-                            : { backgroundColor: '#F3F4F6', color: '#6B7280' }
+                            ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }
+                            : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
                         }
                       >
                         {u.activo ? t('admin.activo') : t('admin.inactivo')}
@@ -235,7 +235,7 @@ function Admin() {
                           onClick={() => abrirEditar(u)}
                           disabled={cargando}
                           className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
-                          style={{ backgroundColor: '#EEF0FD', color: '#4B52E8' }}
+                          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
                         >
                           {t('admin.editar')}
                         </button>
@@ -244,7 +244,7 @@ function Admin() {
                           onClick={() => handleToggleActivo(u)}
                           disabled={cargando}
                           className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
-                          style={{ backgroundColor: '#F3F4F6', color: '#0D0D0D' }}
+                          style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)' }}
                         >
                           {u.activo ? t('admin.desactivar') : t('admin.activar')}
                         </button>
@@ -261,10 +261,10 @@ function Admin() {
       {/* ──────── CONFIGURACIÓN ──────── */}
       {tab === 'config' && (
         <section className="card max-w-xl">
-          <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>
+          <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
             {t('admin.configSistema')}
           </h2>
-          <p className="text-sm" style={{ color: '#0D0D0D' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-accent)' }}>
             {t('admin.tipoCambioActual')}{' '}
             <span className="font-bold">{config?.tipo_cambio_usd ?? '—'}</span> RMB/USD
           </p>
@@ -273,7 +273,7 @@ function Admin() {
             {config?.updated_at ? new Date(config.updated_at).toLocaleString() : t('admin.sinRegistro')}
           </p>
           <div className="flex items-end gap-3">
-            <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('admin.tipoCambio')}
               <input
                 type="number"
@@ -309,7 +309,7 @@ function Admin() {
                 <option value="vendedora">{t('roles.vendedora')}</option>
                 <option value="contadora">{t('roles.contadora')}</option>
               </select>
-              {errorCrear && <p className="text-sm" style={{ color: '#EF4444' }}>{errorCrear}</p>}
+              {errorCrear && <p className="text-sm" style={{ color: 'var(--yuda-error)' }}>{errorCrear}</p>}
             </div>
             <div className="mt-5 flex gap-3">
               <button type="button" onClick={handleCrear} style={{ ...btnPrimario, flex: 1 }}>{t('admin.crear')}</button>
@@ -333,7 +333,7 @@ function Admin() {
                 <option value="vendedora">{t('roles.vendedora')}</option>
                 <option value="contadora">{t('roles.contadora')}</option>
               </select>
-              {errorEditar && <p className="text-sm" style={{ color: '#EF4444' }}>{errorEditar}</p>}
+              {errorEditar && <p className="text-sm" style={{ color: 'var(--yuda-error)' }}>{errorEditar}</p>}
             </div>
             <div className="mt-5 flex flex-col gap-3">
               <div className="flex gap-3">
@@ -342,7 +342,7 @@ function Admin() {
               </div>
               <button type="button"
                 onClick={() => { setReseteando(editando); setEditando(null); setNuevaPassword(''); setErrorReset(null) }}
-                className="text-sm font-medium" style={{ color: '#4B52E8' }}>{t('admin.cambiarContrasena')}</button>
+                className="text-sm font-medium" style={{ color: 'var(--yuda-primary)' }}>{t('admin.cambiarContrasena')}</button>
             </div>
           </div>
         </div>
@@ -357,7 +357,7 @@ function Admin() {
             </h2>
             <input style={inputStyle} type="password" placeholder={t('admin.nuevaContrasena')} value={nuevaPassword}
               onChange={(e) => setNuevaPassword(e.target.value)} className={`w-full ${inputClase}`} />
-            {errorReset && <p className="mt-2 text-sm" style={{ color: '#EF4444' }}>{errorReset}</p>}
+            {errorReset && <p className="mt-2 text-sm" style={{ color: 'var(--yuda-error)' }}>{errorReset}</p>}
             <div className="mt-5 flex gap-3">
               <button type="button" onClick={handleGuardarReset} style={{ ...btnPrimario, flex: 1 }}>{t('admin.cambiarContrasena')}</button>
               <button type="button" onClick={() => setReseteando(null)} style={{ ...btnSecundario, flex: 1 }}>{t('admin.cancelar')}</button>

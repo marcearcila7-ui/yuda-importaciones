@@ -51,11 +51,11 @@ function PedidoCliente({
   if (!sesion.pedido_recibido_at) {
     if (!mostrarVacio) return null
     return (
-      <div className="rounded-xl border p-3" style={{ borderColor: '#E5E7EB' }}>
-        <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
-          <Package size={16} style={{ color: '#6B7280' }} /> {t('pedidoCliente.titulo')}
+      <div className="rounded-xl border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
+        <p className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+          <Package size={16} style={{ color: 'var(--yuda-text-secondary)' }} /> {t('pedidoCliente.titulo')}
         </p>
-        <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>{t('pedidoCliente.sinPedido')}</p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('pedidoCliente.sinPedido')}</p>
       </div>
     )
   }
@@ -68,24 +68,24 @@ function PedidoCliente({
   return (
     <div className="rounded-xl border" style={{ borderColor: '#C7CBF7', backgroundColor: '#F5F6FE' }}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5" style={{ borderColor: '#E0E2FA' }}>
-        <p className="flex items-center gap-2 text-sm font-bold" style={{ color: '#4B52E8' }}>
+        <p className="flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--yuda-primary)' }}>
           <Package size={16} /> {t('pedidoCliente.titulo')}
         </p>
-        <span className="text-xs" style={{ color: '#6B7280' }}>{t('pedidoCliente.recibidoEl', { fecha })}</span>
+        <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('pedidoCliente.recibidoEl', { fecha })}</span>
       </div>
 
-      <div className="flex flex-col divide-y" style={{ borderColor: '#E5E7EB' }}>
+      <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
         {items.map((it) => {
           const cajas = it.cantidad_solicitada ?? 0
           return (
             <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-              <span className="min-w-0 flex-1" style={{ color: '#0D0D0D' }}>{descripcion(it)}</span>
+              <span className="min-w-0 flex-1" style={{ color: 'var(--yuda-accent)' }}>{descripcion(it)}</span>
               {cajas > 0 ? (
-                <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: '#4B52E8' }}>
+                <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: 'var(--yuda-primary)' }}>
                   {t('pedidoCliente.cajas', { n: cajas })}
                 </span>
               ) : (
-                <span className="flex-shrink-0 text-xs" style={{ color: '#6B7280' }}>{t('pedidoCliente.sinCantidad')}</span>
+                <span className="flex-shrink-0 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('pedidoCliente.sinCantidad')}</span>
               )}
             </div>
           )
@@ -93,7 +93,7 @@ function PedidoCliente({
       </div>
 
       {sesion.notas_cliente && (
-        <div className="border-t px-4 py-2.5 text-sm" style={{ borderColor: '#E0E2FA', color: '#374151' }}>
+        <div className="border-t px-4 py-2.5 text-sm" style={{ borderColor: '#E0E2FA', color: 'var(--yuda-text)' }}>
           <span className="font-semibold">📝 {t('pedidoCliente.notas')}:</span> {sesion.notas_cliente}
         </div>
       )}

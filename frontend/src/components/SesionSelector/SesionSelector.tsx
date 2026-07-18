@@ -11,7 +11,7 @@ import type { Cliente, ClienteCreado } from '../../types/cliente'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
-  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[#4B52E8] focus:outline-none'
+  'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
 type Modo = 'cliente' | 'libre'
 
@@ -115,8 +115,8 @@ function SesionSelector() {
           minHeight: 44,
           borderRadius: 8,
           fontSize: 15,
-          backgroundColor: activo ? '#4B52E8' : '#EEF0FD',
-          color: activo ? '#FFFFFF' : '#4B52E8',
+          backgroundColor: activo ? 'var(--yuda-primary)' : 'var(--yuda-primary-soft)',
+          color: activo ? 'var(--yuda-white)' : 'var(--yuda-primary)',
         }}
       >
         {label}
@@ -126,8 +126,8 @@ function SesionSelector() {
 
   return (
     <div className="card">
-      <h2 style={{ fontWeight: 700, fontSize: 18, color: '#0D0D0D' }}>{t('dashboard.nuevaCotizacion')}</h2>
-      <p className="mt-1 text-sm" style={{ color: '#6B7280' }}>
+      <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('dashboard.nuevaCotizacion')}</h2>
+      <p className="mt-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('dashboard.paraQuien')}
       </p>
 
@@ -142,7 +142,7 @@ function SesionSelector() {
         <div className="mt-4 flex flex-col gap-3">
           {!creandoForm ? (
             <>
-              <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+              <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('dashboard.elegirCliente')}
                 <select
                   value={clienteSel}
@@ -165,14 +165,14 @@ function SesionSelector() {
                 type="button"
                 onClick={() => setCreandoForm(true)}
                 className="flex items-center gap-2 self-start text-sm font-semibold"
-                style={{ color: '#4B52E8' }}
+                style={{ color: 'var(--yuda-primary)' }}
               >
                 <UserPlus size={16} /> {t('dashboard.crearClienteNuevo')}
               </button>
             </>
           ) : (
             <div className="rounded-xl border border-gray-200 p-3">
-              <p className="mb-2 text-sm font-semibold" style={{ color: '#0D0D0D' }}>
+              <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                 {t('clientes.nuevo')}
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -186,11 +186,11 @@ function SesionSelector() {
                   onClick={crearClienteInline}
                   disabled={guardandoCliente}
                   className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
-                  style={{ minHeight: 40, backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+                  style={{ minHeight: 40, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
                 >
                   <Plus size={16} /> {guardandoCliente ? t('clientes.creando') : t('clientes.crear')}
                 </button>
-                <button type="button" onClick={() => setCreandoForm(false)} className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                <button type="button" onClick={() => setCreandoForm(false)} className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
                   {t('clientes.cancelar')}
                 </button>
               </div>
@@ -206,10 +206,10 @@ function SesionSelector() {
       {/* MODO LIBRE */}
       {modo === 'libre' && (
         <div className="mt-4 flex flex-col gap-2">
-          <p className="text-sm" style={{ color: '#6B7280' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('dashboard.libreAyuda')}
           </p>
-          <label className="flex flex-col gap-1 text-sm" style={{ color: '#6B7280' }}>
+          <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('dashboard.nombreCliente')}
             <input
               type="text"
@@ -228,7 +228,7 @@ function SesionSelector() {
 
       {/* Tipo de cambio + crear */}
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex flex-col gap-1 text-sm sm:w-44" style={{ color: '#6B7280' }}>
+        <label className="flex flex-col gap-1 text-sm sm:w-44" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('dashboard.tipoCambio')}
           <input
             type="number"
@@ -244,13 +244,13 @@ function SesionSelector() {
           onClick={handleCrear}
           disabled={isLoading}
           className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:min-h-[48px] sm:w-auto"
-          style={{ backgroundColor: '#4B52E8', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
+          style={{ backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
         >
           {isLoading ? t('dashboard.creando') : t('dashboard.nuevaCotizacion')}
         </button>
       </div>
 
-      {aviso && <p className="mt-2 text-sm" style={{ color: '#EF4444' }}>{aviso}</p>}
+      {aviso && <p className="mt-2 text-sm" style={{ color: 'var(--yuda-error)' }}>{aviso}</p>}
 
     </div>
   )
