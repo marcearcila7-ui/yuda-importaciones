@@ -238,7 +238,9 @@
     "confirmarEliminar": "Delete the quotation for {{cliente}}? This action cannot be undone.",
     "eliminada": "Quotation deleted",
     "errorEliminar": "Could not delete the quotation",
-    "exportar": "Export CSV"
+    "exportar": "Export CSV",
+    "cargarMas": "Load more",
+    "cargandoMas": "Loading…"
   },
   "pedidoCliente": {
     "titulo": "Client's order",

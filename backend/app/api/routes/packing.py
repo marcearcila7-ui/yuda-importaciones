@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_roles, get_current_user
@@ -95,6 +95,9 @@ def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
 
 @router.get("/sesiones", response_model=list[SesionResponse])
 def listar_sesiones(
+    # Paginación opcional: sin `limit` devuelve todo (comportamiento anterior).
+    limit: int | None = Query(None, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Sesion]:
@@ -102,7 +105,10 @@ def listar_sesiones(
     query = db.query(Sesion)
     if usuario.rol.value == "vendedora":
         query = query.filter(Sesion.user_id == usuario.id)
-    return query.order_by(Sesion.created_at.desc()).all()
+    query = query.order_by(Sesion.created_at.desc())
+    if limit is not None:
+        query = query.limit(limit).offset(offset)
+    return query.all()
 
 
 @router.post("/sesiones", response_model=SesionResponse, status_code=status.HTTP_201_CREATED)

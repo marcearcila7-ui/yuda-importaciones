@@ -238,7 +238,9 @@
     "confirmarEliminar": "确定删除 {{cliente}} 的报价吗？此操作无法撤销。",
     "eliminada": "报价已删除",
     "errorEliminar": "无法删除报价",
-    "exportar": "导出 CSV"
+    "exportar": "导出 CSV",
+    "cargarMas": "加载更多",
+    "cargandoMas": "加载中…"
   },
   "pedidoCliente": {
     "titulo": "客户订单",

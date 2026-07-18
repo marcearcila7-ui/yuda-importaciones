@@ -153,3 +153,22 @@ def test_confirmar_sin_estar_por_confirmar_falla(
     hc = _h(token_portal("c@y.com"))
     # Sin pedido enviado, no se puede confirmar
     assert client.post(f"/api/v1/portal/cotizaciones/{s.id}/confirmar", headers=hc).status_code == 409
+
+
+# ─────────── Paginación del historial ───────────
+
+
+def test_historial_paginacion(client, crear_usuario, crear_sesion, token_staff):
+    crear_usuario("a@y.com", RolUsuario.admin)
+    v = crear_usuario("v@y.com", RolUsuario.vendedora)
+    for _ in range(3):
+        crear_sesion(v.id)
+    h = _h(token_staff("a@y.com"))
+    base = "/api/v1/historial/sesiones"
+
+    # Sin limit: comportamiento anterior, devuelve todo (3)
+    assert len(client.get(base, headers=h).json()) == 3
+    # Primera página de 2
+    assert len(client.get(f"{base}?limit=2&offset=0", headers=h).json()) == 2
+    # Segunda página: queda 1
+    assert len(client.get(f"{base}?limit=2&offset=2", headers=h).json()) == 1

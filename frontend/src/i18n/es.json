@@ -238,7 +238,9 @@
     "confirmarEliminar": "¿Eliminar la cotización de {{cliente}}? Esta acción no se puede deshacer.",
     "eliminada": "Cotización eliminada",
     "errorEliminar": "No se pudo eliminar la cotización",
-    "exportar": "Exportar CSV"
+    "exportar": "Exportar CSV",
+    "cargarMas": "Cargar más",
+    "cargandoMas": "Cargando…"
   },
   "pedidoCliente": {
     "titulo": "Pedido del cliente",

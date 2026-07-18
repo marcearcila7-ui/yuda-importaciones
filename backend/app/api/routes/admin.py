@@ -514,6 +514,10 @@ def historial_sesiones(
     fecha_desde: Optional[date] = Query(None),
     fecha_hasta: Optional[date] = Query(None),
     nombre_cliente: Optional[str] = Query(None),
+    # Paginación opcional: sin `limit` devuelve todo (comportamiento anterior);
+    # el frontend pide de a páginas con "Cargar más" para no traer cientos de golpe.
+    limit: Optional[int] = Query(None, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     usuario: User = Depends(require_roles("admin", "contadora")),
     db: Session = Depends(get_db),
 ) -> list[dict]:
@@ -526,7 +530,10 @@ def historial_sesiones(
     if nombre_cliente:
         query = query.filter(Sesion.nombre_cliente.ilike(f"%{nombre_cliente}%"))
 
-    sesiones = query.order_by(Sesion.fecha.desc()).all()
+    query = query.order_by(Sesion.fecha.desc())
+    if limit is not None:
+        query = query.limit(limit).offset(offset)
+    sesiones = query.all()
 
     resultado = []
     for sesion in sesiones:

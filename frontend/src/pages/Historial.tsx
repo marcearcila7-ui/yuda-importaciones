@@ -8,6 +8,7 @@ import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
 import { useAuthStore } from '../store/authStore'
 import { confirmar } from '../store/confirmStore'
+import Button from '../components/ui/Button'
 import type { SesionHistorial } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -23,9 +24,15 @@ function Historial() {
   const esAdmin = usuario?.rol === 'admin'
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [cargando, setCargando] = useState(false)
+  const [cargandoMas, setCargandoMas] = useState(false)
+  const [hayMas, setHayMas] = useState(false)
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
   const [nombreCliente, setNombreCliente] = useState('')
+
+  // Cotizaciones por página; se piden de a tandas con "Cargar más" para no traer
+  // cientos de golpe. Los filtros reinician a la primera página.
+  const PAGINA = 50
 
   const buscar = async () => {
     setCargando(true)
@@ -34,10 +41,30 @@ function Historial() {
         fecha_desde: fechaDesde || undefined,
         fecha_hasta: fechaHasta || undefined,
         nombre_cliente: nombreCliente || undefined,
+        limit: PAGINA,
+        offset: 0,
       })
       setSesiones(data)
+      setHayMas(data.length === PAGINA)
     } finally {
       setCargando(false)
+    }
+  }
+
+  const cargarMas = async () => {
+    setCargandoMas(true)
+    try {
+      const data = await getHistorial({
+        fecha_desde: fechaDesde || undefined,
+        fecha_hasta: fechaHasta || undefined,
+        nombre_cliente: nombreCliente || undefined,
+        limit: PAGINA,
+        offset: sesiones.length,
+      })
+      setSesiones((prev) => [...prev, ...data])
+      setHayMas(data.length === PAGINA)
+    } finally {
+      setCargandoMas(false)
     }
   }
 
@@ -160,6 +187,7 @@ function Historial() {
           {t('historial.sinResultados')}
         </p>
       ) : (
+        <>
         <div className="card overflow-x-auto p-0">
           <table className="w-full min-w-[720px] text-sm">
             <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
@@ -222,6 +250,14 @@ function Historial() {
             </tbody>
           </table>
         </div>
+        {hayMas && (
+          <div className="mt-4 flex justify-center">
+            <Button variant="ghost" onClick={cargarMas} disabled={cargandoMas}>
+              {cargandoMas ? t('historial.cargandoMas') : t('historial.cargarMas')}
+            </Button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )

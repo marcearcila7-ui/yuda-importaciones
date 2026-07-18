@@ -67,6 +67,8 @@ export async function getHistorial(filtros?: {
   fecha_desde?: string
   fecha_hasta?: string
   nombre_cliente?: string
+  limit?: number
+  offset?: number
 }): Promise<SesionHistorial[]> {
   const { data } = await apiClient.get<SesionHistorial[]>('/historial/sesiones', {
     params: filtros,
