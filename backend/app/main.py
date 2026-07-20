@@ -11,6 +11,7 @@ from app.api.routes import (
     admin,
     auth,
     clientes,
+    contenedores,
     lotes,
     notificaciones,
     ocr,
@@ -122,6 +123,7 @@ app.include_router(admin.router, prefix="/api/v1")
 app.include_router(admin.historial_router, prefix="/api/v1")
 app.include_router(lotes.router, prefix="/api/v1")
 app.include_router(clientes.router, prefix="/api/v1")
+app.include_router(contenedores.router, prefix="/api/v1")
 app.include_router(portal.router, prefix="/api/v1")
 app.include_router(notificaciones.router, prefix="/api/v1")
 

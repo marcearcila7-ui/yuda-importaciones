@@ -4,5 +4,6 @@ from app.models.sesion import Sesion
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
 from app.models.notificacion import Notificacion
+from app.models.contenedor import Contenedor
 
-__all__ = ["User", "Sesion", "Item", "PedidoGenerado", "Notificacion"]
+__all__ = ["User", "Sesion", "Item", "PedidoGenerado", "Notificacion", "Contenedor"]
