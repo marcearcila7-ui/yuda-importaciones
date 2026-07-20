@@ -92,6 +92,7 @@ class SesionResponse(BaseModel):
     tipo_cambio_usd: float
     user_id: str
     cliente_id: str | None = None
+    contenedor_id: str | None = None  # embarque al que pertenece (define la TRM al facturar)
     enviada_cliente: bool = False
     notas_cliente: str | None = None  # observaciones que dejó el cliente en su pedido
     pedido_recibido_at: datetime | None = None  # cuándo el cliente envió su pedido

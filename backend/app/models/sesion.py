@@ -32,6 +32,11 @@ class Sesion(Base):
     cliente_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("clientes.id"), nullable=True, index=True
     )
+    # Contenedor/embarque al que pertenece la cotización. Cuando está seteado, la
+    # TRM del contenedor manda sobre `tipo_cambio_usd` para facturar en USD.
+    contenedor_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("contenedores.id"), nullable=True, index=True
+    )
     enviada_cliente: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     fecha_envio_cliente: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

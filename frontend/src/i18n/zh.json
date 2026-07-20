@@ -278,7 +278,15 @@
     "sinCajas": "无数量",
     "notasCliente": "客户备注",
     "sinPedidoCliente": "客户尚未从门户提交订单。",
-    "volverClientes": "返回客户"
+    "volverClientes": "返回客户",
+    "facturaTitulo": "客户发票 (USD)",
+    "facturaContenedor": "集装箱（设定汇率）",
+    "facturaSinContenedor": "使用报价单汇率",
+    "facturaTrm": "1 USD = {{trm}} RMB",
+    "facturaPdf": "发票 PDF",
+    "facturaExcel": "发票 Excel",
+    "facturaAyuda": "生成发票前，请在面板中更新纸箱的真实尺寸。",
+    "errorFactura": "无法生成发票"
   },
   "admin": {
     "titulo": "管理",

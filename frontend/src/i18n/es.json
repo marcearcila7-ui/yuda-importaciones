@@ -278,7 +278,15 @@
     "sinCajas": "Sin cantidad",
     "notasCliente": "Notas del cliente",
     "sinPedidoCliente": "El cliente aún no ha enviado su pedido desde el portal.",
-    "volverClientes": "Volver a clientes"
+    "volverClientes": "Volver a clientes",
+    "facturaTitulo": "Factura para el cliente (USD)",
+    "facturaContenedor": "Contenedor (define la TRM)",
+    "facturaSinContenedor": "Usar tipo de cambio de la cotización",
+    "facturaTrm": "1 USD = {{trm}} RMB",
+    "facturaPdf": "Factura PDF",
+    "facturaExcel": "Factura Excel",
+    "facturaAyuda": "Actualiza las medidas reales de las cajas en el panel antes de generar la factura.",
+    "errorFactura": "No se pudo generar la factura"
   },
   "admin": {
     "titulo": "Administración",

@@ -10,6 +10,7 @@ from app.api.dependencies import exigir_roles, get_current_user
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.contenedor import Contenedor
 from app.models.item import Item
 from app.models.lote import LoteItem, LoteOCR
 from app.models.notificacion import Notificacion
@@ -18,6 +19,7 @@ from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.cotizacion import CotizacionRequest
+from app.schemas.factura import FacturaRequest
 from app.schemas.packing import (
     ItemCreate,
     ItemResponse,
@@ -29,6 +31,11 @@ from app.schemas.packing import (
 from app.services.cotizacion_service import (
     generar_cotizacion_excel,
     generar_cotizacion_pdf,
+)
+from app.services.factura_service import (
+    generar_factura_excel,
+    generar_factura_pdf,
+    numero_factura,
 )
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
@@ -486,5 +493,84 @@ def exportar_cotizacion_pdf(
     return Response(
         content=contenido,
         media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+def _resolver_factura(
+    db: Session, sesion: Sesion, contenedor_id: str | None
+) -> tuple[float, str | None]:
+    """Devuelve (TRM a usar, nombre de la vendedora) para facturar.
+
+    Si llega `contenedor_id`, vincula la cotización a ese contenedor y usa su TRM.
+    Si no, usa el contenedor ya vinculado; en su defecto, `sesion.tipo_cambio_usd`.
+    """
+    if contenedor_id is not None:
+        contenedor = db.query(Contenedor).filter(Contenedor.id == contenedor_id).first()
+        if contenedor is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Contenedor no encontrado")
+        sesion.contenedor_id = contenedor.id
+        db.commit()
+        trm = contenedor.trm_usd
+    elif sesion.contenedor_id:
+        contenedor = db.query(Contenedor).filter(Contenedor.id == sesion.contenedor_id).first()
+        trm = contenedor.trm_usd if contenedor else sesion.tipo_cambio_usd
+    else:
+        trm = sesion.tipo_cambio_usd
+
+    vendedora = db.query(User).filter(User.id == sesion.user_id).first()
+    return trm, (vendedora.nombre if vendedora else None)
+
+
+@router.post("/sesiones/{sesion_id}/exportar/factura-pdf")
+def exportar_factura_pdf(
+    sesion_id: str,
+    datos: FacturaRequest,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Genera la factura comercial en USD para el cliente (PDF)"""
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    trm, vendedora = _resolver_factura(db, sesion, datos.contenedor_id)
+    items = (
+        db.query(Item)
+        .filter(Item.sesion_id == sesion_id)
+        .order_by(Item.orden.asc())
+        .all()
+    )
+
+    contenido = generar_factura_pdf(items, sesion, trm, vendedora)
+    nombre_archivo = f"{numero_factura(sesion, datetime.now())}.pdf"
+
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.post("/sesiones/{sesion_id}/exportar/factura-excel")
+def exportar_factura_excel(
+    sesion_id: str,
+    datos: FacturaRequest,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Genera la factura comercial en USD para el cliente (Excel)"""
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    trm, vendedora = _resolver_factura(db, sesion, datos.contenedor_id)
+    items = (
+        db.query(Item)
+        .filter(Item.sesion_id == sesion_id)
+        .order_by(Item.orden.asc())
+        .all()
+    )
+
+    contenido = generar_factura_excel(items, sesion, trm, vendedora)
+    nombre_archivo = f"{numero_factura(sesion, datetime.now())}.xlsx"
+
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
     )

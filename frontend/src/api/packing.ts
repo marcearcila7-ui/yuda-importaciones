@@ -102,3 +102,21 @@ export async function exportarCotizacionPDF(sesion_id: string, idioma: string): 
   )
   return data as Blob
 }
+
+export async function exportarFacturaPDF(sesion_id: string, contenedor_id?: string | null): Promise<Blob> {
+  const { data } = await apiClient.post(
+    `/sesiones/${sesion_id}/exportar/factura-pdf`,
+    { contenedor_id: contenedor_id ?? null },
+    { responseType: 'blob' },
+  )
+  return data as Blob
+}
+
+export async function exportarFacturaExcel(sesion_id: string, contenedor_id?: string | null): Promise<Blob> {
+  const { data } = await apiClient.post(
+    `/sesiones/${sesion_id}/exportar/factura-excel`,
+    { contenedor_id: contenedor_id ?? null },
+    { responseType: 'blob' },
+  )
+  return data as Blob
+}

@@ -278,7 +278,15 @@
     "sinCajas": "No quantity",
     "notasCliente": "Client's notes",
     "sinPedidoCliente": "The client has not submitted an order from the portal yet.",
-    "volverClientes": "Back to clients"
+    "volverClientes": "Back to clients",
+    "facturaTitulo": "Client invoice (USD)",
+    "facturaContenedor": "Container (sets the FX rate)",
+    "facturaSinContenedor": "Use the quotation's exchange rate",
+    "facturaTrm": "1 USD = {{trm}} RMB",
+    "facturaPdf": "Invoice PDF",
+    "facturaExcel": "Invoice Excel",
+    "facturaAyuda": "Update the real box measurements in the panel before generating the invoice.",
+    "errorFactura": "The invoice could not be generated"
   },
   "admin": {
     "titulo": "Administration",

@@ -45,6 +45,7 @@ export interface Sesion {
   tipo_cambio_usd: number
   user_id: string
   cliente_id?: string | null
+  contenedor_id?: string | null
   enviada_cliente?: boolean
   notas_cliente?: string | null
   pedido_recibido_at?: string | null

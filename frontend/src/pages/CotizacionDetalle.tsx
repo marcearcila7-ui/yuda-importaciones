@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Store } from 'lucide-react'
+import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Receipt, Ship, Store } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
 import PedidoCliente from '../components/PedidoCliente'
 import SeguimientoTimeline from '../components/portal/SeguimientoTimeline'
-import { exportarCotizacionExcel, exportarCotizacionPDF, getItems, getSesiones } from '../api/packing'
+import { exportarCotizacionExcel, exportarCotizacionPDF, exportarFacturaExcel, exportarFacturaPDF, getItems, getSesiones } from '../api/packing'
+import { getContenedores } from '../api/contenedores'
 import { getCliente, getSeguimiento } from '../api/clientes'
 import { useAuthStore } from '../store/authStore'
 import type { ItemResponse, Sesion } from '../types/packing'
+import type { Contenedor } from '../types/contenedor'
 import type { Cliente } from '../types/cliente'
 import type { Seguimiento } from '../types/seguimiento'
 
@@ -39,22 +41,28 @@ function CotizacionDetalle() {
   const [cargando, setCargando] = useState(true)
   const [idioma, setIdioma] = useState<string>(['es', 'en', 'zh'].includes(i18n.language) ? i18n.language : 'es')
   const [generando, setGenerando] = useState<'pdf' | 'excel' | null>(null)
+  const [contenedores, setContenedores] = useState<Contenedor[]>([])
+  const [contenedorId, setContenedorId] = useState<string>('')
+  const [generandoFactura, setGenerandoFactura] = useState<'pdf' | 'excel' | null>(null)
 
   useEffect(() => {
     let activo = true
     const cargar = async () => {
       setCargando(true)
       try {
-        const [sesiones, itemsData, seg] = await Promise.all([
+        const [sesiones, itemsData, seg, conts] = await Promise.all([
           getSesiones(),
           getItems(id),
           getSeguimiento(id).catch(() => null),
+          getContenedores().catch(() => [] as Contenedor[]),
         ])
         if (!activo) return
         const s = sesiones.find((x) => x.id === id) ?? null
         setSesion(s)
         setItems(itemsData)
         setSeguimiento(seg)
+        setContenedores(conts)
+        setContenedorId(s?.contenedor_id ?? '')
         if (s?.cliente_id) {
           const c = await getCliente(s.cliente_id).catch(() => null)
           if (activo) setCliente(c)
@@ -99,6 +107,34 @@ function CotizacionDetalle() {
       toast.error(t('detalle.errorDescargar'))
     } finally {
       setGenerando(null)
+    }
+  }
+
+  // Genera la factura comercial en USD (PDF/Excel). El contenedor seleccionado
+  // define la TRM; sin contenedor se usa el tipo de cambio de la cotización.
+  const generarFactura = async (tipo: 'pdf' | 'excel') => {
+    setGenerandoFactura(tipo)
+    const ventana = window.open('', '_blank')
+    try {
+      const cid = contenedorId || null
+      const blob = tipo === 'pdf' ? await exportarFacturaPDF(id, cid) : await exportarFacturaExcel(id, cid)
+      const url = URL.createObjectURL(blob)
+      if (ventana) {
+        ventana.location.href = url
+      } else {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Factura_${sesion?.nombre_cliente ?? ''}.${tipo === 'pdf' ? 'pdf' : 'xlsx'}`
+        a.click()
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      // La sesión queda vinculada al contenedor elegido: reflejarlo en el estado.
+      if (cid) setSesion((prev) => (prev ? { ...prev, contenedor_id: cid } : prev))
+    } catch {
+      ventana?.close()
+      toast.error(t('detalle.errorFactura'))
+    } finally {
+      setGenerandoFactura(null)
     }
   }
 
@@ -194,6 +230,54 @@ function CotizacionDetalle() {
                   style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16, padding: '0 20px' }}
                 >
                   <FileSpreadsheet size={18} /> {generando === 'excel' ? t('detalle.generando') : t('detalle.descargarExcel')}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* Generar la factura del cliente en USD (para Marcela y la contadora) */}
+          {items.length > 0 && (
+            <section className="card flex flex-col gap-3">
+              <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }} className="flex items-center gap-2">
+                <Receipt size={18} /> {t('detalle.facturaTitulo')}
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.facturaAyuda')}</p>
+              <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                <span className="flex items-center gap-1.5"><Ship size={15} /> {t('detalle.facturaContenedor')}</span>
+                <select
+                  value={contenedorId}
+                  onChange={(e) => setContenedorId(e.target.value)}
+                  className="rounded-lg border px-3 py-2 text-sm"
+                  style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-primary)', maxWidth: 420 }}
+                >
+                  <option value="">
+                    {t('detalle.facturaSinContenedor')} · {t('detalle.facturaTrm', { trm: sesion?.tipo_cambio_usd ?? '' })}
+                  </option>
+                  {contenedores.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.codigo} · {t('detalle.facturaTrm', { trm: c.trm_usd })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => generarFactura('pdf')}
+                  disabled={generandoFactura !== null}
+                  className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
+                >
+                  <FileText size={18} /> {generandoFactura === 'pdf' ? t('detalle.generando') : t('detalle.facturaPdf')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => generarFactura('excel')}
+                  disabled={generandoFactura !== null}
+                  className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16, padding: '0 20px' }}
+                >
+                  <FileSpreadsheet size={18} /> {generandoFactura === 'excel' ? t('detalle.generando') : t('detalle.facturaExcel')}
                 </button>
               </div>
             </section>
