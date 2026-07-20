@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, RefreshCw, Trash2, UserPlus, Users } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, RefreshCw, Trash2, UserPlus, Users, Wallet } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -139,6 +139,7 @@ function Clientes() {
         nombre: form.nombre.trim(),
         email: form.email.trim(),
         empresa: form.empresa?.trim() || undefined,
+        nit: form.nit?.trim() || undefined,
         pais: form.pais?.trim() || undefined,
         telefono: form.telefono?.trim() || undefined,
         password: form.password?.trim() || undefined,
@@ -294,6 +295,7 @@ ${t('clientes.email')}: ${c.email}`
             <Campo label={t('clientes.nombre')} value={form.nombre} onChange={(v) => setCampo('nombre', v)} />
             <Campo label={t('clientes.email')} type="email" value={form.email} onChange={(v) => setCampo('email', v)} placeholder="cliente@correo.com" />
             <Campo label={t('clientes.empresa')} value={form.empresa ?? ''} onChange={(v) => setCampo('empresa', v)} />
+            <Campo label={t('clientes.nit')} value={form.nit ?? ''} onChange={(v) => setCampo('nit', v)} />
             <Campo label={t('clientes.pais')} value={form.pais ?? ''} onChange={(v) => setCampo('pais', v)} />
             <Campo label={t('clientes.telefono')} value={form.telefono ?? ''} onChange={(v) => setCampo('telefono', v)} />
             <Campo label={t('clientes.passwordOpcional')} value={form.password ?? ''} onChange={(v) => setCampo('password', v)} placeholder={t('clientes.passwordAuto')} />
@@ -376,6 +378,14 @@ ${t('clientes.email')}: ${c.email}`
                       >
                         {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/clientes/${c.id}/cuenta`)}
+                        className="flex min-h-[40px] items-center gap-1 rounded-lg border border-gray-200 px-3 text-xs font-medium"
+                        style={{ color: 'var(--yuda-primary)' }}
+                      >
+                        <Wallet size={14} /> {t('cuentas.verCuenta')}
+                      </button>
                       <button
                         type="button"
                         onClick={() => toggleActivo(c)}

@@ -3,6 +3,7 @@ export interface Cliente {
   nombre: string
   email: string
   empresa: string | null
+  nit: string | null
   telefono: string | null
   pais: string | null
   vendedora_id: string
@@ -18,6 +19,7 @@ export interface ClienteCreate {
   nombre: string
   email: string
   empresa?: string
+  nit?: string
   telefono?: string
   pais?: string
   password?: string

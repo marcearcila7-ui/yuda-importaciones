@@ -1,4 +1,5 @@
 import portalClient from './portalClient'
+import type { EstadoCuenta } from '../types/cuenta'
 import type {
   CotizacionDetalle,
   CotizacionResumen,
@@ -47,5 +48,11 @@ export async function descargarCotizacion(
     { idioma },
     { responseType: 'blob' },
   )
+  return data
+}
+
+// Estado de cuenta del propio cliente (solo lectura).
+export async function getMiCuenta(): Promise<EstadoCuenta> {
+  const { data } = await portalClient.get<EstadoCuenta>('/portal/cuenta')
   return data
 }

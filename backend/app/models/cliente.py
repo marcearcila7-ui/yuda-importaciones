@@ -17,6 +17,8 @@ class Cliente(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     nombre: Mapped[str] = mapped_column(String, nullable=False)
     empresa: Mapped[str | None] = mapped_column(String, nullable=True)
+    # NIT / identificación tributaria del cliente (aparece en el estado de cuenta).
+    nit: Mapped[str | None] = mapped_column(String, nullable=True)
     telefono: Mapped[str | None] = mapped_column(String, nullable=True)
     pais: Mapped[str | None] = mapped_column(String, nullable=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)

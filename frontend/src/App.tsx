@@ -18,7 +18,10 @@ const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
 const Equipo = lazy(() => import('./pages/Equipo'))
 const Historial = lazy(() => import('./pages/Historial'))
 const Ventas = lazy(() => import('./pages/Ventas'))
+const Cuentas = lazy(() => import('./pages/Cuentas'))
+const CuentaCliente = lazy(() => import('./pages/CuentaCliente'))
 const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'))
+const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
 const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
 
@@ -49,6 +52,7 @@ function App() {
         <Route path="/portal/login" element={<PortalLogin />} />
         <Route element={<PortalProtectedRoute />}>
           <Route path="/portal" element={<PortalCotizaciones />} />
+          <Route path="/portal/cuenta" element={<PortalCuenta />} />
           <Route path="/portal/cotizacion/:sesionId" element={<PortalDetalle />} />
         </Route>
 
@@ -72,9 +76,16 @@ function App() {
           <Route path="/ventas" element={<Layout><Ventas /></Layout>} />
         </Route>
 
-        {/* Historial: solo admin y contadora */}
+        {/* Historial y lista de cuentas: solo admin y contadora */}
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/historial" element={<Layout><Historial /></Layout>} />
+          <Route path="/cuentas" element={<Layout><Cuentas /></Layout>} />
+        </Route>
+
+        {/* Estado de cuenta de un cliente: admin, contadora y la vendedora dueña.
+            El backend limita el acceso a los clientes propios de la vendedora. */}
+        <Route element={<ProtectedRoute roles={['admin', 'contadora', 'vendedora']} />}>
+          <Route path="/clientes/:clienteId/cuenta" element={<Layout><CuentaCliente /></Layout>} />
         </Route>
 
         {/* Detalle de cotización (solo lectura): admin, contadora y la vendedora

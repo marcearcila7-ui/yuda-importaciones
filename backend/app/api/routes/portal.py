@@ -29,12 +29,15 @@ from app.schemas.portal import (
     PortalItem,
     PortalPedidoInput,
 )
+from app.models.cuenta import MovimientoCuenta
+from app.schemas.cuenta import EstadoCuentaResponse
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.cotizacion_service import (
     _calcular,
     generar_cotizacion_excel,
     generar_cotizacion_pdf,
 )
+from app.services.cuenta_service import construir_estado_cuenta
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -94,6 +97,19 @@ def login_cliente(
 @router.get("/me", response_model=ClientePublic)
 def me_cliente(cliente: Cliente = Depends(get_current_cliente)) -> Cliente:
     return cliente
+
+
+@router.get("/cuenta", response_model=EstadoCuentaResponse)
+def mi_cuenta(
+    cliente: Cliente = Depends(get_current_cliente),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Estado de cuenta del propio cliente (solo lectura): compras, comisión,
+    abonos, saldo pendiente y el detalle de cada envío."""
+    movimientos = (
+        db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).all()
+    )
+    return construir_estado_cuenta(cliente, movimientos)
 
 
 @router.get("/cotizaciones", response_model=list[PortalCotizacionResumen])

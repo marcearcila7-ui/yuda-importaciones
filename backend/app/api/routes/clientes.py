@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import require_roles
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cuenta import MovimientoCuenta, calcular_comision
 from app.models.seguimiento import (
     CAMPOS_SOLO_ADMIN,
     ESTADO_DISPARA_AVISO,
@@ -29,8 +30,14 @@ from app.schemas.cliente import (
     ClienteUpdate,
     ResetPasswordRequest,
 )
+from app.schemas.cuenta import (
+    EstadoCuentaResponse,
+    MovimientoCreate,
+    MovimientoUpdate,
+)
 from app.schemas.packing import EnviarAConfirmarInput, SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
+from app.services.cuenta_service import construir_estado_cuenta
 from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
     avisar_listo_para_envio,
@@ -87,6 +94,7 @@ def crear_cliente(
         nombre=datos.nombre.strip(),
         email=email,
         empresa=datos.empresa,
+        nit=datos.nit,
         telefono=datos.telefono,
         pais=datos.pais,
         hashed_password=hash_password(password),
@@ -104,10 +112,10 @@ def crear_cliente(
 
 @router.get("/clientes", response_model=list[ClienteResponse])
 def listar_clientes(
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
 ) -> list[Cliente]:
-    """Lista clientes: la vendedora ve los suyos, el admin ve todos."""
+    """Lista clientes: la vendedora ve los suyos, admin y contadora ven todos."""
     query = db.query(Cliente)
     if usuario.rol.value == "vendedora":
         query = query.filter(Cliente.vendedora_id == usuario.id)
@@ -483,3 +491,123 @@ async def subir_adjunto_seguimiento(
             None, lambda: subir_foto(contenido, nombre_archivo, archivo.content_type)
         )
     return {"url": url, "nombre": archivo.filename, "tipo": tipo}
+
+
+# ---------------------------------------------------------------------------
+# Cuentas de clientes (estado de cuenta / ledger). Gestión: admin y contadora.
+# Lectura: además la vendedora dueña del cliente.
+# ---------------------------------------------------------------------------
+
+
+def _estado_cuenta(db: Session, cliente: Cliente) -> dict:
+    movimientos = (
+        db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).all()
+    )
+    return construir_estado_cuenta(cliente, movimientos)
+
+
+@router.get("/clientes/{cliente_id}/cuenta", response_model=EstadoCuentaResponse)
+def obtener_estado_cuenta(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Estado de cuenta del cliente (compras, comisión, abonos, saldo + ledger)"""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    return _estado_cuenta(db, cliente)
+
+
+@router.post(
+    "/clientes/{cliente_id}/movimientos",
+    response_model=EstadoCuentaResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_movimiento(
+    cliente_id: str,
+    datos: MovimientoCreate,
+    usuario: User = Depends(require_roles("admin", "contadora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Agrega un movimiento (envío) a la cuenta del cliente y devuelve la cuenta"""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    comision = (
+        datos.comision_yuda
+        if datos.comision_yuda is not None
+        else calcular_comision(datos.valor_mercancia)
+    )
+    movimiento = MovimientoCuenta(
+        cliente_id=cliente.id,
+        contenedor_id=datos.contenedor_id,
+        envio=datos.envio,
+        fecha=datos.fecha,
+        guia=datos.guia,
+        descripcion=datos.descripcion,
+        valor_mercancia=datos.valor_mercancia,
+        comision_yuda=comision,
+        abono=datos.abono,
+        nota=datos.nota,
+    )
+    db.add(movimiento)
+    db.commit()
+    return _estado_cuenta(db, cliente)
+
+
+@router.patch(
+    "/clientes/{cliente_id}/movimientos/{movimiento_id}",
+    response_model=EstadoCuentaResponse,
+)
+def actualizar_movimiento(
+    cliente_id: str,
+    movimiento_id: str,
+    datos: MovimientoUpdate,
+    usuario: User = Depends(require_roles("admin", "contadora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Actualiza un movimiento de la cuenta (campos omitidos no cambian)"""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    movimiento = (
+        db.query(MovimientoCuenta)
+        .filter(
+            MovimientoCuenta.id == movimiento_id,
+            MovimientoCuenta.cliente_id == cliente.id,
+        )
+        .first()
+    )
+    if movimiento is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimiento no encontrado")
+
+    cambios = datos.model_dump(exclude_unset=True)
+    # Si cambió el valor y NO se envió comisión explícita, recalcular la comisión.
+    if "valor_mercancia" in cambios and "comision_yuda" not in cambios:
+        cambios["comision_yuda"] = calcular_comision(cambios["valor_mercancia"])
+    for campo, valor in cambios.items():
+        setattr(movimiento, campo, valor)
+    db.commit()
+    return _estado_cuenta(db, cliente)
+
+
+@router.delete(
+    "/clientes/{cliente_id}/movimientos/{movimiento_id}",
+    response_model=EstadoCuentaResponse,
+)
+def eliminar_movimiento(
+    cliente_id: str,
+    movimiento_id: str,
+    usuario: User = Depends(require_roles("admin", "contadora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Elimina un movimiento de la cuenta del cliente"""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    movimiento = (
+        db.query(MovimientoCuenta)
+        .filter(
+            MovimientoCuenta.id == movimiento_id,
+            MovimientoCuenta.cliente_id == cliente.id,
+        )
+        .first()
+    )
+    if movimiento is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimiento no encontrado")
+    db.delete(movimiento)
+    db.commit()
+    return _estado_cuenta(db, cliente)

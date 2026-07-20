@@ -5,5 +5,14 @@ from app.models.item import Item
 from app.models.pedido import PedidoGenerado
 from app.models.notificacion import Notificacion
 from app.models.contenedor import Contenedor
+from app.models.cuenta import MovimientoCuenta
 
-__all__ = ["User", "Sesion", "Item", "PedidoGenerado", "Notificacion", "Contenedor"]
+__all__ = [
+    "User",
+    "Sesion",
+    "Item",
+    "PedidoGenerado",
+    "Notificacion",
+    "Contenedor",
+    "MovimientoCuenta",
+]

@@ -7,7 +7,8 @@
     "historial": "Historial",
     "administracion": "Administración",
     "admin": "Admin",
-    "cerrarSesion": "Cerrar sesión"
+    "cerrarSesion": "Cerrar sesión",
+    "cuentas": "Cuentas"
   },
   "ventas": {
     "titulo": "Ventas",
@@ -153,7 +154,10 @@
     "uso": "Uso",
     "verMas": "Ver todos los datos",
     "verMenos": "Ver menos",
-    "revisarAyuda": "Corrige lo que el sistema haya leído mal. Cada campo indica qué dato es."
+    "revisarAyuda": "Corrige lo que el sistema haya leído mal. Cada campo indica qué dato es.",
+    "reintentarIA": "Reintentar con IA",
+    "reemplazarFoto": "Reemplazar foto",
+    "oCompletaManual": "O completa a mano los datos marcados con * para agregarlo igual."
   },
   "packing": {
     "exportar": "Descargar lista (Excel)",
@@ -379,7 +383,19 @@
     "listas": "{{n}} foto(s) lista(s). Agrega más con + o pulsa Procesar.",
     "procesar": "Procesar {{n}}",
     "agregar": "Agregar",
-    "confirmarDescartar": "¿Descartar los {{n}} productos revisados? Esta acción no se puede deshacer."
+    "confirmarDescartar": "¿Descartar los {{n}} productos revisados? Esta acción no se puede deshacer.",
+    "errorReanalizar": "No se pudo analizar la foto, intenta de nuevo",
+    "ampliar": "Ampliar foto",
+    "cerrar": "Cerrar",
+    "completaOReemplaza": "Completa los datos marcados con * o reemplaza la foto para poder usarla.",
+    "resumenPendientes": "{{listos}} listas para agregar · {{pendientes}} por corregir",
+    "resumenTodoListo": "✅ Todo listo: {{n}} productos para agregar",
+    "analizando": "Analizando…",
+    "reintentarIA": "Reintentar con IA",
+    "reemplazarFoto": "Reemplazar foto",
+    "exitoFinal": "✅ Listo: {{n}} productos agregados a la cotización",
+    "exitoParcial": "{{n}} agregados · quedan {{quedan}} por corregir",
+    "agregarListos": "Agregar {{n}} listos a la cotización"
   },
   "roles": {
     "admin": "Administrador",
@@ -443,7 +459,8 @@
     "desactivado": "{{nombre}} fue desactivado",
     "errorEliminar": "No se pudo eliminar el cliente",
     "cargando": "Cargando…",
-    "reintentar": "Reintentar"
+    "reintentar": "Reintentar",
+    "nit": "NIT"
   },
   "envio": {
     "titulo": "Cliente y envío",
@@ -574,7 +591,12 @@
     "avisoModificar": "Si modificas el pedido, se cancelará tu confirmación y tu vendedora tendrá que revisarlo de nuevo. ¿Continuar?",
     "modificarPedido": "Modificar pedido",
     "enviarCambios": "Enviar cambios",
-    "accesoPortal": "Portal de clientes"
+    "accesoPortal": "Portal de clientes",
+    "miCuenta": "Mi estado de cuenta",
+    "verCuenta": "Ver mi estado de cuenta",
+    "cuentaSubtitulo": "Aquí ves tus compras, abonos y saldo pendiente.",
+    "sinMovimientos": "Todavía no hay movimientos en tu cuenta.",
+    "volverCotizaciones": "Volver a mis cotizaciones"
   },
   "notif": {
     "titulo": "Avisos",
@@ -601,5 +623,45 @@
   "comun": {
     "confirmar": "Confirmar",
     "cancelar": "Cancelar"
+  },
+  "cuenta": {
+    "titulo": "Estado de cuenta",
+    "volver": "Volver",
+    "nit": "NIT",
+    "empresa": "Empresa",
+    "compras": "Compras totales",
+    "comision": "Comisión YUDA",
+    "abonos": "Abonos",
+    "saldoPendiente": "Saldo pendiente",
+    "ultimoAbono": "Último abono",
+    "sinMovimientos": "Esta cuenta todavía no tiene movimientos.",
+    "movimientos": "Movimientos",
+    "nuevo": "Agregar movimiento",
+    "editar": "Editar movimiento",
+    "envio": "Envío",
+    "fecha": "Fecha",
+    "guia": "Guía",
+    "descripcion": "Descripción",
+    "valor": "Valor mercancía",
+    "comisionCol": "Comisión YUDA",
+    "abono": "Abono",
+    "saldo": "Saldo",
+    "nota": "Nota",
+    "contenedor": "Contenedor",
+    "sinContenedor": "Sin contenedor",
+    "comisionAuto": "Se calcula automáticamente (5%) si lo dejas vacío",
+    "guardar": "Guardar",
+    "cancelar": "Cancelar",
+    "eliminar": "Eliminar",
+    "confirmarEliminar": "¿Eliminar este movimiento?",
+    "errorCargar": "No se pudo cargar la cuenta",
+    "errorGuardar": "No se pudo guardar",
+    "acciones": "Acciones"
+  },
+  "cuentas": {
+    "titulo": "Cuentas de clientes",
+    "subtitulo": "Selecciona un cliente para ver y gestionar su estado de cuenta.",
+    "sinClientes": "Todavía no hay clientes.",
+    "verCuenta": "Ver cuenta"
   }
 }

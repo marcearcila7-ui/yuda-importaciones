@@ -7,7 +7,8 @@
     "historial": "历史记录",
     "administracion": "管理",
     "admin": "管理",
-    "cerrarSesion": "退出登录"
+    "cerrarSesion": "退出登录",
+    "cuentas": "账户"
   },
   "ventas": {
     "titulo": "销售",
@@ -153,7 +154,10 @@
     "uso": "用途",
     "verMas": "查看全部数据",
     "verMenos": "收起",
-    "revisarAyuda": "如有识别错误请修正。每个字段都有标签。"
+    "revisarAyuda": "如有识别错误请修正。每个字段都有标签。",
+    "reintentarIA": "用 AI 重试",
+    "reemplazarFoto": "替换照片",
+    "oCompletaManual": "或手动填写带 * 的字段以直接添加。"
   },
   "packing": {
     "exportar": "下载清单 (Excel)",
@@ -379,7 +383,19 @@
     "listas": "已准备 {{n}} 张照片。用 + 添加更多，或点击处理。",
     "procesar": "处理 {{n}}",
     "agregar": "添加",
-    "confirmarDescartar": "放弃已审核的 {{n}} 个产品吗？此操作无法撤销。"
+    "confirmarDescartar": "放弃已审核的 {{n}} 个产品吗？此操作无法撤销。",
+    "errorReanalizar": "无法分析照片，请重试",
+    "ampliar": "放大照片",
+    "cerrar": "关闭",
+    "completaOReemplaza": "填写带 * 的字段或替换照片才能使用。",
+    "resumenPendientes": "{{listos}} 张可添加 · {{pendientes}} 张待修正",
+    "resumenTodoListo": "✅ 全部就绪：{{n}} 个产品可添加",
+    "analizando": "分析中…",
+    "reintentarIA": "用 AI 重试",
+    "reemplazarFoto": "替换照片",
+    "exitoFinal": "✅ 完成：已向报价单添加 {{n}} 个产品",
+    "exitoParcial": "已添加 {{n}} 个 · 还有 {{quedan}} 个待修正",
+    "agregarListos": "将 {{n}} 个就绪项添加到报价单"
   },
   "roles": {
     "admin": "管理员",
@@ -443,7 +459,8 @@
     "desactivado": "{{nombre}} 已停用",
     "errorEliminar": "无法删除客户",
     "cargando": "加载中…",
-    "reintentar": "重试"
+    "reintentar": "重试",
+    "nit": "税号"
   },
   "envio": {
     "titulo": "客户与发货",
@@ -574,7 +591,12 @@
     "avisoModificar": "若修改订单，您的确认将被取消，销售员需重新审核。是否继续？",
     "modificarPedido": "修改订单",
     "enviarCambios": "发送修改",
-    "accesoPortal": "客户门户"
+    "accesoPortal": "客户门户",
+    "miCuenta": "我的对账单",
+    "verCuenta": "查看我的对账单",
+    "cuentaSubtitulo": "在此查看您的采购、付款和未结余额。",
+    "sinMovimientos": "您的账户暂无记录。",
+    "volverCotizaciones": "返回我的报价单"
   },
   "notif": {
     "titulo": "通知",
@@ -601,5 +623,45 @@
   "comun": {
     "confirmar": "确认",
     "cancelar": "取消"
+  },
+  "cuenta": {
+    "titulo": "对账单",
+    "volver": "返回",
+    "nit": "税号",
+    "empresa": "公司",
+    "compras": "采购总额",
+    "comision": "YUDA 佣金",
+    "abonos": "已付款",
+    "saldoPendiente": "未结余额",
+    "ultimoAbono": "最近付款",
+    "sinMovimientos": "该账户暂无记录。",
+    "movimientos": "记录",
+    "nuevo": "添加记录",
+    "editar": "编辑记录",
+    "envio": "发货",
+    "fecha": "日期",
+    "guia": "运单号",
+    "descripcion": "描述",
+    "valor": "货物价值",
+    "comisionCol": "YUDA 佣金",
+    "abono": "付款",
+    "saldo": "余额",
+    "nota": "备注",
+    "contenedor": "集装箱",
+    "sinContenedor": "无集装箱",
+    "comisionAuto": "留空则自动计算（5%）",
+    "guardar": "保存",
+    "cancelar": "取消",
+    "eliminar": "删除",
+    "confirmarEliminar": "删除此记录？",
+    "errorCargar": "无法加载账户",
+    "errorGuardar": "无法保存",
+    "acciones": "操作"
+  },
+  "cuentas": {
+    "titulo": "客户账户",
+    "subtitulo": "选择一个客户以查看和管理其对账单。",
+    "sinClientes": "暂无客户。",
+    "verCuenta": "查看账户"
   }
 }

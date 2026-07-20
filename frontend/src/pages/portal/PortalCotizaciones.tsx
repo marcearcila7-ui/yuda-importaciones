@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ChevronRight, FileText, PackageSearch, RefreshCw } from 'lucide-react'
+import { ChevronRight, FileText, PackageSearch, RefreshCw, Wallet } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import { getMisCotizaciones } from '../../api/portal'
 import { usePortalStore } from '../../store/portalStore'
@@ -48,9 +48,21 @@ function PortalCotizaciones() {
       <h1 style={{ fontWeight: 700, fontSize: 26, color: 'var(--yuda-accent)' }}>
         {t('portal.saludo', { nombre: cliente?.nombre ?? '' })}
       </h1>
-      <p className="mb-6 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+      <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('portal.subtitulo')}
       </p>
+
+      <button
+        type="button"
+        onClick={() => navigate('/portal/cuenta')}
+        className="card mb-6 flex w-full items-center justify-between text-left"
+        style={{ cursor: 'pointer' }}
+      >
+        <span className="flex items-center gap-2" style={{ fontWeight: 600, color: 'var(--yuda-accent)' }}>
+          <Wallet size={20} /> {t('portal.verCuenta')}
+        </span>
+        <ChevronRight size={18} style={{ color: 'var(--yuda-primary)' }} />
+      </button>
 
       {error ? (
         <div className="card flex flex-col items-start gap-3">

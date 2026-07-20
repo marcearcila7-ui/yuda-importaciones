@@ -7,7 +7,8 @@
     "historial": "History",
     "administracion": "Administration",
     "admin": "Admin",
-    "cerrarSesion": "Log out"
+    "cerrarSesion": "Log out",
+    "cuentas": "Accounts"
   },
   "ventas": {
     "titulo": "Sales",
@@ -153,7 +154,10 @@
     "uso": "Use",
     "verMas": "Show all data",
     "verMenos": "Show less",
-    "revisarAyuda": "Fix anything the system misread. Each field is labeled."
+    "revisarAyuda": "Fix anything the system misread. Each field is labeled.",
+    "reintentarIA": "Retry with AI",
+    "reemplazarFoto": "Replace photo",
+    "oCompletaManual": "Or fill the fields marked with * by hand to add it anyway."
   },
   "packing": {
     "exportar": "Download list (Excel)",
@@ -379,7 +383,19 @@
     "listas": "{{n}} photo(s) ready. Add more with + or tap Process.",
     "procesar": "Process {{n}}",
     "agregar": "Add",
-    "confirmarDescartar": "Discard the {{n}} reviewed products? This can't be undone."
+    "confirmarDescartar": "Discard the {{n}} reviewed products? This can't be undone.",
+    "errorReanalizar": "Could not analyze the photo, try again",
+    "ampliar": "Enlarge photo",
+    "cerrar": "Close",
+    "completaOReemplaza": "Fill the fields marked with * or replace the photo to use it.",
+    "resumenPendientes": "{{listos}} ready to add · {{pendientes}} to fix",
+    "resumenTodoListo": "✅ All set: {{n}} products ready to add",
+    "analizando": "Analyzing…",
+    "reintentarIA": "Retry with AI",
+    "reemplazarFoto": "Replace photo",
+    "exitoFinal": "✅ Done: {{n}} products added to the quotation",
+    "exitoParcial": "{{n}} added · {{quedan}} left to fix",
+    "agregarListos": "Add {{n}} ready to the quotation"
   },
   "roles": {
     "admin": "Administrator",
@@ -443,7 +459,8 @@
     "desactivado": "{{nombre}} was deactivated",
     "errorEliminar": "Could not delete the client",
     "cargando": "Loading…",
-    "reintentar": "Retry"
+    "reintentar": "Retry",
+    "nit": "Tax ID"
   },
   "envio": {
     "titulo": "Client and shipment",
@@ -574,7 +591,12 @@
     "avisoModificar": "If you modify the order, your confirmation will be canceled and your salesperson will have to review it again. Continue?",
     "modificarPedido": "Modify order",
     "enviarCambios": "Send changes",
-    "accesoPortal": "Client portal"
+    "accesoPortal": "Client portal",
+    "miCuenta": "My account statement",
+    "verCuenta": "View my account statement",
+    "cuentaSubtitulo": "Here you can see your purchases, payments and outstanding balance.",
+    "sinMovimientos": "There are no entries in your account yet.",
+    "volverCotizaciones": "Back to my quotations"
   },
   "notif": {
     "titulo": "Notifications",
@@ -601,5 +623,45 @@
   "comun": {
     "confirmar": "Confirm",
     "cancelar": "Cancel"
+  },
+  "cuenta": {
+    "titulo": "Account statement",
+    "volver": "Back",
+    "nit": "Tax ID",
+    "empresa": "Company",
+    "compras": "Total purchases",
+    "comision": "YUDA commission",
+    "abonos": "Payments",
+    "saldoPendiente": "Outstanding balance",
+    "ultimoAbono": "Last payment",
+    "sinMovimientos": "This account has no entries yet.",
+    "movimientos": "Entries",
+    "nuevo": "Add entry",
+    "editar": "Edit entry",
+    "envio": "Shipment",
+    "fecha": "Date",
+    "guia": "Tracking",
+    "descripcion": "Description",
+    "valor": "Goods value",
+    "comisionCol": "YUDA commission",
+    "abono": "Payment",
+    "saldo": "Balance",
+    "nota": "Note",
+    "contenedor": "Container",
+    "sinContenedor": "No container",
+    "comisionAuto": "Auto-calculated (5%) if left empty",
+    "guardar": "Save",
+    "cancelar": "Cancel",
+    "eliminar": "Delete",
+    "confirmarEliminar": "Delete this entry?",
+    "errorCargar": "Could not load the account",
+    "errorGuardar": "Could not save",
+    "acciones": "Actions"
+  },
+  "cuentas": {
+    "titulo": "Client accounts",
+    "subtitulo": "Select a client to view and manage their account statement.",
+    "sinClientes": "No clients yet.",
+    "verCuenta": "View account"
   }
 }

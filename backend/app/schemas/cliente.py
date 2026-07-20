@@ -9,6 +9,7 @@ class ClienteCreate(BaseModel):
     nombre: str
     email: str
     empresa: str | None = None
+    nit: str | None = None
     telefono: str | None = None
     pais: str | None = None
     # Si no se envía contraseña, el backend genera una y la devuelve una sola vez
@@ -20,6 +21,7 @@ class ClienteUpdate(BaseModel):
 
     nombre: str | None = None
     empresa: str | None = None
+    nit: str | None = None
     telefono: str | None = None
     pais: str | None = None
     activo: bool | None = None
@@ -32,6 +34,7 @@ class ClienteResponse(BaseModel):
     nombre: str
     email: str
     empresa: str | None
+    nit: str | None
     telefono: str | None
     pais: str | None
     vendedora_id: str
