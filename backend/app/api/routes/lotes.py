@@ -12,8 +12,8 @@ from app.database import get_db
 from app.models.lote import LoteItem, LoteOCR
 from app.models.sesion import Sesion
 from app.models.user import User
-from app.schemas.lote import LoteActivo, LoteCreado, LoteEstado
-from app.services.lote_service import procesar_lote
+from app.schemas.lote import LoteActivo, LoteCreado, LoteEstado, LoteItemInfo
+from app.services.lote_service import ocr_de_bytes, ocr_de_url, procesar_lote
 from app.services.storage_service import subir_foto
 
 router = APIRouter(tags=["lotes"])
@@ -149,6 +149,81 @@ def reprocesar(
     db.commit()
     background.add_task(procesar_lote, lote_id)
     return {"detail": "Reprocesando"}
+
+
+def _obtener_item(db: Session, lote_id: str, item_id: str) -> LoteItem:
+    item = (
+        db.query(LoteItem)
+        .filter(LoteItem.id == item_id, LoteItem.lote_id == lote_id)
+        .first()
+    )
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Foto no encontrada")
+    return item
+
+
+@router.post("/lotes/{lote_id}/items/{item_id}/reanalizar", response_model=LoteItemInfo)
+async def reanalizar_item(
+    lote_id: str,
+    item_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> LoteItem:
+    """Vuelve a correr el OCR sobre la MISMA foto de un ítem puntual (reintento con IA)"""
+    _obtener_lote(db, lote_id, usuario)
+    item = _obtener_item(db, lote_id, item_id)
+    datos, estado = await ocr_de_url(item.foto_url)
+    item.datos = datos
+    item.estado = estado
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.post("/lotes/{lote_id}/items/{item_id}/reemplazar", response_model=LoteItemInfo)
+async def reemplazar_item(
+    lote_id: str,
+    item_id: str,
+    foto: UploadFile,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> LoteItem:
+    """Reemplaza la foto de un ítem por otra y la reanaliza al instante"""
+    _obtener_lote(db, lote_id, usuario)
+    item = _obtener_item(db, lote_id, item_id)
+
+    if foto.content_type not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se permiten imágenes JPG, PNG o WEBP",
+        )
+    imagen_bytes = await foto.read()
+    if len(imagen_bytes) > MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La imagen no debe superar 25MB",
+        )
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen JPG, PNG o WEBP válida",
+        )
+
+    extension = os.path.splitext(foto.filename or "")[1] or TIPOS_PERMITIDOS[tipo_real]
+    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    loop = asyncio.get_event_loop()
+    foto_url = await loop.run_in_executor(
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+    )
+
+    datos, estado = await ocr_de_bytes(imagen_bytes, tipo_real)
+    item.foto_url = foto_url
+    item.datos = datos
+    item.estado = estado
+    db.commit()
+    db.refresh(item)
+    return item
 
 
 @router.get("/lotes/{lote_id}", response_model=LoteEstado)

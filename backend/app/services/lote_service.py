@@ -25,6 +25,33 @@ def _media_type(url: str) -> str:
     return "image/jpeg"
 
 
+async def ocr_de_url(foto_url: str) -> tuple[dict | None, str]:
+    """Descarga una foto y le corre el OCR. Devuelve (datos, estado 'ok'|'error').
+
+    'ok' significa que el modelo respondió (aunque la marque ilegible; eso se
+    resuelve luego con los datos). 'error' es un fallo duro (no se pudo descargar
+    o procesar la imagen)."""
+    try:
+        async with httpx.AsyncClient() as cli:
+            resp = await cli.get(foto_url, timeout=20)
+        if resp.status_code == 200:
+            datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url))
+            return datos, "ok"
+    except Exception:
+        logger.exception("Error reanalizando foto %s", foto_url)
+    return None, "error"
+
+
+async def ocr_de_bytes(imagen_bytes: bytes, media_type: str) -> tuple[dict | None, str]:
+    """Corre el OCR sobre una imagen ya en memoria. Devuelve (datos, estado)."""
+    try:
+        datos = await extraer_datos_etiqueta(imagen_bytes, media_type)
+        return datos, "ok"
+    except Exception:
+        logger.exception("Error analizando imagen subida al lote")
+        return None, "error"
+
+
 async def procesar_lote(lote_id: str) -> None:
     """Procesa en segundo plano todas las fotos pendientes de un lote.
 

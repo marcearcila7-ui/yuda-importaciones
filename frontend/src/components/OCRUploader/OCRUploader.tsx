@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useTranslation } from 'react-i18next'
-import { Camera } from 'lucide-react'
+import { Camera, Sparkles } from 'lucide-react'
 import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
-import { evaluarLegibilidad } from '../../lib/legibilidad'
+import { CAMPOS_OBLIGATORIOS, evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
 
@@ -22,11 +22,16 @@ const inputClase =
 const CAMPOS_NUMERO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
   { clave: 'price_rmb', i18n: 'precioRMB' },
   { clave: 'qty_por_ctn', i18n: 'unidPorCaja' },
+  { clave: 'cantidad_minima', i18n: 'mqt' },
+  { clave: 'cbm_directo', i18n: 'cbm' },
   { clave: 'largo_cm', i18n: 'largoCm' },
   { clave: 'ancho_cm', i18n: 'anchoCm' },
   { clave: 'alto_cm', i18n: 'altoCm' },
   { clave: 'gw', i18n: 'pesoKg' },
 ]
+
+// Datos obligatorios (por su clave i18n) para resaltar los que faltan.
+const REQUERIDOS = new Set(CAMPOS_OBLIGATORIOS.map((c) => c.i18n))
 
 // Campos de texto editables
 const CAMPOS_TEXTO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
@@ -57,6 +62,10 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
     if (!archivoNuevo) return
     setError(null)
     setArchivo(archivoNuevo)
+    // Al elegir/reemplazar una foto, se descarta el resultado anterior para
+    // volver a la pantalla de análisis con la nueva imagen.
+    setResultado(null)
+    setForm(null)
     // Revoca el preview anterior antes de crear uno nuevo
     setPreview((anterior) => {
       if (anterior) URL.revokeObjectURL(anterior)
@@ -125,9 +134,10 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
   }
 
   const chip = form ? chipConfianza(form.confianza) : null
-  // Legibilidad evaluada sobre lo que devolvió el modelo (no sobre ediciones manuales):
-  // si la foto no es legible o faltan datos obligatorios, se bloquea y hay que retomarla.
-  const legibilidad = resultado ? evaluarLegibilidad(resultado.datos_extraidos) : null
+  // Legibilidad evaluada sobre el FORMULARIO editable: así, si la vendedora completa
+  // a mano los datos obligatorios (o reintenta con IA), la tarjeta se desbloquea.
+  const legibilidad = form ? evaluarLegibilidad(form) : null
+  const faltaSet = new Set(legibilidad?.faltantes ?? [])
 
   return (
     <div className="w-full">
@@ -183,30 +193,10 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
         </div>
       )}
 
-      {/* SECCIÓN B.1 — Foto NO legible: bloquea y obliga a volver a tomarla */}
-      {resultado && legibilidad && !legibilidad.ok && (
-        <div className="flex flex-col gap-4">
-          {preview && (
-            <img
-              src={preview}
-              alt="Vista previa"
-              className="max-h-[250px] w-full rounded-lg object-contain sm:max-h-[200px]"
-            />
-          )}
-          <AlertaNoLegible legibilidad={legibilidad} />
-          <button
-            type="button"
-            onClick={resetear}
-            className="min-h-[52px] w-full font-semibold text-white sm:min-h-[48px]"
-            style={{ backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
-          >
-            {t('ocr.volverATomar')}
-          </button>
-        </div>
-      )}
-
-      {/* SECCIÓN B.2 — Panel de revisión (cuando la foto es legible) */}
-      {resultado && form && legibilidad && legibilidad.ok && (
+      {/* SECCIÓN B — Panel de revisión (foto legible O no): siempre editable.
+          Si no es usable, muestra el motivo + acciones de IA, pero permite
+          completar a mano; el botón "Agregar" se habilita cuando están los datos. */}
+      {resultado && form && legibilidad && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h3 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>{t('ocr.revisarDatos')}</h3>
@@ -217,15 +207,51 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             )}
           </div>
 
+          {(preview || resultado.foto_url) && (
+            <img
+              src={preview ?? resultado.foto_url}
+              alt="Vista previa"
+              className="max-h-[250px] w-full rounded-lg object-contain sm:max-h-[200px]"
+            />
+          )}
+
+          {/* Foto no usable: motivo amable + opciones (IA o reemplazar) */}
+          {!legibilidad.ok && (
+            <>
+              <AlertaNoLegible legibilidad={legibilidad} />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleExtraer}
+                  disabled={cargando}
+                  className="flex flex-1 items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
+                  style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, fontSize: 16 }}
+                >
+                  <Sparkles size={16} /> {cargando ? t('ocr.analizando') : t('ocr.reintentarIA')}
+                </button>
+                <button
+                  type="button"
+                  onClick={open}
+                  className="flex flex-1 items-center justify-center gap-2 font-semibold"
+                  style={{ minHeight: 48, backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)', borderRadius: 8, fontSize: 16 }}
+                >
+                  <Camera size={16} /> {t('ocr.reemplazarFoto')}
+                </button>
+              </div>
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('ocr.oCompletaManual')}</p>
+            </>
+          )}
+
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {CAMPOS_TEXTO.map(({ clave, i18n }) => (
               <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t(`ocr.${i18n}`)}
+                {REQUERIDOS.has(i18n) && <span style={{ color: 'var(--yuda-error)' }}> *</span>}
                 <input
                   type="text"
                   value={(form[clave] as string | null) ?? ''}
                   onChange={(e) => actualizarTexto(clave, e.target.value)}
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
               </label>
@@ -233,11 +259,12 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             {CAMPOS_NUMERO.map(({ clave, i18n }) => (
               <label key={clave} className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t(`ocr.${i18n}`)}
+                {REQUERIDOS.has(i18n) && <span style={{ color: 'var(--yuda-error)' }}> *</span>}
                 <input
                   type="number"
                   value={(form[clave] as number | null) ?? ''}
                   onChange={(e) => actualizarNumero(clave, e.target.value)}
-                  style={inputStyle}
+                  style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
               </label>
@@ -248,7 +275,8 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
             <button
               type="button"
               onClick={handleConfirmar}
-              className="flex-1 font-semibold text-white"
+              disabled={!legibilidad.ok}
+              className="flex-1 font-semibold text-white disabled:opacity-60"
               style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, fontSize: 16 }}
             >
               {t('ocr.agregarPacking')}

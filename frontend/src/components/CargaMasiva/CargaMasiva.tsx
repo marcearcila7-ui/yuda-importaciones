@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ChevronDown, ChevronUp, Images, Plus, RefreshCw, Sparkles, Trash2, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
@@ -25,21 +25,30 @@ function CampoLote({
   tipo = 'text',
   onChange,
   ancho,
+  requerido,
+  alerta,
 }: {
   label: string
   valor: string | number | null | undefined
   tipo?: 'text' | 'number'
   onChange: (v: string) => void
   ancho?: string
+  // requerido = dato obligatorio para poder procesar la foto
+  requerido?: boolean
+  // alerta = obligatorio y todavía vacío (se resalta en rojo)
+  alerta?: boolean
 }) {
   return (
     <label className={`flex flex-col gap-0.5 text-xs ${ancho ?? ''}`} style={{ color: 'var(--yuda-text)' }}>
-      <span className="font-medium">{label}</span>
+      <span className="font-medium">
+        {label}
+        {requerido && <span style={{ color: 'var(--yuda-error)' }}> *</span>}
+      </span>
       <input
         type={tipo}
         value={valor ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
+        style={{ ...inputStyle, borderColor: alerta ? 'var(--yuda-error)' : undefined }}
         className={inputClase}
       />
     </label>
@@ -73,15 +82,22 @@ function CargaMasiva() {
     agregarMas,
     retomar,
     reintentar,
+    reanalizarUno,
+    reemplazarUno,
     actualizarDato,
     quitar,
     finalizar,
   } = useLoteStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const inputMasRef = useRef<HTMLInputElement>(null)
+  const inputReemplazarRef = useRef<HTMLInputElement>(null)
 
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
+  // Foto ampliada (lightbox) y tarjeta ocupada (reanálisis/reemplazo en curso)
+  const [zoom, setZoom] = useState<string | null>(null)
+  const [ocupadoId, setOcupadoId] = useState<string | null>(null)
+  const [reemplazarId, setReemplazarId] = useState<string | null>(null)
   // Fotos con el detalle completo desplegado (para revisar/editar todos los datos).
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
   const toggleExpandido = (id: string) =>
@@ -138,11 +154,45 @@ function CargaMasiva() {
     actualizarDato(id, campo, n !== null && Number.isNaN(n) ? null : n)
   }
 
+  // Reintento con IA sobre la misma foto de una tarjeta.
+  const handleReintentarIA = async (id: string) => {
+    setOcupadoId(id)
+    try {
+      await reanalizarUno(id)
+    } catch {
+      toast.error(t('lote.errorReanalizar'))
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
+  // Reemplazar la foto de una tarjeta: abre el selector y, al elegir, reanaliza.
+  const pedirReemplazo = (id: string) => {
+    setReemplazarId(id)
+    inputReemplazarRef.current?.click()
+  }
+  const handleReemplazo = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    const id = reemplazarId
+    setReemplazarId(null)
+    if (!file || !id) return
+    setOcupadoId(id)
+    try {
+      await reemplazarUno(id, file)
+    } catch {
+      toast.error(t('lote.errorReanalizar'))
+    } finally {
+      setOcupadoId(null)
+    }
+  }
+
   // Solo los productos con foto legible y datos completos se pueden agregar.
   const legibles = resultados.filter((r) => evaluarLegibilidad(r.datos).ok)
   const noLegibles = resultados.length - legibles.length
 
-  const agregarTodos = async () => {
+  // Agrega los que ya están listos y DEJA en pantalla los que faltan corregir.
+  const agregarBuenos = async () => {
     if (legibles.length === 0) return
     setAgregando(true)
     const n = legibles.length
@@ -168,10 +218,16 @@ function CargaMasiva() {
         ctns: 1,
       }
       await agregarItem(item)
+      quitar(r.id)
     }
-    await finalizar()
+    const quedan = resultados.length - n
     setAgregando(false)
-    toast.success(t('lote.exito', { n }))
+    if (quedan <= 0) {
+      await finalizar()
+      toast.success(t('lote.exitoFinal', { n }))
+    } else {
+      toast.success(t('lote.exitoParcial', { n, quedan }))
+    }
   }
 
   const enProgreso = fase === 'subiendo' || fase === 'procesando'
@@ -352,48 +408,79 @@ function CargaMasiva() {
             </button>
           </div>
 
-          {noLegibles > 0 && (
-            <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }}>
-              {t('lote.noLegibles', { n: noLegibles })}
-            </p>
-          )}
+          <div
+            className="rounded-lg px-3 py-2 text-sm font-medium"
+            style={
+              noLegibles > 0
+                ? { backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }
+                : { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+            }
+          >
+            {noLegibles > 0
+              ? t('lote.resumenPendientes', { listos: legibles.length, pendientes: noLegibles })
+              : t('lote.resumenTodoListo', { n: legibles.length })}
+          </div>
 
           {resultados.map((r) => {
             const chip = chipConfianza(r.datos.confianza, t)
             const legibilidad = evaluarLegibilidad(r.datos)
+            const faltaSet = new Set(legibilidad.faltantes)
+            const ocupado = ocupadoId === r.id
             return (
               <div
                 key={r.id}
                 className="flex flex-col gap-3 rounded-xl border p-3"
                 style={{ borderColor: legibilidad.ok ? 'var(--yuda-border)' : '#FCA5A5' }}
               >
-              {/* Fila: foto + confianza + quitar */}
-              <div className="flex items-center gap-3">
+              {/* Fila: foto grande (ampliable) + confianza + quitar */}
+              <div className="flex items-start gap-3">
                 {r.foto_url ? (
-                  <img src={r.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setZoom(r.foto_url)}
+                    className="relative flex-shrink-0 overflow-hidden rounded-lg"
+                    style={{ width: 104, height: 104 }}
+                    aria-label={t('lote.ampliar')}
+                  >
+                    <img src={r.foto_url} alt="" className="h-full w-full object-cover" />
+                    <span className="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full text-white" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                      <Maximize2 size={13} />
+                    </span>
+                  </button>
                 ) : (
-                  <div style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
+                  <div style={{ width: 104, height: 104 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                 )}
-                <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chip.style}>
-                  {chip.texto}
-                </span>
-                <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} className="ml-auto" style={{ color: 'var(--yuda-error)' }}>
-                  <Trash2 size={18} />
-                </button>
+                <div className="flex flex-1 flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={chip.style}>
+                      {chip.texto}
+                    </span>
+                    <button type="button" onClick={() => quitar(r.id)} aria-label={t('lote.quitar')} className="ml-auto" style={{ color: 'var(--yuda-error)' }}>
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  {!legibilidad.ok && (
+                    <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {t('lote.completaOReemplaza')}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              {/* Campos principales a ancho completo (más cómodos en celular) */}
+              {/* Datos que la foto necesita para poder procesarse (* = obligatorio) */}
               <div className="grid grid-cols-2 gap-2">
-                <CampoLote ancho="col-span-2" label={t('ocr.proveedor')} valor={r.datos.supplier_nombre}
+                <CampoLote ancho="col-span-2" label={t('ocr.proveedor')} valor={r.datos.supplier_nombre} requerido alerta={faltaSet.has('proveedor')}
                   onChange={(v) => actualizarTexto(r.id, 'supplier_nombre', v)} />
                 <CampoLote ancho="col-span-2" label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
                   onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
-                <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number"
+                <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number" requerido alerta={faltaSet.has('precioRMB')}
                   onChange={(v) => actualizarNumero(r.id, 'price_rmb', v)} />
-                <CampoLote label={t('ocr.unidPorCaja')} valor={r.datos.qty_por_ctn} tipo="number"
+                <CampoLote label={t('ocr.unidPorCaja')} valor={r.datos.qty_por_ctn} tipo="number" requerido alerta={faltaSet.has('unidPorCaja')}
                   onChange={(v) => actualizarNumero(r.id, 'qty_por_ctn', v)} />
-                <CampoLote label={t('ocr.mqt')} valor={r.datos.cantidad_minima} tipo="number"
+                <CampoLote label={t('ocr.mqt')} valor={r.datos.cantidad_minima} tipo="number" requerido alerta={faltaSet.has('mqt')}
                   onChange={(v) => actualizarNumero(r.id, 'cantidad_minima', v)} />
+                <CampoLote label={t('ocr.cbm')} valor={r.datos.cbm_directo} tipo="number" requerido alerta={faltaSet.has('cbm')}
+                  onChange={(v) => actualizarNumero(r.id, 'cbm_directo', v)} />
               </div>
 
               <button
@@ -432,6 +519,30 @@ function CargaMasiva() {
               )}
 
               {!legibilidad.ok && <AlertaNoLegible legibilidad={legibilidad} compacta />}
+
+              {/* Acciones IA para las fotos que fallaron: reintentar o reemplazar */}
+              {!legibilidad.ok && (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => handleReintentarIA(r.id)}
+                    disabled={ocupado}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-primary)' }}
+                  >
+                    <Sparkles size={16} /> {ocupado ? t('lote.analizando') : t('lote.reintentarIA')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => pedirReemplazo(r.id)}
+                    disabled={ocupado}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+                    style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
+                  >
+                    <Upload size={16} /> {t('lote.reemplazarFoto')}
+                  </button>
+                </div>
+              )}
               </div>
             )
           })}
@@ -448,12 +559,42 @@ function CargaMasiva() {
 
           <button
             type="button"
-            onClick={agregarTodos}
+            onClick={agregarBuenos}
             disabled={agregando || legibles.length === 0}
             className="min-h-[52px] w-full rounded-lg font-semibold text-white disabled:opacity-60"
             style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16 }}
           >
-            {agregando ? t('lote.agregando') : t('lote.agregarTodos', { n: legibles.length })}
+            {agregando ? t('lote.agregando') : t('lote.agregarListos', { n: legibles.length })}
+          </button>
+        </div>
+      )}
+
+      {/* Input oculto para reemplazar la foto de una tarjeta */}
+      <input
+        ref={inputReemplazarRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleReemplazo}
+        className="hidden"
+      />
+
+      {/* Lightbox: foto ampliada al tocar */}
+      {zoom && (
+        <div
+          onClick={() => setZoom(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
+          role="dialog"
+        >
+          <img src={zoom} alt="" style={{ maxWidth: '100%', maxHeight: '100%' }} className="rounded-lg" />
+          <button
+            type="button"
+            onClick={() => setZoom(null)}
+            aria-label={t('lote.cerrar')}
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-white"
+            style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+          >
+            <X size={20} />
           </button>
         </div>
       )}

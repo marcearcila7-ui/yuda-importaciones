@@ -5,6 +5,8 @@ import {
   estadoLote,
   loteActivo,
   procesarLoteApi,
+  reanalizarItemLote,
+  reemplazarItemLote,
   reprocesarLote,
   subirFotoLote,
   type LoteEstadoResp,
@@ -16,6 +18,18 @@ export interface ResultadoLote {
   id: string
   foto_url: string
   datos: OCRResultado
+}
+
+// Datos vacíos para una foto que NO se pudo procesar (falla dura): así la tarjeta
+// se muestra igual, marcada como ilegible, con los campos listos para llenar a mano.
+function datosVacios(): OCRResultado {
+  return {
+    descripcion_es: null, descripcion_en: null, descripcion_zh: null,
+    material: null, uso: null, supplier_nombre: null, supplier_numero: null,
+    price_rmb: null, qty_por_ctn: null, largo_cm: null, ancho_cm: null, alto_cm: null,
+    cbm_directo: null, gw: null, colores: null, cantidad_minima: null, notas: null,
+    confianza: 'baja', legible: false, motivo_ilegible: 'no_procesada',
+  }
 }
 
 // Foto elegida pero aún NO subida: se acumula en la fase de selección hasta que
@@ -49,6 +63,8 @@ interface LoteState {
   agregarMas: (files: File[]) => Promise<void>
   retomar: (sesionId: string) => Promise<void>
   reintentar: () => Promise<void>
+  reanalizarUno: (id: string) => Promise<void>
+  reemplazarUno: (id: string, file: File) => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
   quitar: (id: string) => void
   finalizar: () => Promise<void>
@@ -83,9 +99,16 @@ export const useLoteStore = create<LoteState>((set, get) => {
   // Vuelca el estado del servidor al store; si terminó, arma los resultados
   const aplicarEstado = (est: LoteEstadoResp) => {
     if (est.estado === 'completado') {
+      // Se incluyen TODAS las fotos procesadas (ok y con error): las de falla dura
+      // se muestran como tarjeta ilegible para que la vendedora sepa cuál es y la
+      // pueda reemplazar/reanalizar o llenar a mano.
       const resultados = est.items
-        .filter((i) => i.estado === 'ok' && i.datos)
-        .map((i) => ({ id: i.id, foto_url: i.foto_url, datos: { ...(i.datos as OCRResultado) } }))
+        .filter((i) => i.estado === 'ok' || i.estado === 'error')
+        .map((i) => ({
+          id: i.id,
+          foto_url: i.foto_url,
+          datos: i.datos ? { ...(i.datos as OCRResultado) } : datosVacios(),
+        }))
       const errores = est.items.filter((i) => i.estado === 'error').length
       set({ fase: 'completado', resultados, errores, procesadas: est.procesadas, totalProc: est.total })
     } else {
@@ -260,6 +283,35 @@ export const useLoteStore = create<LoteState>((set, get) => {
       } catch {
         // ignorar
       }
+    },
+
+    // Reintento con IA sobre la misma foto de un ítem puntual.
+    reanalizarUno: async (id) => {
+      const loteId = get().loteId
+      if (!loteId) return
+      const info = await reanalizarItemLote(loteId, id)
+      set((s) => ({
+        resultados: s.resultados.map((r) =>
+          r.id === id
+            ? { ...r, foto_url: info.foto_url, datos: info.datos ? { ...info.datos } : datosVacios() }
+            : r,
+        ),
+      }))
+    },
+
+    // Reemplaza la foto de un ítem por otra y la reanaliza.
+    reemplazarUno: async (id, file) => {
+      const loteId = get().loteId
+      if (!loteId) return
+      const comprimido = await comprimirImagen(file)
+      const info = await reemplazarItemLote(loteId, id, comprimido)
+      set((s) => ({
+        resultados: s.resultados.map((r) =>
+          r.id === id
+            ? { ...r, foto_url: info.foto_url, datos: info.datos ? { ...info.datos } : datosVacios() }
+            : r,
+        ),
+      }))
     },
 
     actualizarDato: (id, campo, valor) =>

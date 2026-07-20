@@ -36,6 +36,27 @@ export async function reprocesarLote(lote_id: string): Promise<void> {
   await apiClient.post(`/lotes/${lote_id}/reprocesar`)
 }
 
+// Reintento con IA sobre la MISMA foto de un ítem puntual.
+export async function reanalizarItemLote(lote_id: string, item_id: string): Promise<LoteItemInfo> {
+  const { data } = await apiClient.post<LoteItemInfo>(`/lotes/${lote_id}/items/${item_id}/reanalizar`)
+  return data
+}
+
+// Reemplaza la foto de un ítem por otra y la reanaliza al instante.
+export async function reemplazarItemLote(
+  lote_id: string,
+  item_id: string,
+  file: File,
+): Promise<LoteItemInfo> {
+  const fd = new FormData()
+  fd.append('foto', file)
+  const { data } = await apiClient.post<LoteItemInfo>(
+    `/lotes/${lote_id}/items/${item_id}/reemplazar`,
+    fd,
+  )
+  return data
+}
+
 export async function estadoLote(lote_id: string): Promise<LoteEstadoResp> {
   const { data } = await apiClient.get(`/lotes/${lote_id}`)
   return data as LoteEstadoResp
