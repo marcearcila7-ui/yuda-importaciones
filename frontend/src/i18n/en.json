@@ -619,7 +619,8 @@
     "generarTitulo": "Generate supplier order",
     "enviadoAConfirmar": "Sent to the client for confirmation",
     "confirmadoOk": "The client confirmed the quantities. You can now generate the supplier order.",
-    "error": "Could not send"
+    "error": "Could not send",
+    "enviarAConfirmarOpcional": "Send to client to confirm (optional)"
   },
   "comun": {
     "confirmar": "Confirm",

@@ -10,10 +10,12 @@ import type { GenerarPedidosResponse } from '../../types/pedidos'
 interface GenerarPedidosProps {
   sesion_id: string
   nombre_cliente: string
-  pedidoConfirmado?: boolean
+  // El cliente ya envió sus cantidades desde el portal → se habilita generar con
+  // las cajas que pidió (ya no hace falta una segunda confirmación).
+  permitirCantidadesCliente?: boolean
 }
 
-function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }: GenerarPedidosProps) {
+function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente = false }: GenerarPedidosProps) {
   const { t } = useTranslation()
   const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
@@ -24,8 +26,8 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
     let mensajeConfirm: string
     if (usarCantidadesCliente) {
       mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
-    } else if (!pedidoConfirmado) {
-      // Botón normal (CTNS internas) cuando el cliente todavía no confirmó: advierte.
+    } else if (!permitirCantidadesCliente) {
+      // Botón normal (CTNS internas) cuando el cliente todavía no envió su pedido: advierte.
       mensajeConfirm = t('pedidos.confirmarSinPedido', { cliente: nombre_cliente })
     } else {
       mensajeConfirm = t('pedidos.confirmar', { cliente: nombre_cliente })
@@ -87,7 +89,7 @@ function GenerarPedidos({ sesion_id, nombre_cliente, pedidoConfirmado = false }:
       </Button>
 
       {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
-      {pedidoConfirmado && (
+      {permitirCantidadesCliente && (
         <Button variant="success" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
           {generando === 'cliente' ? (
             t('pedidos.generando')

@@ -287,7 +287,7 @@ function Dashboard() {
             <GenerarPedidos
               sesion_id={sesionActual.id}
               nombre_cliente={sesionActual.nombre_cliente}
-              pedidoConfirmado={sesionActual.pedido_estado === 'confirmado'}
+              permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
             />
           </SectionCard>
 

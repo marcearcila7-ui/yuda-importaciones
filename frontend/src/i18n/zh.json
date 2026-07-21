@@ -619,7 +619,8 @@
     "generarTitulo": "生成供应商订单",
     "enviadoAConfirmar": "已发送给客户确认",
     "confirmadoOk": "客户已确认数量。您现在可以生成供应商订单。",
-    "error": "发送失败"
+    "error": "发送失败",
+    "enviarAConfirmarOpcional": "发送给客户确认（可选）"
   },
   "comun": {
     "confirmar": "确认",

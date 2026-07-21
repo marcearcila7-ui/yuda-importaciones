@@ -12,7 +12,7 @@ from app.api.dependencies import exigir_roles, get_current_user
 from app.database import get_db
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
-from app.models.sesion import PEDIDO_CONFIRMADO, Sesion
+from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.pedidos import (
     GenerarPedidosResponse,
@@ -98,11 +98,12 @@ def generar_pedidos(
     warnings: list[str] = []
 
     if usar_cantidades_cliente:
-        # El cliente debe haber confirmado las cantidades finales en el portal
-        if sesion.pedido_estado != PEDIDO_CONFIRMADO:
+        # Basta con que el cliente haya ENVIADO las cantidades desde el portal; ya
+        # no se exige una segunda confirmación (se genera directo con lo enviado).
+        if sesion.pedido_recibido_at is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El cliente aún no ha confirmado las cantidades finales del pedido",
+                detail="El cliente aún no ha enviado las cantidades desde el portal",
             )
         # d/e. Usar las cajas que pidió el cliente; avisar de las que dejó en 0
         items_validos = []

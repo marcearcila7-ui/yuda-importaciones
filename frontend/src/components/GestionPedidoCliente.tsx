@@ -110,40 +110,41 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
         </div>
       )}
 
-      {/* Acciones según el estado */}
+      {/* Acciones: como el cliente ya envió sus cantidades, se puede generar directo
+          el pedido al proveedor. "Enviar a confirmar" queda como paso opcional. */}
       <div className="border-t px-4 py-3" style={{ borderColor: '#E0E2FA' }}>
-        {confirmado ? (
-          <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
+          {confirmado && (
             <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
               <CheckCircle2 size={16} /> {t('gestionPedido.confirmadoOk')}
             </p>
-            <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>{t('gestionPedido.generarTitulo')}</p>
-            <GenerarPedidos sesion_id={sesion.id} nombre_cliente={sesion.nombre_cliente} pedidoConfirmado />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {porConfirmar && (
-              <p className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
-                <Clock size={15} /> {t('gestionPedido.esperandoConfirmacion')}
-              </p>
-            )}
-            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('gestionPedido.avisoGenerar')}</p>
+          )}
+          {porConfirmar && (
+            <p className="flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+              <Clock size={15} /> {t('gestionPedido.esperandoConfirmacion')}
+            </p>
+          )}
+          <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>{t('gestionPedido.generarTitulo')}</p>
+          <GenerarPedidos sesion_id={sesion.id} nombre_cliente={sesion.nombre_cliente} permitirCantidadesCliente />
+
+          {/* Opcional: pedirle al cliente que confirme (útil si ajustaste cantidades) */}
+          {!confirmado && (
             <button
               type="button"
               onClick={enviar}
               disabled={enviando}
-              className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-              style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
+              className="flex items-center gap-2 self-start text-sm font-medium disabled:opacity-60"
+              style={{ color: 'var(--yuda-primary)' }}
             >
-              <Send size={16} />{' '}
+              <Send size={15} />{' '}
               {enviando
                 ? t('gestionPedido.enviando')
                 : porConfirmar
                   ? t('gestionPedido.reenviar')
-                  : t('gestionPedido.enviarAConfirmar')}
+                  : t('gestionPedido.enviarAConfirmarOpcional')}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

@@ -619,7 +619,8 @@
     "generarTitulo": "Generar pedido a proveedor",
     "enviadoAConfirmar": "Enviado al cliente para confirmar",
     "confirmadoOk": "El cliente confirmó las cantidades. Ya podés generar el pedido al proveedor.",
-    "error": "No se pudo enviar"
+    "error": "No se pudo enviar",
+    "enviarAConfirmarOpcional": "Enviar al cliente para que confirme (opcional)"
   },
   "comun": {
     "confirmar": "Confirmar",
