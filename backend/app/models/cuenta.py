@@ -30,6 +30,11 @@ class MovimientoCuenta(Base):
     cliente_id: Mapped[str] = mapped_column(
         String, ForeignKey("clientes.id"), nullable=False, index=True
     )
+    # Pedido (cotización) al que pertenece el movimiento. Cada pedido lleva su
+    # propia contabilidad; los movimientos sin pedido caen en un apartado aparte.
+    sesion_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("sesiones.id"), nullable=True, index=True
+    )
     # Contenedor/embarque al que pertenece el movimiento (opcional).
     contenedor_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("contenedores.id"), nullable=True, index=True

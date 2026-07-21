@@ -109,7 +109,8 @@ def mi_cuenta(
     movimientos = (
         db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).all()
     )
-    return construir_estado_cuenta(cliente, movimientos)
+    sesiones = db.query(Sesion).filter(Sesion.cliente_id == cliente.id).all()
+    return construir_estado_cuenta(cliente, movimientos, sesiones)
 
 
 @router.get("/cotizaciones", response_model=list[PortalCotizacionResumen])

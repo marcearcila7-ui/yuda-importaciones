@@ -658,7 +658,12 @@
     "confirmarEliminar": "删除此记录？",
     "errorCargar": "无法加载账户",
     "errorGuardar": "无法保存",
-    "acciones": "操作"
+    "acciones": "操作",
+    "pedido": "订单（报价单）",
+    "sinPedido": "无订单",
+    "esPedido": "订单",
+    "esCotizacion": "报价单",
+    "agregarAqui": "在此添加"
   },
   "cuentas": {
     "titulo": "客户账户",

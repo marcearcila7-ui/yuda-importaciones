@@ -503,7 +503,24 @@ def _estado_cuenta(db: Session, cliente: Cliente) -> dict:
     movimientos = (
         db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).all()
     )
-    return construir_estado_cuenta(cliente, movimientos)
+    # Pedidos = cotizaciones del cliente (para el nombre/fecha de cada apartado).
+    sesiones = db.query(Sesion).filter(Sesion.cliente_id == cliente.id).all()
+    return construir_estado_cuenta(cliente, movimientos, sesiones)
+
+
+def _validar_sesion_del_cliente(db: Session, cliente_id: str, sesion_id: str | None) -> None:
+    """El pedido (cotización) asociado a un movimiento debe ser del propio cliente."""
+    if sesion_id is None:
+        return
+    existe = (
+        db.query(Sesion)
+        .filter(Sesion.id == sesion_id, Sesion.cliente_id == cliente_id)
+        .first()
+    )
+    if existe is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "El pedido no pertenece a este cliente"
+        )
 
 
 @router.get("/clientes/{cliente_id}/cuenta", response_model=EstadoCuentaResponse)
@@ -530,6 +547,7 @@ def crear_movimiento(
 ) -> dict:
     """Agrega un movimiento (envío) a la cuenta del cliente y devuelve la cuenta"""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
+    _validar_sesion_del_cliente(db, cliente.id, datos.sesion_id)
     comision = (
         datos.comision_yuda
         if datos.comision_yuda is not None
@@ -537,6 +555,7 @@ def crear_movimiento(
     )
     movimiento = MovimientoCuenta(
         cliente_id=cliente.id,
+        sesion_id=datos.sesion_id,
         contenedor_id=datos.contenedor_id,
         envio=datos.envio,
         fecha=datos.fecha,
@@ -577,6 +596,9 @@ def actualizar_movimiento(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Movimiento no encontrado")
 
     cambios = datos.model_dump(exclude_unset=True)
+    # Si se reasigna el pedido, validar que sea del mismo cliente.
+    if "sesion_id" in cambios:
+        _validar_sesion_del_cliente(db, cliente.id, cambios["sesion_id"])
     # Si cambió el valor y NO se envió comisión explícita, recalcular la comisión.
     if "valor_mercancia" in cambios and "comision_yuda" not in cambios:
         cambios["comision_yuda"] = calcular_comision(cambios["valor_mercancia"])

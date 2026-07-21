@@ -658,7 +658,12 @@
     "confirmarEliminar": "¿Eliminar este movimiento?",
     "errorCargar": "No se pudo cargar la cuenta",
     "errorGuardar": "No se pudo guardar",
-    "acciones": "Acciones"
+    "acciones": "Acciones",
+    "pedido": "Pedido (cotización)",
+    "sinPedido": "Sin pedido",
+    "esPedido": "Pedido",
+    "esCotizacion": "Cotización",
+    "agregarAqui": "Agregar aquí"
   },
   "cuentas": {
     "titulo": "Cuentas de clientes",

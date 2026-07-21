@@ -46,41 +46,52 @@ function PortalCuenta() {
             <MetricCard titulo={t('cuenta.saldoPendiente')} valor={`$ ${fmt(cuenta.saldo_pendiente)}`} icono={<Wallet size={20} />} color="var(--yuda-accent)" />
           </div>
 
-          <section className="card flex flex-col gap-3">
-            <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('cuenta.movimientos')}</h2>
-            {cuenta.movimientos.length === 0 ? (
+          {cuenta.pedidos.length === 0 ? (
+            <section className="card">
               <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('portal.sinMovimientos')}</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
-                      <th className="px-3 py-2 text-left font-semibold">{t('cuenta.envio')}</th>
-                      <th className="px-3 py-2 text-left font-semibold">{t('cuenta.fecha')}</th>
-                      <th className="px-3 py-2 text-left font-semibold">{t('cuenta.descripcion')}</th>
-                      <th className="px-3 py-2 text-right font-semibold">{t('cuenta.valor')}</th>
-                      <th className="px-3 py-2 text-right font-semibold">{t('cuenta.comisionCol')}</th>
-                      <th className="px-3 py-2 text-right font-semibold">{t('cuenta.abono')}</th>
-                      <th className="px-3 py-2 text-right font-semibold">{t('cuenta.saldo')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cuenta.movimientos.map((m, i) => (
-                      <tr key={m.id} style={{ background: i % 2 ? 'var(--yuda-bg)' : 'transparent', borderBottom: '1px solid var(--yuda-border)' }}>
-                        <td className="px-3 py-2">{m.envio ?? ''}</td>
-                        <td className="px-3 py-2">{m.fecha ?? ''}</td>
-                        <td className="px-3 py-2">{m.descripcion ?? ''}</td>
-                        <td className="px-3 py-2 text-right">{fmt(m.valor_mercancia)}</td>
-                        <td className="px-3 py-2 text-right">{fmt(m.comision_yuda)}</td>
-                        <td className="px-3 py-2 text-right">{fmt(m.abono)}</td>
-                        <td className="px-3 py-2 text-right font-semibold">{fmt(m.saldo)}</td>
+            </section>
+          ) : (
+            cuenta.pedidos.map((p) => (
+              <section key={p.sesion_id ?? 'sin'} className="card flex flex-col gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+                    {p.sesion_id ? (p.pedido_numero ?? '') : t('cuenta.sinPedido')}
+                  </h2>
+                  <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('cuenta.saldoPendiente')}: <strong style={{ color: 'var(--yuda-accent)' }}>$ {fmt(p.saldo_pendiente)}</strong>
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
+                        <th className="px-3 py-2 text-left font-semibold">{t('cuenta.envio')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('cuenta.fecha')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('cuenta.descripcion')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.valor')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.comisionCol')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.abono')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.saldo')}</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+                    </thead>
+                    <tbody>
+                      {p.movimientos.map((m, i) => (
+                        <tr key={m.id} style={{ background: i % 2 ? 'var(--yuda-bg)' : 'transparent', borderBottom: '1px solid var(--yuda-border)' }}>
+                          <td className="px-3 py-2">{m.envio ?? ''}</td>
+                          <td className="px-3 py-2">{m.fecha ?? ''}</td>
+                          <td className="px-3 py-2">{m.descripcion ?? ''}</td>
+                          <td className="px-3 py-2 text-right">{fmt(m.valor_mercancia)}</td>
+                          <td className="px-3 py-2 text-right">{fmt(m.comision_yuda)}</td>
+                          <td className="px-3 py-2 text-right">{fmt(m.abono)}</td>
+                          <td className="px-3 py-2 text-right font-semibold">{fmt(m.saldo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ))
+          )}
         </div>
       )}
     </PortalLayout>

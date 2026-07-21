@@ -658,7 +658,12 @@
     "confirmarEliminar": "Delete this entry?",
     "errorCargar": "Could not load the account",
     "errorGuardar": "Could not save",
-    "acciones": "Actions"
+    "acciones": "Actions",
+    "pedido": "Order (quotation)",
+    "sinPedido": "No order",
+    "esPedido": "Order",
+    "esCotizacion": "Quotation",
+    "agregarAqui": "Add here"
   },
   "cuentas": {
     "titulo": "Client accounts",
