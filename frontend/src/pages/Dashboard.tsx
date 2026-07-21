@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
+import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
@@ -85,6 +86,9 @@ function Dashboard() {
     volverAlInicio,
   } = usePackingStore()
   const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
+  // Sesión para la que ya confirmaron la advertencia de fotos (se reinicia en cada
+  // carga y al abrir otra cotización → la alerta vuelve a salir cada vez).
+  const [confirmadoParaSesion, setConfirmadoParaSesion] = useState<string | null>(null)
 
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
@@ -314,6 +318,15 @@ function Dashboard() {
             </div>
           </SectionCard>
         </>
+      )}
+
+      {/* Advertencia OBLIGATORIA sobre cómo tomar las fotos: aparece al abrir/iniciar
+          una cotización y bloquea hasta que la vendedora confirma que sus fotos cumplen. */}
+      {sesionActual && confirmadoParaSesion !== sesionActual.id && (
+        <AdvertenciaFotos
+          onConfirmar={() => setConfirmadoParaSesion(sesionActual.id)}
+          onCancelar={volverAlInicio}
+        />
       )}
     </div>
   )

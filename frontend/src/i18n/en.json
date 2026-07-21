@@ -716,5 +716,27 @@
     "periodo_todo": "All",
     "totalComisiones": "Total commissions received",
     "sinComisiones": "No commissions received in this period."
+  },
+  "advertenciaFotos": {
+    "titulo": "Before you start: check your photos",
+    "subtitulo": "If a photo is badly taken, the system can't read it. Most errors come from this.",
+    "comoTitulo": "How to take each photo well",
+    "como": [
+      "Good lighting, no shadows or glare on the label.",
+      "In focus and sharp: not shaky or blurry.",
+      "The whole label/board visible, not cropped.",
+      "Straight on and close, so the text is clearly readable."
+    ],
+    "datosTitulo": "These details MUST be readable in the photo:",
+    "datos": [
+      "Store / supplier",
+      "Price in RMB",
+      "Units per box",
+      "Minimum quantity (MOQ)",
+      "CBM / box measurements"
+    ],
+    "consecuencia": "If a photo doesn't meet this, the system won't read it and you'll have to retake it.",
+    "confirmar": "I confirm my photos meet this",
+    "cancelar": "Not yet"
   }
 }

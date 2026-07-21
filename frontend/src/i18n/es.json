@@ -716,5 +716,27 @@
     "periodo_todo": "Todo",
     "totalComisiones": "Total comisiones recibidas",
     "sinComisiones": "No hay comisiones recibidas en este período."
+  },
+  "advertenciaFotos": {
+    "titulo": "Antes de empezar: revisa tus fotos",
+    "subtitulo": "Si una foto está mal tomada, el sistema no la puede leer. La mayoría de los errores son por esto.",
+    "comoTitulo": "Cómo tomar bien cada foto",
+    "como": [
+      "Con buena luz, sin sombras ni reflejos sobre la etiqueta.",
+      "Enfocada y nítida: no movida ni borrosa.",
+      "La etiqueta/tablero completo y visible, sin recortar.",
+      "De frente y de cerca, que el texto se lea claramente."
+    ],
+    "datosTitulo": "Estos datos DEBEN quedar legibles en la foto:",
+    "datos": [
+      "Tienda / proveedor",
+      "Precio en RMB",
+      "Unidades por caja",
+      "Cantidad mínima (MQT)",
+      "CBM / medidas de la caja"
+    ],
+    "consecuencia": "Si una foto no cumple, el sistema no podrá leerla y tendrás que volver a tomarla.",
+    "confirmar": "Confirmo que mis fotos cumplen",
+    "cancelar": "Todavía no"
   }
 }
