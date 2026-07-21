@@ -291,7 +291,11 @@
     "facturaPdf": "Factura PDF",
     "facturaExcel": "Factura Excel",
     "facturaAyuda": "Actualiza las medidas reales de las cajas en el panel antes de generar la factura.",
-    "errorFactura": "No se pudo generar la factura"
+    "errorFactura": "No se pudo generar la factura",
+    "facturaDe": "De (emisor)",
+    "facturaPara": "Para (cliente)",
+    "facturaDePlaceholder": "Si lo dejas vacío: Y&H IMPORT & EXPORT CO.,LTD",
+    "facturaParaPlaceholder": "Nombre y datos del cliente"
   },
   "admin": {
     "titulo": "Administración",

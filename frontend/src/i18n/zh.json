@@ -291,7 +291,11 @@
     "facturaPdf": "发票 PDF",
     "facturaExcel": "发票 Excel",
     "facturaAyuda": "生成发票前，请在面板中更新纸箱的真实尺寸。",
-    "errorFactura": "无法生成发票"
+    "errorFactura": "无法生成发票",
+    "facturaDe": "发件方（开票方）",
+    "facturaPara": "收件方（客户）",
+    "facturaDePlaceholder": "留空则为：Y&H IMPORT & EXPORT CO.,LTD",
+    "facturaParaPlaceholder": "客户名称及信息"
   },
   "admin": {
     "titulo": "管理",

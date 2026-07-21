@@ -8,6 +8,7 @@ CONSERVAN descripción, cajas, cantidades, precio y total en USD, más la vended
 Los valores de emisor/banco se toman tal cual del archivo enviado por Marcela.
 """
 from datetime import datetime
+from html import escape
 from io import BytesIO
 
 from openpyxl import Workbook
@@ -69,10 +70,40 @@ def _descripcion(item) -> str:
     return item.descripcion_en or item.descripcion_es or ""
 
 
+def _bloque_html(texto: str) -> str:
+    """Escapa y convierte saltos de línea a <br> (para De/Para editables)."""
+    return escape(texto).replace("\n", "<br>")
+
+
+def _emisor_html(de: str | None) -> str:
+    """Bloque FROM/De del PDF: si el usuario lo escribió, se usa; si no, Y&H."""
+    if de and de.strip():
+        lineas = de.strip().split("\n")
+        primera = escape(lineas[0])
+        resto = "".join(f"<p>{escape(l)}</p>" for l in lineas[1:])
+        return f'<div class="emisor"><h1>{primera}</h1>{resto}</div>'
+    return (
+        '<div class="emisor">'
+        f"<h1>{FACTURA_EMISOR['razon']}</h1>"
+        f"<p>{FACTURA_EMISOR['direccion']}</p>"
+        f"<p>Tel: {FACTURA_EMISOR['tel']} · USCI: {FACTURA_EMISOR['usci']}</p>"
+        "</div>"
+    )
+
+
 def generar_factura_pdf(
-    items: list, sesion: Sesion, trm: float, vendedora: str | None = None
+    items: list,
+    sesion: Sesion,
+    trm: float,
+    vendedora: str | None = None,
+    de: str | None = None,
+    para: str | None = None,
 ) -> bytes:
-    """Genera la factura comercial en USD (PDF) con WeasyPrint."""
+    """Genera la factura comercial en USD (PDF) con WeasyPrint.
+
+    `de` (FROM) y `para` (TO) son editables: si vienen, se usan; si no, se toma
+    el emisor Y&H y el nombre del cliente respectivamente.
+    """
     fecha = datetime.now()
     numero = numero_factura(sesion, fecha)
 
@@ -101,6 +132,8 @@ def generar_factura_pdf(
     vendedora_html = (
         f'<div><strong>SALESPERSON:</strong> {vendedora}</div>' if vendedora else ""
     )
+    emisor_html = _emisor_html(de)
+    para_txt = _bloque_html(para.strip()) if (para and para.strip()) else escape(sesion.nombre_cliente)
     b = FACTURA_BANCO
 
     html = f"""<!doctype html>
@@ -125,11 +158,7 @@ def generar_factura_pdf(
   .firma {{ margin-top: 40px; font-size: 10px; }}
 </style></head><body>
   <div class="head">
-    <div class="emisor">
-      <h1>{FACTURA_EMISOR['razon']}</h1>
-      <p>{FACTURA_EMISOR['direccion']}</p>
-      <p>Tel: {FACTURA_EMISOR['tel']} · USCI: {FACTURA_EMISOR['usci']}</p>
-    </div>
+    {emisor_html}
     <div class="meta">
       <div><strong>INVOICE No:</strong> {numero}</div>
       <div><strong>DATE:</strong> {fecha.strftime('%Y-%m-%d')}</div>
@@ -138,7 +167,7 @@ def generar_factura_pdf(
   </div>
   <div class="titulo">INVOICE</div>
   <div class="to">
-    <div><strong>TO:</strong> {sesion.nombre_cliente}</div>
+    <div><strong>TO:</strong> {para_txt}</div>
     {vendedora_html}
   </div>
   <table>
@@ -174,11 +203,21 @@ def generar_factura_pdf(
 
 
 def generar_factura_excel(
-    items: list, sesion: Sesion, trm: float, vendedora: str | None = None
+    items: list,
+    sesion: Sesion,
+    trm: float,
+    vendedora: str | None = None,
+    de: str | None = None,
+    para: str | None = None,
 ) -> bytes:
-    """Genera la factura comercial en USD (Excel)."""
+    """Genera la factura comercial en USD (Excel). `de`/`para` editables."""
     fecha = datetime.now()
     numero = numero_factura(sesion, fecha)
+    # De (FROM) y Para (TO) editables; si no vienen, Y&H y el nombre del cliente.
+    de_lineas = [l for l in (de.strip().split("\n") if de and de.strip() else [])]
+    emisor_nombre = de_lineas[0] if de_lineas else FACTURA_EMISOR["razon"]
+    emisor_dir = "\n".join(de_lineas[1:]) if len(de_lineas) > 1 else FACTURA_EMISOR["direccion"]
+    para_txt = para.strip() if (para and para.strip()) else sesion.nombre_cliente
 
     wb = Workbook()
     ws = wb.active
@@ -196,18 +235,18 @@ def generar_factura_excel(
     ultima = "H"
 
     ws.merge_cells(f"A1:{ultima}1")
-    ws["A1"] = FACTURA_EMISOR["razon"]
+    ws["A1"] = emisor_nombre
     ws["A1"].fill = fill_emisor
     ws["A1"].font = font_emisor
     ws["A1"].alignment = centro
     ws.merge_cells(f"A2:{ultima}2")
-    ws["A2"] = FACTURA_EMISOR["direccion"]
+    ws["A2"] = emisor_dir
     ws["A2"].alignment = Alignment(horizontal="center", wrap_text=True)
 
     ws["A4"] = f"INVOICE No: {numero}"
     ws["A5"] = f"DATE: {fecha.strftime('%Y-%m-%d')}"
     ws["A6"] = f"TERMS: {FACTURA_EMISOR['terms']}"
-    ws["A7"] = f"TO: {sesion.nombre_cliente}"
+    ws["A7"] = f"TO: {para_txt}"
     if vendedora:
         ws["A8"] = f"SALESPERSON: {vendedora}"
 

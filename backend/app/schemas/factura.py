@@ -10,3 +10,6 @@ class FacturaRequest(BaseModel):
     """
 
     contenedor_id: str | None = None
+    # De (FROM) y Para (TO) editables por el usuario antes de generar la factura.
+    de: str | None = None
+    para: str | None = None

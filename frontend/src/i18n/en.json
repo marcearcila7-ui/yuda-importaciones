@@ -291,7 +291,11 @@
     "facturaPdf": "Invoice PDF",
     "facturaExcel": "Invoice Excel",
     "facturaAyuda": "Update the real box measurements in the panel before generating the invoice.",
-    "errorFactura": "The invoice could not be generated"
+    "errorFactura": "The invoice could not be generated",
+    "facturaDe": "From (issuer)",
+    "facturaPara": "To (client)",
+    "facturaDePlaceholder": "If left empty: Y&H IMPORT & EXPORT CO.,LTD",
+    "facturaParaPlaceholder": "Client name and details"
   },
   "admin": {
     "titulo": "Administration",

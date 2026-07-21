@@ -44,6 +44,9 @@ function CotizacionDetalle() {
   const [contenedores, setContenedores] = useState<Contenedor[]>([])
   const [contenedorId, setContenedorId] = useState<string>('')
   const [generandoFactura, setGenerandoFactura] = useState<'pdf' | 'excel' | null>(null)
+  // De (FROM) y Para (TO) editables de la factura. Para se precarga con el cliente.
+  const [facturaDe, setFacturaDe] = useState<string>('')
+  const [facturaPara, setFacturaPara] = useState<string>('')
 
   useEffect(() => {
     let activo = true
@@ -63,6 +66,7 @@ function CotizacionDetalle() {
         setSeguimiento(seg)
         setContenedores(conts)
         setContenedorId(s?.contenedor_id ?? '')
+        setFacturaPara(s?.nombre_cliente ?? '')
         if (s?.cliente_id) {
           const c = await getCliente(s.cliente_id).catch(() => null)
           if (activo) setCliente(c)
@@ -117,7 +121,8 @@ function CotizacionDetalle() {
     const ventana = window.open('', '_blank')
     try {
       const cid = contenedorId || null
-      const blob = tipo === 'pdf' ? await exportarFacturaPDF(id, cid) : await exportarFacturaExcel(id, cid)
+      const opciones = { contenedor_id: cid, de: facturaDe.trim() || null, para: facturaPara.trim() || null }
+      const blob = tipo === 'pdf' ? await exportarFacturaPDF(id, opciones) : await exportarFacturaExcel(id, opciones)
       const url = URL.createObjectURL(blob)
       if (ventana) {
         ventana.location.href = url
@@ -260,6 +265,31 @@ function CotizacionDetalle() {
                   ))}
                 </select>
               </label>
+              {/* De (FROM) y Para (TO) editables antes de generar */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('detalle.facturaDe')}
+                  <textarea
+                    value={facturaDe}
+                    onChange={(e) => setFacturaDe(e.target.value)}
+                    rows={3}
+                    placeholder={t('detalle.facturaDePlaceholder')}
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-primary)' }}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('detalle.facturaPara')}
+                  <textarea
+                    value={facturaPara}
+                    onChange={(e) => setFacturaPara(e.target.value)}
+                    rows={3}
+                    placeholder={t('detalle.facturaParaPlaceholder')}
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-primary)' }}
+                  />
+                </label>
+              </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"

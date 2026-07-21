@@ -103,19 +103,25 @@ export async function exportarCotizacionPDF(sesion_id: string, idioma: string): 
   return data as Blob
 }
 
-export async function exportarFacturaPDF(sesion_id: string, contenedor_id?: string | null): Promise<Blob> {
+export interface FacturaOpciones {
+  contenedor_id?: string | null
+  de?: string | null
+  para?: string | null
+}
+
+export async function exportarFacturaPDF(sesion_id: string, opciones: FacturaOpciones = {}): Promise<Blob> {
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/factura-pdf`,
-    { contenedor_id: contenedor_id ?? null },
+    { contenedor_id: opciones.contenedor_id ?? null, de: opciones.de ?? null, para: opciones.para ?? null },
     { responseType: 'blob' },
   )
   return data as Blob
 }
 
-export async function exportarFacturaExcel(sesion_id: string, contenedor_id?: string | null): Promise<Blob> {
+export async function exportarFacturaExcel(sesion_id: string, opciones: FacturaOpciones = {}): Promise<Blob> {
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/factura-excel`,
-    { contenedor_id: contenedor_id ?? null },
+    { contenedor_id: opciones.contenedor_id ?? null, de: opciones.de ?? null, para: opciones.para ?? null },
     { responseType: 'blob' },
   )
   return data as Blob

@@ -539,7 +539,7 @@ def exportar_factura_pdf(
         .all()
     )
 
-    contenido = generar_factura_pdf(items, sesion, trm, vendedora)
+    contenido = generar_factura_pdf(items, sesion, trm, vendedora, de=datos.de, para=datos.para)
     nombre_archivo = f"{numero_factura(sesion, datetime.now())}.pdf"
 
     return Response(
@@ -566,7 +566,7 @@ def exportar_factura_excel(
         .all()
     )
 
-    contenido = generar_factura_excel(items, sesion, trm, vendedora)
+    contenido = generar_factura_excel(items, sesion, trm, vendedora, de=datos.de, para=datos.para)
     nombre_archivo = f"{numero_factura(sesion, datetime.now())}.xlsx"
 
     return Response(
