@@ -62,6 +62,7 @@ def construir_response(p: PedidoTienda, db: Session, hoy: date | None = None) ->
         "fecha_estimada_pago_70": p.fecha_estimada_pago_70,
         "fecha_pago_70": p.fecha_pago_70,
         "pct_comision_tienda": _f(p.pct_comision_tienda),
+        "fecha_comision": p.fecha_comision,
         "empleada_id": p.empleada_id,
         "empleada_nombre": empleada.nombre if empleada else None,
         "notas": p.notas,
@@ -70,6 +71,43 @@ def construir_response(p: PedidoTienda, db: Session, hoy: date | None = None) ->
         "alerta_pago_70": hay_alerta_pago_70(p, hoy),
         "created_at": p.created_at,
     }
+
+
+def reporte_comisiones(
+    db: Session, desde: date | None = None, hasta: date | None = None
+) -> dict:
+    """Comisiones recibidas (pedidos con % > 0 y fecha de comisión) en el período,
+    con su total en CNY. Sin fechas, toma todas las que tengan fecha_comision."""
+    q = db.query(PedidoTienda).filter(
+        PedidoTienda.pct_comision_tienda > 0,
+        PedidoTienda.fecha_comision.isnot(None),
+    )
+    if desde is not None:
+        q = q.filter(PedidoTienda.fecha_comision >= desde)
+    if hasta is not None:
+        q = q.filter(PedidoTienda.fecha_comision <= hasta)
+    pedidos = q.order_by(PedidoTienda.fecha_comision.desc()).all()
+
+    items = []
+    total = 0.0
+    for p in pedidos:
+        monto = round(_f(p.monto_total) * _f(p.pct_comision_tienda) / 100, 2)
+        total += monto
+        empleada = (
+            db.query(User).filter(User.id == p.empleada_id).first() if p.empleada_id else None
+        )
+        items.append(
+            {
+                "pedido_id": p.id,
+                "nombre_tienda": p.nombre_tienda,
+                "pct_comision_tienda": _f(p.pct_comision_tienda),
+                "monto_comision": monto,
+                "fecha_comision": p.fecha_comision,
+                "fecha_pedido": p.fecha_pedido,
+                "empleada_nombre": empleada.nombre if empleada else None,
+            }
+        )
+    return {"items": items, "total_comision": round(total, 2), "desde": desde, "hasta": hasta}
 
 
 def revisar_alertas_pago_70(db: Session, hoy: date | None = None) -> int:

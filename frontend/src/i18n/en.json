@@ -705,6 +705,16 @@
     "mPedidos": "Orders",
     "mSaldo70": "70% outstanding",
     "mComision": "Commissions",
-    "mAlertas": "Due soon"
+    "mAlertas": "Due soon",
+    "tab_pedidos": "Orders",
+    "tab_comisiones": "Commissions",
+    "fechaComision": "Commission received date",
+    "hintComision": "When YUDA received the commission",
+    "periodo_mes": "This month",
+    "periodo_trimestre": "Quarter",
+    "periodo_anio": "Year",
+    "periodo_todo": "All",
+    "totalComisiones": "Total commissions received",
+    "sinComisiones": "No commissions received in this period."
   }
 }

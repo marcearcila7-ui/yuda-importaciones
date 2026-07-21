@@ -22,6 +22,7 @@ class PedidoTiendaCreate(BaseModel):
     fecha_estimada_pago_70: date | None = None
     fecha_pago_70: date | None = None
     pct_comision_tienda: float = 0
+    fecha_comision: date | None = None
     empleada_id: str | None = None
     notas: str | None = None
 
@@ -38,6 +39,7 @@ class PedidoTiendaUpdate(BaseModel):
     fecha_estimada_pago_70: date | None = None
     fecha_pago_70: date | None = None
     pct_comision_tienda: float | None = None
+    fecha_comision: date | None = None
     empleada_id: str | None = None
     notas: str | None = None
 
@@ -59,6 +61,7 @@ class PedidoTiendaResponse(BaseModel):
     fecha_estimada_pago_70: date | None
     fecha_pago_70: date | None
     pct_comision_tienda: float
+    fecha_comision: date | None
     empleada_id: str | None
     empleada_nombre: str | None
     notas: str | None
@@ -66,3 +69,24 @@ class PedidoTiendaResponse(BaseModel):
     dias_para_pago_70: int | None
     alerta_pago_70: bool
     created_at: datetime
+
+
+class ComisionItem(BaseModel):
+    """Una comisión recibida (derivada de un pedido a tienda)."""
+
+    pedido_id: str
+    nombre_tienda: str
+    pct_comision_tienda: float
+    monto_comision: float
+    fecha_comision: date | None
+    fecha_pedido: date | None
+    empleada_nombre: str | None
+
+
+class ComisionesReporte(BaseModel):
+    """Comisiones recibidas en un período con su total."""
+
+    items: list[ComisionItem]
+    total_comision: float
+    desde: date | None
+    hasta: date | None

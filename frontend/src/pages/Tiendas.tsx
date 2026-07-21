@@ -7,16 +7,23 @@ import {
   actualizarPedidoTienda,
   crearPedidoTienda,
   eliminarPedidoTienda,
+  getComisiones,
   getEmpleadas,
   getPedidosTienda,
 } from '../api/tiendas'
-import type { EmpleadaResumen, PedidoTienda, PedidoTiendaCreate } from '../types/tienda'
+import type {
+  ComisionesReporte,
+  EmpleadaResumen,
+  PedidoTienda,
+  PedidoTiendaCreate,
+} from '../types/tienda'
 
 type FormT = {
   nombre_tienda: string
   fecha_pedido: string
   monto_total: string
   pct_comision_tienda: string
+  fecha_comision: string
   empleada_id: string
   fecha_pago_30: string
   fecha_estimada_entrega: string
@@ -27,7 +34,7 @@ type FormT = {
 }
 
 const VACIO: FormT = {
-  nombre_tienda: '', fecha_pedido: '', monto_total: '', pct_comision_tienda: '', empleada_id: '',
+  nombre_tienda: '', fecha_pedido: '', monto_total: '', pct_comision_tienda: '', fecha_comision: '', empleada_id: '',
   fecha_pago_30: '', fecha_estimada_entrega: '', fecha_real_entrega: '',
   fecha_estimada_pago_70: '', fecha_pago_70: '', notas: '',
 }
@@ -40,6 +47,7 @@ function Tiendas() {
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [mostrarForm, setMostrarForm] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [vista, setVista] = useState<'pedidos' | 'comisiones'>('pedidos')
 
   const cargar = () => getPedidosTienda().then(setPedidos).catch(() => setPedidos([]))
   useEffect(() => {
@@ -63,6 +71,7 @@ function Tiendas() {
     setForm({
       nombre_tienda: p.nombre_tienda, fecha_pedido: p.fecha_pedido ?? '',
       monto_total: String(p.monto_total ?? ''), pct_comision_tienda: String(p.pct_comision_tienda ?? ''),
+      fecha_comision: p.fecha_comision ?? '',
       empleada_id: p.empleada_id ?? '', fecha_pago_30: p.fecha_pago_30 ?? '',
       fecha_estimada_entrega: p.fecha_estimada_entrega ?? '', fecha_real_entrega: p.fecha_real_entrega ?? '',
       fecha_estimada_pago_70: p.fecha_estimada_pago_70 ?? '', fecha_pago_70: p.fecha_pago_70 ?? '',
@@ -80,6 +89,7 @@ function Tiendas() {
         fecha_pedido: form.fecha_pedido || null,
         monto_total: Number(form.monto_total) || 0,
         pct_comision_tienda: Number(form.pct_comision_tienda) || 0,
+        fecha_comision: form.fecha_comision || null,
         empleada_id: form.empleada_id || null,
         fecha_pago_30: form.fecha_pago_30 || null,
         fecha_estimada_entrega: form.fecha_estimada_entrega || null,
@@ -118,6 +128,29 @@ function Tiendas() {
         <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('tiendas.subtitulo')}</p>
       </div>
 
+      {/* Pestañas: pedidos / comisiones */}
+      <div className="flex gap-2">
+        {(['pedidos', 'comisiones'] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setVista(v)}
+            className="rounded-lg px-4 py-2 text-sm font-semibold"
+            style={
+              vista === v
+                ? { backgroundColor: 'var(--yuda-primary)', color: '#fff' }
+                : { backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
+            }
+          >
+            {t(`tiendas.tab_${v}`)}
+          </button>
+        ))}
+      </div>
+
+      {vista === 'comisiones' && <ComisionesPanel fmt={fmt} />}
+
+      {vista === 'pedidos' && (
+      <>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <MetricCard titulo={t('tiendas.mPedidos')} valor={totales.total} icono={<Store size={20} />} color="var(--yuda-primary)" />
         <MetricCard titulo={t('tiendas.mSaldo70')} valor={`¥ ${fmt(totales.saldo70)}`} icono={<Wallet size={20} />} color="var(--yuda-accent)" />
@@ -145,6 +178,7 @@ function Tiendas() {
               <Campo label={t('tiendas.fechaPedido')} type="date" value={form.fecha_pedido} onChange={(v) => setCampo('fecha_pedido', v)} />
               <Campo label={t('tiendas.montoTotal')} type="number" value={form.monto_total} onChange={(v) => setCampo('monto_total', v)} />
               <Campo label={t('tiendas.pctComision')} type="number" value={form.pct_comision_tienda} onChange={(v) => setCampo('pct_comision_tienda', v)} />
+              <Campo label={t('tiendas.fechaComision')} type="date" value={form.fecha_comision} onChange={(v) => setCampo('fecha_comision', v)} hint={t('tiendas.hintComision')} />
               <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('tiendas.empleada')}
                 <select value={form.empleada_id} onChange={(e) => setCampo('empleada_id', e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--yuda-border)' }}>
@@ -228,7 +262,90 @@ function Tiendas() {
           </div>
         )}
       </section>
+      </>
+      )}
     </div>
+  )
+}
+
+// Panel de comisiones recibidas con filtro por período y total.
+function ComisionesPanel({ fmt }: { fmt: (n: number) => string }) {
+  const { t } = useTranslation()
+  const [reporte, setReporte] = useState<ComisionesReporte | null>(null)
+  const [periodo, setPeriodo] = useState<'mes' | 'trimestre' | 'anio' | 'todo'>('mes')
+
+  const rango = (p: typeof periodo): { desde: string | null; hasta: string | null } => {
+    if (p === 'todo') return { desde: null, hasta: null }
+    const hoy = new Date()
+    const y = hoy.getFullYear()
+    const iso = (d: Date) => d.toISOString().slice(0, 10)
+    if (p === 'anio') return { desde: `${y}-01-01`, hasta: `${y}-12-31` }
+    if (p === 'trimestre') {
+      const q = Math.floor(hoy.getMonth() / 3)
+      return { desde: iso(new Date(y, q * 3, 1)), hasta: iso(new Date(y, q * 3 + 3, 0)) }
+    }
+    return { desde: iso(new Date(y, hoy.getMonth(), 1)), hasta: iso(new Date(y, hoy.getMonth() + 1, 0)) }
+  }
+
+  useEffect(() => {
+    const { desde, hasta } = rango(periodo)
+    getComisiones(desde, hasta).then(setReporte).catch(() => setReporte(null))
+  }, [periodo])
+
+  return (
+    <section className="card flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {(['mes', 'trimestre', 'anio', 'todo'] as const).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => setPeriodo(p)}
+            className="rounded-lg border px-3 py-1.5 text-sm font-medium"
+            style={
+              periodo === p
+                ? { borderColor: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
+                : { borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }
+            }
+          >
+            {t(`tiendas.periodo_${p}`)}
+          </button>
+        ))}
+      </div>
+
+      <div className="rounded-lg px-4 py-3" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
+        <span className="text-sm font-medium" style={{ color: 'var(--yuda-warning-dark)' }}>{t('tiendas.totalComisiones')}: </span>
+        <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-warning-dark)' }}>¥ {fmt(reporte?.total_comision ?? 0)}</span>
+      </div>
+
+      {reporte && reporte.items.length === 0 ? (
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('tiendas.sinComisiones')}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
+                <th className="px-3 py-2 text-left font-semibold">{t('tiendas.nombre')}</th>
+                <th className="px-3 py-2 text-right font-semibold">%</th>
+                <th className="px-3 py-2 text-right font-semibold">{t('tiendas.comision')}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t('tiendas.fechaComision')}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t('tiendas.empleada')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(reporte?.items ?? []).map((c, i) => (
+                <tr key={c.pedido_id} style={{ background: i % 2 ? 'var(--yuda-bg)' : 'transparent', borderBottom: '1px solid var(--yuda-border)' }}>
+                  <td className="px-3 py-2 font-medium">{c.nombre_tienda}</td>
+                  <td className="px-3 py-2 text-right">{c.pct_comision_tienda}%</td>
+                  <td className="px-3 py-2 text-right font-semibold">{fmt(c.monto_comision)}</td>
+                  <td className="px-3 py-2">{c.fecha_comision ?? '—'}</td>
+                  <td className="px-3 py-2">{c.empleada_nombre ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   )
 }
 

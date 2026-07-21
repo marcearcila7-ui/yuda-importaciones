@@ -705,6 +705,16 @@
     "mPedidos": "订单",
     "mSaldo70": "70% 未结",
     "mComision": "佣金",
-    "mAlertas": "即将到期"
+    "mAlertas": "即将到期",
+    "tab_pedidos": "订单",
+    "tab_comisiones": "佣金",
+    "fechaComision": "佣金收到日期",
+    "hintComision": "YUDA 收到佣金的日期",
+    "periodo_mes": "本月",
+    "periodo_trimestre": "本季度",
+    "periodo_anio": "本年",
+    "periodo_todo": "全部",
+    "totalComisiones": "已收佣金总额",
+    "sinComisiones": "该期间没有已收佣金。"
   }
 }

@@ -1,5 +1,10 @@
 import apiClient from './client'
-import type { EmpleadaResumen, PedidoTienda, PedidoTiendaCreate } from '../types/tienda'
+import type {
+  ComisionesReporte,
+  EmpleadaResumen,
+  PedidoTienda,
+  PedidoTiendaCreate,
+} from '../types/tienda'
 
 export async function getPedidosTienda(): Promise<PedidoTienda[]> {
   const { data } = await apiClient.get<PedidoTienda[]>('/tiendas/pedidos')
@@ -25,5 +30,16 @@ export async function eliminarPedidoTienda(id: string): Promise<void> {
 
 export async function getEmpleadas(): Promise<EmpleadaResumen[]> {
   const { data } = await apiClient.get<EmpleadaResumen[]>('/tiendas/empleadas')
+  return data
+}
+
+export async function getComisiones(
+  desde?: string | null,
+  hasta?: string | null,
+): Promise<ComisionesReporte> {
+  const params: Record<string, string> = {}
+  if (desde) params.desde = desde
+  if (hasta) params.hasta = hasta
+  const { data } = await apiClient.get<ComisionesReporte>('/tiendas/comisiones', { params })
   return data
 }

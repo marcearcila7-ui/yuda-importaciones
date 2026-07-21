@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import require_roles
@@ -8,12 +8,17 @@ from app.database import get_db
 from app.models.tienda import PedidoTienda
 from app.models.user import RolUsuario, User
 from app.schemas.tienda import (
+    ComisionesReporte,
     EmpleadaResumen,
     PedidoTiendaCreate,
     PedidoTiendaResponse,
     PedidoTiendaUpdate,
 )
-from app.services.tienda_service import construir_response, revisar_alertas_pago_70
+from app.services.tienda_service import (
+    construir_response,
+    reporte_comisiones,
+    revisar_alertas_pago_70,
+)
 
 # Se monta en main.py bajo /api/v1. Gestión: admin y contadora.
 router = APIRouter(tags=["tiendas"])
@@ -58,6 +63,17 @@ def listar_pedidos_tienda(
     return [construir_response(p, db, hoy) for p in pedidos]
 
 
+@router.get("/tiendas/comisiones", response_model=ComisionesReporte)
+def comisiones_tienda(
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    usuario: User = Depends(require_roles("admin", "contadora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Comisiones recibidas de tiendas en el período (mes/trimestre/año) + total."""
+    return reporte_comisiones(db, desde, hasta)
+
+
 @router.get("/tiendas/pedidos/{pedido_id}", response_model=PedidoTiendaResponse)
 def obtener_pedido_tienda(
     pedido_id: str,
@@ -87,6 +103,7 @@ def crear_pedido_tienda(
         fecha_estimada_pago_70=datos.fecha_estimada_pago_70,
         fecha_pago_70=datos.fecha_pago_70,
         pct_comision_tienda=datos.pct_comision_tienda,
+        fecha_comision=datos.fecha_comision,
         empleada_id=datos.empleada_id,
         notas=datos.notas,
     )

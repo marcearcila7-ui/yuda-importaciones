@@ -45,6 +45,8 @@ class PedidoTienda(Base):
 
     # Comisión que la tienda da a YUDA sobre este pedido (0 si no da).
     pct_comision_tienda: Mapped[float] = mapped_column(Float, default=0, nullable=False)
+    # Fecha en que YUDA recibió la comisión (para totalizar por período).
+    fecha_comision: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Empleada que gestionó la compra (para el ranking).
     empleada_id: Mapped[str | None] = mapped_column(

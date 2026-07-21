@@ -705,6 +705,16 @@
     "mPedidos": "Pedidos",
     "mSaldo70": "Saldo 70% pendiente",
     "mComision": "Comisiones",
-    "mAlertas": "Por vencer"
+    "mAlertas": "Por vencer",
+    "tab_pedidos": "Pedidos",
+    "tab_comisiones": "Comisiones",
+    "fechaComision": "Fecha de comisión recibida",
+    "hintComision": "Cuándo YUDA recibió la comisión",
+    "periodo_mes": "Este mes",
+    "periodo_trimestre": "Trimestre",
+    "periodo_anio": "Año",
+    "periodo_todo": "Todo",
+    "totalComisiones": "Total comisiones recibidas",
+    "sinComisiones": "No hay comisiones recibidas en este período."
   }
 }
