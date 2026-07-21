@@ -15,6 +15,8 @@ TIPO_PEDIDO_CLIENTE = "pedido_cliente"
 TIPO_ENVIO_VENDEDORA = "envio_vendedora"
 # El cliente confirmó las cantidades finales: aviso para la vendedora dueña + Marcela.
 TIPO_PEDIDO_CONFIRMADO = "pedido_confirmado"
+# Se acerca la fecha de pago del 70% a una tienda: aviso para la contadora.
+TIPO_ALERTA_PAGO_TIENDA = "alerta_pago_tienda"
 
 
 class Notificacion(Base):
@@ -33,6 +35,9 @@ class Notificacion(Base):
     sesion_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("sesiones.id"), nullable=True, index=True
     )
+    # Referencia opcional a la entidad que originó el aviso (ej. id de pedido a
+    # tienda). Sirve para no duplicar un mismo aviso.
+    ref_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     tipo: Mapped[str] = mapped_column(String, nullable=False)
     titulo: Mapped[str] = mapped_column(String, nullable=False)
     mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)

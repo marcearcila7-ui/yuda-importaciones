@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, LogOut, Network, Package, Settings, TrendingUp, Users, Wallet } from 'lucide-react'
+import { ClipboardList, LogOut, Network, Package, Settings, Store, TrendingUp, Users, Wallet } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import NotificacionesBell from './NotificacionesBell'
 
@@ -65,6 +65,7 @@ const LINKS: ItemNav[] = [
   { to: '/ventas', icono: <TrendingUp size={18} />, clave: 'ventas', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
   { to: '/cuentas', icono: <Wallet size={18} />, clave: 'cuentas', roles: ['admin', 'contadora'] },
+  { to: '/tiendas', icono: <Store size={18} />, clave: 'tiendas', roles: ['admin', 'contadora'] },
   { to: '/admin', icono: <Settings size={18} />, clave: 'administracion', roles: ['admin'] },
 ]
 
@@ -136,7 +137,7 @@ function Sidebar() {
               {usuario?.rol ? t(`roles.${usuario.rol}`) : ''}
             </p>
           </div>
-          {(rol === 'admin' || rol === 'vendedora') && <NotificacionesBell />}
+          {(rol === 'admin' || rol === 'vendedora' || rol === 'contadora') && <NotificacionesBell />}
         </div>
         <button
           type="button"

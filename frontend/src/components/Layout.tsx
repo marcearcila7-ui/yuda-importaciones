@@ -73,7 +73,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <img src="/favicon.png" alt="YUDA" style={{ height: 30, width: 30 }} />
         <div className="flex items-center gap-2">
           <SelectorIdiomaMobile />
-          {(usuario?.rol === 'admin' || usuario?.rol === 'vendedora') && (
+          {(usuario?.rol === 'admin' || usuario?.rol === 'vendedora' || usuario?.rol === 'contadora') && (
             <NotificacionesBell posicion="abajo" />
           )}
           <span className="max-w-[80px] truncate" style={{ fontSize: 14, color: 'var(--yuda-text-secondary)' }}>

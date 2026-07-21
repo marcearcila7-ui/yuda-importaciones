@@ -20,6 +20,7 @@ const Historial = lazy(() => import('./pages/Historial'))
 const Ventas = lazy(() => import('./pages/Ventas'))
 const Cuentas = lazy(() => import('./pages/Cuentas'))
 const CuentaCliente = lazy(() => import('./pages/CuentaCliente'))
+const Tiendas = lazy(() => import('./pages/Tiendas'))
 const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'))
 const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
@@ -80,6 +81,7 @@ function App() {
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/historial" element={<Layout><Historial /></Layout>} />
           <Route path="/cuentas" element={<Layout><Cuentas /></Layout>} />
+          <Route path="/tiendas" element={<Layout><Tiendas /></Layout>} />
         </Route>
 
         {/* Estado de cuenta de un cliente: admin, contadora y la vendedora dueña.

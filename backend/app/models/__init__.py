@@ -6,6 +6,7 @@ from app.models.pedido import PedidoGenerado
 from app.models.notificacion import Notificacion
 from app.models.contenedor import Contenedor
 from app.models.cuenta import MovimientoCuenta
+from app.models.tienda import PedidoTienda
 
 __all__ = [
     "User",
@@ -15,4 +16,5 @@ __all__ = [
     "Notificacion",
     "Contenedor",
     "MovimientoCuenta",
+    "PedidoTienda",
 ]

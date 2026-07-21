@@ -18,6 +18,7 @@ from app.api.routes import (
     packing,
     pedidos,
     portal,
+    tiendas,
 )
 from app.core.config import settings
 from app.core.logging_setup import configurar_logging
@@ -124,6 +125,7 @@ app.include_router(admin.historial_router, prefix="/api/v1")
 app.include_router(lotes.router, prefix="/api/v1")
 app.include_router(clientes.router, prefix="/api/v1")
 app.include_router(contenedores.router, prefix="/api/v1")
+app.include_router(tiendas.router, prefix="/api/v1")
 app.include_router(portal.router, prefix="/api/v1")
 app.include_router(notificaciones.router, prefix="/api/v1")
 
