@@ -32,6 +32,7 @@ def _fila(m: MovimientoCuenta, saldo: float) -> dict:
         "cliente_id": m.cliente_id,
         "sesion_id": m.sesion_id,
         "contenedor_id": m.contenedor_id,
+        "moneda": m.moneda or "USD",
         "envio": m.envio,
         "fecha": m.fecha,
         "guia": m.guia,
@@ -67,11 +68,14 @@ def construir_estado_cuenta(
     orden_sids = reales + ([None] if None in grupos else [])
 
     pedidos = []
-    tot_compras = tot_comision = tot_abonos = 0.0
+    # Totales del cliente agrupados por moneda (no se mezclan monedas distintas).
+    por_moneda: dict[str, dict[str, float]] = {}
     fecha_ultimo_abono: date | None = None
 
     for sid in orden_sids:
         movs = sorted(grupos[sid], key=_orden)
+        # Moneda del pedido = la de sus movimientos (se mantiene consistente).
+        moneda = (movs[0].moneda if movs and movs[0].moneda else "USD")
         compras = comision = abonos = saldo = 0.0
         filas = []
         for m in movs:
@@ -83,6 +87,11 @@ def construir_estado_cuenta(
             if ab > 0 and (fecha_ultimo_abono is None or (m.fecha and m.fecha > fecha_ultimo_abono)):
                 fecha_ultimo_abono = m.fecha
             filas.append(_fila(m, saldo))
+            mon = m.moneda or "USD"
+            acc = por_moneda.setdefault(mon, {"compras": 0.0, "comision": 0.0, "abonos": 0.0})
+            acc["compras"] += valor
+            acc["comision"] += com
+            acc["abonos"] += ab
 
         s = ses_map.get(sid) if sid else None
         pedidos.append(
@@ -93,6 +102,7 @@ def construir_estado_cuenta(
                 # "Ya es pedido" cuando la cotización entró al circuito de pedido
                 # (el cliente envió/confirmó cantidades → tiene packing list).
                 "es_pedido": bool(s and s.pedido_estado),
+                "moneda": moneda,
                 "compras_totales": round(compras, 2),
                 "comision_total": round(comision, 2),
                 "abonos_totales": round(abonos, 2),
@@ -100,19 +110,24 @@ def construir_estado_cuenta(
                 "movimientos": filas,
             }
         )
-        tot_compras += compras
-        tot_comision += comision
-        tot_abonos += abonos
+
+    totales_por_moneda = [
+        {
+            "moneda": mon,
+            "compras_totales": round(v["compras"], 2),
+            "comision_total": round(v["comision"], 2),
+            "abonos_totales": round(v["abonos"], 2),
+            "saldo_pendiente": round(v["compras"] + v["comision"] - v["abonos"], 2),
+        }
+        for mon, v in sorted(por_moneda.items())
+    ]
 
     return {
         "cliente_id": cliente.id,
         "nombre": cliente.nombre,
         "nit": cliente.nit,
         "empresa": cliente.empresa,
-        "compras_totales": round(tot_compras, 2),
-        "comision_total": round(tot_comision, 2),
-        "abonos_totales": round(tot_abonos, 2),
-        "saldo_pendiente": round(tot_compras + tot_comision - tot_abonos, 2),
+        "totales_por_moneda": totales_por_moneda,
         "fecha_ultimo_abono": fecha_ultimo_abono,
         "pedidos": pedidos,
     }

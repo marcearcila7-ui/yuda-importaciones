@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Coins, DollarSign, HandCoins, Wallet } from 'lucide-react'
+import { ArrowLeft, Wallet } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import MetricCard from '../../components/MetricCard'
 import { getMiCuenta } from '../../api/portal'
@@ -18,6 +18,7 @@ function PortalCuenta() {
   }, [])
 
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtMon = (n: number, moneda: string) => `${moneda} ${fmt(n)}`
 
   return (
     <PortalLayout>
@@ -39,12 +40,13 @@ function PortalCuenta() {
         <div className="card"><p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.cargando')}</p></div>
       ) : (
         <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <MetricCard titulo={t('cuenta.compras')} valor={`$ ${fmt(cuenta.compras_totales)}`} icono={<DollarSign size={20} />} color="var(--yuda-primary)" />
-            <MetricCard titulo={t('cuenta.comision')} valor={`$ ${fmt(cuenta.comision_total)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
-            <MetricCard titulo={t('cuenta.abonos')} valor={`$ ${fmt(cuenta.abonos_totales)}`} icono={<HandCoins size={20} />} color="var(--yuda-success)" />
-            <MetricCard titulo={t('cuenta.saldoPendiente')} valor={`$ ${fmt(cuenta.saldo_pendiente)}`} icono={<Wallet size={20} />} color="var(--yuda-accent)" />
-          </div>
+          {cuenta.totales_por_moneda.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+              {cuenta.totales_por_moneda.map((tm) => (
+                <MetricCard key={tm.moneda} titulo={`${t('cuenta.saldoPendiente')} · ${tm.moneda}`} valor={fmtMon(tm.saldo_pendiente, tm.moneda)} icono={<Wallet size={20} />} color="var(--yuda-accent)" />
+              ))}
+            </div>
+          )}
 
           {cuenta.pedidos.length === 0 ? (
             <section className="card">
@@ -54,11 +56,12 @@ function PortalCuenta() {
             cuenta.pedidos.map((p) => (
               <section key={p.sesion_id ?? 'sin'} className="card flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+                  <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
                     {p.sesion_id ? (p.pedido_numero ?? '') : t('cuenta.sinPedido')}
+                    <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}>{p.moneda}</span>
                   </h2>
                   <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                    {t('cuenta.saldoPendiente')}: <strong style={{ color: 'var(--yuda-accent)' }}>$ {fmt(p.saldo_pendiente)}</strong>
+                    {t('cuenta.saldoPendiente')}: <strong style={{ color: 'var(--yuda-accent)' }}>{fmtMon(p.saldo_pendiente, p.moneda)}</strong>
                   </span>
                 </div>
                 <div className="overflow-x-auto">

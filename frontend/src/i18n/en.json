@@ -667,7 +667,9 @@
     "sinPedido": "No order",
     "esPedido": "Order",
     "esCotizacion": "Quotation",
-    "agregarAqui": "Add here"
+    "agregarAqui": "Add here",
+    "moneda": "Currency",
+    "monedaFijada": "This order already uses this currency"
   },
   "cuentas": {
     "titulo": "Client accounts",

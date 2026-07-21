@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Coins, DollarSign, HandCoins, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { ArrowLeft, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
 import {
   actualizarMovimiento,
@@ -12,12 +12,14 @@ import {
 } from '../api/cuentas'
 import { getContenedores } from '../api/contenedores'
 import { getCotizacionesCliente } from '../api/clientes'
+import { MONEDAS } from '../types/cuenta'
 import type { EstadoCuenta, Movimiento, MovimientoCreate, PedidoCuenta } from '../types/cuenta'
 import type { Contenedor } from '../types/contenedor'
 import type { Sesion } from '../types/packing'
 
 type FormMov = {
   sesion_id: string
+  moneda: string
   contenedor_id: string
   envio: string
   fecha: string
@@ -30,7 +32,7 @@ type FormMov = {
 }
 
 const FORM_VACIO: FormMov = {
-  sesion_id: '', contenedor_id: '', envio: '', fecha: '', guia: '', descripcion: '',
+  sesion_id: '', moneda: 'USD', contenedor_id: '', envio: '', fecha: '', guia: '', descripcion: '',
   valor_mercancia: '', comision_yuda: '', abono: '', nota: '',
 }
 
@@ -76,17 +78,31 @@ function CuentaCliente() {
   }, [clienteId, t])
 
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const fmtMon = (n: number, moneda: string) => `${moneda} ${fmt(n)}`
   const setCampo = (k: keyof FormMov, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
+  // Moneda ya fijada de un pedido (por sus movimientos), o null si aún no tiene.
+  const monedaDelPedido = (sesionId: string): string | null => {
+    if (!sesionId || !cuenta) return null
+    const p = cuenta.pedidos.find((x) => x.sesion_id === sesionId)
+    return p && p.movimientos.length > 0 ? p.moneda : null
+  }
+
   const abrirNuevo = (sesionId = '') => {
-    setForm({ ...FORM_VACIO, sesion_id: sesionId })
+    setForm({ ...FORM_VACIO, sesion_id: sesionId, moneda: monedaDelPedido(sesionId) ?? 'USD' })
     setEditandoId(null)
     setMostrarForm(true)
+  }
+
+  // Al cambiar el pedido en el form, si ese pedido ya tiene moneda, se adopta.
+  const cambiarPedido = (sesionId: string) => {
+    setForm((f) => ({ ...f, sesion_id: sesionId, moneda: monedaDelPedido(sesionId) ?? f.moneda }))
   }
 
   const abrirEdicion = (m: Movimiento) => {
     setForm({
       sesion_id: m.sesion_id ?? '',
+      moneda: m.moneda ?? 'USD',
       contenedor_id: m.contenedor_id ?? '',
       envio: m.envio ?? '',
       fecha: m.fecha ?? '',
@@ -106,6 +122,7 @@ function CuentaCliente() {
     try {
       const payload: MovimientoCreate = {
         sesion_id: form.sesion_id || null,
+        moneda: form.moneda || 'USD',
         contenedor_id: form.contenedor_id || null,
         envio: form.envio.trim() || null,
         fecha: form.fecha || null,
@@ -185,13 +202,20 @@ function CuentaCliente() {
         )}
       </div>
 
-      {/* Totales del cliente (suma de todos sus pedidos) */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <MetricCard titulo={t('cuenta.compras')} valor={`$ ${fmt(cuenta.compras_totales)}`} icono={<DollarSign size={20} />} color="var(--yuda-primary)" />
-        <MetricCard titulo={t('cuenta.comision')} valor={`$ ${fmt(cuenta.comision_total)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
-        <MetricCard titulo={t('cuenta.abonos')} valor={`$ ${fmt(cuenta.abonos_totales)}`} icono={<HandCoins size={20} />} color="var(--yuda-success)" />
-        <MetricCard titulo={t('cuenta.saldoPendiente')} valor={`$ ${fmt(cuenta.saldo_pendiente)}`} icono={<Wallet size={20} />} color="var(--yuda-accent)" />
-      </div>
+      {/* Saldo pendiente del cliente por moneda (no se suman monedas distintas) */}
+      {cuenta.totales_por_moneda.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {cuenta.totales_por_moneda.map((tm) => (
+            <MetricCard
+              key={tm.moneda}
+              titulo={`${t('cuenta.saldoPendiente')} · ${tm.moneda}`}
+              valor={fmtMon(tm.saldo_pendiente, tm.moneda)}
+              icono={<Wallet size={20} />}
+              color="var(--yuda-accent)"
+            />
+          ))}
+        </div>
+      )}
 
       {/* Formulario de alta/edición de movimiento */}
       {mostrarForm && (
@@ -201,9 +225,9 @@ function CuentaCliente() {
           </h3>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {/* Pedido (cotización) al que pertenece el movimiento */}
-            <label className="flex flex-col gap-1 text-xs sm:col-span-2 lg:col-span-3" style={{ color: 'var(--yuda-text-secondary)' }}>
+            <label className="flex flex-col gap-1 text-xs sm:col-span-2" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('cuenta.pedido')}
-              <select value={form.sesion_id} onChange={(e) => setCampo('sesion_id', e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--yuda-border)' }}>
+              <select value={form.sesion_id} onChange={(e) => cambiarPedido(e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--yuda-border)' }}>
                 <option value="">{t('cuenta.sinPedido')}</option>
                 {cotizaciones.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -211,6 +235,19 @@ function CuentaCliente() {
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('cuenta.moneda')}
+              <select
+                value={form.moneda}
+                onChange={(e) => setCampo('moneda', e.target.value)}
+                disabled={!!monedaDelPedido(form.sesion_id)}
+                className="rounded-lg border px-2 py-1.5 text-sm disabled:opacity-70"
+                style={{ borderColor: 'var(--yuda-border)' }}
+              >
+                {MONEDAS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              {monedaDelPedido(form.sesion_id) && <span style={{ fontSize: 10 }}>{t('cuenta.monedaFijada')}</span>}
             </label>
             <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('cuenta.contenedor')}
@@ -256,10 +293,13 @@ function CuentaCliente() {
                     {p.es_pedido ? t('cuenta.esPedido') : t('cuenta.esCotizacion')}
                   </span>
                 )}
+                <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}>
+                  {p.moneda}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {t('cuenta.saldoPendiente')}: <strong style={{ color: 'var(--yuda-accent)' }}>$ {fmt(p.saldo_pendiente)}</strong>
+                  {t('cuenta.saldoPendiente')}: <strong style={{ color: 'var(--yuda-accent)' }}>{fmtMon(p.saldo_pendiente, p.moneda)}</strong>
                 </span>
                 {p.sesion_id && (
                   <button type="button" onClick={() => abrirNuevo(p.sesion_id ?? '')} className="flex items-center gap-1 text-sm font-medium" style={{ color: 'var(--yuda-primary)' }}>

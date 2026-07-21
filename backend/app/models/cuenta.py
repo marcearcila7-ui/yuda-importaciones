@@ -11,6 +11,11 @@ from app.database import Base
 # Marcela). Se aplica por defecto al crear un movimiento; puede sobrescribirse.
 COMISION_YUDA_PCT = 0.05
 
+# Monedas en las que se le puede cobrar al cliente (por pedido). Sin conversión:
+# los montos se registran y se muestran en la moneda elegida.
+MONEDAS = ("USD", "COP", "RMB", "EUR")
+MONEDA_DEFAULT = "USD"
+
 
 def calcular_comision(valor_mercancia: float, pct: float = COMISION_YUDA_PCT) -> float:
     """Comisión YUDA = valor de la mercancía × porcentaje (5% por defecto)."""
@@ -44,7 +49,9 @@ class MovimientoCuenta(Base):
     fecha: Mapped[date | None] = mapped_column(Date, nullable=True)
     guia: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Montos en USD.
+    # Moneda de cobro del pedido (USD/COP/RMB/EUR). Los movimientos de un mismo
+    # pedido comparten moneda; no hay conversión, se muestra tal cual se registra.
+    moneda: Mapped[str] = mapped_column(String, default=MONEDA_DEFAULT, nullable=False)
     valor_mercancia: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
     comision_yuda: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
     abono: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)

@@ -667,7 +667,9 @@
     "sinPedido": "无订单",
     "esPedido": "订单",
     "esCotizacion": "报价单",
-    "agregarAqui": "在此添加"
+    "agregarAqui": "在此添加",
+    "moneda": "货币",
+    "monedaFijada": "该订单已使用此货币"
   },
   "cuentas": {
     "titulo": "客户账户",

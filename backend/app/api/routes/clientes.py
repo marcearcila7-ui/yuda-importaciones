@@ -523,6 +523,26 @@ def _validar_sesion_del_cliente(db: Session, cliente_id: str, sesion_id: str | N
         )
 
 
+def _validar_moneda_pedido(
+    db: Session, cliente_id: str, sesion_id: str | None, moneda: str, excluir_id: str | None = None
+) -> None:
+    """Todos los movimientos de un mismo pedido deben usar la misma moneda."""
+    if sesion_id is None:
+        return
+    q = db.query(MovimientoCuenta).filter(
+        MovimientoCuenta.cliente_id == cliente_id,
+        MovimientoCuenta.sesion_id == sesion_id,
+    )
+    if excluir_id:
+        q = q.filter(MovimientoCuenta.id != excluir_id)
+    otro = q.first()
+    if otro is not None and (otro.moneda or "USD") != moneda:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Este pedido ya usa la moneda {otro.moneda}. Usa la misma moneda para el pedido.",
+        )
+
+
 @router.get("/clientes/{cliente_id}/cuenta", response_model=EstadoCuentaResponse)
 def obtener_estado_cuenta(
     cliente_id: str,
@@ -548,6 +568,7 @@ def crear_movimiento(
     """Agrega un movimiento (envío) a la cuenta del cliente y devuelve la cuenta"""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     _validar_sesion_del_cliente(db, cliente.id, datos.sesion_id)
+    _validar_moneda_pedido(db, cliente.id, datos.sesion_id, datos.moneda)
     comision = (
         datos.comision_yuda
         if datos.comision_yuda is not None
@@ -557,6 +578,7 @@ def crear_movimiento(
         cliente_id=cliente.id,
         sesion_id=datos.sesion_id,
         contenedor_id=datos.contenedor_id,
+        moneda=datos.moneda,
         envio=datos.envio,
         fecha=datos.fecha,
         guia=datos.guia,
@@ -599,6 +621,11 @@ def actualizar_movimiento(
     # Si se reasigna el pedido, validar que sea del mismo cliente.
     if "sesion_id" in cambios:
         _validar_sesion_del_cliente(db, cliente.id, cambios["sesion_id"])
+    # La moneda debe seguir siendo consistente con el pedido tras el cambio.
+    if "moneda" in cambios or "sesion_id" in cambios:
+        nueva_sesion = cambios.get("sesion_id", movimiento.sesion_id)
+        nueva_moneda = cambios.get("moneda", movimiento.moneda or "USD")
+        _validar_moneda_pedido(db, cliente.id, nueva_sesion, nueva_moneda, excluir_id=movimiento.id)
     # Si cambió el valor y NO se envió comisión explícita, recalcular la comisión.
     if "valor_mercancia" in cambios and "comision_yuda" not in cambios:
         cambios["comision_yuda"] = calcular_comision(cambios["valor_mercancia"])

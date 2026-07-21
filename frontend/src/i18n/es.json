@@ -667,7 +667,9 @@
     "sinPedido": "Sin pedido",
     "esPedido": "Pedido",
     "esCotizacion": "Cotización",
-    "agregarAqui": "Agregar aquí"
+    "agregarAqui": "Agregar aquí",
+    "moneda": "Moneda",
+    "monedaFijada": "Este pedido ya usa esta moneda"
   },
   "cuentas": {
     "titulo": "Cuentas de clientes",
