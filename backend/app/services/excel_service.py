@@ -202,14 +202,20 @@ def _expandir_pedido(ws, faltan: int) -> None:
 
 
 def generar_formato_pedido(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date
+    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    fotos: dict | None = None,
 ) -> bytes:
     """Rellena la plantilla literal FORMATO PEDIDO con los productos del proveedor.
 
     El sistema completa: NO, foto, ITEM NO, descripción, CTN, QTY/CTN, precio,
     CBM y G.W. Las fórmulas (QTY, AMOUNT, T.CBM, totales) y todo lo demás
     (membrete, fechas, firmas, notas) quedan tal cual el formato original.
+
+    `fotos` mapea url→bytes PNG ya descargados (para no bajar la misma foto dos
+    veces ni de forma secuencial). Si falta, cae a descargar la foto en el momento.
     """
+    from io import BytesIO
+    fotos = fotos or {}
     wb = load_workbook(PLANTILLA_PEDIDO)
     ws = wb.active
 
@@ -228,7 +234,9 @@ def generar_formato_pedido(
         # B: PHOTO — la final (limpia) si existe; si no, la de datos como respaldo.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         if foto_doc:
-            buf = descargar_imagen_png(foto_doc, lado_px=180)
+            # Imagen ya descargada (bytes) si está en cache; si no, se baja al momento.
+            cache = fotos.get(foto_doc)
+            buf = BytesIO(cache) if cache is not None else descargar_imagen_png(foto_doc, lado_px=180)
             if buf is not None:
                 try:
                     img = XLImage(buf)

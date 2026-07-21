@@ -20,6 +20,7 @@ from app.schemas.pedidos import (
     PedidoGeneradoResponse,
 )
 from app.services.excel_service import agrupar_items_por_supplier, generar_formato_pedido
+from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes_png
 from app.services.pdf_service import generar_pedido_pdf
 from app.services.storage_service import subir_excel, subir_pdf
 
@@ -132,16 +133,28 @@ def generar_pedidos(
     fecha_hoy = datetime.now().date()
     fecha_str = fecha_hoy.strftime("%Y%m%d")
 
+    # f.2. Descargar TODAS las fotos una sola vez y en paralelo (antes se bajaban
+    # dos veces —Excel y PDF— y de forma secuencial, lo que hacía muy lenta y a
+    # veces colgaba la generación). Se reutilizan como bytes (Excel) y data URI (PDF).
+    urls_fotos = [
+        (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None))
+        for i in items_validos
+    ]
+    fotos_bytes = descargar_imagenes_png(urls_fotos, lado_px=180)
+    fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
+
     resultados: list[PedidoGeneradoInfo] = []
 
     # g. Un archivo por proveedor
     for clave, grupo in grupos.items():
         primero = grupo[0]
         contenido = generar_formato_pedido(
-            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy
+            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
+            fotos=fotos_bytes,
         )
         contenido_pdf = generar_pedido_pdf(
-            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy
+            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
+            fotos=fotos_datauri,
         )
 
         nombre_archivo = f"{fecha_str}_{_sanitizar(clave)}_Pedido.xlsx"

@@ -28,9 +28,16 @@ tr.total td { background: #EEE; font-weight: bold; }
 
 
 def generar_pedido_pdf(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date
+    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    fotos: dict | None = None,
 ) -> bytes:
-    """Genera el PDF del Formato Pedido del proveedor (réplica fiel, con fotos)."""
+    """Genera el PDF del Formato Pedido del proveedor (réplica fiel, con fotos).
+
+    `fotos` mapea url→data URI (imagen ya descargada e incrustada). Se usa para que
+    WeasyPrint NO haga peticiones de red al renderizar (evita cuelgues por fotos
+    lentas). Si una foto no está en el diccionario, la fila va sin imagen.
+    """
+    fotos = fotos or {}
     filas = []
     tot_ctn = tot_qty = tot_amount = tot_tcbm = 0.0
 
@@ -54,8 +61,10 @@ def generar_pedido_pdf(
 
         desc = item.descripcion_zh or item.descripcion_es or item.descripcion_en or ""
         # Foto final (limpia) si existe; si no, la de datos como respaldo.
+        # Se usa la imagen YA descargada e incrustada (data URI); sin red al renderizar.
         _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        foto = f'<img src="{_foto_doc}" />' if _foto_doc else ""
+        _data = fotos.get(_foto_doc) if _foto_doc else None
+        foto = f'<img src="{_data}" />' if _data else ""
         filas.append(
             f"<tr>"
             f"<td>{n}</td>"

@@ -18,7 +18,12 @@ export async function generarPedidos(
   const { data } = await apiClient.post<GenerarPedidosResponse>(
     `/pedidos/${sesion_id}/generar`,
     null,
-    { params: { usar_cantidades_cliente: usarCantidadesCliente } },
+    {
+      params: { usar_cantidades_cliente: usarCantidadesCliente },
+      // Genera Excel+PDF con fotos por proveedor: puede tardar. Timeout amplio para
+      // no quedar colgado indefinidamente y dar un error claro si algo falla.
+      timeout: 180000,
+    },
   )
   return data
 }
