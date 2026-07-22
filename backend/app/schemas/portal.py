@@ -23,6 +23,8 @@ class PortalItem(BaseModel):
 
     item_id: str
     foto_url: str | None = None
+    # Referencia de catálogo de YUDA (la que pide el cliente)
+    referencia: str | None = None
     descripcion_es: str | None = None
     descripcion_en: str | None = None
     descripcion_zh: str | None = None

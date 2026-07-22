@@ -28,6 +28,8 @@ export interface ItemResponse extends ItemCreate {
   id: string
   sesion_id: string
   foto_url?: string
+  // Referencia de catálogo que ve el cliente (la asigna el sistema)
+  referencia?: string | null
   cantidad_solicitada?: number | null
   t_qty: number
   total_rmb: number

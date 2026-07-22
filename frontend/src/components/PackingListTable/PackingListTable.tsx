@@ -38,6 +38,8 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'supplier_numero', header: 'N° STAND', meta: { campo: 'supplier_numero', kind: 'text-edit', width: 100 } },
   { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 60 } },
   { id: 'foto_final', header: 'FOTO FINAL', meta: { kind: 'photo-final', width: 90 } },
+  // Referencia que ve el cliente en su cotización. La asigna el sistema, no se edita.
+  { id: 'referencia', header: 'REF. CLIENTE', meta: { campo: 'referencia', kind: 'ro-num', width: 110 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
   { id: 'descripcion_es', header: 'ESPAÑOL', meta: { campo: 'descripcion_es', kind: 'text-edit', width: 200, stickyLeft: 160 } },
   { id: 'descripcion_en', header: 'ENGLISH', meta: { campo: 'descripcion_en', kind: 'text-edit', width: 200 } },

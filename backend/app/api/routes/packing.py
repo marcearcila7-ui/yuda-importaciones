@@ -74,6 +74,7 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         alto_cm=item.alto_cm,
         moq_cajas=item.moq_cajas,
         ctns=item.ctns,
+        referencia=item.referencia,
         cantidad_solicitada=item.cantidad_solicitada,
         orden=item.orden,
         **calculados,

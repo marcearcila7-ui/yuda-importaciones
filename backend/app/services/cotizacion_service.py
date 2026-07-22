@@ -24,7 +24,7 @@ CONTACTO = {
 LABELS = {
     "es": {
         "empresa": "YUDA IMPORTACIONES",
-        "cols": ["N°", "Foto", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM", "Peso kg", "Peso total kg", "MQT (mín. cajas)"],
+        "cols": ["N°", "Foto", "Referencia", "Código", "Descripción", "Material", "Uso", "Cajas", "Uds/Caja", "Total Uds", "Precio RMB", "Total RMB", "Precio USD", "Total USD", "CBM", "T.CBM", "Peso kg", "Peso total kg", "MQT (mín. cajas)"],
         "numero": "N° Cotización",
         "emision": "Fecha de emisión",
         "cliente": "Cliente",
@@ -35,7 +35,7 @@ LABELS = {
     },
     "en": {
         "empresa": "YIWU YUDA TRADING CO.,LTD",
-        "cols": ["N°", "Photo", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM", "Weight kg", "Total weight kg", "MOQ (min. boxes)"],
+        "cols": ["N°", "Photo", "Reference", "Code", "Description", "Material", "Use", "Boxes", "Units/Box", "Total Units", "Price RMB", "Total RMB", "Price USD", "Total USD", "CBM", "T.CBM", "Weight kg", "Total weight kg", "MOQ (min. boxes)"],
         "numero": "Quotation No.",
         "emision": "Issue date",
         "cliente": "Client",
@@ -46,7 +46,7 @@ LABELS = {
     },
     "zh": {
         "empresa": "义乌市与达贸易有限公司",
-        "cols": ["序号", "图片", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM", "毛重kg", "总毛重kg", "起订量(箱)"],
+        "cols": ["序号", "图片", "参考号", "货号", "描述", "材质", "用途", "箱数", "每箱数量", "总数量", "单价(元)", "总价(元)", "单价(USD)", "总价(USD)", "CBM", "总CBM", "毛重kg", "总毛重kg", "起订量(箱)"],
         "numero": "报价单号",
         "emision": "签发日期",
         "cliente": "客户",
@@ -166,6 +166,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         valores = [
             n,
             None,  # Foto (se agrega como imagen)
+            item.referencia,  # referencia de catálogo de YUDA (solo cliente)
             item.item_no,
             _descripcion(item, idioma),
             item.material,
@@ -210,13 +211,13 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         tot_gw += round((item.gw or 0) * (item.ctns or 0), 2)
         fila += 1
 
-    # Fila de totales
+    # Fila de totales (las columnas van corridas por la de Referencia)
     ws.cell(row=fila, column=1, value=lab["totales"])
-    ws.cell(row=fila, column=7, value=int(tot_cajas))
-    ws.cell(row=fila, column=11, value=round(tot_rmb, 2))
-    ws.cell(row=fila, column=13, value=round(tot_usd, 2))
-    ws.cell(row=fila, column=15, value=round(tot_cbm, 6))
-    ws.cell(row=fila, column=17, value=round(tot_gw, 2))
+    ws.cell(row=fila, column=8, value=int(tot_cajas))
+    ws.cell(row=fila, column=12, value=round(tot_rmb, 2))
+    ws.cell(row=fila, column=14, value=round(tot_usd, 2))
+    ws.cell(row=fila, column=16, value=round(tot_cbm, 6))
+    ws.cell(row=fila, column=18, value=round(tot_gw, 2))
 
     # Recuadro de resumen amigable (fila 8, arriba de la tabla)
     ws.merge_cells(f"A8:{ultima_col}8")
@@ -253,7 +254,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         ws.cell(row=fila_contacto + i, column=1, value=linea)
 
     # Anchos de columna
-    anchos = [5, 18, 13, 34, 14, 12, 8, 9, 10, 11, 11, 11, 11, 9, 9, 9, 11]
+    anchos = [5, 18, 13, 13, 34, 14, 12, 8, 9, 10, 11, 11, 11, 11, 9, 9, 9, 11]
     for idx, ancho in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = ancho
 
@@ -280,6 +281,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
             f"<tr{alt}>"
             f"<td>{n}</td>"
             f'<td class="foto">{foto}</td>'
+            f"<td>{item.referencia or ''}</td>"
             f"<td>{item.item_no or ''}</td>"
             f"<td>{_descripcion(item, idioma)}</td>"
             f"<td>{item.material or ''}</td>"
@@ -344,7 +346,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     <tbody>
       {''.join(filas_html)}
       <tr class="totales">
-        <td colspan="6">{lab['totales']}</td>
+        <td colspan="7">{lab['totales']}</td>
         <td>{int(tot_cajas)}</td><td></td><td></td><td></td>
         <td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>
         <td></td><td>{round(tot_cbm, 6)}</td>

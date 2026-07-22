@@ -1,9 +1,20 @@
+import secrets
 import uuid
 
 from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
+
+
+def nueva_referencia() -> str:
+    """Referencia de catálogo que ve el CLIENTE en su cotización (REF-748213).
+
+    Es un número al azar, no un consecutivo: no revela cuántos productos se han
+    cotizado ni el código del proveedor. Se guarda con el ítem, así que una vez
+    asignada no cambia aunque la cotización se vuelva a exportar.
+    """
+    return f"REF-{secrets.randbelow(900_000) + 100_000}"
 
 
 class Item(Base):
@@ -23,6 +34,12 @@ class Item(Base):
     # Foto 2 (final/limpia): solo se muestra en los documentos del cliente y del
     # proveedor. No se extraen datos de ella. Si falta, se usa foto_url.
     foto_final_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Referencia de YUDA para el cliente (la piden para pedir por catálogo). Se
+    # asigna sola al crear el ítem y solo sale en los documentos del cliente;
+    # el pedido al proveedor sigue yendo con item_no (el código del proveedor).
+    referencia: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True, default=nueva_referencia
+    )
     item_no: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_es: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_en: Mapped[str | None] = mapped_column(String, nullable=True)

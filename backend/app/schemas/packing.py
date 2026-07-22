@@ -62,6 +62,7 @@ class ItemResponse(ItemCreate):
     id: str
     sesion_id: str
     foto_url: Optional[str] = None
+    referencia: Optional[str] = None  # referencia de catálogo (documentos del cliente)
     cantidad_solicitada: Optional[int] = None  # cajas que pidió el cliente en su portal
     t_qty: int
     total_rmb: float

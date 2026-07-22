@@ -242,6 +242,11 @@ function PortalDetalle() {
                         <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                       )}
                       <div className="min-w-0 flex-1">
+                        {item.referencia && (
+                          <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
+                            {item.referencia}
+                          </p>
+                        )}
                         <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
                           {descripcion(item, i18n.language) || '—'}
                         </p>
@@ -358,6 +363,11 @@ function PortalDetalle() {
                     <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                   )}
                   <div className="min-w-0 flex-1">
+                    {item.referencia && (
+                      <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
+                        {item.referencia}
+                      </p>
+                    )}
                     <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
                       {descripcion(item, i18n.language) || '—'}
                     </p>

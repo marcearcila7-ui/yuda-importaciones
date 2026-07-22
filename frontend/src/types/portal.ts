@@ -28,6 +28,7 @@ export interface CotizacionResumen {
 export interface PortalItem {
   item_id: string
   foto_url: string | null
+  referencia: string | null
   descripcion_es: string | null
   descripcion_en: string | null
   descripcion_zh: string | null

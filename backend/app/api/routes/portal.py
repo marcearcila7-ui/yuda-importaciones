@@ -169,6 +169,7 @@ def detalle_cotizacion(
             PortalItem(
                 item_id=i.id,
                 foto_url=i.foto_url,
+                referencia=i.referencia,
                 descripcion_es=i.descripcion_es,
                 descripcion_en=i.descripcion_en,
                 descripcion_zh=i.descripcion_zh,
