@@ -61,6 +61,17 @@ function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   return { style: { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }, texto: t('ocr.confianzaBaja') }
 }
 
+// El bloque de carga es alto: cuando termina el análisis o se agregan los
+// productos, se vacía de golpe y la página se acorta. El navegador conserva la
+// posición del scroll, que entonces cae al final y obliga a subir a mano. Por eso
+// después de cada paso llevamos la vista a la sección que la vendedora necesita ver.
+function irASeccion(id: string) {
+  // En el siguiente frame: el navegador ya repintó con el alto nuevo.
+  requestAnimationFrame(() => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
 function CargaMasiva() {
   const { t } = useTranslation()
   const sesionActual = usePackingStore((s) => s.sesionActual)
@@ -113,6 +124,17 @@ function CargaMasiva() {
     if (sesionId) retomar(sesionId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionId])
+
+  // Cuando el análisis termina, la barra de progreso (que la vendedora estaba
+  // mirando abajo) se reemplaza por la lista de resultados: se lleva la vista al
+  // principio del bloque para que empiece a revisarlos desde el primero.
+  const faseAnterior = useRef(fase)
+  useEffect(() => {
+    if (faseAnterior.current === 'procesando' && fase === 'completado') {
+      irASeccion('seccion-carga')
+    }
+    faseAnterior.current = fase
+  }, [fase])
 
   // Elegir fotos: se AGREGAN a la selección (no se procesan hasta pulsar "Procesar")
   const handleArchivos = (e: ChangeEvent<HTMLInputElement>) => {
@@ -225,8 +247,12 @@ function CargaMasiva() {
     if (quedan <= 0) {
       await finalizar()
       toast.success(t('lote.exitoFinal', { n }))
+      // Ya no queda nada por corregir: se muestran los productos como quedaron.
+      irASeccion('seccion-productos')
     } else {
       toast.success(t('lote.exitoParcial', { n, quedan }))
+      // Quedan fotos por corregir: se vuelve arriba del bloque de carga.
+      irASeccion('seccion-carga')
     }
   }
 

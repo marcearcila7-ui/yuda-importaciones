@@ -50,10 +50,11 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
   )
 }
 
-// Card de sección con título
-function SectionCard({ titulo, children }: { titulo: string; children: ReactNode }) {
+// Card de sección con título. El `id` permite volver la vista a esta sección
+// cuando el contenido de arriba cambia de alto (ver CargaMasiva).
+function SectionCard({ titulo, children, id }: { titulo: string; children: ReactNode; id?: string }) {
   return (
-    <section className="card">
+    <section className="card" id={id}>
       <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
         {titulo}
       </h2>
@@ -279,12 +280,12 @@ function Dashboard() {
           </div>
 
           {/* 1. Agregar productos */}
-          <SectionCard titulo={t('lote.titulo')}>
+          <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
             <CargaMasiva />
           </SectionCard>
 
           {/* 2. Revisar productos */}
-          <SectionCard titulo={t('dashboard.productos')}>
+          <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
             <PackingListTable
               items={items}
               tipo_cambio_usd={sesionActual.tipo_cambio_usd}
