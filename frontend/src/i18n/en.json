@@ -758,5 +758,13 @@
     "consecuencia": "If a photo doesn't meet this, the system won't read it and you'll have to retake it.",
     "confirmar": "I confirm my photos meet this",
     "cancelar": "Not yet"
+  },
+  "fotosProveedor": {
+    "titulo": "Photos for the supplier",
+    "contador": "{{n}} of {{total}} with final photo",
+    "ayuda": "This is the photo the supplier will see in the order Excel and PDF: it is the reference for what was ordered if something arrives wrong. Upload the clean product photo (without the data board). If you upload none, the photo from when you added the product is used.",
+    "conFotoFinal": "Has final photo",
+    "usaraFotoCarga": "Will use the upload photo",
+    "subiendo": "Uploading…"
   }
 }

@@ -758,5 +758,13 @@
     "consecuencia": "Si una foto no cumple, el sistema no podrá leerla y tendrás que volver a tomarla.",
     "confirmar": "Confirmo que mis fotos cumplen",
     "cancelar": "Todavía no"
+  },
+  "fotosProveedor": {
+    "titulo": "Fotos para el proveedor",
+    "contador": "{{n}} de {{total}} con foto final",
+    "ayuda": "Esta es la foto que verá el proveedor en el Excel y el PDF del pedido: es la referencia de lo que se pidió si algo llega mal. Sube la foto limpia del producto (sin el cartel de datos). Si no subes ninguna, se usa la foto con la que cargaste el producto.",
+    "conFotoFinal": "Tiene foto final",
+    "usaraFotoCarga": "Se usará la foto de la carga",
+    "subiendo": "Subiendo…"
   }
 }

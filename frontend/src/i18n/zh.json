@@ -758,5 +758,13 @@
     "consecuencia": "如果某张照片不符合，系统将无法识别，你需要重新拍摄。",
     "confirmar": "我确认我的照片符合要求",
     "cancelar": "还没有"
+  },
+  "fotosProveedor": {
+    "titulo": "给供应商的产品照片",
+    "contador": "{{total}} 个产品中有 {{n}} 个已上传成品照",
+    "ayuda": "这是供应商在订单 Excel 和 PDF 中看到的照片：如果收到的货有问题，它就是下单内容的凭据。请上传干净的产品照片（不带写数据的白板）。若不上传，则使用录入产品时的照片。",
+    "conFotoFinal": "已有成品照",
+    "usaraFotoCarga": "将使用录入时的照片",
+    "subiendo": "上传中…"
   }
 }

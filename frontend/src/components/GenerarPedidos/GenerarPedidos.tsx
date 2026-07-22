@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
+import FotosProveedor from './FotosProveedor'
 import Button from '../ui/Button'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
@@ -77,6 +78,10 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
 
   return (
     <div className="flex w-full flex-col gap-4">
+      {/* SECCIÓN 0 — Fotos con las que se le pedirá al proveedor. Se decide aquí,
+          justo antes de generar, porque es LA referencia de lo que se pidió. */}
+      <FotosProveedor sesionId={sesion_id} />
+
       {/* SECCIÓN A — Botón principal (CTNS internas del packing) */}
       <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
         {generando === 'normal' ? (

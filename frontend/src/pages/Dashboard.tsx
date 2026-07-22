@@ -287,7 +287,6 @@ function Dashboard() {
           <SectionCard titulo={t('dashboard.productos')}>
             <PackingListTable
               items={items}
-              sesion_id={sesionActual.id}
               tipo_cambio_usd={sesionActual.tipo_cambio_usd}
               onItemActualizado={cargarItems}
             />

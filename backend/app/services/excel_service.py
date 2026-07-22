@@ -253,7 +253,7 @@ def generar_formato_pedido(
             cache = fotos.get(foto_doc)
             buf = (
                 BytesIO(cache) if cache is not None
-                else descargar_imagen_png(foto_doc, lado_px=PED_FOTO_PX * 2)
+                else descargar_imagen_png(foto_doc, lado_px=PED_FOTO_PX * 3)
             )
             if buf is not None:
                 try:
