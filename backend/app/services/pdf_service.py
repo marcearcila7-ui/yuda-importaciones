@@ -18,7 +18,13 @@ table.items { width: 100%; border-collapse: collapse; font-size: 9px; }
 table.items th { background: #404040; color: #fff; padding: 4px 3px; border: 1px solid #555; white-space: pre-line; }
 table.items td { padding: 3px; border: 1px solid #999; text-align: center; vertical-align: middle; }
 table.items td.desc { text-align: left; }
-table.items td.foto img { width: 70px; height: 70px; object-fit: cover; }
+/* La foto es la referencia de lo que se pidió: va grande y completa (contain,
+   sin recortar), y su celda manda el ancho de la columna. */
+table.items td.foto { width: 175px; }
+table.items td.foto img { width: 165px; height: 165px; object-fit: contain; }
+/* ITEM NO se rellena a mano sobre el impreso: necesita ancho propio. */
+table.items td.item, table.items th.item { width: 90px; }
+table.items td.desc .zh { display: block; }
 tr.total td { background: #EEE; font-weight: bold; }
 .firmas { margin-top: 6px; font-size: 10px; border: 1px solid #999; padding: 6px; }
 .notas { margin-top: 4px; font-size: 8px; }
@@ -73,7 +79,11 @@ def html_pedido(
         tot_amount += amount
         tot_tcbm += tcbm
 
-        desc = item.descripcion_zh or item.descripcion_es or item.descripcion_en or ""
+        # Descripción SIEMPRE en español y en chino: la vendedora escribe en
+        # español y el proveedor lee el chino.
+        _es = item.descripcion_es or item.descripcion_en or ""
+        _zh = item.descripcion_zh or ""
+        desc = _es + (f'<span class="zh">{_zh}</span>' if _zh else "")
         # Foto final (limpia) si existe; si no, la de datos como respaldo.
         # Se usa la imagen YA descargada e incrustada (data URI); sin red al renderizar.
         _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
@@ -83,7 +93,7 @@ def html_pedido(
             f"<tr>"
             f"<td>{n}</td>"
             f'<td class="foto">{foto}</td>'
-            f"<td>{item.item_no or ''}</td>"
+            f'<td class="item">{item.item_no or ""}</td>'
             f'<td class="desc">{desc}</td>'
             f"<td>{ctn}</td><td>{qty_ctn}</td><td>PCS</td><td>{qty}</td>"
             f"<td>{price}</td><td>{round(amount, 2)}</td>"

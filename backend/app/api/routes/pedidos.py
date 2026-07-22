@@ -154,7 +154,10 @@ def generar_pedidos(
         (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None))
         for i in items_validos
     ]
-    fotos_bytes = descargar_imagenes_png(urls_fotos, lado_px=180)
+    # 600 px de lado: la foto va grande en el Excel y en el PDF (es LA referencia
+    # de lo que se pidió), así que se baja al doble del tamaño en que se muestra
+    # para que no se vea pixelada ni en pantalla ni impresa.
+    fotos_bytes = descargar_imagenes_png(urls_fotos, lado_px=600)
     fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
 
     resultados: list[PedidoGeneradoInfo] = []

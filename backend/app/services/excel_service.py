@@ -153,15 +153,24 @@ PED_FILA0 = 7
 PED_FILAS_PLANTILLA = 11
 PED_FILA_TOTALES = 18
 
+# La foto es LA referencia de lo que se pidió: si algo llega mal, es lo que se le
+# muestra al proveedor. Por eso va grande y nítida, y la fila y la columna se
+# agrandan para que quepa sin taparle el espacio a ITEM NO (que se rellena a mano).
+PED_FOTO_PX = 300  # lado de la imagen dentro de la celda
+PED_ALTO_FILA = 232  # puntos (~310 px): la foto entra completa y sobra aire
+PED_ANCHO_FOTO = 45  # ancho de la columna B en caracteres (~320 px)
+PED_ANCHO_ITEM = 24  # ancho de la columna C (ITEM NO), para escribir a mano
+
 
 def _descripcion_proveedor(item) -> str:
-    """Para el proveedor chino, priorizar la descripción en chino."""
-    return (
-        getattr(item, "descripcion_zh", None)
-        or getattr(item, "descripcion_es", None)
-        or getattr(item, "descripcion_en", None)
-        or ""
-    )
+    """Descripción para el proveedor: SIEMPRE español y chino, uno debajo del otro.
+
+    La vendedora escribe en español y el proveedor lee el chino; con las dos
+    juntas nadie tiene que adivinar de qué producto se trata.
+    """
+    es = getattr(item, "descripcion_es", None) or getattr(item, "descripcion_en", None) or ""
+    zh = getattr(item, "descripcion_zh", None) or ""
+    return "\n".join([t for t in (es, zh) if t])
 
 
 def _expandir_pedido(ws, faltan: int) -> None:
@@ -228,25 +237,40 @@ def generar_formato_pedido(
         for col, letra in [(6, "F"), (9, "I"), (11, "K"), (13, "M")]:
             ws.cell(row=total_row, column=col, value=f"=SUM({letra}{PED_FILA0}:{letra}{ultima})")
 
+    # Columnas de la foto y del ITEM NO: la foto va grande y el ITEM NO necesita
+    # ancho propio para que se pueda escribir a mano sin que la tape la imagen.
+    ws.column_dimensions["B"].width = PED_ANCHO_FOTO
+    ws.column_dimensions["C"].width = PED_ANCHO_ITEM
+
     for idx, item in enumerate(items):
         f = PED_FILA0 + idx
+        ws.row_dimensions[f].height = PED_ALTO_FILA
         ws.cell(row=f, column=1, value=idx + 1)  # A: NO
         # B: PHOTO — la final (limpia) si existe; si no, la de datos como respaldo.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         if foto_doc:
             # Imagen ya descargada (bytes) si está en cache; si no, se baja al momento.
             cache = fotos.get(foto_doc)
-            buf = BytesIO(cache) if cache is not None else descargar_imagen_png(foto_doc, lado_px=180)
+            buf = (
+                BytesIO(cache) if cache is not None
+                else descargar_imagen_png(foto_doc, lado_px=PED_FOTO_PX * 2)
+            )
             if buf is not None:
                 try:
                     img = XLImage(buf)
-                    img.width = 150
-                    img.height = 140
+                    # Se respeta la proporción de la foto: nada de estirarla.
+                    escala = PED_FOTO_PX / max(img.width, img.height)
+                    img.width = round(img.width * escala)
+                    img.height = round(img.height * escala)
                     ws.add_image(img, f"B{f}")
                 except Exception:
                     pass
-        ws.cell(row=f, column=3, value=getattr(item, "item_no", None))   # C: ITEM NO
-        ws.cell(row=f, column=4, value=_descripcion_proveedor(item))     # D: DESCRIPTION
+        # C: ITEM NO — lo rellenan a mano; queda centrado y con salto de línea.
+        celda_item = ws.cell(row=f, column=3, value=getattr(item, "item_no", None))
+        celda_item.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        # D: DESCRIPTION (español + chino, una debajo de la otra)
+        celda_desc = ws.cell(row=f, column=4, value=_descripcion_proveedor(item))
+        celda_desc.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
         ws.cell(row=f, column=6, value=getattr(item, "ctns", None))      # F: CTN
         ws.cell(row=f, column=7, value=getattr(item, "qty_por_ctn", None))  # G: QTY/CTN
         ws.cell(row=f, column=10, value=getattr(item, "price_rmb", None))   # J: PRICE
