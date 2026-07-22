@@ -225,7 +225,9 @@
     "preparandoZip": "Preparando ZIP...",
     "itemsCount": "{{n}} ítems",
     "errorGenerar": "No se pudieron generar los pedidos",
-    "errorZip": "No se pudo descargar el ZIP"
+    "errorZip": "No se pudo descargar el ZIP",
+    "ayudaGenerar": "Pide al proveedor las cajas que cargaste tú en la tabla de productos (columna CTNS).",
+    "ayudaGenerarCliente": "Pide exactamente las cajas que el cliente escribió en su portal."
   },
   "historial": {
     "titulo": "Historial de cotizaciones",

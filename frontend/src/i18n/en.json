@@ -225,7 +225,9 @@
     "preparandoZip": "Preparing ZIP...",
     "itemsCount": "{{n}} items",
     "errorGenerar": "Could not generate the orders",
-    "errorZip": "Could not download the ZIP"
+    "errorZip": "Could not download the ZIP",
+    "ayudaGenerar": "Orders the boxes you entered yourself in the products table (CTNS column).",
+    "ayudaGenerarCliente": "Orders exactly the boxes the client entered in their portal."
   },
   "historial": {
     "titulo": "Quotation history",

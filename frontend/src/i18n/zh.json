@@ -225,7 +225,9 @@
     "preparandoZip": "正在准备 ZIP...",
     "itemsCount": "{{n}} 件",
     "errorGenerar": "无法生成订单",
-    "errorZip": "无法下载 ZIP"
+    "errorZip": "无法下载 ZIP",
+    "ayudaGenerar": "按你在产品表中填写的箱数（CTNS 列）向供应商下单。",
+    "ayudaGenerarCliente": "完全按客户在门户中填写的箱数下单。"
   },
   "historial": {
     "titulo": "报价历史记录",

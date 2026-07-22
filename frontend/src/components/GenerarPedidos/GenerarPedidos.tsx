@@ -82,28 +82,40 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
           justo antes de generar, porque es LA referencia de lo que se pidió. */}
       <FotosProveedor sesionId={sesion_id} />
 
-      {/* SECCIÓN A — Botón principal (CTNS internas del packing) */}
-      <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
-        {generando === 'normal' ? (
-          t('pedidos.generando')
-        ) : (
-          <>
-            <FileText size={18} /> {t('pedidos.generar')}
-          </>
-        )}
-      </Button>
-
-      {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
-      {permitirCantidadesCliente && (
-        <Button variant="success" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
-          {generando === 'cliente' ? (
+      {/* SECCIÓN A — Botón principal (CTNS internas del packing). Debajo de cada
+          botón va en una línea de dónde saca las cajas, que es lo único que los
+          diferencia: sin eso las vendedoras no sabían cuál usar. */}
+      <div className="flex flex-col gap-1">
+        <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
+          {generando === 'normal' ? (
             t('pedidos.generando')
           ) : (
             <>
-              <UserCheck size={18} /> {t('pedidos.generarCliente')}
+              <FileText size={18} /> {t('pedidos.generar')}
             </>
           )}
         </Button>
+        <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+          {t('pedidos.ayudaGenerar')}
+        </p>
+      </div>
+
+      {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
+      {permitirCantidadesCliente && (
+        <div className="flex flex-col gap-1">
+          <Button variant="success" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
+            {generando === 'cliente' ? (
+              t('pedidos.generando')
+            ) : (
+              <>
+                <UserCheck size={18} /> {t('pedidos.generarCliente')}
+              </>
+            )}
+          </Button>
+          <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('pedidos.ayudaGenerarCliente')}
+          </p>
+        </div>
       )}
 
       {/* SECCIÓN B — Advertencias */}
