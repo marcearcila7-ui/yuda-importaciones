@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-from weasyprint import HTML
+from app.services.pdf_service import render_pdf
 
 from app.models.sesion import Sesion
 
@@ -361,4 +361,4 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
   </div>
 </body></html>"""
 
-    return HTML(string=html).write_pdf()
+    return render_pdf(html)

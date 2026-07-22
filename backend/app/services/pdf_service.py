@@ -27,11 +27,25 @@ tr.total td { background: #EEE; font-weight: bold; }
 """
 
 
-def generar_pedido_pdf(
+def render_pdf(html: str) -> bytes:
+    """Renderiza un HTML a PDF.
+
+    `hinting=True` deja los hints de la fuente tal cual: WeasyPrint se salta el
+    paso de limpiarlos, que en la fuente china (Noto CJK, decenas de miles de
+    glifos) se lleva un tercio del tiempo total y no cambia el resultado visible.
+
+    Es una función a nivel de módulo (y no un closure) a propósito: así se puede
+    mandar a otro proceso con ProcessPoolExecutor cuando hay que generar varios
+    PDFs a la vez.
+    """
+    return HTML(string=html).write_pdf(hinting=True)
+
+
+def html_pedido(
     supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
     fotos: dict | None = None,
-) -> bytes:
-    """Genera el PDF del Formato Pedido del proveedor (réplica fiel, con fotos).
+) -> str:
+    """Arma el HTML del Formato Pedido del proveedor (réplica fiel, con fotos).
 
     `fotos` mapea url→data URI (imagen ya descargada e incrustada). Se usa para que
     WeasyPrint NO haga peticiones de red al renderizar (evita cuelgues por fotos
@@ -125,7 +139,15 @@ def generar_pedido_pdf(
       </tr></table>
     </body></html>"""
 
-    return HTML(string=html).write_pdf()
+    return html
+
+
+def generar_pedido_pdf(
+    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    fotos: dict | None = None,
+) -> bytes:
+    """PDF del Formato Pedido de un proveedor (arma el HTML y lo renderiza)."""
+    return render_pdf(html_pedido(supplier_nombre, supplier_numero, items, fecha, fotos))
 
 
 def generar_packing_list_pdf(
@@ -202,4 +224,4 @@ def generar_packing_list_pdf(
       </table>
     </body></html>"""
 
-    return HTML(string=html).write_pdf()
+    return render_pdf(html)

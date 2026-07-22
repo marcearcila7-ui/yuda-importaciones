@@ -1,7 +1,11 @@
 import io
+import logging
+import multiprocessing
 import os
 import re
+import time
 import zipfile
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import datetime
 
 import httpx
@@ -21,10 +25,19 @@ from app.schemas.pedidos import (
 )
 from app.services.excel_service import agrupar_items_por_supplier, generar_formato_pedido
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes_png
-from app.services.pdf_service import generar_pedido_pdf
+from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_excel, subir_pdf
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
+
+logger = logging.getLogger(__name__)
+
+# Cada PDF del formato de pedido tarda varios segundos (WeasyPrint tiene que
+# incrustar la fuente china, que trae decenas de miles de glifos). Con muchos
+# proveedores eso se vuelve minutos, así que los PDFs se renderizan en varios
+# procesos a la vez. "spawn" evita los bloqueos de hacer fork desde un hilo del
+# servidor; los procesos solo reciben el HTML (texto) y devuelven los bytes.
+_MAX_PROCESOS_PDF = 8
 
 
 def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
@@ -146,26 +159,62 @@ def generar_pedidos(
 
     resultados: list[PedidoGeneradoInfo] = []
 
-    # g. Un archivo por proveedor
-    for clave, grupo in grupos.items():
+    # g. Un archivo por proveedor. El Excel y el HTML se arman al momento (son
+    # instantáneos); los PDFs, que son lo lento, se renderizan en paralelo.
+    claves = list(grupos)
+    t0 = time.perf_counter()
+    excels: dict[str, bytes] = {}
+    htmls: list[str] = []
+    for clave in claves:
+        grupo = grupos[clave]
         primero = grupo[0]
-        contenido = generar_formato_pedido(
+        excels[clave] = generar_formato_pedido(
             primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
             fotos=fotos_bytes,
         )
-        contenido_pdf = generar_pedido_pdf(
-            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
-            fotos=fotos_datauri,
+        htmls.append(
+            html_pedido(
+                primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
+                fotos=fotos_datauri,
+            )
         )
 
-        nombre_archivo = f"{fecha_str}_{_sanitizar(clave)}_Pedido.xlsx"
-        nombre_pdf = f"{fecha_str}_{_sanitizar(clave)}_Pedido.pdf"
-        ruta_en_bucket = f"{sesion_id}/{nombre_archivo}"
-        ruta_pdf = f"{sesion_id}/{nombre_pdf}"
+    pdfs: dict[str, bytes] = {}
+    if len(claves) > 1:
+        try:
+            with ProcessPoolExecutor(
+                max_workers=min(len(claves), _MAX_PROCESOS_PDF),
+                mp_context=multiprocessing.get_context("spawn"),
+            ) as pool:
+                pdfs = dict(zip(claves, pool.map(render_pdf, htmls)))
+        except Exception:  # si el entorno no deja crear procesos, se hace en fila
+            logger.exception("No se pudo renderizar en paralelo; se hace secuencial")
+            pdfs = {}
+    if not pdfs:
+        pdfs = {clave: render_pdf(html) for clave, html in zip(claves, htmls)}
+    t_pdfs = time.perf_counter() - t0
 
-        # Subir Excel y PDF a Supabase Storage (carpeta por sesión)
-        url_descarga = subir_excel(contenido, ruta_en_bucket)
-        url_pdf = subir_pdf(contenido_pdf, ruta_pdf)
+    # Subir Excel y PDF a Supabase Storage (carpeta por sesión). Las subidas son
+    # espera de red, así que van todas a la vez en hilos.
+    def _subir(clave: str) -> tuple[str, str]:
+        ruta = f"{sesion_id}/{fecha_str}_{_sanitizar(clave)}_Pedido"
+        return (
+            subir_excel(excels[clave], f"{ruta}.xlsx"),
+            subir_pdf(pdfs[clave], f"{ruta}.pdf"),
+        )
+
+    t1 = time.perf_counter()
+    with ThreadPoolExecutor(max_workers=min(len(claves), 8)) as hilos:
+        urls = dict(zip(claves, hilos.map(_subir, claves)))
+    logger.info(
+        "generar_pedidos sesion=%s proveedores=%s pdfs=%.1fs subidas=%.1fs",
+        sesion_id, len(claves), t_pdfs, time.perf_counter() - t1,
+    )
+
+    for clave in claves:
+        grupo = grupos[clave]
+        nombre_archivo = f"{fecha_str}_{_sanitizar(clave)}_Pedido.xlsx"
+        url_descarga, url_pdf = urls[clave]
 
         # Upsert del registro en pedidos_generados
         registro = (

@@ -13,7 +13,7 @@ from io import BytesIO
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
-from weasyprint import HTML
+from app.services.pdf_service import render_pdf
 
 from app.models.sesion import Sesion
 
@@ -199,7 +199,7 @@ def generar_factura_pdf(
   <div class="firma">AUTHORIZED SIGNING: ____________________________</div>
 </body></html>"""
 
-    return HTML(string=html).write_pdf()
+    return render_pdf(html)
 
 
 def generar_factura_excel(
