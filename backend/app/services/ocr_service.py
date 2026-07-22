@@ -41,7 +41,7 @@ El JSON debe tener exactamente estas claves:
 {
   "descripcion_es": "qué es el producto, en español, claro y específico (ej: 'Vaso plástico con tapa y sorbete') o null",
   "descripcion_en": "lo mismo en inglés (ej: 'Plastic cup with lid and straw') o null",
-  "descripcion_zh": "lo mismo en chino, o lo que diga el cartel en chino, o null",
+  "descripcion_zh": "la MISMA descripción del producto traducida al chino simplificado (ej: '带盖带吸管的塑料杯'). NUNCA copies aquí el nombre de la tienda, la razón social ni la dirección del cartel: solo el producto",
   "material": "material principal que ves (plástico, metal, vidrio, cerámica, tela, madera, silicona, papel...) o null",
   "uso": "categoría o uso del producto (cocina, hogar, juguete, oficina, baño, decoración, mascotas...) o null",
   "supplier_nombre": "nombre o CÓDIGO de la tienda/proveedor (string o null)",

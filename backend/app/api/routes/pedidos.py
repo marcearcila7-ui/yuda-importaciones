@@ -27,6 +27,7 @@ from app.services.excel_service import agrupar_items_por_supplier, generar_forma
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes_png
 from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_excel, subir_pdf
+from app.services.traduccion_service import descripcion_zh_util, traducir_descripciones_zh
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 
@@ -140,6 +141,22 @@ def generar_pedidos(
                 )
         # e. Solo ítems con CTNS > 0
         items_validos = [item for item in items if item.ctns and item.ctns > 0]
+
+    # f.0. El formato del proveedor lleva la descripción en español Y en chino. El
+    # OCR muchas veces deja en el campo chino lo que decía el cartel de la tienda
+    # (razón social, dirección), así que lo que no sirva se traduce ahora y queda
+    # guardado con el producto: se traduce una sola vez, no en cada generación.
+    sin_zh = [i for i in items_validos if not descripcion_zh_util(i)]
+    if sin_zh:
+        # Los ítems pueden venir envueltos (cantidades del cliente): se escribe
+        # sobre el ítem real de la base, no sobre la envoltura.
+        reales = {i.id: i for i in items}
+        traducciones = traducir_descripciones_zh(sin_zh)
+        for item_id, zh in traducciones.items():
+            if item_id in reales:
+                reales[item_id].descripcion_zh = zh
+        if traducciones:
+            db.commit()
 
     # f. Agrupar por proveedor
     grupos = agrupar_items_por_supplier(items_validos)
