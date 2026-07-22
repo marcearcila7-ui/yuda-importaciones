@@ -17,6 +17,9 @@ PED_CSS = """
 table.items { width: 100%; border-collapse: collapse; font-size: 9px; }
 table.items th { background: #404040; color: #fff; padding: 4px 3px; border: 1px solid #555; white-space: pre-line; }
 table.items td { padding: 3px; border: 1px solid #999; text-align: center; vertical-align: middle; }
+/* Un producto no se parte entre dos páginas: si no cabe, pasa entero a la
+   siguiente. Sin esto la foto quedaba sola en una página, sin sus datos. */
+table.items tbody tr { page-break-inside: avoid; break-inside: avoid; }
 table.items td.desc { text-align: left; }
 /* La foto es la referencia de lo que se pidió: va grande y completa (contain,
    sin recortar), y su celda manda el ancho de la columna. */
@@ -73,6 +76,9 @@ def html_pedido(
         cbm = round(largo * ancho * alto / 1_000_000, 6)
         tcbm = round(cbm * ctn, 6)
         gw = item.gw or 0
+        # Un 0.0 en CBM o peso el proveedor lo lee como un dato real equivocado;
+        # si no está cargado, la celda va vacía.
+        cbm_txt, tcbm_txt, gw_txt = (cbm or ""), (tcbm or ""), (gw or "")
 
         tot_ctn += ctn
         tot_qty += qty
@@ -97,7 +103,7 @@ def html_pedido(
             f'<td class="desc">{desc}</td>'
             f"<td>{ctn}</td><td>{qty_ctn}</td><td>PCS</td><td>{qty}</td>"
             f"<td>{price}</td><td>{round(amount, 2)}</td>"
-            f"<td>{cbm}</td><td>{tcbm}</td><td>{gw}</td>"
+            f"<td>{cbm_txt}</td><td>{tcbm_txt}</td><td>{gw_txt}</td>"
             f"</tr>"
         )
 
@@ -112,7 +118,7 @@ def html_pedido(
     total = (
         f'<tr class="total"><td colspan="4">Total Amount（总金额）¥</td>'
         f"<td>{int(tot_ctn)}</td><td></td><td></td><td>{int(tot_qty)}</td>"
-        f"<td></td><td>{round(tot_amount, 2)}</td><td></td><td>{round(tot_tcbm, 6)}</td><td></td></tr>"
+        f"<td></td><td>{round(tot_amount, 2)}</td><td></td><td>{round(tot_tcbm, 6) or ''}</td><td></td></tr>"
     )
 
     terminos = (

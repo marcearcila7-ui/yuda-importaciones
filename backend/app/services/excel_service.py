@@ -277,8 +277,10 @@ def generar_formato_pedido(
         largo = getattr(item, "largo_cm", 0) or 0
         ancho = getattr(item, "ancho_cm", 0) or 0
         alto = getattr(item, "alto_cm", 0) or 0
-        ws.cell(row=f, column=12, value=round(largo * ancho * alto / 1_000_000, 6))  # L: CBM
-        ws.cell(row=f, column=14, value=getattr(item, "gw", None))       # N: G.W
+        # CBM y peso: si no están cargados, la celda va vacía (un 0 lo lee el
+        # proveedor como un dato real equivocado).
+        ws.cell(row=f, column=12, value=round(largo * ancho * alto / 1_000_000, 6) or None)  # L: CBM
+        ws.cell(row=f, column=14, value=getattr(item, "gw", None) or None)  # N: G.W
 
     buffer = BytesIO()
     wb.save(buffer)
