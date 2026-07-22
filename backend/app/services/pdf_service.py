@@ -31,6 +31,9 @@ table.items td.desc .zh { display: block; }
 tr.total td { background: #EEE; font-weight: bold; }
 .firmas { margin-top: 6px; font-size: 10px; border: 1px solid #999; padding: 6px; }
 .notas { margin-top: 4px; font-size: 8px; }
+/* Las firmas y el bloque de condiciones/marcado van enteros: sin esto se
+   partían y quedaba una página suelta con tres líneas del marcado. */
+.firmas, .notas, .notas tr, .marca { page-break-inside: avoid; break-inside: avoid; }
 .notas td { vertical-align: top; padding: 2px 6px; }
 .marca { border: 1px solid #999; padding: 4px; font-size: 8px; }
 """
