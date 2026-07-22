@@ -18,7 +18,13 @@ MODELO = "claude-opus-4-8"
 
 # Señales de que el "chino" guardado es en realidad el letrero del proveedor
 # (razón social, fábrica, puesto del mercado) y no el nombre del producto.
-_PISTAS_PROVEEDOR = ("公司", "工厂", "工艺厂", "商贸城", "市场", "有限", "号门")
+# Ojo: van los caracteres sueltos de "fábrica" en simplificado (厂) y tradicional
+# (廠) porque los carteles usan las dos formas — con "工厂" solo no se detectaban
+# casos reales como 义乌市瀚扬扇厂 o 龍創玻璃工艺制品廠.
+_PISTAS_PROVEEDOR = (
+    "公司", "厂", "廠", "商贸城", "商貿城", "市场", "市場",
+    "有限", "号门", "批发", "批發",
+)
 
 _ESQUEMA = {
     "type": "object",

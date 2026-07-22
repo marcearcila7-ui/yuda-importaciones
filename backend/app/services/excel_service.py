@@ -8,7 +8,7 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter, range_boundaries
 
-from app.services.imagen_service import descargar_imagen_png
+from app.services.imagen_service import descargar_imagen
 
 # Plantilla literal del formato de pedido al proveedor (FORMATO PEDIDO de YUDA)
 PLANTILLA_PEDIDO = os.path.join(
@@ -67,7 +67,7 @@ def generar_packing_list_excel(
         ws.cell(row=fila, column=1, value=getattr(item, "supplier_nombre", None))
         # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda
         if getattr(item, "foto_url", None):
-            buf = descargar_imagen_png(item.foto_url, lado_px=120)
+            buf = descargar_imagen(item.foto_url, lado_px=120)
             if buf is not None:
                 try:
                     img = XLImage(buf)
@@ -253,7 +253,7 @@ def generar_formato_pedido(
             cache = fotos.get(foto_doc)
             buf = (
                 BytesIO(cache) if cache is not None
-                else descargar_imagen_png(foto_doc, lado_px=PED_FOTO_PX * 3)
+                else descargar_imagen(foto_doc, lado_px=PED_FOTO_PX * 3)
             )
             if buf is not None:
                 try:

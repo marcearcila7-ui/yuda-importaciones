@@ -6,6 +6,7 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
+from app.services.imagen_service import CALIDAD_JPEG
 from app.services.pdf_service import render_pdf
 
 from app.models.sesion import Sesion
@@ -94,8 +95,8 @@ def _calcular(item, tipo_cambio: float) -> dict:
     }
 
 
-def _descargar_imagen_png(url: str):
-    """Descarga una imagen y la normaliza a PNG. Devuelve BytesIO o None si falla."""
+def _descargar_imagen(url: str):
+    """Descarga una imagen y la normaliza a JPEG. Devuelve BytesIO o None si falla."""
     try:
         resp = httpx.get(url, timeout=15)
         if resp.status_code != 200:
@@ -104,7 +105,8 @@ def _descargar_imagen_png(url: str):
 
         pil = PILImage.open(BytesIO(resp.content)).convert("RGB")
         buf = BytesIO()
-        pil.save(buf, format="PNG")
+        # JPEG: son fotos, en PNG el Excel de la cotización pesa varias veces más.
+        pil.save(buf, format="JPEG", quality=CALIDAD_JPEG, optimize=True)
         buf.seek(0)
         return buf
     except Exception:
@@ -194,7 +196,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         # Foto: la final (limpia) si existe; si no, la de datos como respaldo.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         if foto_doc:
-            buf = _descargar_imagen_png(foto_doc)
+            buf = _descargar_imagen(foto_doc)
             if buf is not None:
                 try:
                     img = XLImage(buf)

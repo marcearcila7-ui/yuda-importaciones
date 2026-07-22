@@ -24,7 +24,7 @@ from app.schemas.pedidos import (
     PedidoGeneradoResponse,
 )
 from app.services.excel_service import agrupar_items_por_supplier, generar_formato_pedido
-from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes_png
+from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
 from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_excel, subir_pdf
 from app.services.traduccion_service import descripcion_zh_util, traducir_descripciones_zh
@@ -174,7 +174,7 @@ def generar_pedidos(
     # 900 px de lado: la foto va grande en el Excel y en el PDF (es LA referencia
     # de lo que se pidió), así que se baja al triple del tamaño en que se muestra
     # (300 px) para que se vea nítida también impresa, no solo en pantalla.
-    fotos_bytes = descargar_imagenes_png(urls_fotos, lado_px=900)
+    fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
     fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
 
     resultados: list[PedidoGeneradoInfo] = []
