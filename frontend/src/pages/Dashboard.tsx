@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, X } from 'lucide-react'
+import axios from 'axios'
+import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
@@ -13,7 +14,8 @@ import MetricCard from '../components/MetricCard'
 import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
-import { exportarPackingExcel, exportarPackingPDF } from '../api/packing'
+import { eliminarSesion, exportarPackingExcel, exportarPackingPDF } from '../api/packing'
+import { confirmar } from '../store/confirmStore'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
 import PanelVentas from '../components/ventas/PanelVentas'
@@ -128,6 +130,27 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.sesion_id])
 
+  // Elimina la cotización abierta. Si ya se le había enviado al cliente,
+  // también deja de verla en su portal.
+  const eliminarCotizacion = async () => {
+    if (!sesionActual) return
+    const ok = await confirmar({
+      mensaje: t('dashboard.confirmarEliminarCotizacion', { cliente: sesionActual.nombre_cliente }),
+      peligro: true,
+      textoConfirmar: t('dashboard.eliminarCotizacion'),
+    })
+    if (!ok) return
+    try {
+      await eliminarSesion(sesionActual.id)
+      toast.success(t('dashboard.cotizacionEliminada'))
+      volverAlInicio()
+      await cargarSesiones()
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(typeof detalle === 'string' ? detalle : t('dashboard.errorEliminarCotizacion'))
+    }
+  }
+
   // Descarga el Packing List interno (Excel o PDF)
   const descargarPacking = async (tipo: 'excel' | 'pdf') => {
     if (!sesionActual) return
@@ -233,14 +256,26 @@ function Dashboard() {
               {t('dashboard.cotizacionAbierta')}{' '}
               <strong>{sesionActual.nombre_cliente}</strong>
             </p>
-            <button
-              type="button"
-              onClick={volverAlInicio}
-              className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
-              style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
-            >
-              <X size={15} /> {t('dashboard.cerrarCotizacion')}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={volverAlInicio}
+                className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
+                style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
+              >
+                <X size={15} /> {t('dashboard.cerrarCotizacion')}
+              </button>
+              {/* Borrarla del todo (también sirve para los borradores que aún no
+                  están vinculados a ningún cliente). */}
+              <button
+                type="button"
+                onClick={eliminarCotizacion}
+                className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
+                style={{ borderColor: 'var(--yuda-error)', color: 'var(--yuda-error)', backgroundColor: 'var(--yuda-white)' }}
+              >
+                <Trash2 size={15} /> {t('dashboard.eliminarCotizacion')}
+              </button>
+            </div>
           </div>
 
           {/* 1. Agregar productos */}

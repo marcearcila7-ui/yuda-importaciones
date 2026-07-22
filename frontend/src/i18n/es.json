@@ -105,7 +105,11 @@
     "errorDescargar": "No se pudo descargar la lista",
     "saludo": "Hola, {{nombre}}",
     "cotizacionAbierta": "Cotización abierta:",
-    "cerrarCotizacion": "Cerrar cotización"
+    "cerrarCotizacion": "Cerrar cotización",
+    "eliminarCotizacion": "Eliminar cotización",
+    "confirmarEliminarCotizacion": "¿Eliminar la cotización de {{cliente}}? Se borran sus productos y los pedidos generados, y si ya se la enviaste también desaparecerá de su portal. Esta acción no se puede deshacer.",
+    "cotizacionEliminada": "Cotización eliminada",
+    "errorEliminarCotizacion": "No se pudo eliminar la cotización"
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",

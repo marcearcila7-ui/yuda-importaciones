@@ -105,7 +105,11 @@
     "errorDescargar": "无法下载清单",
     "saludo": "你好，{{nombre}}",
     "cotizacionAbierta": "已打开的报价：",
-    "cerrarCotizacion": "关闭报价"
+    "cerrarCotizacion": "关闭报价",
+    "eliminarCotizacion": "删除报价单",
+    "confirmarEliminarCotizacion": "确定删除 {{cliente}} 的报价单？其产品和已生成的供应商订单都会被删除；如果已发送给客户，也会从其门户中消失。此操作无法撤销。",
+    "cotizacionEliminada": "报价单已删除",
+    "errorEliminarCotizacion": "无法删除该报价单"
   },
   "ocr": {
     "titulo": "上传标签照片",
