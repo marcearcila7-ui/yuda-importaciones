@@ -3,10 +3,10 @@ import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { Download } from 'lucide-react'
 import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
-import { useAuthStore } from '../store/authStore'
 import { confirmar } from '../store/confirmStore'
 import Button from '../components/ui/Button'
 import type { SesionHistorial } from '../types/admin'
@@ -20,8 +20,6 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 function Historial() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const { usuario } = useAuthStore()
-  const esAdmin = usuario?.rol === 'admin'
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [cargando, setCargando] = useState(false)
   const [cargandoMas, setCargandoMas] = useState(false)
@@ -117,8 +115,11 @@ function Historial() {
       await eliminarSesion(s.id)
       toast.success(t('historial.eliminada'))
       buscar()
-    } catch {
-      toast.error(t('historial.errorEliminar'))
+    } catch (err) {
+      // Si el backend explica por qué no se puede (p. ej. tiene movimientos de
+      // cuenta), se muestra ese motivo en vez de un error genérico.
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(typeof detalle === 'string' ? detalle : t('historial.errorEliminar'))
     }
   }
 
@@ -233,16 +234,16 @@ function Historial() {
                       >
                         {t('historial.verDetalle')}
                       </button>
-                      {esAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleEliminar(s)}
-                          className="rounded-lg px-3 py-1 text-sm font-medium"
-                          style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
-                        >
-                          {t('historial.eliminar')}
-                        </button>
-                      )}
+                      {/* La vendedora solo ve aquí sus propias cotizaciones, así que
+                          puede borrarlas; admin puede borrar cualquiera. */}
+                      <button
+                        type="button"
+                        onClick={() => handleEliminar(s)}
+                        className="rounded-lg px-3 py-1 text-sm font-medium"
+                        style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
+                      >
+                        {t('historial.eliminar')}
+                      </button>
                     </div>
                   </td>
                 </tr>

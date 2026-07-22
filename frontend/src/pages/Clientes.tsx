@@ -13,6 +13,7 @@ import {
   getCotizacionesCliente,
   resetPasswordCliente,
 } from '../api/clientes'
+import { eliminarSesion } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
 import CredencialesCliente from '../components/CredencialesCliente'
 import GestionPedidoCliente from '../components/GestionPedidoCliente'
@@ -103,6 +104,25 @@ function Clientes() {
     getCotizacionesCliente(clienteId)
       .then((cots) => setCotizaciones((m) => ({ ...m, [clienteId]: cots })))
       .catch(() => {})
+  }
+
+  // Borrar una cotización del cliente. Si ya se la habían enviado, también deja
+  // de verla en su portal.
+  const eliminarCotizacion = async (s: Sesion, clienteId: string) => {
+    const ok = await confirmar({
+      mensaje: t('clientes.confirmarEliminarCotizacion', { numero: numeroCot(s) }),
+      peligro: true,
+      textoConfirmar: t('clientes.eliminarCotizacion'),
+    })
+    if (!ok) return
+    try {
+      await eliminarSesion(s.id)
+      toast.success(t('clientes.cotizacionEliminada'))
+      recargarCotizaciones(clienteId)
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(typeof detalle === 'string' ? detalle : t('clientes.errorEliminarCotizacion'))
+    }
   }
 
   const toggleCot = (id: string) => {
@@ -491,6 +511,14 @@ ${t('clientes.email')}: ${c.email}`
                                   </button>
                                   <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
                                     {t('clientes.seguimiento')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => eliminarCotizacion(s, c.id)}
+                                    className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold"
+                                    style={{ color: 'var(--yuda-error)' }}
+                                  >
+                                    {t('clientes.eliminarCotizacion')}
                                   </button>
                                 </div>
                               </div>

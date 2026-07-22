@@ -37,6 +37,11 @@ from app.services.factura_service import (
     generar_factura_pdf,
     numero_factura,
 )
+from app.services.borrado_service import (
+    borrar_sesiones,
+    limpiar_storage,
+    tiene_movimientos_sesion,
+)
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
@@ -157,46 +162,27 @@ def eliminar_sesion(
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    """Elimina una cotización con sus ítems y pedidos (solo admin)"""
-    exigir_roles(usuario, "admin")
+    """Elimina una cotización con sus ítems, pedidos y seguimiento.
+
+    La vendedora puede borrar las suyas; admin, cualquiera. Si ya estaba enviada,
+    también desaparece del portal del cliente (el portal solo muestra las
+    cotizaciones que existen). Se bloquea si tiene contabilidad registrada.
+    """
+    exigir_roles(usuario, "admin", "vendedora")
     _obtener_sesion(db, sesion_id, usuario)
 
-    # Recolectar las URLs de archivos para borrarlos del storage tras el commit.
-    lote_ids = [
-        lid for (lid,) in db.query(LoteOCR.id).filter(LoteOCR.sesion_id == sesion_id).all()
-    ]
-    fotos_urls: list[str | None] = []
-    for foto_url, foto_final in db.query(Item.foto_url, Item.foto_final_url).filter(
-        Item.sesion_id == sesion_id
-    ):
-        fotos_urls.extend([foto_url, foto_final])
-    if lote_ids:
-        fotos_urls.extend(
-            u for (u,) in db.query(LoteItem.foto_url).filter(LoteItem.lote_id.in_(lote_ids))
+    if tiene_movimientos_sesion(db, sesion_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Esta cotización tiene abonos o cobros registrados en la cuenta del "
+                "cliente. Pide que se eliminen esos movimientos antes de borrarla."
+            ),
         )
-    pedidos_urls: list[str | None] = []
-    for xlsx, pdf in db.query(PedidoGenerado.archivo_xlsx_url, PedidoGenerado.archivo_pdf_url).filter(
-        PedidoGenerado.sesion_id == sesion_id
-    ):
-        pedidos_urls.extend([xlsx, pdf])
 
-    # Borrar primero los registros que dependen de la sesión (FK)
-    db.query(Item).filter(Item.sesion_id == sesion_id).delete()
-    db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).delete()
-    db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).delete()
-    # Avisos internos que referencian esta cotización (FK notificaciones.sesion_id)
-    db.query(Notificacion).filter(Notificacion.sesion_id == sesion_id).delete()
-    # Lotes de OCR (carga masiva): primero las fotos (LoteItem) y luego los lotes,
-    # respetando las FK lote_items.lote_id -> lotes_ocr.id -> sesiones.id
-    if lote_ids:
-        db.query(LoteItem).filter(LoteItem.lote_id.in_(lote_ids)).delete(synchronize_session=False)
-        db.query(LoteOCR).filter(LoteOCR.sesion_id == sesion_id).delete(synchronize_session=False)
-    db.query(Sesion).filter(Sesion.id == sesion_id).delete()
+    archivos = borrar_sesiones(db, [sesion_id])
     db.commit()
-
-    # Limpieza best-effort del storage (no bloquea si falla): fotos y pedidos.
-    borrar_archivos("fotos", [ruta_desde_url(u, "fotos") for u in fotos_urls])
-    borrar_archivos("pedidos", [ruta_desde_url(u, "pedidos") for u in pedidos_urls])
+    limpiar_storage(archivos)
     return {"detail": "Cotización eliminada"}
 
 

@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import require_roles
 from app.database import get_db
+from app.services.borrado_service import (
+    borrar_sesiones,
+    limpiar_storage,
+    tiene_movimientos_cliente,
+)
 from app.models.cliente import Cliente
 from app.models.cuenta import MovimientoCuenta, calcular_comision
 from app.models.seguimiento import (
@@ -170,30 +175,29 @@ def eliminar_cliente(
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
 ) -> None:
-    """Elimina un cliente. Se bloquea si tiene cotizaciones ya enviadas (tienen
-    seguimiento/portal activos); en ese caso conviene desactivarlo. Las cotizaciones
-    sin enviar se desvinculan para no perder el trabajo.
+    """Elimina un cliente con TODAS sus cotizaciones (enviadas o no), sus pedidos
+    generados y su seguimiento. Pierde el acceso al portal.
+
+    Se bloquea si tiene abonos o cobros registrados en su cuenta: esa es
+    contabilidad y no se borra sola. En ese caso conviene desactivarlo.
     """
     cliente = _cliente_autorizado(db, cliente_id, usuario)
 
-    enviadas = (
-        db.query(Sesion)
-        .filter(Sesion.cliente_id == cliente_id, Sesion.enviada_cliente.is_(True))
-        .count()
-    )
-    if enviadas:
+    if tiene_movimientos_cliente(db, cliente_id):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            "Este cliente tiene cotizaciones enviadas con seguimiento activo. "
-            "Desactívalo en lugar de eliminarlo.",
+            "Este cliente tiene abonos o cobros registrados en su cuenta. "
+            "Desactívalo en lugar de eliminarlo, o pide que se eliminen esos "
+            "movimientos primero.",
         )
 
-    # Desvincula las cotizaciones sin enviar para conservarlas
-    db.query(Sesion).filter(Sesion.cliente_id == cliente_id).update(
-        {Sesion.cliente_id: None}
-    )
+    sesion_ids = [
+        sid for (sid,) in db.query(Sesion.id).filter(Sesion.cliente_id == cliente_id)
+    ]
+    archivos = borrar_sesiones(db, sesion_ids)
     db.delete(cliente)
     db.commit()
+    limpiar_storage(archivos)
 
 
 @router.post("/clientes/{cliente_id}/reset-password")
