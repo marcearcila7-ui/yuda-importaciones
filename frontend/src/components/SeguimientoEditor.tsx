@@ -2,7 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { FileText, ImageIcon, Lock, Paperclip, Save, Ship, Upload, X } from 'lucide-react'
+import axios from 'axios'
+import {
+  FileSpreadsheet,
+  FileText,
+  ImageIcon,
+  Lock,
+  Paperclip,
+  Save,
+  Ship,
+  Upload,
+  X,
+} from 'lucide-react'
 import {
   getSeguimiento,
   guardarSeguimiento,
@@ -10,7 +21,7 @@ import {
   subirBlPdf,
 } from '../api/clientes'
 import { useAuthStore } from '../store/authStore'
-import { ESTADOS_ENVIO, ESTADOS_VENDEDORA, NAVIERAS } from '../types/seguimiento'
+import { ADJUNTO_ACCEPT, ESTADOS_ENVIO, ESTADOS_VENDEDORA, NAVIERAS } from '../types/seguimiento'
 import type { Adjunto, Hito, Seguimiento } from '../types/seguimiento'
 
 const LOCALES: Record<string, string> = { es: 'es-CO', en: 'en-US', zh: 'zh-CN' }
@@ -20,6 +31,14 @@ const inputClase =
   'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
 
 const ESTADOS_VENDEDORA_SET: ReadonlySet<string> = new Set(ESTADOS_VENDEDORA)
+
+// Icono según el tipo de adjunto: imagen, hoja de cálculo (CSV/Excel) o documento
+function IconoAdjunto({ tipo, size, color }: { tipo?: string | null; size: number; color?: string }) {
+  const estilo = color ? { color } : undefined
+  if (tipo === 'imagen') return <ImageIcon size={size} style={estilo} />
+  if (tipo === 'csv' || tipo === 'excel') return <FileSpreadsheet size={size} style={estilo} />
+  return <FileText size={size} style={estilo} />
+}
 
 // Editor del seguimiento del envío de una cotización (se usa en Clientes y en Equipo).
 // La vendedora gestiona las etapas hasta "en bodega"; la info de envío (naviera,
@@ -101,8 +120,11 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
       const adj = await subirAdjuntoSeguimiento(sesionId, archivo)
       setAdjuntos(estado, [...adjuntosEtapa, adj])
       toast.success(t('envio.adjuntoSubido'))
-    } catch {
-      toast.error(t('envio.errorAdjunto'))
+    } catch (err) {
+      // El backend explica el motivo (tipo no soportado, muy pesado, storage caído);
+      // mostrarlo evita el "no se pudo adjuntar" a secas que no dice nada.
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(detalle || t('envio.errorAdjunto'))
     } finally {
       setSubiendoAdj(false)
       if (adjRef.current) adjRef.current.value = ''
@@ -118,8 +140,9 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
       const url = await subirBlPdf(sesionId, archivo)
       setBlPdfUrl(url)
       toast.success(t('envio.blSubido'))
-    } catch {
-      toast.error(t('envio.errorBl'))
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(detalle || t('envio.errorBl'))
     } finally {
       setSubiendoBl(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -202,8 +225,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                         className="mt-1 flex items-center gap-1 text-xs"
                         style={{ color: 'var(--yuda-primary)' }}
                       >
-                        {a.tipo === 'imagen' ? <ImageIcon size={13} /> : <FileText size={13} />}{' '}
-                        {a.nombre || t('envio.archivo')}
+                        <IconoAdjunto tipo={a.tipo} size={13} /> {a.nombre || t('envio.archivo')}
                       </a>
                     ))}
                   </div>
@@ -280,11 +302,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                       className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-sm"
                       style={{ borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-white)' }}
                     >
-                      {a.tipo === 'imagen' ? (
-                        <ImageIcon size={15} style={{ color: 'var(--yuda-primary)' }} />
-                      ) : (
-                        <FileText size={15} style={{ color: 'var(--yuda-primary)' }} />
-                      )}
+                      <IconoAdjunto tipo={a.tipo} size={15} color="var(--yuda-primary)" />
                       <a
                         href={a.url}
                         target="_blank"
@@ -309,7 +327,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
               <input
                 ref={adjRef}
                 type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
+                accept={ADJUNTO_ACCEPT}
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0]
@@ -325,6 +343,9 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
               >
                 <Paperclip size={16} /> {subiendoAdj ? t('envio.subiendo') : t('envio.adjuntarArchivo')}
               </button>
+              <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('envio.tiposAdjunto')}
+              </p>
             </div>
           </>
         )}

@@ -83,3 +83,18 @@ def subir_pdf(archivo_bytes: bytes, nombre_archivo: str) -> str:
     except Exception:
         logger.exception("Error subiendo el PDF a Supabase Storage")
         raise
+
+
+def subir_documento(archivo_bytes: bytes, nombre_archivo: str, content_type: str) -> str:
+    """Sube un documento (PDF, CSV, Excel) al bucket 'pedidos' y devuelve su URL pública"""
+    try:
+        storage = _storage()
+        storage.from_("pedidos").upload(
+            nombre_archivo,
+            archivo_bytes,
+            {"content-type": content_type, "upsert": "true"},
+        )
+        return f"{settings.SUPABASE_URL}/storage/v1/object/public/pedidos/{nombre_archivo}"
+    except Exception:
+        logger.exception("Error subiendo el documento a Supabase Storage")
+        raise

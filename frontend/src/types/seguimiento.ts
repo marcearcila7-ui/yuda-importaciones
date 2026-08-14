@@ -48,8 +48,16 @@ export const ESTADOS_VENDEDORA = [
 export interface Adjunto {
   url: string
   nombre?: string | null
-  tipo?: string | null // 'pdf' | 'imagen'
+  tipo?: string | null // 'pdf' | 'imagen' | 'csv' | 'excel'
 }
+
+// Lo que acepta el input de archivo del adjunto. Se listan las extensiones además
+// de los MIME porque el navegador manda un content-type poco fiable para CSV/Excel.
+export const ADJUNTO_ACCEPT =
+  '.pdf,.jpg,.jpeg,.png,.webp,.csv,.xls,.xlsx,' +
+  'application/pdf,image/jpeg,image/png,image/webp,text/csv,' +
+  'application/vnd.ms-excel,' +
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 export interface Hito {
   fecha?: string | null

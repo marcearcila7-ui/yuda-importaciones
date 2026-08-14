@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, FileText, Ship } from 'lucide-react'
+import { ExternalLink, FileSpreadsheet, FileText, Ship } from 'lucide-react'
 import { ESTADOS_ENVIO } from '../../types/seguimiento'
 import type { Seguimiento } from '../../types/seguimiento'
 
@@ -191,7 +191,12 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                             className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium"
                             style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
                           >
-                            <FileText size={14} /> {a.nombre || t('envio.archivo')}
+                            {a.tipo === 'csv' || a.tipo === 'excel' ? (
+                              <FileSpreadsheet size={14} />
+                            ) : (
+                              <FileText size={14} />
+                            )}{' '}
+                            {a.nombre || t('envio.archivo')}
                           </a>
                         ),
                       )}

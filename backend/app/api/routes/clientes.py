@@ -47,7 +47,7 @@ from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
     avisar_listo_para_envio,
 )
-from app.services.storage_service import subir_foto, subir_pdf
+from app.services.storage_service import subir_documento, subir_foto, subir_pdf
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
@@ -450,12 +450,47 @@ async def subir_bl_pdf(
 
     nombre_archivo = f"bl/{sesion_id}-{uuid.uuid4().hex[:8]}.pdf"
     loop = asyncio.get_event_loop()
-    url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
+    try:
+        url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo guardar el BL: el almacenamiento no está disponible. "
+            "Intenta de nuevo en unos minutos.",
+        ) from exc
     return {"url": url}
 
 
-# Tipos de imagen permitidos como adjunto de una etapa
-_IMG_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+# Archivos que se pueden adjuntar a una etapa: extensión -> (tipo, content-type).
+# Se valida por extensión y no por el content-type del navegador porque para los
+# CSV y los Excel es poco fiable: Windows manda los .csv como
+# "application/vnd.ms-excel" y varios navegadores mandan "application/octet-stream".
+_ADJ_EXT = {
+    ".pdf": ("pdf", "application/pdf"),
+    ".jpg": ("imagen", "image/jpeg"),
+    ".jpeg": ("imagen", "image/jpeg"),
+    ".png": ("imagen", "image/png"),
+    ".webp": ("imagen", "image/webp"),
+    ".csv": ("csv", "text/csv"),
+    ".xls": ("excel", "application/vnd.ms-excel"),
+    ".xlsx": ("excel", _XLSX),
+}
+
+# Respaldo por content-type para archivos subidos sin extensión en el nombre
+_ADJ_CONTENT_TYPE = {
+    "application/pdf": ("pdf", ".pdf"),
+    "image/jpeg": ("imagen", ".jpg"),
+    "image/png": ("imagen", ".png"),
+    "image/webp": ("imagen", ".webp"),
+    "text/csv": ("csv", ".csv"),
+    _XLSX: ("excel", ".xlsx"),
+}
+
+_ADJ_NO_SOPORTADO = (
+    "Solo se permiten archivos PDF, imágenes (JPG, PNG, WEBP), CSV o Excel (XLS, XLSX)"
+)
 
 
 @router.post("/sesiones/{sesion_id}/seguimiento/adjunto")
@@ -465,7 +500,7 @@ async def subir_adjunto_seguimiento(
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
 ) -> dict:
-    """Sube un PDF o imagen para adjuntarlo a una etapa del seguimiento.
+    """Sube un PDF, imagen, CSV o Excel para adjuntarlo a una etapa del seguimiento.
 
     Lo puede subir la vendedora (en sus etapas) o Marcela; el cliente lo verá en
     su portal dentro del tracking. Devuelve {url, nombre, tipo} para guardarlo en
@@ -473,14 +508,17 @@ async def subir_adjunto_seguimiento(
     """
     _sesion_autorizada(db, sesion_id, usuario)
 
-    if archivo.content_type == "application/pdf":
-        tipo, extension = "pdf", ".pdf"
-    elif archivo.content_type in _IMG_EXT:
-        tipo, extension = "imagen", _IMG_EXT[archivo.content_type]
+    nombre_original = archivo.filename or ""
+    punto = nombre_original.rfind(".")
+    extension = nombre_original[punto:].lower() if punto != -1 else ""
+
+    if extension in _ADJ_EXT:
+        tipo, content_type = _ADJ_EXT[extension]
+    elif archivo.content_type in _ADJ_CONTENT_TYPE:
+        tipo, extension = _ADJ_CONTENT_TYPE[archivo.content_type]
+        content_type = archivo.content_type
     else:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos PDF o imágenes (JPG, PNG, WEBP)"
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
 
     contenido = await archivo.read()
     if len(contenido) > 25 * 1024 * 1024:
@@ -488,12 +526,24 @@ async def subir_adjunto_seguimiento(
 
     nombre_archivo = f"seguimiento/{sesion_id}-{uuid.uuid4().hex[:8]}{extension}"
     loop = asyncio.get_event_loop()
-    if tipo == "pdf":
-        url = await loop.run_in_executor(None, lambda: subir_pdf(contenido, nombre_archivo))
-    else:
-        url = await loop.run_in_executor(
-            None, lambda: subir_foto(contenido, nombre_archivo, archivo.content_type)
-        )
+    try:
+        if tipo == "imagen":
+            url = await loop.run_in_executor(
+                None, lambda: subir_foto(contenido, nombre_archivo, content_type)
+            )
+        else:
+            url = await loop.run_in_executor(
+                None, lambda: subir_documento(contenido, nombre_archivo, content_type)
+            )
+    except Exception as exc:
+        # Sin esto el fallo del storage sale como un 500 crudo y la vendedora solo
+        # ve "no se pudo adjuntar", sin pista de qué pasó.
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo guardar el archivo: el almacenamiento no está disponible. "
+            "Intenta de nuevo en unos minutos.",
+        ) from exc
+
     return {"url": url, "nombre": archivo.filename, "tipo": tipo}
 
 
