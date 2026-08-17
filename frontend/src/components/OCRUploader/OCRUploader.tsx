@@ -73,13 +73,17 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
     })
   }, [])
 
+  // Se listan las extensiones además del MIME porque en Android muchas fotos
+  // llegan con el type vacío o "application/octet-stream" (Google Fotos, Drive,
+  // imágenes de WhatsApp) y el filtro por MIME solo las descartaba sin avisar.
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
+    onDropRejected: () => setError(t('ocr.archivoNoSoportado')),
     multiple: false,
     accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'image/webp': [],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp'],
     },
   })
 

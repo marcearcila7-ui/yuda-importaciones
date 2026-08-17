@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { TIMEOUT_SUBIDA } from '../lib/imagenes'
 import type { OCRResultado } from '../types/ocr'
 
 export interface LoteItemInfo {
@@ -25,7 +26,7 @@ export async function crearLote(sesion_id: string): Promise<{ lote_id: string }>
 export async function subirFotoLote(lote_id: string, file: File): Promise<void> {
   const fd = new FormData()
   fd.append('foto', file)
-  await apiClient.post(`/lotes/${lote_id}/foto`, fd)
+  await apiClient.post(`/lotes/${lote_id}/foto`, fd, { timeout: TIMEOUT_SUBIDA })
 }
 
 export async function procesarLoteApi(lote_id: string): Promise<void> {
@@ -53,6 +54,7 @@ export async function reemplazarItemLote(
   const { data } = await apiClient.post<LoteItemInfo>(
     `/lotes/${lote_id}/items/${item_id}/reemplazar`,
     fd,
+    { timeout: TIMEOUT_SUBIDA },
   )
   return data
 }

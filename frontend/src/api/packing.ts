@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { TIMEOUT_SUBIDA } from '../lib/imagenes'
 import type { ItemCreate, ItemResponse, Sesion } from '../types/packing'
 
 // Adjunta el token de localStorage en cada request
@@ -62,7 +63,7 @@ export async function subirFotoFinal(
   const { data } = await apiClient.post<ItemResponse>(
     `/sesiones/${sesion_id}/items/${item_id}/foto-final`,
     form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
+    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: TIMEOUT_SUBIDA },
   )
   return data
 }

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { Camera, Check, ChevronDown, ChevronRight, Image as ImageIcon } from 'lucide-react'
 import { getItems, subirFotoFinal } from '../../api/packing'
+import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import type { ItemResponse } from '../../types/packing'
 
 // La foto que verá el proveedor: la final (limpia) si existe, si no la de datos.
@@ -69,7 +70,7 @@ function FilaProducto({
       <input
         ref={input}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT_IMAGENES}
         className="hidden"
         onChange={(e) => {
           const archivo = e.target.files?.[0]

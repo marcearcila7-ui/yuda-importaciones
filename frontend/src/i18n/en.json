@@ -135,6 +135,7 @@
     "cancelar": "Cancel",
     "exitoAgregado": "Item added to Packing List",
     "errorProcesar": "Could not process the image",
+    "archivoNoSoportado": "That file is not a JPG, PNG or WEBP photo. If your phone saves in HEIC, switch the camera to a compatible format or take the photo from the app.",
     "tomarFoto": "Take photo or upload image",
     "cbm": "Volume (m³)",
     "mqt": "Min. boxes",

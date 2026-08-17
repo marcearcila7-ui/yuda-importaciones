@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Images, Maximize2, Plus, RefreshCw, Sparkles, T
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
+import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import type { OCRResultado } from '../../types/ocr'
@@ -275,7 +276,7 @@ function CargaMasiva() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT_IMAGENES}
         multiple
         onChange={handleArchivos}
         className="hidden"
@@ -283,7 +284,7 @@ function CargaMasiva() {
       <input
         ref={inputMasRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT_IMAGENES}
         multiple
         onChange={handleAgregarMas}
         className="hidden"
@@ -599,7 +600,7 @@ function CargaMasiva() {
       <input
         ref={inputReemplazarRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept={ACCEPT_IMAGENES}
         onChange={handleReemplazo}
         className="hidden"
       />

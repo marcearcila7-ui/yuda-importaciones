@@ -1,12 +1,37 @@
 // Comprime/reduce una imagen antes de subir (las fotos de celular pesan mucho).
 // Reescala a un lado máximo de 1600px y reencoda a JPEG. Si algo falla, devuelve el original.
-export async function comprimirImagen(file: File): Promise<File> {
-  if (file.size < 1_500_000) return file
+//
+// Además de aligerar, sirve para NORMALIZAR el tipo: en Android el selector de
+// archivos entrega muchas fotos con el type vacío o "application/octet-stream"
+// (galería de Google Fotos, imágenes recibidas por WhatsApp, Drive), y el backend
+// solo acepta image/jpeg, image/png o image/webp. Al pasarlas por el canvas salen
+// siempre como JPEG de verdad.
+
+// Tipos que el backend acepta tal cual (ver backend/app/api/routes/ocr.py)
+const TIPOS_OK = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+// Si el navegador no decodifica la foto en este tiempo, se sigue con el original.
+// En Android con poca memoria y fotos de muchos megapíxeles, el decode a veces no
+// dispara ni onload ni onerror y la promesa se quedaba colgada para siempre.
+const TIMEOUT_MS = 10_000
+
+function reducir(file: File): Promise<File> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
+    let resuelto = false
+
+    const terminar = (resultado: File) => {
+      if (resuelto) return
+      resuelto = true
+      clearTimeout(temporizador)
+      URL.revokeObjectURL(url)
+      resolve(resultado)
+    }
+
+    const temporizador = setTimeout(() => terminar(file), TIMEOUT_MS)
+
     const img = new Image()
     img.onload = () => {
-      URL.revokeObjectURL(url)
       let { width, height } = img
       const maxLado = 1600
       if (Math.max(width, height) > maxLado) {
@@ -19,27 +44,31 @@ export async function comprimirImagen(file: File): Promise<File> {
       canvas.height = height
       const ctx = canvas.getContext('2d')
       if (!ctx) {
-        resolve(file)
+        terminar(file)
         return
       }
       ctx.drawImage(img, 0, 0, width, height)
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            resolve(file)
+            terminar(file)
             return
           }
           const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg'
-          resolve(new File([blob], nombre, { type: 'image/jpeg' }))
+          terminar(new File([blob], nombre, { type: 'image/jpeg' }))
         },
         'image/jpeg',
         0.85,
       )
     }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(file)
-    }
+    img.onerror = () => terminar(file)
     img.src = url
   })
+}
+
+export async function comprimirImagen(file: File): Promise<File> {
+  // Atajo solo si ya es liviana Y viene con un tipo que el backend acepta.
+  // Si el tipo es dudoso hay que pasarla por el canvas aunque sea pequeña.
+  if (file.size < 1_500_000 && TIPOS_OK.has(file.type)) return file
+  return reducir(file)
 }

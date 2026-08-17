@@ -135,6 +135,7 @@
     "cancelar": "Cancelar",
     "exitoAgregado": "Ítem agregado al Packing List",
     "errorProcesar": "No se pudo procesar la imagen",
+    "archivoNoSoportado": "Ese archivo no es una foto JPG, PNG o WEBP. Si tu celular guarda en HEIC, cambia la cámara a formato compatible o toma la foto desde la app.",
     "tomarFoto": "Tomar foto o subir imagen",
     "cbm": "Volumen (m³)",
     "mqt": "Mín. de cajas",
