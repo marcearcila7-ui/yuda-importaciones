@@ -10,8 +10,20 @@ from app.core.ocr_limiter import slot_ocr
 
 logger = logging.getLogger(__name__)
 
-# Modelo de visión a utilizar
-MODELO = "claude-opus-4-5-20251101"
+# Modelo de visión a utilizar.
+# Opus 5 lee imágenes de hasta 2576px de lado largo (Opus 4.5 se quedaba en 1568)
+# y entiende mucho mejor documentos y texto manuscrito: es lo que hace la diferencia
+# leyendo carteles en chino escritos a mano y con brillos.
+MODELO = "claude-opus-5"
+
+# Cuánto "piensa" el modelo antes de responder. En Opus 5 el pensamiento va prendido
+# por defecto y sale del mismo presupuesto de MAX_TOKENS. Si el OCR se equivoca leyendo
+# carteles difíciles, subir a "high"; si sale caro o lento, bajar a "low".
+ESFUERZO = "medium"
+
+# Tope de tokens de la respuesta. Incluye el pensamiento del modelo, no solo el JSON:
+# con el tope viejo de 1024 la respuesta se cortaba a la mitad y no se podía parsear.
+MAX_TOKENS = 4096
 
 # Cliente único reutilizado (evita abrir una conexión nueva por cada foto).
 # max_retries: el SDK reintenta con backoff exponencial ante 429 / 5xx / errores de red.
@@ -91,7 +103,8 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
   - chino: "起订量", "起訂量", "最少", "最低", "最低起订", "起批", "最少订购", y "一手" (en Yiwu "una mano" es la unidad mínima de compra: si dice "一手10个" la mínima es 10)
   Extrae SOLO el número aunque diga "10 cajas" o "5 x tienda" (ej: "MOQ: 600" → 600 ; "moa 10" → 10 ; "moq: 5 x tienda" → 5 ; "起订量 20" → 20)
 
-• PESO BRUTO por caja (kg) → gw. Variantes: "PESO", "PESO BRUTO"; inglés "G.W.", "GW", "GROSS WEIGHT", "KGS", "KG"; chino "毛重", "重量", "公斤", "千克" (ej: "G.W. 12.5" → 12.5 ; "毛重 9公斤" → 9)
+• PESO BRUTO por caja (kg) → gw. Variantes: "PESO BRUTO", "P. BRUTO"; inglés "G.W.", "GW", "GROSS WEIGHT", "KGS", "KG"; chino "毛重", "重量", "公斤", "千克" (ej: "G.W. 12.5" → 12.5 ; "毛重 9公斤" → 9)
+  CUIDADO — NO CONFUNDAS PESO CON PRECIO: en la letra manuscrita de estos carteles "Precio" se parece muchísimo a "Peso". El precio está en casi TODOS los carteles; el peso bruto casi nunca. Ante un rótulo que empieza por "P" seguido de un número, la respuesta correcta es PRECIO (price_rmb), NO peso. Pon algo en gw SOLO si el rótulo dice claramente "BRUTO", "G.W.", "KG" o 毛重. Si dudas, el número va en price_rmb y gw queda en null.
 
 • TIENDA / PROVEEDOR → supplier_nombre. Variantes:
   - español/inglés: "TIENDA", "TIENDA:", "BOOTH", "BOOTH NO.", "STAND", "SHOP", "STALL"
@@ -233,7 +246,8 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
         async with slot_ocr():
             response = await client.messages.create(
                 model=MODELO,
-                max_tokens=1024,
+                max_tokens=MAX_TOKENS,
+                output_config={"effort": ESFUERZO},
                 messages=[
                     {
                         "role": "user",
@@ -254,7 +268,15 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
                     }
                 ],
             )
-        texto = response.content[0].text
+        # El primer bloque ya no es necesariamente el texto: con el pensamiento
+        # prendido la respuesta trae bloques de tipo "thinking" antes. Se busca el
+        # primer bloque de texto en vez de asumir la posición 0.
+        texto = next((b.text for b in response.content if b.type == "text"), "")
+        if not texto:
+            logger.error(
+                "La respuesta del OCR no trae texto (stop_reason=%s)", response.stop_reason
+            )
+            return _resultado_vacio()
     except Exception:
         logger.exception("Error llamando a la API de Anthropic")
         return _resultado_vacio()

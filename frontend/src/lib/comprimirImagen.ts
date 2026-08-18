@@ -33,7 +33,10 @@ function reducir(file: File): Promise<File> {
     const img = new Image()
     img.onload = () => {
       let { width, height } = img
-      const maxLado = 1600
+      // Lado máximo que el modelo de visión aprovecha (Opus 5 lee hasta 2576px;
+      // antes eran 1568 y por eso este valor estaba en 1600). Reducir más la foto
+      // es tirar a la basura detalle que sirve para leer el chino manuscrito.
+      const maxLado = 2576
       if (Math.max(width, height) > maxLado) {
         const escala = maxLado / Math.max(width, height)
         width = Math.round(width * escala)
