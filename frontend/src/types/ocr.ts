@@ -15,6 +15,9 @@ export interface OCRResultado {
   gw: number | null
   colores: string | null
   cantidad_minima: number | null
+  // Minimo de compra de TODA la tienda. Solo llega cuando el cartel trae los dos
+  // minimos; la app avisa y la vendedora elige cual usar. Falta en items viejos.
+  cantidad_minima_tienda?: number | null
   notas: string | null
   confianza: 'alta' | 'media' | 'baja'
   // Calidad de la foto evaluada por el modelo. Puede faltar en ítems viejos.

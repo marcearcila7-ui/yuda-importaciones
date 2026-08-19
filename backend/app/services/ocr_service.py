@@ -66,7 +66,8 @@ El JSON debe tener exactamente estas claves:
   "cbm_directo": número decimal del CBM (cubicaje/volumen por caja) o null,
   "gw": número decimal del peso bruto por caja en kg o null,
   "colores": "colores o variantes disponibles como string separado por comas o null",
-  "cantidad_minima": número entero de la mínima cantidad de compra o null,
+  "cantidad_minima": número entero de la mínima cantidad de compra DE ESTE PRODUCTO o null,
+  "cantidad_minima_tienda": número entero de la mínima de compra de TODA LA TIENDA (sumando todos sus productos) o null,
   "notas": "cualquier otra información relevante o null",
   "confianza": "alta, media o baja según tu certeza en la extracción",
   "legible": true o false (booleano),
@@ -98,10 +99,23 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
   - chino: "体积", "體積", "材积", "立方", "立方米", "外箱体积"
   Ejemplos: "CBM: 0.22" → 0.22 ; "cbm 0.11" → 0.11 ; "体积 0.08" → 0.08
 
-• CANTIDAD MÍNIMA de compra → cantidad_minima. Variantes:
+• CANTIDAD MÍNIMA de compra. OJO: hay DOS mínimos distintos y muchos carteles traen los dos.
+  Rótulos, en cualquiera de los tres idiomas:
   - español/inglés con ortografía manuscrita: "MOQ", "MQT", "MOA", "MOG", "MQO", "MINIMO", "MIN", "MIN ORDER", "MIN. QTY", "MINIMUM"
   - chino: "起订量", "起訂量", "最少", "最低", "最低起订", "起批", "最少订购", y "一手" (en Yiwu "una mano" es la unidad mínima de compra: si dice "一手10个" la mínima es 10)
-  Extrae SOLO el número aunque diga "10 cajas" o "5 x tienda" (ej: "MOQ: 600" → 600 ; "moa 10" → 10 ; "moq: 5 x tienda" → 5 ; "起订量 20" → 20)
+
+  → cantidad_minima = el mínimo DE ESTE PRODUCTO. Es el que va acompañado de "por modelo",
+    "x modelo", "por referencia", "each model", "per model", "每款", "每个款式" — o el único
+    que hay cuando el cartel trae uno solo (ej: "MOQ: 600" → 600 ; "moa 10" → 10 ; "起订量 20" → 20).
+
+  → cantidad_minima_tienda = el mínimo para comprarle A LA TIENDA en total, sumando todos sus
+    productos. Va acompañado de "toda tienda", "x tienda", "por tienda", "total", "whole shop",
+    "per shop", "全店", "整店" (ej: "Toda tienda MOQ: 10 cajas" → 10 ; "moq: 5 x tienda" → 5).
+
+  Si el cartel trae los dos (ej: "MOQ: 2 cajas por modelo" y abajo "Toda tienda MOQ: 10 cajas"),
+  devuelve LOS DOS: cantidad_minima=2 y cantidad_minima_tienda=10. Si solo trae uno y no dice si
+  es por modelo o por tienda, ponlo en cantidad_minima y deja cantidad_minima_tienda en null.
+  NUNCA repitas el mismo número en los dos campos.
 
 • PESO BRUTO por caja (kg) → gw. Variantes: "PESO BRUTO", "P. BRUTO"; inglés "G.W.", "GW", "GROSS WEIGHT", "KGS", "KG"; chino "毛重", "重量", "公斤", "千克" (ej: "G.W. 12.5" → 12.5 ; "毛重 9公斤" → 9)
   CUIDADO — NO CONFUNDAS PESO CON PRECIO: en la letra manuscrita de estos carteles "Precio" se parece muchísimo a "Peso". El precio está en casi TODOS los carteles; el peso bruto casi nunca. Ante un rótulo que empieza por "P" seguido de un número, la respuesta correcta es PRECIO (price_rmb), NO peso. Pon algo en gw SOLO si el rótulo dice claramente "BRUTO", "G.W.", "KG" o 毛重. Si dudas, el número va en price_rmb y gw queda en null.
@@ -119,7 +133,7 @@ Reglas:
 - material y uso: infiérelos de la imagen aunque no estén escritos; si no podés deducirlo, null.
 - Si un dato NUMÉRICO no aparece, usa null; nunca inventes números. Pero si en el tablero SÍ está el precio, las piezas por caja, el CBM o la cantidad mínima (en cualquiera de sus variantes de arriba), DEBES extraerlos: no los dejes en null.
 - largo_cm, ancho_cm y alto_cm van SIEMPRE en null: son las medidas de la CAJA FINAL, que se cargan a mano después. Aunque el cartel muestre medidas (ej "28x23x12"), NO las pongas ahí.
-- price_rmb, qty_por_ctn, cbm_directo, gw, cantidad_minima deben ser números (float o int) o null, nunca strings.
+- price_rmb, qty_por_ctn, cbm_directo, gw, cantidad_minima, cantidad_minima_tienda deben ser números (float o int) o null, nunca strings.
 - confianza es obligatorio, nunca null.
 - Que el cartel esté escrito en chino o en inglés NO es motivo para marcar legible=false ni para bajar la confianza: los tres idiomas son igual de válidos y sus datos deben extraerse igual.
 - legible es obligatorio, nunca null: evalúa SOLO si se puede LEER el texto. Un reflejo/brillo o que la foto esté rotada NO la hacen ilegible por sí solos. Marca legible=false SOLO si el texto realmente no se distingue (muy borroso, movido, muy oscuro, tapado o cortado). Ante la duda por buena calidad, marca true.
@@ -145,6 +159,7 @@ def _resultado_vacio() -> dict:
         "gw": None,
         "colores": None,
         "cantidad_minima": None,
+        "cantidad_minima_tienda": None,
         "notas": None,
         "confianza": "baja",
         # Si no se pudo procesar la foto, se considera no legible: la vendedora
@@ -303,6 +318,11 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     datos["cbm_directo"] = _a_numero(datos["cbm_directo"])
     datos["gw"] = _a_numero(datos["gw"])
     datos["cantidad_minima"] = _a_numero(datos["cantidad_minima"], entero=True)
+    datos["cantidad_minima_tienda"] = _a_numero(datos["cantidad_minima_tienda"], entero=True)
+    # El mismo número en los dos campos no aporta nada y confundiría a la vendedora
+    # con un aviso falso de "hay dos mínimos".
+    if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
+        datos["cantidad_minima_tienda"] = None
 
     # confianza es obligatorio, nunca null
     if not datos.get("confianza"):

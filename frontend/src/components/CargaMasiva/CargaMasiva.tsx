@@ -9,6 +9,7 @@ import { confirmar } from '../../store/confirmStore'
 import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
+import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
@@ -504,8 +505,15 @@ function CargaMasiva() {
                   onChange={(v) => actualizarNumero(r.id, 'price_rmb', v)} />
                 <CampoLote label={t('ocr.unidPorCaja')} valor={r.datos.qty_por_ctn} tipo="number" requerido alerta={faltaSet.has('unidPorCaja')}
                   onChange={(v) => actualizarNumero(r.id, 'qty_por_ctn', v)} />
-                <CampoLote label={t('ocr.mqt')} valor={r.datos.cantidad_minima} tipo="number" requerido alerta={faltaSet.has('mqt')}
-                  onChange={(v) => actualizarNumero(r.id, 'cantidad_minima', v)} />
+                <div>
+                  <CampoLote label={t('ocr.mqt')} valor={r.datos.cantidad_minima} tipo="number" requerido alerta={faltaSet.has('mqt')}
+                    onChange={(v) => actualizarNumero(r.id, 'cantidad_minima', v)} />
+                  <AvisoDosMinimos
+                    actual={r.datos.cantidad_minima}
+                    tienda={r.datos.cantidad_minima_tienda}
+                    onElegir={(v) => actualizarNumero(r.id, 'cantidad_minima', String(v))}
+                  />
+                </div>
                 <CampoLote label={t('ocr.cbm')} valor={r.datos.cbm_directo} tipo="number" requerido alerta={faltaSet.has('cbm')}
                   onChange={(v) => actualizarNumero(r.id, 'cbm_directo', v)} />
               </div>

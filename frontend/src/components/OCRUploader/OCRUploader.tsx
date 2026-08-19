@@ -7,6 +7,7 @@ import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
 import { CAMPOS_OBLIGATORIOS, evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
+import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
 
 interface OCRUploaderProps {
@@ -271,6 +272,13 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
+                {clave === 'cantidad_minima' && (
+                  <AvisoDosMinimos
+                    actual={form.cantidad_minima}
+                    tienda={form.cantidad_minima_tienda}
+                    onElegir={(v) => setForm((prev) => (prev ? { ...prev, cantidad_minima: v } : prev))}
+                  />
+                )}
               </label>
             ))}
           </div>

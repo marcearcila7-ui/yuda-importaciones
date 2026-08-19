@@ -27,7 +27,8 @@ function datosVacios(): OCRResultado {
     descripcion_es: null, descripcion_en: null, descripcion_zh: null,
     material: null, uso: null, supplier_nombre: null, supplier_numero: null,
     price_rmb: null, qty_por_ctn: null, largo_cm: null, ancho_cm: null, alto_cm: null,
-    cbm_directo: null, gw: null, colores: null, cantidad_minima: null, notas: null,
+    cbm_directo: null, gw: null, colores: null, cantidad_minima: null,
+    cantidad_minima_tienda: null, notas: null,
     confianza: 'baja', legible: false, motivo_ilegible: 'no_procesada',
   }
 }

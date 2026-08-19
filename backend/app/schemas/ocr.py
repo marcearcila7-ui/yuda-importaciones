@@ -17,6 +17,9 @@ class OCRResultado(BaseModel):
     gw: Optional[float] = None
     colores: Optional[str] = None
     cantidad_minima: Optional[int] = None
+    # Mínimo para comprarle a la tienda en total; solo viene cuando el cartel
+    # trae los dos mínimos y la vendedora elige cuál usar.
+    cantidad_minima_tienda: Optional[int] = None
     descripcion_zh: Optional[str] = None
     notas: Optional[str] = None
     confianza: str = "baja"
