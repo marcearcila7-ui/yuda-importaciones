@@ -157,7 +157,9 @@
       "reflejo": "反光",
       "recortada": "被裁切",
       "no_procesada": "无法处理",
-      "generico": "不够清晰"
+      "generico": "不够清晰",
+      "error_sistema": "系统故障",
+      "sin_saldo": "账户余额不足"
     },
     "descripcionEn": "描述（英文）",
     "material": "材质",
@@ -167,7 +169,11 @@
     "revisarAyuda": "如有识别错误请修正。每个字段都有标签。",
     "reintentarIA": "用 AI 重试",
     "reemplazarFoto": "替换照片",
-    "oCompletaManual": "或手动填写带 * 的字段以直接添加。"
+    "oCompletaManual": "或手动填写带 * 的字段以直接添加。",
+    "errorSistemaTitulo": "无法处理这张照片 — 不是你的问题",
+    "errorSistemaTexto": "是系统这边出了问题，重拍也没用。请通知技术支持，稍后重试；照片已保存。",
+    "sinSaldoTitulo": "分析服务余额不足",
+    "sinSaldoTexto": "不是照片的问题，也不是应用故障：支付图片分析的账户余额不足，需要充值才能恢复。请通知 Marcela 或技术支持；照片已保存。"
   },
   "packing": {
     "exportar": "下载清单 (Excel)",
@@ -411,7 +417,13 @@
     "reemplazarFoto": "替换照片",
     "exitoFinal": "✅ 完成：已向报价单添加 {{n}} 个产品",
     "exitoParcial": "已添加 {{n}} 个 · 还有 {{quedan}} 个待修正",
-    "agregarListos": "将 {{n}} 个就绪项添加到报价单"
+    "agregarListos": "将 {{n}} 个就绪项添加到报价单",
+    "falloSistemaTitulo": "因系统故障，分析失败",
+    "falloSistemaTexto": "不是照片的问题：系统无法分析。照片已保存，无需重拍。请通知技术支持，稍后点击「重试」。",
+    "falloSistemaTextoCortado": "不是照片的问题：系统无法分析，已停止以免浪费剩余的 {{n}} 张。全部已保存。请通知技术支持，稍后点击「重试」。",
+    "falloSaldoTitulo": "分析服务余额不足",
+    "falloSaldoTexto": "不是照片的问题，也不是应用故障：支付图片分析的账户余额不足。请通知 Marcela 或技术支持充值，确认后点击「重试」。",
+    "falloFotosGuardadas": "还有 {{n}} 张未分析，但全部已保存：重试时会自动处理，无需重拍。"
   },
   "roles": {
     "admin": "管理员",

@@ -25,6 +25,36 @@ ESFUERZO = "medium"
 # con el tope viejo de 1024 la respuesta se cortaba a la mitad y no se podía parsear.
 MAX_TOKENS = 4096
 
+# Motivo que se guarda cuando la foto NO se pudo procesar por un fallo NUESTRO
+# (la API no respondió, se quedó sin crédito, devolvió algo ilegible...). Es distinto
+# de que la foto esté borrosa: la vendedora no tiene nada que corregir y volver a
+# tomarla no sirve de nada. El 15-ago-2026 la cuenta de Anthropic se quedó sin saldo
+# y la app le dijo "foto no legible, vuelve a tomarla" 268 veces seguidas.
+MOTIVO_ERROR_SISTEMA = "error_sistema"
+
+# Caso concreto y de lejos el más común: la cuenta de Anthropic se quedó sin saldo.
+# Se separa del error genérico porque la solución es distinta y concreta —recargar—
+# y porque decir "error del sistema" manda a buscar un bug que no existe.
+MOTIVO_SIN_SALDO = "sin_saldo"
+
+_MOTIVOS_DE_SISTEMA = {MOTIVO_ERROR_SISTEMA, MOTIVO_SIN_SALDO}
+
+
+def es_error_sistema(datos: dict | None) -> bool:
+    """¿El resultado viene de un fallo NUESTRO (y no de una foto mala)?"""
+    return bool(datos) and datos.get("motivo_ilegible") in _MOTIVOS_DE_SISTEMA
+
+
+def _motivo_de_la_excepcion(exc: Exception) -> str:
+    """Traduce el fallo de la API al motivo que verá la vendedora."""
+    texto = str(exc).lower()
+    # La API responde 400 con "your credit balance is too low to access the
+    # Anthropic API". Es un mensaje estable de Anthropic; si algún día cambia, el
+    # peor caso es caer al error genérico, que sigue siendo correcto.
+    if "credit balance" in texto or "insufficient credit" in texto:
+        return MOTIVO_SIN_SALDO
+    return MOTIVO_ERROR_SISTEMA
+
 # Cliente único reutilizado (evita abrir una conexión nueva por cada foto).
 # max_retries: el SDK reintenta con backoff exponencial ante 429 / 5xx / errores de red.
 _client: AsyncAnthropic | None = None
@@ -140,8 +170,9 @@ Reglas:
 """
 
 
-def _resultado_vacio() -> dict:
-    """Devuelve un resultado con todos los campos en null y confianza baja"""
+def _resultado_vacio(motivo: str = "no_procesada") -> dict:
+    """Resultado con todos los campos en null. `motivo` distingue si fue un fallo
+    del sistema (MOTIVO_ERROR_SISTEMA) o una foto que no se pudo leer."""
     return {
         "descripcion_es": None,
         "descripcion_en": None,
@@ -165,7 +196,7 @@ def _resultado_vacio() -> dict:
         # Si no se pudo procesar la foto, se considera no legible: la vendedora
         # deberá volver a tomarla.
         "legible": False,
-        "motivo_ilegible": "no_procesada",
+        "motivo_ilegible": motivo,
     }
 
 
@@ -291,15 +322,17 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
             logger.error(
                 "La respuesta del OCR no trae texto (stop_reason=%s)", response.stop_reason
             )
-            return _resultado_vacio()
-    except Exception:
+            return _resultado_vacio(MOTIVO_ERROR_SISTEMA)
+    except Exception as exc:
         logger.exception("Error llamando a la API de Anthropic")
-        return _resultado_vacio()
+        return _resultado_vacio(_motivo_de_la_excepcion(exc))
 
     # 5. Parsear la respuesta
     parsed = _parsear_json(texto)
     if parsed is None:
-        return _resultado_vacio()
+        # El modelo respondió pero no en JSON: tampoco es culpa de la foto.
+        logger.error("La respuesta del OCR no es JSON válido")
+        return _resultado_vacio(MOTIVO_ERROR_SISTEMA)
 
     # Partir de un resultado vacío y sobrescribir con lo que vino del modelo
     datos = _resultado_vacio()

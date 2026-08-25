@@ -18,6 +18,12 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
   const claveMotivo = (motivo ?? '').toLowerCase().replace(/\s+/g, '_')
   const motivoTraducido = t([`ocr.motivos.${claveMotivo}`, 'ocr.motivos.generico'])
 
+  // Falla NUESTRA (API caída o sin crédito), no de la foto. Volver a tomarla no
+  // arregla nada, así que el mensaje tiene que decirlo con todas las letras en vez
+  // de mandar a la vendedora a repetir el trabajo.
+  const sinSaldo = claveMotivo === 'sin_saldo'
+  const esErrorSistema = claveMotivo === 'error_sistema' || sinSaldo
+
   // Lista de datos faltantes traducida
   const camposFaltantes = faltantes.map((k) => t(`ocr.${k}`)).join(', ')
 
@@ -35,10 +41,16 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
         <AlertTriangle size={compacta ? 16 : 20} style={{ color: 'var(--yuda-error)', flexShrink: 0, marginTop: 1 }} />
         <div className="flex flex-col gap-1">
           <p className="font-semibold" style={{ color: 'var(--yuda-error-dark)', fontSize: compacta ? 13 : 15 }}>
-            {t('ocr.noLegibleTitulo')}
+            {t(sinSaldo ? 'ocr.sinSaldoTitulo' : esErrorSistema ? 'ocr.errorSistemaTitulo' : 'ocr.noLegibleTitulo')}
           </p>
 
-          {imagenIlegible && (
+          {esErrorSistema && (
+            <p style={{ color: '#7F1D1D', fontSize: compacta ? 12 : 14 }}>
+              {t(sinSaldo ? 'ocr.sinSaldoTexto' : 'ocr.errorSistemaTexto')}
+            </p>
+          )}
+
+          {!esErrorSistema && imagenIlegible && (
             <p style={{ color: '#7F1D1D', fontSize: compacta ? 12 : 14 }}>
               {motivo
                 ? t('ocr.noLegibleImagen', { motivo: motivoTraducido })
@@ -46,13 +58,13 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
             </p>
           )}
 
-          {faltantes.length > 0 && (
+          {!esErrorSistema && faltantes.length > 0 && (
             <p style={{ color: '#7F1D1D', fontSize: compacta ? 12 : 14 }}>
               {t('ocr.noLegibleFaltan', { campos: camposFaltantes })}
             </p>
           )}
 
-          {!compacta && (
+          {!compacta && !esErrorSistema && (
             <p style={{ color: '#7F1D1D', fontSize: 13 }}>{t('ocr.noLegibleInstruccion')}</p>
           )}
         </div>

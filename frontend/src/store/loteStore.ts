@@ -57,6 +57,12 @@ interface LoteState {
   resultados: ResultadoLote[]
   errores: number
   erroresSubida: number
+  // El lote fallo por un problema NUESTRO (API caida/sin credito), no por las fotos
+  falloSistema: boolean
+  // Motivo concreto del fallo del sistema (p. ej. 'sin_saldo')
+  motivoFallo: string | null
+  // Fotos que quedaron sin procesar al cortarse el lote
+  sinProcesar: number
   agregarSeleccion: (sesionId: string, files: File[]) => void
   quitarSeleccion: (id: string) => void
   cancelarSeleccion: () => void
@@ -94,12 +100,18 @@ const ESTADO_INICIAL = {
   resultados: [] as ResultadoLote[],
   errores: 0,
   erroresSubida: 0,
+  falloSistema: false,
+  motivoFallo: null,
+  sinProcesar: 0,
 }
 
 export const useLoteStore = create<LoteState>((set, get) => {
   // Vuelca el estado del servidor al store; si terminó, arma los resultados
   const aplicarEstado = (est: LoteEstadoResp) => {
-    if (est.estado === 'completado') {
+    // 'error' tambien es un final: el lote se corto porque el sistema esta fallando
+    // (API caida o sin credito). Si no se contempla, el poll gira para siempre y la
+    // vendedora se queda mirando "procesando" sin que nada avance.
+    if (est.estado === 'completado' || est.estado === 'error') {
       // Se incluyen TODAS las fotos procesadas (ok y con error): las de falla dura
       // se muestran como tarjeta ilegible para que la vendedora sepa cuál es y la
       // pueda reemplazar/reanalizar o llenar a mano.
@@ -111,7 +123,24 @@ export const useLoteStore = create<LoteState>((set, get) => {
           datos: i.datos ? { ...(i.datos as OCRResultado) } : datosVacios(),
         }))
       const errores = est.items.filter((i) => i.estado === 'error').length
-      set({ fase: 'completado', resultados, errores, procesadas: est.procesadas, totalProc: est.total })
+      // Fallo del sistema: el lote quedo en error, o ninguna foto salio bien.
+      const falloSistema = est.estado === 'error' || (resultados.length > 0 && errores === resultados.length)
+      // Motivo concreto del fallo (p. ej. 'sin_saldo'), tomado de la primera foto que
+      // lo reporte: sirve para decirle a la vendedora QUE paso, no solo que fallo.
+      const motivoFallo = falloSistema
+        ? (resultados.find((r) => r.datos.motivo_ilegible)?.datos.motivo_ilegible ?? null)
+        : null
+      set({
+        fase: 'completado',
+        resultados,
+        errores,
+        falloSistema,
+        motivoFallo,
+        // Fotos que quedaron sin procesar porque el lote se corto al detectar la falla.
+        sinProcesar: Math.max(0, est.total - est.procesadas),
+        procesadas: est.procesadas,
+        totalProc: est.total,
+      })
     } else {
       set({ fase: 'procesando', procesadas: est.procesadas, totalProc: est.total })
     }
@@ -123,7 +152,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
       try {
         const est = await estadoLote(loteId)
         aplicarEstado(est)
-        if (est.estado === 'completado') detenerPoll()
+        if (est.estado === 'completado' || est.estado === 'error') detenerPoll()
       } catch {
         // ignorar fallas transitorias de red
       }
@@ -277,7 +306,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
     reintentar: async () => {
       const loteId = get().loteId
       if (!loteId) return
-      set({ fase: 'procesando' })
+      set({ fase: 'procesando', falloSistema: false, motivoFallo: null, sinProcesar: 0 })
       try {
         await reprocesarLote(loteId)
         iniciarPoll(loteId)

@@ -157,7 +157,9 @@
       "reflejo": "con reflejos",
       "recortada": "recortada",
       "no_procesada": "no se pudo procesar",
-      "generico": "no se ve con claridad"
+      "generico": "no se ve con claridad",
+      "error_sistema": "problema del sistema",
+      "sin_saldo": "sin saldo en la cuenta"
     },
     "descripcionEn": "Descripción (inglés)",
     "material": "Material",
@@ -167,7 +169,11 @@
     "revisarAyuda": "Corrige lo que el sistema haya leído mal. Cada campo indica qué dato es.",
     "reintentarIA": "Reintentar con IA",
     "reemplazarFoto": "Reemplazar foto",
-    "oCompletaManual": "O completa a mano los datos marcados con * para agregarlo igual."
+    "oCompletaManual": "O completa a mano los datos marcados con * para agregarlo igual.",
+    "errorSistemaTitulo": "No pudimos procesar esta foto — no es culpa tuya",
+    "errorSistemaTexto": "El sistema no pudo analizarla por un problema nuestro. Volver a tomarla no lo arregla. Avisa a soporte y reintenta más tarde; la foto queda guardada.",
+    "sinSaldoTitulo": "El servicio de análisis se quedó sin saldo",
+    "sinSaldoTexto": "No es tu foto ni una falla de la app: la cuenta que paga el análisis de imágenes se quedó sin saldo. Hay que recargarla para que vuelva a funcionar. Avisa a Marcela o a soporte; tu foto queda guardada."
   },
   "packing": {
     "exportar": "Descargar lista (Excel)",
@@ -411,7 +417,13 @@
     "reemplazarFoto": "Reemplazar foto",
     "exitoFinal": "✅ Listo: {{n}} productos agregados a la cotización",
     "exitoParcial": "{{n}} agregados · quedan {{quedan}} por corregir",
-    "agregarListos": "Agregar {{n}} listos a la cotización"
+    "agregarListos": "Agregar {{n}} listos a la cotización",
+    "falloSistemaTitulo": "El análisis falló por un problema del sistema",
+    "falloSistemaTexto": "No es por tus fotos: el sistema no pudo analizarlas. Ya quedaron guardadas, así que no tienes que volver a tomarlas. Avisa a soporte y toca «Reintentar» más tarde.",
+    "falloSistemaTextoCortado": "No es por tus fotos: el sistema no pudo analizarlas y se detuvo para no gastar las {{n}} que faltaban. Todas quedaron guardadas. Avisa a soporte y toca «Reintentar» más tarde.",
+    "falloSaldoTitulo": "El servicio de análisis se quedó sin saldo",
+    "falloSaldoTexto": "No es por tus fotos ni por una falla de la app: la cuenta que paga el análisis de imágenes se quedó sin saldo. Avisa a Marcela o a soporte para que la recarguen, y toca «Reintentar» cuando te confirmen.",
+    "falloFotosGuardadas": "Quedaron {{n}} fotos sin analizar, pero todas están guardadas: al reintentar se procesan solas, no tienes que volver a tomarlas."
   },
   "roles": {
     "admin": "Administrador",

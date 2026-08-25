@@ -157,7 +157,9 @@
       "reflejo": "glare",
       "recortada": "cropped",
       "no_procesada": "could not be processed",
-      "generico": "not clear enough"
+      "generico": "not clear enough",
+      "error_sistema": "system problem",
+      "sin_saldo": "account out of balance"
     },
     "descripcionEn": "Description (English)",
     "material": "Material",
@@ -167,7 +169,11 @@
     "revisarAyuda": "Fix anything the system misread. Each field is labeled.",
     "reintentarIA": "Retry with AI",
     "reemplazarFoto": "Replace photo",
-    "oCompletaManual": "Or fill the fields marked with * by hand to add it anyway."
+    "oCompletaManual": "Or fill the fields marked with * by hand to add it anyway.",
+    "errorSistemaTitulo": "We couldn't process this photo — it's not your fault",
+    "errorSistemaTexto": "The system failed to analyze it on our side. Retaking it won't help. Let support know and retry later; the photo is saved.",
+    "sinSaldoTitulo": "The analysis service ran out of balance",
+    "sinSaldoTexto": "It's not your photo or an app failure: the account that pays for image analysis ran out of balance. It needs a top-up to work again. Let Marcela or support know; your photo is saved."
   },
   "packing": {
     "exportar": "Download list (Excel)",
@@ -411,7 +417,13 @@
     "reemplazarFoto": "Replace photo",
     "exitoFinal": "✅ Done: {{n}} products added to the quotation",
     "exitoParcial": "{{n}} added · {{quedan}} left to fix",
-    "agregarListos": "Add {{n}} ready to the quotation"
+    "agregarListos": "Add {{n}} ready to the quotation",
+    "falloSistemaTitulo": "Analysis failed due to a system problem",
+    "falloSistemaTexto": "It's not your photos: the system couldn't analyze them. They are already saved, so you don't need to retake them. Let support know and tap «Retry» later.",
+    "falloSistemaTextoCortado": "It's not your photos: the system couldn't analyze them and stopped so the remaining {{n}} weren't wasted. All of them are saved. Let support know and tap «Retry» later.",
+    "falloSaldoTitulo": "The analysis service ran out of balance",
+    "falloSaldoTexto": "It's not your photos or an app failure: the account that pays for image analysis ran out of balance. Let Marcela or support know so they can top it up, then tap «Retry».",
+    "falloFotosGuardadas": "{{n}} photos were left unanalyzed, but all of them are saved: retrying processes them automatically, you don't need to retake them."
   },
   "roles": {
     "admin": "Administrator",

@@ -66,11 +66,13 @@ def test_lee_el_json_aunque_venga_despues_del_pensamiento(monkeypatch):
 
 
 def test_sin_bloque_de_texto_devuelve_resultado_vacio(monkeypatch):
-    # Pasa si el tope de tokens se agota pensando: no hay JSON que leer.
+    # Pasa si el tope de tokens se agota pensando: no hay JSON que leer. Es un fallo
+    # NUESTRO, no una foto mala, y por eso el motivo es "error_sistema" (ver
+    # test_ocr_error_sistema.py): a la vendedora no se le pide volver a tomarla.
     respuesta = _Respuesta([_Bloque("thinking", pensamiento="...")], stop_reason="max_tokens")
     datos, _ = _correr(monkeypatch, respuesta)
     assert datos["legible"] is False
-    assert datos["motivo_ilegible"] == "no_procesada"
+    assert datos["motivo_ilegible"] == ocr.MOTIVO_ERROR_SISTEMA
     assert datos["price_rmb"] is None
 
 

@@ -88,6 +88,9 @@ function CargaMasiva() {
     resultados,
     errores,
     erroresSubida,
+    falloSistema,
+    motivoFallo,
+    sinProcesar,
     agregarSeleccion,
     quitarSeleccion,
     cancelarSeleccion,
@@ -393,11 +396,33 @@ function CargaMasiva() {
       )}
 
       {/* Fotos que fallaron (con reintento) */}
-      {fase === 'completado' && errores > 0 && (
+      {fase === 'completado' && (errores > 0 || falloSistema) && (
         <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-error-soft)' }}>
-          <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-error)' }}>
-            {t('lote.fallidasTitulo', { n: errores })}
-          </p>
+          {falloSistema ? (
+            // El problema es del sistema (API caida o sin credito): decirlo claro.
+            // Las fotos ya estan guardadas, no hay que volver a tomarlas.
+            <div className="mb-2">
+              <p className="text-sm font-semibold" style={{ color: 'var(--yuda-error)' }}>
+                {t(motivoFallo === 'sin_saldo' ? 'lote.falloSaldoTitulo' : 'lote.falloSistemaTitulo')}
+              </p>
+              <p className="mt-1 text-sm" style={{ color: 'var(--yuda-error)' }}>
+                {motivoFallo === 'sin_saldo'
+                  ? t('lote.falloSaldoTexto')
+                  : sinProcesar > 0
+                    ? t('lote.falloSistemaTextoCortado', { n: sinProcesar })
+                    : t('lote.falloSistemaTexto')}
+              </p>
+              {sinProcesar > 0 && (
+                <p className="mt-1 text-sm" style={{ color: 'var(--yuda-error)' }}>
+                  {t('lote.falloFotosGuardadas', { n: sinProcesar })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-error)' }}>
+              {t('lote.fallidasTitulo', { n: errores })}
+            </p>
+          )}
           <button
             type="button"
             onClick={reintentar}
