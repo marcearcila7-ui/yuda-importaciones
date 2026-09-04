@@ -6,8 +6,21 @@ import { Check } from 'lucide-react'
 // para la secuencia de las fotos y para la cotizacion completa.
 //
 // `pasos` son claves de i18n; `activo` es el numero de paso (empieza en 1).
-function BarraPasos({ pasos, activo }: { pasos: readonly string[]; activo: number }) {
+// Con `onIr` la barra tambien sirve para moverse: se puede tocar cualquier paso
+// hasta `maxAlcanzable`, para volver atras sin perder de vista donde se estaba.
+function BarraPasos({
+  pasos,
+  activo,
+  onIr,
+  maxAlcanzable,
+}: {
+  pasos: readonly string[]
+  activo: number
+  onIr?: (paso: number) => void
+  maxAlcanzable?: number
+}) {
   const { t } = useTranslation()
+  const tope = maxAlcanzable ?? pasos.length
   return (
     <ol className="flex items-start">
       {pasos.map((clave, i) => {
@@ -19,6 +32,7 @@ function BarraPasos({ pasos, activo }: { pasos: readonly string[]; activo: numbe
           : actual
             ? 'var(--yuda-primary)'
             : 'var(--yuda-border)'
+        const navegable = Boolean(onIr) && numero <= tope
         return (
           <li key={clave} className="flex flex-1 flex-col items-center gap-1 text-center">
             <div className="flex w-full items-center">
@@ -26,9 +40,14 @@ function BarraPasos({ pasos, activo }: { pasos: readonly string[]; activo: numbe
                 className="h-0.5 flex-1"
                 style={{ backgroundColor: i === 0 ? 'transparent' : hecho || actual ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
               />
-              <span
+              <button
+                type="button"
+                onClick={navegable ? () => onIr?.(numero) : undefined}
+                disabled={!navegable}
+                aria-current={actual ? 'step' : undefined}
                 className="flex flex-shrink-0 items-center justify-center font-bold"
                 style={{
+                  cursor: navegable ? 'pointer' : 'default',
                   width: 26,
                   height: 26,
                   borderRadius: 999,
@@ -39,7 +58,7 @@ function BarraPasos({ pasos, activo }: { pasos: readonly string[]; activo: numbe
                 }}
               >
                 {hecho ? <Check size={14} /> : numero}
-              </span>
+              </button>
               <span
                 className="h-0.5 flex-1"
                 style={{ backgroundColor: i === pasos.length - 1 ? 'transparent' : hecho ? 'var(--yuda-success)' : 'var(--yuda-border)' }}

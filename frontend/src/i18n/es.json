@@ -125,7 +125,11 @@
     "pasoProductos": "Agregar productos",
     "pasoCliente": "Enviar al cliente",
     "pasoPedidos": "Pedidos a proveedores",
-    "aunSinProductos": "Todavía no hay productos en esta cotización. Cuando agregues los primeros, aquí aparecen la lista completa, el documento para el cliente y los pedidos a proveedores."
+    "aunSinProductos": "Todavía no hay productos en esta cotización. Agrega los primeros con las fotos de arriba y podrás pasar al siguiente paso.",
+    "pasoAtras": "Volver",
+    "pasoSiguiente": "Siguiente",
+    "pasoTerminar": "Terminar",
+    "avisoSinProductosAvanzar": "Agrega al menos un producto para continuar."
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",

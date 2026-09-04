@@ -125,7 +125,11 @@
     "pasoProductos": "Add products",
     "pasoCliente": "Send to the client",
     "pasoPedidos": "Supplier orders",
-    "aunSinProductos": "There are no products in this quotation yet. Once you add the first ones, the full list, the client document and the supplier orders will appear here."
+    "aunSinProductos": "There are no products in this quotation yet. Add the first ones with the photos above and you will be able to move to the next step.",
+    "pasoAtras": "Back",
+    "pasoSiguiente": "Next",
+    "pasoTerminar": "Finish",
+    "avisoSinProductosAvanzar": "Add at least one product to continue."
   },
   "ocr": {
     "titulo": "Upload label photo",

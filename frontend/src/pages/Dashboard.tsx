@@ -4,7 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
@@ -94,6 +94,9 @@ function Dashboard() {
     volverAlInicio,
   } = usePackingStore()
   const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
+  // Pantalla del asistente de cotización en la que está parada la vendedora.
+  // Cada paso es una pantalla propia: se avanza y se vuelve, nunca se ve todo junto.
+  const [pasoVista, setPasoVista] = useState(1)
   // Sesión para la que ya confirmaron la advertencia de fotos (se reinicia en cada
   // carga y al abrir otra cotización → la alerta vuelve a salir cada vez).
   const [confirmadoParaSesion, setConfirmadoParaSesion] = useState<string | null>(null)
@@ -102,12 +105,28 @@ function Dashboard() {
   // pedidos a proveedores, registros internos) es ruido: no se puede usar todavia
   // y llena la pantalla de botones que no llevan a ninguna parte.
   const hayProductos = items.length > 0
-  const pasoCotizacion = !hayProductos ? 1 : sesionActual?.enviada_cliente ? 3 : 2
 
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
   // El bloque de cliente y envío lo gestionan admin y vendedoras
   const esStaffVentas = usuario?.rol === 'admin' || usuario?.rol === 'vendedora'
+
+  // Al abrir otra cotización se empieza de nuevo por la primera pantalla.
+  useEffect(() => {
+    setPasoVista(1)
+  }, [sesionActual?.id])
+
+  // Si se quedó sin productos (los borró todos), las pantallas siguientes ya no
+  // aplican: se la devuelve a la primera en vez de dejarla en una pantalla muerta.
+  useEffect(() => {
+    if (!hayProductos && pasoVista !== 1) setPasoVista(1)
+  }, [hayProductos, pasoVista])
+
+  // Cambiar de pantalla debe empezar arriba, no a media página.
+  const irAPaso = (paso: number) => {
+    setPasoVista(paso)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   // Carga las métricas del mes (solo admin)
   useEffect(() => {
@@ -290,91 +309,146 @@ function Dashboard() {
             </div>
           </div>
 
-          <BarraPasos pasos={PASOS_COTIZACION} activo={pasoCotizacion} />
+          <BarraPasos
+            pasos={PASOS_COTIZACION}
+            activo={pasoVista}
+            maxAlcanzable={hayProductos ? PASOS_COTIZACION.length : 1}
+            onIr={irAPaso}
+          />
 
-          {/* 1. Agregar productos */}
-          <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
-            <CargaMasiva />
-          </SectionCard>
-
-          {!hayProductos && (
-            <p className="card text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('dashboard.aunSinProductos')}
-            </p>
-          )}
-
-          {hayProductos && (
+          {/* PANTALLA 1: cargar las fotos y revisar los productos */}
+          {pasoVista === 1 && (
             <>
-            {/* 2. Revisar productos */}
-            <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
-              <PackingListTable
-                items={items}
-                tipo_cambio_usd={sesionActual.tipo_cambio_usd}
-                onItemActualizado={cargarItems}
-              />
-            </SectionCard>
-
-            {/* 3. Para el cliente */}
-            <GroupHeading texto={t('dashboard.grupoCliente')} />
-
-            <ExportarCotizacion
-              sesion_id={sesionActual.id}
-              nombre_cliente={sesionActual.nombre_cliente}
-            />
-
-            {esStaffVentas && (
-              <SectionCard titulo={t('envio.titulo')}>
-                <ClienteEnvio
-                  sesionId={sesionActual.id}
-                  clienteIdInicial={sesionActual.cliente_id ?? null}
-                  enviadaInicial={sesionActual.enviada_cliente ?? false}
-                  nombreClienteSesion={sesionActual.nombre_cliente}
-                />
+              <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
+                <CargaMasiva />
               </SectionCard>
-            )}
 
-            {/* 4. Pedidos a proveedores */}
-            <GroupHeading texto={t('dashboard.grupoProveedores')} />
-
-            <SectionCard titulo={t('dashboard.generarPedidos')}>
-              <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('dashboard.generarPedidosAyuda')}
-              </p>
-              <GenerarPedidos
-                sesion_id={sesionActual.id}
-                nombre_cliente={sesionActual.nombre_cliente}
-                permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
-              />
-            </SectionCard>
-
-            {/* 5. Uso interno (tus registros) */}
-            <GroupHeading texto={t('dashboard.grupoInterno')} />
-
-            <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
-              <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('dashboard.exportarPackingAyuda')}
-              </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => descargarPacking('excel')}
-                  className="flex items-center justify-center gap-2 font-semibold text-white"
-                  style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
-                >
-                  <Download size={18} /> {t('dashboard.exportarPacking')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => descargarPacking('pdf')}
-                  className="flex items-center justify-center gap-2 font-semibold text-white"
-                  style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
-                >
-                  <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
-                </button>
-              </div>
-            </SectionCard>
+              {hayProductos ? (
+                <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
+                  <PackingListTable
+                    items={items}
+                    tipo_cambio_usd={sesionActual.tipo_cambio_usd}
+                    onItemActualizado={cargarItems}
+                  />
+                </SectionCard>
+              ) : (
+                <p className="card text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('dashboard.aunSinProductos')}
+                </p>
+              )}
             </>
           )}
+
+          {/* PANTALLA 2: el documento del cliente y el envío a su portal */}
+          {pasoVista === 2 && (
+            <>
+              <ExportarCotizacion
+                sesion_id={sesionActual.id}
+                nombre_cliente={sesionActual.nombre_cliente}
+              />
+
+              {esStaffVentas && (
+                <SectionCard titulo={t('envio.titulo')}>
+                  <ClienteEnvio
+                    sesionId={sesionActual.id}
+                    clienteIdInicial={sesionActual.cliente_id ?? null}
+                    enviadaInicial={sesionActual.enviada_cliente ?? false}
+                    nombreClienteSesion={sesionActual.nombre_cliente}
+                  />
+                </SectionCard>
+              )}
+            </>
+          )}
+
+          {/* PANTALLA 3: pedidos a proveedores y los registros internos */}
+          {pasoVista === 3 && (
+            <>
+              <SectionCard titulo={t('dashboard.generarPedidos')}>
+                <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('dashboard.generarPedidosAyuda')}
+                </p>
+                <GenerarPedidos
+                  sesion_id={sesionActual.id}
+                  nombre_cliente={sesionActual.nombre_cliente}
+                  permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
+                />
+              </SectionCard>
+
+              <GroupHeading texto={t('dashboard.grupoInterno')} />
+
+              <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
+                <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('dashboard.exportarPackingAyuda')}
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => descargarPacking('excel')}
+                    className="flex items-center justify-center gap-2 font-semibold text-white"
+                    style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
+                  >
+                    <Download size={18} /> {t('dashboard.exportarPacking')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => descargarPacking('pdf')}
+                    className="flex items-center justify-center gap-2 font-semibold text-white"
+                    style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
+                  >
+                    <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
+                  </button>
+                </div>
+              </SectionCard>
+            </>
+          )}
+
+          {/* Avanzar y volver: siempre al pie de la pantalla, siempre en el mismo lugar */}
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => irAPaso(pasoVista - 1)}
+              disabled={pasoVista === 1}
+              className="flex items-center justify-center gap-2 font-semibold disabled:opacity-40"
+              style={{
+                minHeight: 48,
+                borderRadius: 8,
+                padding: '0 20px',
+                border: '2px solid var(--yuda-border)',
+                color: 'var(--yuda-text-secondary)',
+                backgroundColor: 'var(--yuda-white)',
+              }}
+            >
+              <ArrowLeft size={18} /> {t('dashboard.pasoAtras')}
+            </button>
+
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+              {pasoVista === 1 && !hayProductos && (
+                <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('dashboard.avisoSinProductosAvanzar')}
+                </span>
+              )}
+              {pasoVista < PASOS_COTIZACION.length ? (
+                <button
+                  type="button"
+                  onClick={() => irAPaso(pasoVista + 1)}
+                  disabled={!hayProductos}
+                  className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-40"
+                  style={{ minHeight: 48, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-primary)' }}
+                >
+                  {t('dashboard.pasoSiguiente')} <ArrowRight size={18} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={volverAlInicio}
+                  className="flex items-center justify-center gap-2 font-semibold text-white"
+                  style={{ minHeight: 48, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-success)' }}
+                >
+                  <Check size={18} /> {t('dashboard.pasoTerminar')}
+                </button>
+              )}
+            </div>
+          </div>
         </>
       )}
 
