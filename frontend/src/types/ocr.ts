@@ -12,7 +12,8 @@ export interface OCRResultado {
   ancho_cm: number | null
   alto_cm: number | null
   cbm_directo: number | null
-  // Recuadro del producto que marco el modelo, en fracciones de 0 a 1.
+  // Recuadros en fracciones de 0 a 1: donde esta el cartel y donde el producto.
+  recuadro_cartel?: number[] | null
   recuadro_producto?: number[] | null
   // Foto ya recortada al producto: es la que va a los documentos.
   foto_recorte_url?: string | null

@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.database import SessionLocal
 from app.models.lote import LoteItem, LoteOCR
 from app.services.ocr_service import es_error_sistema, extraer_datos_etiqueta
-from app.services.recorte_service import recortar_producto
+from app.services.recorte_service import recortar_producto, recuadro_fuera_del_cartel
 from app.services.storage_service import subir_foto
 
 logger = logging.getLogger(__name__)
@@ -36,6 +36,14 @@ async def adjuntar_recorte(datos: dict | None, imagen_bytes: bytes) -> None:
         return
     recuadro = datos.get("recuadro_producto")
     if not recuadro:
+        # Plan B: si ubico el cartel que leyo pero no marco el producto, se recorta
+        # lo que queda al sacar el cartel. Es lo que haria la vendedora a mano.
+        cartel = datos.get("recuadro_cartel")
+        recuadro = recuadro_fuera_del_cartel(cartel) if cartel else None
+        if recuadro:
+            logger.info("Recorte deducido del cartel: %s", recuadro)
+    if not recuadro:
+        logger.info("Sin recuadro usable: la foto va entera a los documentos")
         return
     recorte = recortar_producto(imagen_bytes, recuadro)
     if recorte is None:

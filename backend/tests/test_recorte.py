@@ -9,7 +9,12 @@ from io import BytesIO
 
 from PIL import Image
 
-from app.services.recorte_service import MARGEN, recortar_producto, recuadro_valido
+from app.services.recorte_service import (
+    MARGEN,
+    recortar_producto,
+    recuadro_fuera_del_cartel,
+    recuadro_valido,
+)
 
 
 def _foto_de_prueba() -> bytes:
@@ -64,3 +69,29 @@ def test_recorta_donde_esta_el_producto():
 def test_no_revienta_con_una_imagen_rota():
     # Ante cualquier problema se devuelve None y los documentos usan la foto entera
     assert recortar_producto(b"esto no es una imagen", [0.1, 0.1, 0.9, 0.9]) is None
+
+
+def test_recuadro_del_cartel_puede_ser_casi_toda_la_foto():
+    # Un cartel grande es valido: el recorte sale de lo que queda alrededor
+    grande = [0.0, 0.0, 1.0, 0.96]
+    assert recuadro_valido(grande) is None                      # como producto, no sirve
+    assert recuadro_valido(grande, area_maxima=0.98) == grande   # como cartel, si
+
+
+def test_deduce_el_producto_sacando_el_cartel():
+    # Cartel abajo ocupando el 40% inferior: el producto tiene que estar arriba
+    assert recuadro_fuera_del_cartel([0.0, 0.6, 1.0, 1.0]) == [0.0, 0.0, 1.0, 0.6]
+    # Cartel a la izquierda: queda la franja derecha
+    assert recuadro_fuera_del_cartel([0.0, 0.0, 0.35, 1.0]) == [0.35, 0.0, 1.0, 1.0]
+
+
+def test_no_deduce_nada_si_el_cartel_tapa_casi_todo():
+    # No queda espacio donde pueda estar el producto: mejor la foto entera
+    assert recuadro_fuera_del_cartel([0.0, 0.0, 1.0, 0.95]) is None
+
+
+def test_el_recorte_deducido_se_puede_aplicar():
+    # El plan B tiene que producir un recuadro que el recortador acepte
+    caja = recuadro_fuera_del_cartel([0.0, 0.55, 1.0, 1.0])
+    assert caja is not None
+    assert recortar_producto(_foto_de_prueba(), caja) is not None

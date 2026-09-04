@@ -28,7 +28,7 @@ CALIDAD_JPEG = 88
 LADO_MAX = 900
 
 
-def recuadro_valido(valor) -> list[float] | None:
+def recuadro_valido(valor, area_maxima: float = 0.92) -> list[float] | None:
     """Normaliza el recuadro del producto o devuelve None.
 
     Descarta lo que no sirve para recortar: valores fuera de rango, esquinas al
@@ -46,10 +46,42 @@ def recuadro_valido(valor) -> list[float] | None:
     if x1 <= x0 or y1 <= y0:
         return None
     area = (x1 - x0) * (y1 - y0)
-    # Menos del 3% de la foto es casi seguro un error; mas del 92% no vale la pena.
-    if area < 0.03 or area > 0.92:
+    # Menos del 3% de la foto es casi seguro un error. El tope de arriba depende
+    # de para que es el recuadro: recortar al 92% de la foto no aporta nada, pero
+    # un cartel SI puede ocupar casi todo (y ahi el recorte sale de lo que queda).
+    if area < 0.03 or area > area_maxima:
         return None
     return [x0, y0, x1, y1]
+
+
+def recuadro_fuera_del_cartel(cartel: list[float]) -> list[float] | None:
+    """Deduce donde esta el producto a partir de donde esta el cartel.
+
+    Es el plan B cuando el modelo ubica el cartel que acaba de leer pero no se
+    anima a marcar el producto. La idea es la de la propia vendedora: sacale el
+    cartel a la foto y lo que queda es el producto. Se prueban las cuatro franjas
+    que rodean al cartel (arriba, abajo, izquierda, derecha) y se toma la mas
+    grande, que es donde tiene que estar.
+
+    Devuelve None si ninguna franja es lo bastante grande como para contener algo.
+    """
+    x0, y0, x1, y1 = cartel
+    franjas = [
+        [0.0, 0.0, 1.0, y0],   # arriba del cartel
+        [0.0, y1, 1.0, 1.0],   # abajo
+        [0.0, 0.0, x0, 1.0],   # a la izquierda
+        [x1, 0.0, 1.0, 1.0],   # a la derecha
+    ]
+    mejor = None
+    mejor_area = 0.0
+    for f in franjas:
+        area = (f[2] - f[0]) * (f[3] - f[1])
+        if area > mejor_area:
+            mejor, mejor_area = f, area
+    # Menos del 12% de la foto no alcanza para que ahi entre el producto entero
+    if mejor is None or mejor_area < 0.12:
+        return None
+    return mejor
 
 
 def recortar_producto(imagen_bytes: bytes, recuadro: list[float]) -> bytes | None:

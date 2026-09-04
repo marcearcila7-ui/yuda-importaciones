@@ -99,7 +99,8 @@ El JSON debe tener exactamente estas claves:
   "cantidad_minima": número entero de la mínima cantidad de compra DE ESTE PRODUCTO o null,
   "cantidad_minima_tienda": número entero de la mínima de compra de TODA LA TIENDA (sumando todos sus productos) o null,
   "notas": "cualquier otra información relevante o null",
-  "recuadro_producto": [x0, y0, x1, y1] con el recuadro del PRODUCTO en la foto, en fracciones de 0 a 1 (0,0 = esquina superior izquierda; 1,1 = inferior derecha), o null,
+  "recuadro_cartel": [x0, y0, x1, y1] con el recuadro del CARTEL o tablero de datos que acabas de leer, en fracciones de 0 a 1 (0,0 = esquina superior izquierda; 1,1 = inferior derecha), o null si no hay cartel,
+  "recuadro_producto": [x0, y0, x1, y1] con el recuadro del PRODUCTO, en las mismas coordenadas,
   "confianza": "alta, media o baja según tu certeza en la extracción",
   "legible": true o false (booleano),
   "motivo_ilegible": "si legible es false, el problema en una o dos palabras (ej: 'borrosa', 'oscura', 'recortada'); si legible es true, null"
@@ -159,12 +160,21 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
 
 • Puede haber otros rótulos: "DESCRIPCION" (texto libre del producto; en inglés "DESCRIPTION" / "ITEM", en chino "品名", "名称", "产品"), "TAMAÑO"/medidas (ej "20x10x9"; en inglés "SIZE", en chino "尺寸", "规格"), "LOGO", colores/variantes (ej "PLATA/TIRA/CADENA"; en inglés "COLOR", en chino "颜色", "色"). Usa la descripción y los colores si ayudan, pero NO pongas las medidas en largo/ancho/alto.
 
-RECUADRO DEL PRODUCTO — además de leer los datos, marca dónde está EL PRODUCTO en la foto, para poder recortarlo y que en la cotización salga solo el producto y no el cartel.
-- recuadro_producto = [x0, y0, x1, y1] en fracciones de 0 a 1: x0/y0 es la esquina superior izquierda del recuadro y x1/y1 la inferior derecha. Ejemplo: un producto que ocupa la mitad derecha y la mitad de abajo de la foto sería [0.5, 0.5, 1.0, 1.0].
-- El recuadro debe contener el producto COMPLETO y dejar fuera todo lo demás: el cartel o tablero de datos, la tarjeta del proveedor, las manos, el piso, la mesa y los productos vecinos que no son el que se está cotizando.
-- Deja un poco de aire alrededor del producto, no lo cortes al ras.
-- Si hay varias unidades del MISMO producto juntas (un exhibidor, una pila), encuádralas todas.
-- Si el producto no se distingue, si ocupa prácticamente toda la foto, o si no estás seguro, devuelve null: es mejor no recortar que recortar mal.
+RECUADROS — además de leer los datos, tienes que marcar DÓNDE está cada cosa en la foto. Sirve para recortar la imagen y que en la cotización del cliente y en el pedido al proveedor salga SOLO el producto, sin el cartel. Es tan importante como leer los datos: no lo saltes.
+
+Las coordenadas van en fracciones de 0 a 1, como [x0, y0, x1, y1]: x0/y0 es la esquina superior izquierda del recuadro y x1/y1 la inferior derecha. El origen (0,0) es la esquina superior izquierda de la foto. Ejemplo: algo que ocupa la mitad derecha y la mitad de abajo sería [0.5, 0.5, 1.0, 1.0].
+
+• recuadro_cartel = dónde está el cartel, tablero, tarjeta o papel del que acabas de leer los datos. Si los datos estaban escritos directamente sobre el piso o la mesa, encuadra esa zona escrita. Acabas de leerlo, así que sabes exactamente dónde está: márcalo SIEMPRE que haya leído algo.
+
+• recuadro_producto = dónde está el producto que se está cotizando, o sea TODO LO QUE NO ES EL CARTEL. Piénsalo así: quita el cartel de la foto y lo que queda es el producto. Casi siempre están separados, uno arriba y el otro abajo, o uno a cada lado.
+  - Encuadra el producto COMPLETO, con un poco de aire alrededor, sin cortarlo al ras.
+  - Deja fuera el cartel, la tarjeta del proveedor, las manos, el piso vacío y la mesa vacía.
+  - Si hay varias unidades del MISMO producto juntas (un exhibidor, una pila, una caja abierta con su contenido), encuádralas todas como un solo bloque.
+  - Si hay productos vecinos que claramente no son el que se cotiza, déjalos fuera.
+
+REGLA IMPORTANTE: si pudiste leer el cartel, ENTONCES devuelve los dos recuadros. Que el producto sea chico, que esté de costado, que la foto tenga brillos o que no sepas exactamente qué producto es NO son motivos para devolver null: igual sabes qué parte de la foto NO es el cartel, y eso es lo que hay que marcar. Un recuadro aproximado sirve; null no sirve para nada.
+
+Devuelve recuadro_producto en null SOLO en dos casos: cuando la foto es ilegible (legible=false), o cuando el producto y el cartel están tan encimados que no se pueden separar.
 
 Reglas:
 - SIEMPRE identifica el producto y completa descripcion_es y descripcion_en mirando la foto, aunque el cartel no traiga descripción. Debe ser específica del producto que ves, no genérica.
@@ -199,6 +209,7 @@ def _resultado_vacio(motivo: str = "no_procesada") -> dict:
         "cantidad_minima": None,
         "cantidad_minima_tienda": None,
         "notas": None,
+        "recuadro_cartel": None,
         "recuadro_producto": None,
         # URL del recorte ya subido (lo completa el backend, no el modelo)
         "foto_recorte_url": None,
@@ -366,7 +377,13 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
         datos["cantidad_minima_tienda"] = None
 
+    datos["recuadro_cartel"] = recuadro_valido(datos.get("recuadro_cartel"), area_maxima=0.98)
     datos["recuadro_producto"] = recuadro_valido(datos.get("recuadro_producto"))
+    # Queda registrado para poder revisar despues por que una foto no se recorto
+    logger.info(
+        "OCR recuadros: producto=%s cartel=%s legible=%s",
+        datos["recuadro_producto"], datos["recuadro_cartel"], datos["legible"],
+    )
 
     # confianza es obligatorio, nunca null
     if not datos.get("confianza"):
