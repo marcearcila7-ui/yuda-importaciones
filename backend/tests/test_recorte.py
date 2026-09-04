@@ -95,3 +95,45 @@ def test_el_recorte_deducido_se_puede_aplicar():
     caja = recuadro_fuera_del_cartel([0.0, 0.55, 1.0, 1.0])
     assert caja is not None
     assert recortar_producto(_foto_de_prueba(), caja) is not None
+
+
+def test_el_giro_es_en_sentido_horario():
+    # Marca roja arriba a la izquierda. Al girar 90 en sentido horario tiene que
+    # quedar arriba a la derecha, y los lados se intercambian.
+    img = Image.new("RGB", (400, 800), "white")
+    for x in range(80):
+        for y in range(80):
+            img.putpixel((x, y), (220, 20, 20))
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=95)
+    original = buf.getvalue()
+
+    def esquina_roja(datos: bytes) -> str:
+        im = Image.open(BytesIO(datos))
+        w, h = im.size
+        puntos = {
+            "sup-izq": (10, 10),
+            "sup-der": (w - 10, 10),
+            "inf-der": (w - 10, h - 10),
+            "inf-izq": (10, h - 10),
+        }
+        for nombre, (x, y) in puntos.items():
+            r, g, b = im.getpixel((x, y))
+            if r > 150 and g < 90:
+                return nombre
+        return "ninguna"
+
+    assert esquina_roja(recortar_producto(original, None, 0)) == "sup-izq"
+    assert esquina_roja(recortar_producto(original, None, 90)) == "sup-der"
+    assert esquina_roja(recortar_producto(original, None, 180)) == "inf-der"
+    assert esquina_roja(recortar_producto(original, None, 270)) == "inf-izq"
+
+
+def test_girar_sin_recuadro_no_recorta():
+    # Girar la foto entera conserva la proporcion, solo intercambia los lados
+    original = _foto_de_prueba()
+    girada = recortar_producto(original, None, 90)
+    assert girada is not None
+    ancho, alto = Image.open(BytesIO(girada)).size
+    # La de prueba es apaisada (1000x800); girada tiene que quedar vertical
+    assert alto > ancho

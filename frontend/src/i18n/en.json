@@ -824,6 +824,9 @@
     "guardado": "Crop saved",
     "error": "The crop could not be saved",
     "tocaAjustar": "Tap to adjust the crop",
-    "actual": "This is how it appears today in the quotation and the order. Drag over the photo only if you want to change it."
+    "actual": "This is how it appears today in the quotation and the order. Drag over the photo only if you want to change it.",
+    "girar": "Rotate the photo:",
+    "girarIzquierda": "Rotate left",
+    "girarDerecha": "Rotate right"
   }
 }

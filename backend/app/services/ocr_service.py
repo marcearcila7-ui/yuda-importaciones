@@ -99,6 +99,7 @@ El JSON debe tener exactamente estas claves:
   "cantidad_minima": número entero de la mínima cantidad de compra DE ESTE PRODUCTO o null,
   "cantidad_minima_tienda": número entero de la mínima de compra de TODA LA TIENDA (sumando todos sus productos) o null,
   "notas": "cualquier otra información relevante o null",
+  "giro_necesario": 0, 90, 180 o 270: cuántos grados hay que girar la foto EN SENTIDO HORARIO para que quede derecha,
   "recuadro_cartel": [x0, y0, x1, y1] con el recuadro del CARTEL o tablero de datos que acabas de leer, en fracciones de 0 a 1 (0,0 = esquina superior izquierda; 1,1 = inferior derecha), o null si no hay cartel,
   "recuadro_producto": [x0, y0, x1, y1] con el recuadro del PRODUCTO, en las mismas coordenadas,
   "confianza": "alta, media o baja según tu certeza en la extracción",
@@ -160,6 +161,12 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
 
 • Puede haber otros rótulos: "DESCRIPCION" (texto libre del producto; en inglés "DESCRIPTION" / "ITEM", en chino "品名", "名称", "产品"), "TAMAÑO"/medidas (ej "20x10x9"; en inglés "SIZE", en chino "尺寸", "规格"), "LOGO", colores/variantes (ej "PLATA/TIRA/CADENA"; en inglés "COLOR", en chino "颜色", "色"). Usa la descripción y los colores si ayudan, pero NO pongas las medidas en largo/ancho/alto.
 
+ORIENTACIÓN — las fotos del mercado salen giradas todo el tiempo, porque se toman con el celular de costado o parándose al lado del producto. En la cotización que recibe el cliente eso se ve mal.
+- giro_necesario = cuántos grados hay que girar ESTA foto en sentido horario (el de las agujas del reloj) para que quede derecha: 0, 90, 180 o 270.
+- "Derecha" significa que el texto del cartel se lee normal, de izquierda a derecha, y que el producto queda parado como se usa.
+- Si la foto ya está derecha, devuelve 0. Si para leer el cartel tuviste que girar la imagen mentalmente, ese es el giro que hay que devolver.
+- Ejemplo: el texto del cartel corre de arriba hacia abajo y para leerlo hay que inclinar la cabeza hacia la derecha. Entonces la foto está girada y hay que llevarla al derecho con giro_necesario = 270.
+
 RECUADROS — además de leer los datos, tienes que marcar DÓNDE está cada cosa en la foto. Sirve para recortar la imagen y que en la cotización del cliente y en el pedido al proveedor salga SOLO el producto, sin el cartel. Es tan importante como leer los datos: no lo saltes.
 
 Las coordenadas van en fracciones de 0 a 1, como [x0, y0, x1, y1]: x0/y0 es la esquina superior izquierda del recuadro y x1/y1 la inferior derecha. El origen (0,0) es la esquina superior izquierda de la foto. Ejemplo: algo que ocupa la mitad derecha y la mitad de abajo sería [0.5, 0.5, 1.0, 1.0].
@@ -209,6 +216,7 @@ def _resultado_vacio(motivo: str = "no_procesada") -> dict:
         "cantidad_minima": None,
         "cantidad_minima_tienda": None,
         "notas": None,
+        "giro_necesario": 0,
         "recuadro_cartel": None,
         "recuadro_producto": None,
         # URL del recorte ya subido (lo completa el backend, no el modelo)
@@ -377,12 +385,15 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
         datos["cantidad_minima_tienda"] = None
 
+    giro = datos.get("giro_necesario")
+    datos["giro_necesario"] = giro if giro in (0, 90, 180, 270) else 0
+
     datos["recuadro_cartel"] = recuadro_valido(datos.get("recuadro_cartel"), area_maxima=0.98)
     datos["recuadro_producto"] = recuadro_valido(datos.get("recuadro_producto"))
     # Queda registrado para poder revisar despues por que una foto no se recorto
     logger.info(
-        "OCR recuadros: producto=%s cartel=%s legible=%s",
-        datos["recuadro_producto"], datos["recuadro_cartel"], datos["legible"],
+        "OCR recuadros: producto=%s cartel=%s giro=%s legible=%s",
+        datos["recuadro_producto"], datos["recuadro_cartel"], datos["giro_necesario"], datos["legible"],
     )
 
     # confianza es obligatorio, nunca null

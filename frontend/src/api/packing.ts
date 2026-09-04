@@ -60,10 +60,11 @@ export async function guardarRecorte(
   sesion_id: string,
   item_id: string,
   recuadro: number[] | null,
+  giro = 0,
 ): Promise<ItemResponse> {
   const { data } = await apiClient.post<ItemResponse>(
     `/sesiones/${sesion_id}/items/${item_id}/recorte`,
-    { recuadro },
+    { recuadro, giro },
     { timeout: TIMEOUT_SUBIDA },
   )
   return data

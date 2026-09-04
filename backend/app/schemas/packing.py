@@ -40,6 +40,8 @@ class RecorteRequest(BaseModel):
     """
 
     recuadro: Optional[list[float]] = None
+    # Grados en sentido horario para enderezar la foto: 0, 90, 180 o 270.
+    giro: int = 0
 
 
 class ItemUpdate(BaseModel):

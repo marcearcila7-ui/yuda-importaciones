@@ -84,10 +84,16 @@ def recuadro_fuera_del_cartel(cartel: list[float]) -> list[float] | None:
     return mejor
 
 
-def recortar_producto(imagen_bytes: bytes, recuadro: list[float]) -> bytes | None:
+def recortar_producto(
+    imagen_bytes: bytes, recuadro: list[float] | None, giro: int = 0
+) -> bytes | None:
     """Recorta la foto al recuadro del producto. Devuelve JPEG o None si falla.
 
-    `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1, ya validado por el OCR.
+    `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1, ya validado por el OCR;
+    en None se usa la foto entera y solo se aplica el giro. `giro` son los grados
+    en sentido horario para enderezarla (0, 90, 180 o 270): las fotos del mercado
+    salen de costado porque se toman parandose al lado del producto.
+
     Nunca lanza: si algo sale mal se devuelve None y se usa la foto completa,
     que es exactamente lo que pasaba antes de que existiera el recorte.
     """
@@ -105,6 +111,31 @@ def recortar_producto(imagen_bytes: bytes, recuadro: list[float]) -> bytes | Non
             pass
         pil = pil.convert("RGB")
 
+        if recuadro is None:
+            recorte = pil
+        else:
+            recorte = _recortar(pil, recuadro)
+            if recorte is None:
+                return None
+
+        # El giro va DESPUES del recorte: el recuadro esta en las coordenadas de
+        # la foto tal como la vio el modelo, o sea sin girar.
+        if giro in (90, 180, 270):
+            # PIL gira en sentido antihorario, y el modelo responde en horario
+            recorte = recorte.rotate(-giro, expand=True)
+
+        recorte.thumbnail((LADO_MAX, LADO_MAX))
+        buf = BytesIO()
+        recorte.save(buf, format="JPEG", quality=CALIDAD_JPEG, optimize=True)
+        return buf.getvalue()
+    except Exception:
+        logger.exception("No se pudo recortar la foto del producto")
+        return None
+
+
+def _recortar(pil, recuadro: list[float]):
+    """Recorta al recuadro dejando un poco de aire alrededor."""
+    try:
         ancho, alto = pil.size
         x0, y0, x1, y1 = recuadro
 
@@ -125,12 +156,7 @@ def recortar_producto(imagen_bytes: bytes, recuadro: list[float]) -> bytes | Non
         if caja[2] - caja[0] < 40 or caja[3] - caja[1] < 40:
             # Recorte de menos de 40 px de lado: no sirve para ningun documento.
             return None
-
-        recorte = pil.crop(caja)
-        recorte.thumbnail((LADO_MAX, LADO_MAX))
-        buf = BytesIO()
-        recorte.save(buf, format="JPEG", quality=CALIDAD_JPEG, optimize=True)
-        return buf.getvalue()
+        return pil.crop(caja)
     except Exception:
-        logger.exception("No se pudo recortar la foto del producto")
+        logger.exception("No se pudo aplicar el recuadro")
         return None

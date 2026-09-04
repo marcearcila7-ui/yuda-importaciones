@@ -824,6 +824,9 @@
     "guardado": "Recorte guardado",
     "error": "No se pudo guardar el recorte",
     "tocaAjustar": "Toca para ajustar el recorte",
-    "actual": "Así sale hoy en la cotización y en el pedido. Arrastra sobre la foto solo si quieres cambiarlo."
+    "actual": "Así sale hoy en la cotización y en el pedido. Arrastra sobre la foto solo si quieres cambiarlo.",
+    "girar": "Girar la foto:",
+    "girarIzquierda": "Girar a la izquierda",
+    "girarDerecha": "Girar a la derecha"
   }
 }

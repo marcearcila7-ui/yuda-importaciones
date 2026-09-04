@@ -314,23 +314,28 @@ async def guardar_recorte(
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
 
-    # Sin recuadro: se descarta el recorte y los documentos usan la foto entera.
-    if datos.recuadro is None:
+    giro = datos.giro if datos.giro in (90, 180, 270) else 0
+
+    # Sin recuadro y sin giro: se descarta el recorte y vuelve la foto entera.
+    if datos.recuadro is None and giro == 0:
         item.foto_final_url = None
         db.commit()
         db.refresh(item)
         return _construir_item_response(item, sesion.tipo_cambio_usd)
 
-    recuadro = recuadro_valido(datos.recuadro)
-    if recuadro is None:
+    recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
+    if datos.recuadro is not None and recuadro is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El recorte no es válido")
-    if not item.foto_url:
+    # Girar sin recortar trabaja sobre lo que hoy sale en los documentos; recortar
+    # de nuevo siempre parte de la foto original, para no encimar recortes.
+    origen_url = item.foto_url if recuadro is not None else (item.foto_final_url or item.foto_url)
+    if not origen_url:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El producto no tiene foto para recortar")
 
     loop = asyncio.get_event_loop()
     try:
         async with httpx.AsyncClient() as cli:
-            resp = await cli.get(item.foto_url, timeout=20)
+            resp = await cli.get(origen_url, timeout=20)
         if resp.status_code != 200:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
         original = resp.content
@@ -339,7 +344,7 @@ async def guardar_recorte(
     except Exception:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
 
-    recorte = recortar_producto(original, recuadro)
+    recorte = recortar_producto(original, recuadro, giro)
     if recorte is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
 

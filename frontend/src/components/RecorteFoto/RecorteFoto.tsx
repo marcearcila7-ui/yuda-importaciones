@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Maximize2, X } from 'lucide-react'
+import { Check, Maximize2, RotateCcw, RotateCw, X } from 'lucide-react'
 
 // Recuadro en fracciones de 0 a 1 sobre la foto original
 type Recuadro = { x0: number; y0: number; x1: number; y1: number }
@@ -27,7 +27,8 @@ function RecorteFoto({
   // ajuste, veia la foto original entera y creia que no se habia recortado nada.
   recorteActual?: string | null
   guardando: boolean
-  onGuardar: (recuadro: number[] | null) => void
+  // recuadro null + giro 0 = volver a la foto completa; null + giro = solo girar
+  onGuardar: (recuadro: number[] | null, giro: number) => void
   onCerrar: () => void
 }) {
   const { t } = useTranslation()
@@ -93,6 +94,34 @@ function RecorteFoto({
         <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('recorte.ayuda')}
         </p>
+
+        {/* Girar: las fotos del mercado salen de costado porque se toman
+            parandose al lado del producto */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('recorte.girar')}
+          </span>
+          <button
+            type="button"
+            onClick={() => onGuardar(null, 270)}
+            disabled={guardando}
+            aria-label={t('recorte.girarIzquierda')}
+            className="flex items-center justify-center rounded-lg border disabled:opacity-50"
+            style={{ width: 40, height: 40, borderColor: 'var(--yuda-border)', color: 'var(--yuda-primary)' }}
+          >
+            <RotateCcw size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onGuardar(null, 90)}
+            disabled={guardando}
+            aria-label={t('recorte.girarDerecha')}
+            className="flex items-center justify-center rounded-lg border disabled:opacity-50"
+            style={{ width: 40, height: 40, borderColor: 'var(--yuda-border)', color: 'var(--yuda-primary)' }}
+          >
+            <RotateCw size={18} />
+          </button>
+        </div>
 
         {recorteActual && (
           <div
@@ -161,7 +190,7 @@ function RecorteFoto({
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
-            onClick={() => onGuardar(null)}
+            onClick={() => onGuardar(null, 0)}
             disabled={guardando}
             className="flex items-center justify-center gap-2 font-semibold disabled:opacity-50"
             style={{
@@ -188,7 +217,7 @@ function RecorteFoto({
             <button
               type="button"
               onClick={() =>
-                recuadro && onGuardar([recuadro.x0, recuadro.y0, recuadro.x1, recuadro.y1])
+                recuadro && onGuardar([recuadro.x0, recuadro.y0, recuadro.x1, recuadro.y1], 0)
               }
               disabled={!sirve || guardando}
               className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-50"

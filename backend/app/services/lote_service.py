@@ -42,10 +42,11 @@ async def adjuntar_recorte(datos: dict | None, imagen_bytes: bytes) -> None:
         recuadro = recuadro_fuera_del_cartel(cartel) if cartel else None
         if recuadro:
             logger.info("Recorte deducido del cartel: %s", recuadro)
-    if not recuadro:
-        logger.info("Sin recuadro usable: la foto va entera a los documentos")
+    giro = datos.get("giro_necesario") or 0
+    if not recuadro and not giro:
+        logger.info("Sin recuadro ni giro: la foto va entera a los documentos")
         return
-    recorte = recortar_producto(imagen_bytes, recuadro)
+    recorte = recortar_producto(imagen_bytes, recuadro, giro)
     if recorte is None:
         return
     try:

@@ -289,13 +289,18 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   const [itemRecorte, setItemRecorte] = useState<ItemResponse | null>(null)
   const [guardandoRecorte, setGuardandoRecorte] = useState(false)
 
-  const aplicarRecorte = async (recuadro: number[] | null) => {
+  const aplicarRecorte = async (recuadro: number[] | null, giro = 0) => {
     if (!itemRecorte || !sesionActual) return
     setGuardandoRecorte(true)
     try {
-      await guardarRecorte(sesionActual.id, itemRecorte.id, recuadro)
+      const actualizado = await guardarRecorte(sesionActual.id, itemRecorte.id, recuadro, giro)
       toast.success(t('recorte.guardado'))
-      setItemRecorte(null)
+      // Girar deja el modal abierto para poder seguir girando; recortar lo cierra.
+      if (giro) {
+        setItemRecorte(actualizado)
+      } else {
+        setItemRecorte(null)
+      }
       onItemActualizado()
     } catch {
       toast.error(t('recorte.error'))
