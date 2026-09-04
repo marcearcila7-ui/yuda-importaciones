@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, LogOut, Network, Package, Settings, Store, TrendingUp, Users, Wallet } from 'lucide-react'
+import { ClipboardList, LogOut, Package, Settings, Store, TrendingUp, Users, Wallet } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import NotificacionesBell from './NotificacionesBell'
 
@@ -61,7 +61,6 @@ interface ItemNav {
 const LINKS: ItemNav[] = [
   { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion', roles: ['admin', 'vendedora'] },
   { to: '/clientes', icono: <Users size={18} />, clave: 'clientes', roles: ['admin', 'vendedora'] },
-  { to: '/equipo', icono: <Network size={18} />, clave: 'equipo', roles: ['admin'] },
   { to: '/ventas', icono: <TrendingUp size={18} />, clave: 'ventas', roles: ['admin'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
   { to: '/cuentas', icono: <Wallet size={18} />, clave: 'cuentas', roles: ['admin', 'contadora'] },

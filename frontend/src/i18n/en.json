@@ -2,7 +2,6 @@
   "nav": {
     "cotizacion": "Quotation",
     "clientes": "Clients",
-    "equipo": "Team",
     "ventas": "Sales",
     "historial": "History",
     "administracion": "Administration",
@@ -523,7 +522,8 @@
     "volverALista": "Back to the list",
     "cotizacionesTitulo": "This client's quotations",
     "buscar": "Search by name, company or email",
-    "sinResultados": "No client matches «{{texto}}»."
+    "sinResultados": "No client matches «{{texto}}».",
+    "todasLasVendedoras": "All salespeople"
   },
   "envio": {
     "titulo": "Client and shipment",

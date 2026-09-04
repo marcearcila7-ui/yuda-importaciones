@@ -2,7 +2,6 @@
   "nav": {
     "cotizacion": "报价",
     "clientes": "客户",
-    "equipo": "团队",
     "ventas": "销售",
     "historial": "历史记录",
     "administracion": "管理",
@@ -523,7 +522,8 @@
     "volverALista": "返回列表",
     "cotizacionesTitulo": "该客户的报价",
     "buscar": "按姓名、公司或邮箱搜索",
-    "sinResultados": "没有与「{{texto}}」匹配的客户。"
+    "sinResultados": "没有与「{{texto}}」匹配的客户。",
+    "todasLasVendedoras": "所有销售员"
   },
   "envio": {
     "titulo": "客户与发货",

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { ArrowLeft, Check, ChevronDown, ChevronRight, Copy, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, Users, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -14,12 +14,15 @@ import {
   resetPasswordCliente,
 } from '../api/clientes'
 import { eliminarSesion } from '../api/packing'
+import { getEquipo } from '../api/admin'
+import { useAuthStore } from '../store/authStore'
 import { confirmar } from '../store/confirmStore'
 import CredencialesCliente from '../components/CredencialesCliente'
 import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import SeguimientoEditor from '../components/SeguimientoEditor'
 import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
 import type { Sesion } from '../types/packing'
+import type { EquipoResponse } from '../types/equipo'
 
 const numeroCot = (s: Sesion) =>
   `YUDA-${(s.fecha || '').replace(/-/g, '')}-${s.id.slice(0, 6).toUpperCase()}`
@@ -67,6 +70,7 @@ function Campo({
 function Clientes() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const esAdmin = useAuthStore((s) => s.usuario?.rol) === 'admin'
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
@@ -85,6 +89,11 @@ function Clientes() {
   // pantalla se entera sola y vuelve a la lista.
   const [clienteAbiertoId, setClienteAbiertoId] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
+  // Solo para Marcela: a que vendedora pertenece cada cliente, y el filtro.
+  // Antes esto vivia en una pagina aparte, "Equipo", que mostraba los mismos
+  // clientes pero agrupados. Dos listas de lo mismo confunden mas de lo que ayudan.
+  const [equipo, setEquipo] = useState<EquipoResponse | null>(null)
+  const [filtroVendedora, setFiltroVendedora] = useState('')
   const [cotizaciones, setCotizaciones] = useState<Record<string, Sesion[]>>({})
   const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
 
@@ -150,6 +159,15 @@ function Clientes() {
     cargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Marcela ve todos los clientes: necesita saber de quien es cada uno y poder
+  // filtrar. Las vendedoras solo ven los suyos, asi que no hace falta pedirlo.
+  useEffect(() => {
+    if (!esAdmin) return
+    getEquipo()
+      .then(setEquipo)
+      .catch(() => setEquipo({ vendedoras: [] }))
+  }, [esAdmin])
 
   const setCampo = (campo: keyof ClienteCreate, valor: string) =>
     setForm((f) => ({ ...f, [campo]: valor }))
@@ -267,14 +285,46 @@ ${t('clientes.email')}: ${c.email}`
     }
   }
 
+  const vendedoras = equipo?.vendedoras ?? []
+  const nombreVendedora: Record<string, string> = {}
+  for (const v of vendedoras) nombreVendedora[v.user_id] = v.nombre
+
+  // Cotizaciones esperando que Marcela cargue la naviera y el BL. Estaban en la
+  // pagina "Equipo"; se traen aca, que es donde vive todo lo del cliente.
+  const pendientesBl: { sesionId: string; numero: string; cliente: string; clienteId: string; vendedora: string }[] = []
+  for (const v of vendedoras) {
+    for (const c of v.clientes) {
+      for (const cot of c.cotizaciones) {
+        if (cot.pendiente_bl) {
+          pendientesBl.push({
+            sesionId: cot.sesion_id,
+            numero: cot.numero,
+            cliente: cot.nombre_cliente,
+            clienteId: c.id,
+            vendedora: v.nombre,
+          })
+        }
+      }
+    }
+  }
+
+  // Abre la ficha del cliente y despliega el seguimiento de esa cotizacion
+  const abrirPendiente = (clienteId: string, sesionId: string) => {
+    const cli = clientes.find((c) => c.id === clienteId)
+    if (!cli) return
+    abrirCliente(cli)
+    setCotAbierta(new Set([sesionId]))
+  }
+
   const clienteAbierto = clientes.find((c) => c.id === clienteAbiertoId) ?? null
 
   const clientesFiltrados = (() => {
     const texto = busqueda.trim().toLowerCase()
-    if (!texto) return clientes
-    return clientes.filter((c) =>
-      `${c.nombre} ${c.email} ${c.empresa ?? ''} ${c.pais ?? ''}`.toLowerCase().includes(texto),
-    )
+    return clientes.filter((c) => {
+      if (filtroVendedora && c.vendedora_id !== filtroVendedora) return false
+      if (!texto) return true
+      return `${c.nombre} ${c.email} ${c.empresa ?? ''} ${c.pais ?? ''}`.toLowerCase().includes(texto)
+    })
   })()
 
   // ---------- PANTALLA 2: la ficha de un cliente ----------
@@ -492,6 +542,30 @@ ${t('clientes.email')}: ${c.email}`
         </button>
       </div>
 
+      {/* Lo que Marcela tiene que atender: cotizaciones esperando naviera y BL */}
+      {esAdmin && pendientesBl.length > 0 && (
+        <div className="rounded-xl border p-4" style={{ borderColor: '#FCD34D', backgroundColor: '#FFFBEB' }}>
+          <p className="mb-2 flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--yuda-warning-dark)' }}>
+            <AlertCircle size={16} /> {t('equipo.pendientesBl', { n: pendientesBl.length })}
+          </p>
+          <div className="flex flex-col gap-1">
+            {pendientesBl.map((p) => (
+              <button
+                key={p.sesionId}
+                type="button"
+                onClick={() => abrirPendiente(p.clienteId, p.sesionId)}
+                className="flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-white"
+                style={{ color: '#92400E' }}
+              >
+                <strong>{p.numero}</strong>
+                <span>{p.cliente}</span>
+                <span style={{ color: 'var(--yuda-warning-dark)' }}>({p.vendedora})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Credenciales recién creadas (incluye el link del portal) */}
       {credenciales && (
         <div className="card">
@@ -555,6 +629,33 @@ ${t('clientes.email')}: ${c.email}`
           )}
         </div>
 
+        {/* De quien es cada cliente. Reemplaza a la pagina "Equipo": la misma
+            informacion, pero como filtro sobre una unica lista. */}
+        {esAdmin && vendedoras.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {[{ id: '', nombre: t('clientes.todasLasVendedoras') }, ...vendedoras.map((v) => ({ id: v.user_id, nombre: v.nombre }))].map((v) => {
+              const activo = filtroVendedora === v.id
+              const cuantos = v.id ? clientes.filter((c) => c.vendedora_id === v.id).length : clientes.length
+              return (
+                <button
+                  key={v.id || 'todas'}
+                  type="button"
+                  onClick={() => setFiltroVendedora(v.id)}
+                  className="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold"
+                  style={{
+                    border: `1.5px solid ${activo ? 'var(--yuda-primary)' : 'var(--yuda-border)'}`,
+                    backgroundColor: activo ? 'var(--yuda-primary-soft)' : 'var(--yuda-white)',
+                    color: activo ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
+                  }}
+                >
+                  {v.nombre}
+                  <span style={{ opacity: 0.7 }}>{cuantos}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {cargandoClientes ? (
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.cargando')}</p>
         ) : errorClientes ? (
@@ -599,6 +700,11 @@ ${t('clientes.email')}: ${c.email}`
                   <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                     {[c.empresa, c.email].filter(Boolean).join('  ')}
                   </span>
+                  {esAdmin && nombreVendedora[c.vendedora_id] && (
+                    <span className="mt-0.5 flex items-center gap-1 text-xs" style={{ color: 'var(--yuda-primary)' }}>
+                      <UserRound size={12} /> {nombreVendedora[c.vendedora_id]}
+                    </span>
+                  )}
                 </span>
                 {!c.activo && (
                   <span

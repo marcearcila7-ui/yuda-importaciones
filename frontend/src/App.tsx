@@ -15,7 +15,6 @@ import { usePortalStore } from './store/portalStore'
 // aligerar el bundle inicial de las vendedoras.
 const Admin = lazy(() => import('./pages/Admin'))
 const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
-const Equipo = lazy(() => import('./pages/Equipo'))
 const Historial = lazy(() => import('./pages/Historial'))
 const Ventas = lazy(() => import('./pages/Ventas'))
 const Cuentas = lazy(() => import('./pages/Cuentas'))
@@ -73,7 +72,8 @@ function App() {
         {/* Solo administración */}
         <Route element={<ProtectedRoute roles={['admin']} />}>
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
-          <Route path="/equipo" element={<Layout><Equipo /></Layout>} />
+          {/* "Equipo" se unifico con Clientes: mismos clientes, con filtro por vendedora */}
+          <Route path="/equipo" element={<Navigate to="/clientes" replace />} />
           <Route path="/ventas" element={<Layout><Ventas /></Layout>} />
         </Route>
 
