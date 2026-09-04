@@ -17,11 +17,15 @@ const limitar = (v: number) => Math.min(1, Math.max(0, v))
 // mismo codigo que usa el OCR: aca solo se eligen las coordenadas.
 function RecorteFoto({
   fotoUrl,
+  recorteActual,
   guardando,
   onGuardar,
   onCerrar,
 }: {
   fotoUrl: string
+  // El recorte que hoy sale en los documentos. Sin esto la vendedora abria el
+  // ajuste, veia la foto original entera y creia que no se habia recortado nada.
+  recorteActual?: string | null
   guardando: boolean
   onGuardar: (recuadro: number[] | null) => void
   onCerrar: () => void
@@ -89,6 +93,23 @@ function RecorteFoto({
         <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('recorte.ayuda')}
         </p>
+
+        {recorteActual && (
+          <div
+            className="mb-3 flex items-center gap-3 rounded-lg p-2"
+            style={{ backgroundColor: 'var(--yuda-primary-soft)' }}
+          >
+            <img
+              src={recorteActual}
+              alt=""
+              style={{ width: 64, height: 64 }}
+              className="flex-shrink-0 rounded-lg object-cover"
+            />
+            <span className="text-sm" style={{ color: 'var(--yuda-accent)' }}>
+              {t('recorte.actual')}
+            </span>
+          </div>
+        )}
 
         <div
           ref={contenedor}

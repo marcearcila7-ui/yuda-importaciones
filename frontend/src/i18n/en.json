@@ -524,7 +524,9 @@
     "cotizacionesTitulo": "This client's quotations",
     "buscar": "Search by name, company or email",
     "sinResultados": "No client matches «{{texto}}».",
-    "todasLasVendedoras": "All salespeople"
+    "todasLasVendedoras": "All salespeople",
+    "verInactivos": "Show deactivated ({{n}})",
+    "ocultarInactivos": "Hide deactivated"
   },
   "envio": {
     "titulo": "Client and shipment",
@@ -821,6 +823,7 @@
     "muyChico": "The box is too small. Mark a larger area over the product.",
     "guardado": "Crop saved",
     "error": "The crop could not be saved",
-    "tocaAjustar": "Tap to adjust the crop"
+    "tocaAjustar": "Tap to adjust the crop",
+    "actual": "This is how it appears today in the quotation and the order. Drag over the photo only if you want to change it."
   }
 }

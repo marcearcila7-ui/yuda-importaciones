@@ -444,6 +444,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       {itemRecorte?.foto_url && (
         <RecorteFoto
           fotoUrl={itemRecorte.foto_url}
+          recorteActual={itemRecorte.foto_final_url}
           guardando={guardandoRecorte}
           onGuardar={aplicarRecorte}
           onCerrar={() => setItemRecorte(null)}

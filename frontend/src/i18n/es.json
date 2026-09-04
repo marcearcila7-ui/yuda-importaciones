@@ -524,7 +524,9 @@
     "cotizacionesTitulo": "Cotizaciones de este cliente",
     "buscar": "Busca por nombre, empresa o correo",
     "sinResultados": "Ningún cliente coincide con «{{texto}}».",
-    "todasLasVendedoras": "Todas las vendedoras"
+    "todasLasVendedoras": "Todas las vendedoras",
+    "verInactivos": "Ver desactivados ({{n}})",
+    "ocultarInactivos": "Ocultar desactivados"
   },
   "envio": {
     "titulo": "Cliente y envío",
@@ -821,6 +823,7 @@
     "muyChico": "El recuadro es muy pequeño. Marca un área más grande sobre el producto.",
     "guardado": "Recorte guardado",
     "error": "No se pudo guardar el recorte",
-    "tocaAjustar": "Toca para ajustar el recorte"
+    "tocaAjustar": "Toca para ajustar el recorte",
+    "actual": "Así sale hoy en la cotización y en el pedido. Arrastra sobre la foto solo si quieres cambiarlo."
   }
 }

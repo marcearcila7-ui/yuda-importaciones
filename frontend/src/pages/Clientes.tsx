@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -94,6 +94,7 @@ function Clientes() {
   // clientes pero agrupados. Dos listas de lo mismo confunden mas de lo que ayudan.
   const [equipo, setEquipo] = useState<EquipoResponse | null>(null)
   const [filtroVendedora, setFiltroVendedora] = useState('')
+  const [verInactivos, setVerInactivos] = useState(false)
   const [cotizaciones, setCotizaciones] = useState<Record<string, Sesion[]>>({})
   const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
 
@@ -316,11 +317,14 @@ ${t('clientes.email')}: ${c.email}`
     setCotAbierta(new Set([sesionId]))
   }
 
+  const inactivos = clientes.filter((c) => !c.activo).length
+
   const clienteAbierto = clientes.find((c) => c.id === clienteAbiertoId) ?? null
 
   const clientesFiltrados = (() => {
     const texto = busqueda.trim().toLowerCase()
     return clientes.filter((c) => {
+      if (!c.activo && !verInactivos) return false
       if (filtroVendedora && c.vendedora_id !== filtroVendedora) return false
       if (!texto) return true
       return `${c.nombre} ${c.email} ${c.empresa ?? ''} ${c.pais ?? ''}`.toLowerCase().includes(texto)
@@ -628,6 +632,21 @@ ${t('clientes.email')}: ${c.email}`
             </div>
           )}
         </div>
+
+        {/* Los desactivados estan guardados, no borrados: se ven cuando se piden */}
+        {inactivos > 0 && (
+          <button
+            type="button"
+            onClick={() => setVerInactivos((v) => !v)}
+            className="flex items-center gap-2 self-start text-sm font-semibold"
+            style={{ color: 'var(--yuda-text-secondary)' }}
+          >
+            {verInactivos ? <EyeOff size={15} /> : <Eye size={15} />}
+            {verInactivos
+              ? t('clientes.ocultarInactivos')
+              : t('clientes.verInactivos', { n: inactivos })}
+          </button>
+        )}
 
         {/* De quien es cada cliente. Reemplaza a la pagina "Equipo": la misma
             informacion, pero como filtro sobre una unica lista. */}

@@ -524,7 +524,9 @@
     "cotizacionesTitulo": "该客户的报价",
     "buscar": "按姓名、公司或邮箱搜索",
     "sinResultados": "没有与「{{texto}}」匹配的客户。",
-    "todasLasVendedoras": "所有销售员"
+    "todasLasVendedoras": "所有销售员",
+    "verInactivos": "显示已停用 ({{n}})",
+    "ocultarInactivos": "隐藏已停用"
   },
   "envio": {
     "titulo": "客户与发货",
@@ -821,6 +823,7 @@
     "muyChico": "框选区域太小。请在产品上标出更大的区域。",
     "guardado": "裁剪已保存",
     "error": "无法保存裁剪",
-    "tocaAjustar": "点击调整裁剪"
+    "tocaAjustar": "点击调整裁剪",
+    "actual": "这是目前在报价单和订单中显示的效果。只有需要更改时才在照片上拖动。"
   }
 }
