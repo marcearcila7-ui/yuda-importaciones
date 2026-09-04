@@ -9,8 +9,20 @@ export const fmtUSD = (n: number): string =>
 function TarjetasVentas({ data }: { data: PanelVentas }) {
   const { t } = useTranslation()
   const sinMonto = data.contenedores_sin_monto ?? 0
+  const fuera = data.despachos_fuera_periodo ?? 0
+  // Un panel en cero no dice si no hubo ventas o si el periodo esta mal elegido
+  const vacioPeroHayFuera = data.contenedores_total === 0 && fuera > 0
   return (
     <>
+    {vacioPeroHayFuera && (
+      <p
+        className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm"
+        style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-accent)' }}
+      >
+        <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+        {t('ventas.fueraPeriodo', { n: fuera })}
+      </p>
+    )}
     {sinMonto > 0 && (
       <p
         className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm"

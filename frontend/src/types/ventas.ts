@@ -32,6 +32,8 @@ export interface PanelVentas {
   contenedores_vendedoras: number
   // Despachos sin monto de venta cargado: suman 0 y por eso hay que avisarlo
   contenedores_sin_monto?: number
+  // Despachos que existen pero caen fuera del periodo elegido
+  despachos_fuera_periodo?: number
   ventas_vendedoras: number
   por_vendedora: VendedoraVenta[]
   despachos: DespachoVenta[]

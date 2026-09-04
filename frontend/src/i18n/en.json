@@ -57,7 +57,8 @@
       "despachado": "Dispatched",
       "fechaCotizacion": "Quotation date"
     },
-    "sinMonto": "{{n}} dispatched container(s) have no sale amount recorded, so they add nothing to the total. Enter it in that quotation's tracking."
+    "sinMonto": "{{n}} dispatched container(s) have no sale amount recorded, so they add nothing to the total. Enter it in that quotation's tracking.",
+    "fueraPeriodo": "There were no dispatches in this period. There are {{n}} outside it: change the date range or choose «All» to see them."
   },
   "login": {
     "bienvenida": "Welcome",

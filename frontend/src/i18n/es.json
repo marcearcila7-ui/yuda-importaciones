@@ -57,7 +57,8 @@
       "despachado": "Despachado",
       "fechaCotizacion": "Fecha cotización"
     },
-    "sinMonto": "{{n}} contenedor(es) despachado(s) no tienen cargado el monto de la venta, por eso no suman al total. Cárgalo en el seguimiento de esa cotización."
+    "sinMonto": "{{n}} contenedor(es) despachado(s) no tienen cargado el monto de la venta, por eso no suman al total. Cárgalo en el seguimiento de esa cotización.",
+    "fueraPeriodo": "En este período no hubo despachos. Hay {{n}} fuera del período: cambia el rango de fechas o elige «Todo» para verlos."
   },
   "login": {
     "bienvenida": "Bienvenida",

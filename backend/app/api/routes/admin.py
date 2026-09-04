@@ -389,6 +389,20 @@ def panel_ventas(
             }
         )
 
+    # Despachos que existen pero caen fuera del periodo elegido. Sin este dato,
+    # un panel en cero no distingue entre "no hubo ventas" y "estas mirando el
+    # periodo equivocado", y las dos cosas se ven igual.
+    fuera_periodo = 0
+    if ini is not None or fin is not None:
+        q_todos = (
+            db.query(SeguimientoPedido)
+            .join(Sesion, SeguimientoPedido.sesion_id == Sesion.id)
+            .filter(SeguimientoPedido.estado.in_(ESTADOS_DESPACHADO))
+        )
+        if vendedora_id:
+            q_todos = q_todos.filter(Sesion.user_id == vendedora_id)
+        fuera_periodo = max(0, q_todos.count() - len(filas))
+
     # ---- Cotizaciones enviadas (archivos enviados al cliente) ----
     qc = db.query(Sesion.user_id).filter(Sesion.enviada_cliente.is_(True))
     if ini is not None:
@@ -430,6 +444,7 @@ def panel_ventas(
         "contenedores_total": len(despachos),
         "contenedores_vendedoras": contenedores_vendedoras,
         "contenedores_sin_monto": sin_monto,
+        "despachos_fuera_periodo": fuera_periodo,
         "ventas_vendedoras": round(ventas_vendedoras, 2),
         "por_vendedora": por_vendedora,
         "despachos": despachos,
