@@ -56,7 +56,8 @@
       "montoUsd": "Monto (USD)",
       "despachado": "Despachado",
       "fechaCotizacion": "Fecha cotización"
-    }
+    },
+    "sinMonto": "{{n}} contenedor(es) despachado(s) no tienen cargado el monto de la venta, por eso no suman al total. Cárgalo en el seguimiento de esa cotización."
   },
   "login": {
     "bienvenida": "Bienvenida",

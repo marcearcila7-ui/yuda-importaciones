@@ -56,7 +56,8 @@
       "montoUsd": "Amount (USD)",
       "despachado": "Dispatched",
       "fechaCotizacion": "Quotation date"
-    }
+    },
+    "sinMonto": "{{n}} dispatched container(s) have no sale amount recorded, so they add nothing to the total. Enter it in that quotation's tracking."
   },
   "login": {
     "bienvenida": "Welcome",

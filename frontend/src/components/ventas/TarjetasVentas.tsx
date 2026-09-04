@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { DollarSign, FileText, Package, Ship } from 'lucide-react'
+import { AlertCircle, DollarSign, FileText, Package, Ship } from 'lucide-react'
 import MetricCard from '../MetricCard'
 import type { PanelVentas } from '../../types/ventas'
 
@@ -8,7 +8,18 @@ export const fmtUSD = (n: number): string =>
 
 function TarjetasVentas({ data }: { data: PanelVentas }) {
   const { t } = useTranslation()
+  const sinMonto = data.contenedores_sin_monto ?? 0
   return (
+    <>
+    {sinMonto > 0 && (
+      <p
+        className="flex items-start gap-2 rounded-lg px-3 py-2 text-sm"
+        style={{ backgroundColor: '#FFFBEB', color: '#92400E' }}
+      >
+        <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+        {t('ventas.sinMonto', { n: sinMonto })}
+      </p>
+    )}
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       <MetricCard
         titulo={t('ventas.tarjetas.ventas')}
@@ -39,6 +50,7 @@ function TarjetasVentas({ data }: { data: PanelVentas }) {
         color="var(--yuda-accent)"
       />
     </div>
+    </>
   )
 }
 

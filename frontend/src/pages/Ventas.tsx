@@ -12,7 +12,9 @@ const LOCALES: Record<string, string> = { es: 'es-CO', en: 'en-US', zh: 'zh-CN' 
 
 function Ventas() {
   const { t, i18n } = useTranslation()
-  const [rango, setRango] = useState<Rango>({})
+  // Arranca en null a proposito: se espera a que el selector diga cual es el
+  // periodo en vez de pedir todo el historial y despues corregir.
+  const [rango, setRango] = useState<Rango | null>(null)
   const [vendedoraId, setVendedoraId] = useState('')
   const [vendedoras, setVendedoras] = useState<{ id: string; nombre: string }[]>([])
   const [data, setData] = useState<PanelVentas | null>(null)
@@ -25,11 +27,24 @@ function Ventas() {
   }, [])
 
   useEffect(() => {
+    if (rango === null) return
     setCargando(true)
+    // Guarda contra respuestas fuera de orden: solo la ultima consulta pinta.
+    // Sin esto, cambiar de periodo rapido dejaba los numeros del periodo anterior.
+    let vigente = true
     getPanelVentas({ ...rango, vendedora_id: vendedoraId || undefined })
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setCargando(false))
+      .then((d) => {
+        if (vigente) setData(d)
+      })
+      .catch(() => {
+        if (vigente) setData(null)
+      })
+      .finally(() => {
+        if (vigente) setCargando(false)
+      })
+    return () => {
+      vigente = false
+    }
   }, [rango, vendedoraId])
 
   const fmtFechaHora = (iso: string | null): string => {
@@ -44,7 +59,7 @@ function Ventas() {
   const exportarVendedoras = () => {
     if (!data) return
     descargarCSV(
-      `ventas_por_vendedora_${rango.desde ?? 'todo'}_${rango.hasta ?? ''}`,
+      `ventas_por_vendedora_${rango?.desde ?? 'todo'}_${rango?.hasta ?? ''}`,
       data.por_vendedora.map((v) => ({
         vendedora: v.nombre,
         cotizaciones: v.cotizaciones,
@@ -63,7 +78,7 @@ function Ventas() {
   const exportarDespachos = () => {
     if (!data) return
     descargarCSV(
-      `ventas_despachos_${rango.desde ?? 'todo'}_${rango.hasta ?? ''}`,
+      `ventas_despachos_${rango?.desde ?? 'todo'}_${rango?.hasta ?? ''}`,
       data.despachos.map((d) => ({
         numero: d.numero,
         cliente: d.cliente,

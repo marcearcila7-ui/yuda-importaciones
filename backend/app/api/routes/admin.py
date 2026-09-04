@@ -355,7 +355,13 @@ def panel_ventas(
     contenedores_vendedoras = 0
     en_transito = 0
     agg_vend: dict[str, dict] = {}
+    sin_monto = 0
     for seg, ses, creador in filas:
+        # Un despacho sin monto cargado suma 0. No es un error de calculo, es un
+        # dato que falta, y hay que decirlo: si no, el panel muestra contenedores
+        # despachados con $0,00 en ventas y parece que la cuenta esta rota.
+        if seg.monto_venta is None:
+            sin_monto += 1
         monto = float(seg.monto_venta) if seg.monto_venta is not None else 0.0
         ventas_total += monto
         es_vend = creador.rol == RolUsuario.vendedora
@@ -423,6 +429,7 @@ def panel_ventas(
         "cotizaciones_hechas": cotizaciones_hechas,
         "contenedores_total": len(despachos),
         "contenedores_vendedoras": contenedores_vendedoras,
+        "contenedores_sin_monto": sin_monto,
         "ventas_vendedoras": round(ventas_vendedoras, 2),
         "por_vendedora": por_vendedora,
         "despachos": despachos,

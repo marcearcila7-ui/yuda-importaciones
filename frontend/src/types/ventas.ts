@@ -30,6 +30,8 @@ export interface PanelVentas {
   cotizaciones_hechas: number
   contenedores_total: number
   contenedores_vendedoras: number
+  // Despachos sin monto de venta cargado: suman 0 y por eso hay que avisarlo
+  contenedores_sin_monto?: number
   ventas_vendedoras: number
   por_vendedora: VendedoraVenta[]
   despachos: DespachoVenta[]

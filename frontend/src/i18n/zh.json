@@ -56,7 +56,8 @@
       "montoUsd": "金额 (USD)",
       "despachado": "已发货",
       "fechaCotizacion": "报价日期"
-    }
+    },
+    "sinMonto": "有 {{n}} 个已发运的货柜没有填写销售金额，因此不计入总额。请在该报价的跟踪中填写。"
   },
   "login": {
     "bienvenida": "欢迎",
