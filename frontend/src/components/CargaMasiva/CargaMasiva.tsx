@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ChevronDown, ChevronUp, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image as ImageIcon, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
@@ -121,6 +121,8 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
   const [ocupadoId, setOcupadoId] = useState<string | null>(null)
   const [reemplazarId, setReemplazarId] = useState<string | null>(null)
   // Fotos con el detalle completo desplegado (para revisar/editar todos los datos).
+  // Fotos que el navegador no pudo dibujar (las HEIC del iPhone, sobre todo)
+  const [sinVista, setSinVista] = useState<Set<string>>(new Set())
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
   const toggleExpandido = (id: string) =>
     setExpandidos((s) => {
@@ -360,7 +362,28 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 className="relative aspect-square overflow-hidden rounded-xl border"
                 style={{ borderColor: 'var(--yuda-border)' }}
               >
-                <img src={f.preview} alt="" className="h-full w-full object-cover" />
+                {sinVista.has(f.id) ? (
+                  // Las fotos de iPhone (HEIC) el navegador no las sabe dibujar, asi
+                  // que la miniatura salia como imagen rota. Se suben igual y el
+                  // backend las convierte: aca solo hay que decirlo en vez de
+                  // mostrar un icono roto que parece un error.
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+                    <ImageIcon size={22} style={{ color: 'var(--yuda-primary)' }} />
+                    <span className="w-full truncate text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                      {f.file.name}
+                    </span>
+                    <span className="text-xs leading-tight" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {t('lote.sinVistaPrevia')}
+                    </span>
+                  </div>
+                ) : (
+                  <img
+                    src={f.preview}
+                    alt=""
+                    className="h-full w-full object-cover"
+                    onError={() => setSinVista((s) => new Set(s).add(f.id))}
+                  />
+                )}
                 <button
                   type="button"
                   onClick={() => quitarSeleccion(f.id)}

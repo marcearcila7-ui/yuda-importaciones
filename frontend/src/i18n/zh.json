@@ -458,7 +458,8 @@
     "fallidasSubidaTitulo": "有 {{n}} 张照片无法上传",
     "fallidasSubidaTexto": "看起来是网络问题。请检查您的网络后重试：照片仍在您的手机里，没有丢失。",
     "fallidasSubidaSistemaTitulo": "我们无法保存 {{n}} 张照片",
-    "fallidasSubidaSistemaTexto": "这是我们的问题，不是您的照片或网络的问题：保存照片的系统没有响应。请不要重新拍摄。请告知 Marcela 或技术支持，稍后再试。"
+    "fallidasSubidaSistemaTexto": "这是我们的问题，不是您的照片或网络的问题：保存照片的系统没有响应。请不要重新拍摄。请告知 Marcela 或技术支持，稍后再试。",
+    "sinVistaPrevia": "iPhone 照片，处理后可见"
   },
   "roles": {
     "admin": "管理员",

@@ -458,7 +458,8 @@
     "fallidasSubidaTitulo": "{{n}} photo(s) could not be uploaded",
     "fallidasSubidaTexto": "This looks like a connection problem. Check your internet and try again: the photos are still on your phone, you haven't lost them.",
     "fallidasSubidaSistemaTitulo": "We could not save {{n}} photo(s)",
-    "fallidasSubidaSistemaTexto": "This one is on us, not on your photos or your connection: the system that stores them is not responding. Do NOT take them again. Tell Marcela or support and try again later."
+    "fallidasSubidaSistemaTexto": "This one is on us, not on your photos or your connection: the system that stores them is not responding. Do NOT take them again. Tell Marcela or support and try again later.",
+    "sinVistaPrevia": "iPhone photo, visible once processed"
   },
   "roles": {
     "admin": "Administrator",

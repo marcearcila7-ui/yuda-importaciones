@@ -458,7 +458,8 @@
     "fallidasSubidaTitulo": "No se pudieron subir {{n}} foto(s)",
     "fallidasSubidaTexto": "Parece un problema de conexión. Revisa tu internet y vuelve a intentarlo: las fotos siguen en tu teléfono, no las perdiste.",
     "fallidasSubidaSistemaTitulo": "No pudimos guardar {{n}} foto(s)",
-    "fallidasSubidaSistemaTexto": "El problema es nuestro, no de tus fotos ni de tu conexión: el sistema donde se guardan no está respondiendo. NO vuelvas a tomarlas. Avisa a Marcela o a soporte e inténtalo de nuevo más tarde."
+    "fallidasSubidaSistemaTexto": "El problema es nuestro, no de tus fotos ni de tu conexión: el sistema donde se guardan no está respondiendo. NO vuelvas a tomarlas. Avisa a Marcela o a soporte e inténtalo de nuevo más tarde.",
+    "sinVistaPrevia": "Foto de iPhone, se ve al terminar"
   },
   "roles": {
     "admin": "Administrador",
