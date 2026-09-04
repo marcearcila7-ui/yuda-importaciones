@@ -21,6 +21,11 @@ apiClient.interceptors.response.use(
     if (status === 401 && !esLogin && localStorage.getItem('yuda_token')) {
       localStorage.removeItem('yuda_token')
       localStorage.removeItem('yuda_usuario')
+      // Se deja dicho POR QUE se cerro la sesion. El redirect recarga la pagina y
+      // se lleva puesto cualquier aviso en pantalla, asi que el mensaje viaja por
+      // aca y lo muestra el login. Sin esto la vendedora solo veia el error crudo
+      // del servidor ("No autenticado") y no entendia que tenia que volver a entrar.
+      sessionStorage.setItem('yuda_sesion_vencida', '1')
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login'
       }

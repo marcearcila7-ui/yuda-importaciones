@@ -20,6 +20,13 @@ function Login() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const { login, isLoading, error } = useAuthStore()
+  // Si el usuario llego aca porque se le vencio la sesion, hay que decirselo:
+  // de otro modo parece que la app lo hubiera echado sin motivo.
+  const [sesionVencida] = useState(() => {
+    const vencida = sessionStorage.getItem('yuda_sesion_vencida') === '1'
+    if (vencida) sessionStorage.removeItem('yuda_sesion_vencida')
+    return vencida
+  })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -71,6 +78,14 @@ function Login() {
             alt="YUDA Importaciones"
             style={{ height: 44, width: 'auto', margin: '0 auto 20px' }}
           />
+          {sesionVencida && (
+            <p
+              className="mb-4 rounded-lg px-3 py-2 text-sm"
+              style={{ backgroundColor: '#FFFBEB', color: '#92400E' }}
+            >
+              {t('login.sesionVencida')}
+            </p>
+          )}
           <div className="text-center">
             <span
               className="inline-block rounded-full px-3 py-1 text-xs font-semibold"

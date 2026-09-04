@@ -19,6 +19,13 @@ logger = logging.getLogger(__name__)
 # recorte al ras se ve apretado; con el afinado por pixeles ya no hace falta tanto.
 MARGEN = 0.025
 
+# Hacia donde apunta el techo de las letras -> cuantos grados hay que girar la
+# foto en sentido horario para enderezarla.
+#
+# Si el techo de las letras apunta a la DERECHA, la foto esta girada 90 grados en
+# sentido horario respecto de lo normal, asi que se la devuelve girando 270.
+GIRO_SEGUN_TEXTO = {"arriba": 0, "izquierda": 90, "abajo": 180, "derecha": 270}
+
 # Cuanto se agranda el recuadro del modelo antes de buscar el borde real del
 # producto. El modelo suele quedarse corto y cortar un pedazo, asi que se mira
 # tambien un poco afuera de lo que marco.

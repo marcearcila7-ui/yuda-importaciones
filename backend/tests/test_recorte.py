@@ -10,6 +10,7 @@ from io import BytesIO
 from PIL import Image
 
 from app.services.recorte_service import (
+    GIRO_SEGUN_TEXTO,
     recortar_producto,
     recuadro_fuera_del_cartel,
     recuadro_valido,
@@ -180,3 +181,34 @@ def test_no_afina_cuando_no_hay_fondo_liso():
     ruido.save(buf, format="PNG")
     recorte = recortar_producto(buf.getvalue(), [0.25, 0.25, 0.75, 0.75])
     assert recorte is not None
+
+
+def test_la_orientacion_vuelve_al_derecho_desde_los_cuatro_lados():
+    """El mapa de orientacion tiene que enderezar la foto, mire donde mire el texto.
+
+    Se le pide al modelo una observacion ("hacia donde apunta el techo de las
+    letras") en vez de los grados, porque pidiendole los grados contestaba el
+    sentido contrario y la foto salia de cabeza en el PDF del cliente.
+    """
+    from PIL import ImageDraw
+
+    base = Image.new("RGB", (600, 300), "white")
+    dibujo = ImageDraw.Draw(base)
+    # Marca en la esquina superior izquierda del texto derecho
+    dibujo.rectangle([40, 40, 100, 70], fill=(220, 20, 20))
+
+    girada = {
+        "arriba": base,
+        "derecha": base.rotate(-90, expand=True),   # la foto quedo girada en horario
+        "abajo": base.rotate(180, expand=True),
+        "izquierda": base.rotate(90, expand=True),
+    }
+    for mira, img in girada.items():
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        enderezada = recortar_producto(buf.getvalue(), None, GIRO_SEGUN_TEXTO[mira])
+        assert enderezada is not None, mira
+        res = Image.open(BytesIO(enderezada))
+        ancho, alto = res.size
+        r, g, _ = res.getpixel((int(ancho * 0.10), int(alto * 0.17)))
+        assert r > 150 and g < 90, f"con el texto mirando a {mira} la foto no volvio al derecho"

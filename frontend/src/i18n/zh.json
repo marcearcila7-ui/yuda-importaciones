@@ -68,7 +68,8 @@
     "ingresando": "正在登录...",
     "error": "账号或密码错误",
     "tagline": "连接中国与您的成功",
-    "accesoEquipo": "团队登录"
+    "accesoEquipo": "团队登录",
+    "sesionVencida": "出于安全考虑，您的会话在数小时后已关闭。请重新登录并继续，数据不会丢失。"
   },
   "dashboard": {
     "titulo": "报价",

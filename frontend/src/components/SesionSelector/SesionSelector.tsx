@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
+import axios from 'axios'
 import { Check, FileText, Plus, Search, UserPlus, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { crearCliente, getClientes } from '../../api/clientes'
@@ -209,12 +210,12 @@ function SesionSelector() {
       setAviso(null)
       toast.success(t('clientes.creado'))
     } catch (err) {
-      const detalle =
-        typeof err === 'object' && err && 'response' in err
-          ? // @ts-expect-error acceso defensivo al detalle de axios
-            err.response?.data?.detail
-          : null
-      toast.error(detalle || t('clientes.errorCrear'))
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      // Con la sesion vencida el interceptor ya manda al login, que lo explica:
+      // mostrar aca "No autenticado" solo confunde.
+      if (!axios.isAxiosError(err) || err.response?.status !== 401) {
+        toast.error(detalle || t('clientes.errorCrear'))
+      }
     } finally {
       setGuardandoCliente(false)
     }

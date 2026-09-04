@@ -200,7 +200,11 @@ function Clientes() {
           ? // @ts-expect-error acceso defensivo al detalle de axios
             err.response?.data?.detail
           : null
-      toast.error(detalle || t('clientes.errorCrear'))
+      // Con la sesion vencida el interceptor ya manda al login, que lo explica:
+      // mostrar aca "No autenticado" solo confunde.
+      if (!axios.isAxiosError(err) || err.response?.status !== 401) {
+        toast.error(detalle || t('clientes.errorCrear'))
+      }
     } finally {
       setGuardando(false)
     }

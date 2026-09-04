@@ -7,7 +7,7 @@ from anthropic import AsyncAnthropic
 
 from app.core.config import settings
 from app.core.ocr_limiter import slot_ocr
-from app.services.recorte_service import recuadro_valido
+from app.services.recorte_service import GIRO_SEGUN_TEXTO, recuadro_valido
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ El JSON debe tener exactamente estas claves:
   "cantidad_minima": número entero de la mínima cantidad de compra DE ESTE PRODUCTO o null,
   "cantidad_minima_tienda": número entero de la mínima de compra de TODA LA TIENDA (sumando todos sus productos) o null,
   "notas": "cualquier otra información relevante o null",
-  "giro_necesario": 0, 90, 180 o 270: cuántos grados hay que girar la foto EN SENTIDO HORARIO para que quede derecha,
+  "hacia_donde_mira_el_texto": "arriba", "abajo", "izquierda" o "derecha": hacia qué borde de la foto apunta la PARTE DE ARRIBA de las letras,
   "recuadro_cartel": [x0, y0, x1, y1] con el recuadro del CARTEL o tablero de datos que acabas de leer, en fracciones de 0 a 1 (0,0 = esquina superior izquierda; 1,1 = inferior derecha), o null si no hay cartel,
   "recuadro_producto": [x0, y0, x1, y1] con el recuadro del PRODUCTO, en las mismas coordenadas,
   "confianza": "alta, media o baja según tu certeza en la extracción",
@@ -161,11 +161,17 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
 
 • Puede haber otros rótulos: "DESCRIPCION" (texto libre del producto; en inglés "DESCRIPTION" / "ITEM", en chino "品名", "名称", "产品"), "TAMAÑO"/medidas (ej "20x10x9"; en inglés "SIZE", en chino "尺寸", "规格"), "LOGO", colores/variantes (ej "PLATA/TIRA/CADENA"; en inglés "COLOR", en chino "颜色", "色"). Usa la descripción y los colores si ayudan, pero NO pongas las medidas en largo/ancho/alto.
 
-ORIENTACIÓN — las fotos del mercado salen giradas todo el tiempo, porque se toman con el celular de costado o parándose al lado del producto. En la cotización que recibe el cliente eso se ve mal.
-- giro_necesario = cuántos grados hay que girar ESTA foto en sentido horario (el de las agujas del reloj) para que quede derecha: 0, 90, 180 o 270.
-- "Derecha" significa que el texto del cartel se lee normal, de izquierda a derecha, y que el producto queda parado como se usa.
-- Si la foto ya está derecha, devuelve 0. Si para leer el cartel tuviste que girar la imagen mentalmente, ese es el giro que hay que devolver.
-- Ejemplo: el texto del cartel corre de arriba hacia abajo y para leerlo hay que inclinar la cabeza hacia la derecha. Entonces la foto está girada y hay que llevarla al derecho con giro_necesario = 270.
+ORIENTACIÓN — las fotos del mercado salen giradas todo el tiempo, porque se toman con el celular de costado o parándose al lado del producto. En la cotización que recibe el cliente eso se ve mal, así que el sistema las endereza. Para eso necesita saber cómo está parado el texto.
+
+NO calcules cuánto hay que girar la foto. Solo MIRA y responde una cosa: en las letras del cartel, la parte de ARRIBA de cada letra (el techo de la A, el punto de la i, lo que queda arriba cuando el texto está derecho), ¿hacia qué borde de la foto está apuntando?
+
+hacia_donde_mira_el_texto:
+- "arriba"    = el texto se lee normal, de izquierda a derecha. La foto ya está derecha.
+- "derecha"   = el texto corre hacia abajo por la foto y para leerlo hay que inclinar la cabeza hacia la izquierda.
+- "izquierda" = el texto corre hacia arriba por la foto y para leerlo hay que inclinar la cabeza hacia la derecha.
+- "abajo"     = el texto está de cabeza, se lee al revés.
+
+Si no hay texto legible, fíjate en el producto: hacia dónde apunta su parte de arriba, la que queda arriba cuando está apoyado como se usa. Si no puedes decidirlo, responde "arriba".
 
 RECUADROS — además de leer los datos, tienes que marcar DÓNDE está cada cosa en la foto. Sirve para recortar la imagen y que en la cotización del cliente y en el pedido al proveedor salga SOLO el producto, sin el cartel. Es tan importante como leer los datos: no lo saltes.
 
@@ -217,6 +223,7 @@ def _resultado_vacio(motivo: str = "no_procesada") -> dict:
         "cantidad_minima": None,
         "cantidad_minima_tienda": None,
         "notas": None,
+        "hacia_donde_mira_el_texto": None,
         "giro_necesario": 0,
         "recuadro_cartel": None,
         "recuadro_producto": None,
@@ -386,15 +393,20 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
         datos["cantidad_minima_tienda"] = None
 
-    giro = datos.get("giro_necesario")
-    datos["giro_necesario"] = giro if giro in (0, 90, 180, 270) else 0
+    # Se le pide una observacion ("hacia donde apunta el techo de las letras") y
+    # el giro se calcula aca. Pedirle directamente los grados salia mal: contesta
+    # el sentido contrario y la foto quedaba de cabeza en el PDF del cliente.
+    datos["giro_necesario"] = GIRO_SEGUN_TEXTO.get(
+        str(datos.get("hacia_donde_mira_el_texto") or "").strip().lower(), 0
+    )
 
     datos["recuadro_cartel"] = recuadro_valido(datos.get("recuadro_cartel"), area_maxima=0.98)
     datos["recuadro_producto"] = recuadro_valido(datos.get("recuadro_producto"))
     # Queda registrado para poder revisar despues por que una foto no se recorto
     logger.info(
-        "OCR recuadros: producto=%s cartel=%s giro=%s legible=%s",
-        datos["recuadro_producto"], datos["recuadro_cartel"], datos["giro_necesario"], datos["legible"],
+        "OCR recuadros: producto=%s cartel=%s texto_mira=%s giro=%s legible=%s",
+        datos["recuadro_producto"], datos["recuadro_cartel"],
+        datos["hacia_donde_mira_el_texto"], datos["giro_necesario"], datos["legible"],
     )
 
     # confianza es obligatorio, nunca null

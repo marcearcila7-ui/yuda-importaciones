@@ -68,7 +68,8 @@
     "ingresando": "Iniciando sesión...",
     "error": "Credenciales incorrectas",
     "tagline": "Conectamos China con tu éxito",
-    "accesoEquipo": "Acceso del equipo"
+    "accesoEquipo": "Acceso del equipo",
+    "sesionVencida": "Tu sesión se cerró por seguridad después de varias horas. Vuelve a entrar y sigue donde estabas; no perdiste nada."
   },
   "dashboard": {
     "titulo": "Cotización",

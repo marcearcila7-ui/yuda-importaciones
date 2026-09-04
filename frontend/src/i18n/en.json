@@ -68,7 +68,8 @@
     "ingresando": "Signing in...",
     "error": "Incorrect credentials",
     "tagline": "We connect China with your success",
-    "accesoEquipo": "Team access"
+    "accesoEquipo": "Team access",
+    "sesionVencida": "Your session was closed for security after several hours. Sign in again and carry on where you were; nothing was lost."
   },
   "dashboard": {
     "titulo": "Quotation",
