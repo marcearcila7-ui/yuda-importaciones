@@ -15,11 +15,25 @@ def _es_webp(b: bytes) -> bool:
     return len(b) >= 12 and b[:4] == b"RIFF" and b[8:12] == b"WEBP"
 
 
+# Las fotos de iPhone son HEIC, no JPEG. Se reconocen por la "marca" que va
+# despues de ftyp en la cabecera ISO-BMFF. Se aceptan y se convierten a JPEG al
+# entrar; ni el navegador ni el resto del sistema saben abrir un HEIC.
+_MARCAS_HEIC = {
+    b"heic", b"heix", b"heim", b"heis", b"hevc", b"hevx", b"hevm", b"hevs",
+    b"mif1", b"msf1", b"avif", b"avis",
+}
+
+
+def _es_heic(b: bytes) -> bool:
+    return len(b) >= 12 and b[4:8] == b"ftyp" and b[8:12] in _MARCAS_HEIC
+
+
 # Orden de detección: content-type real -> función que reconoce su firma
 _FIRMAS = {
     "image/jpeg": _es_jpeg,
     "image/png": _es_png,
     "image/webp": _es_webp,
+    "image/heic": _es_heic,
 }
 
 

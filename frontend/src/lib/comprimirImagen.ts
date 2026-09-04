@@ -69,7 +69,21 @@ function reducir(file: File): Promise<File> {
   })
 }
 
+// Una foto HEIC de iPhone. El canvas del navegador NO sabe decodificarla: el
+// decode no dispara ni onload ni onerror, se come los 10 segundos del timeout y
+// al final devuelve el original igual. Se detecta antes y se sube tal cual, que
+// el backend la convierte a JPEG al recibirla.
+function esHeic(file: File): boolean {
+  return (
+    file.type === 'image/heic' ||
+    file.type === 'image/heif' ||
+    /\.hei[cf]$/i.test(file.name)
+  )
+}
+
 export async function comprimirImagen(file: File): Promise<File> {
+  // El HEIC no pasa por el canvas: el navegador no lo sabe abrir.
+  if (esHeic(file)) return file
   // Atajo solo si ya es liviana Y viene con un tipo que el backend acepta.
   // Si el tipo es dudoso hay que pasarla por el canvas aunque sea pequeña.
   if (file.size < 1_500_000 && TIPOS_OK.has(file.type)) return file

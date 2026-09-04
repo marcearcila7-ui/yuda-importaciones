@@ -1,5 +1,4 @@
 import asyncio
-import os
 import uuid
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
@@ -14,6 +13,7 @@ from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.lote import LoteActivo, LoteCreado, LoteEstado, LoteItemInfo
 from app.services.lote_service import ocr_de_bytes, ocr_de_url, procesar_lote
+from app.services.imagen_service import convertir_a_jpeg
 from app.services.storage_service import subir_foto
 
 router = APIRouter(tags=["lotes"])
@@ -22,7 +22,12 @@ TIPOS_PERMITIDOS = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
+    # Las fotos de iPhone son HEIC. Se aceptan y se convierten a JPEG al entrar.
+    "image/heic": ".heic",
 }
+
+# Lo que un iPhone o un navegador pueden declarar para una foto HEIC.
+_DECLARADOS_HEIC = {"image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"}
 MAX_BYTES = 25 * 1024 * 1024
 
 
@@ -75,7 +80,7 @@ async def subir_foto_lote(
     """Sube una foto al lote (la guarda en Supabase y la deja pendiente de OCR)"""
     _obtener_lote(db, lote_id, usuario)
 
-    if foto.content_type not in TIPOS_PERMITIDOS:
+    if foto.content_type not in TIPOS_PERMITIDOS and foto.content_type not in _DECLARADOS_HEIC:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Solo se permiten imágenes JPG, PNG o WEBP",
@@ -94,7 +99,19 @@ async def subir_foto_lote(
             detail="El archivo no es una imagen JPG, PNG o WEBP válida",
         )
 
-    extension = os.path.splitext(foto.filename or "")[1] or TIPOS_PERMITIDOS[tipo_real]
+    # El resto del sistema (navegador, Excel, API de vision) no entiende HEIC:
+    # se convierte una sola vez, aca, y de ahi en adelante es un JPEG normal.
+    if tipo_real == "image/heic":
+        convertida = convertir_a_jpeg(imagen_bytes)
+        if convertida is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se pudo leer la foto del iPhone. Vuelve a intentarlo.",
+            )
+        imagen_bytes = convertida
+        tipo_real = "image/jpeg"
+
+    extension = TIPOS_PERMITIDOS[tipo_real]
     nombre_archivo = f"{uuid.uuid4()}{extension}"
 
     loop = asyncio.get_event_loop()
@@ -192,7 +209,7 @@ async def reemplazar_item(
     _obtener_lote(db, lote_id, usuario)
     item = _obtener_item(db, lote_id, item_id)
 
-    if foto.content_type not in TIPOS_PERMITIDOS:
+    if foto.content_type not in TIPOS_PERMITIDOS and foto.content_type not in _DECLARADOS_HEIC:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Solo se permiten imágenes JPG, PNG o WEBP",
@@ -210,7 +227,19 @@ async def reemplazar_item(
             detail="El archivo no es una imagen JPG, PNG o WEBP válida",
         )
 
-    extension = os.path.splitext(foto.filename or "")[1] or TIPOS_PERMITIDOS[tipo_real]
+    # El resto del sistema (navegador, Excel, API de vision) no entiende HEIC:
+    # se convierte una sola vez, aca, y de ahi en adelante es un JPEG normal.
+    if tipo_real == "image/heic":
+        convertida = convertir_a_jpeg(imagen_bytes)
+        if convertida is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se pudo leer la foto del iPhone. Vuelve a intentarlo.",
+            )
+        imagen_bytes = convertida
+        tipo_real = "image/jpeg"
+
+    extension = TIPOS_PERMITIDOS[tipo_real]
     nombre_archivo = f"{uuid.uuid4()}{extension}"
     loop = asyncio.get_event_loop()
     foto_url = await loop.run_in_executor(

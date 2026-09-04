@@ -20,3 +20,9 @@ httpx==0.27.0
 # Monitoreo de errores. Rango 2.x para no fijar un patch inexistente; solo se
 # activa si SENTRY_DSN está configurado. Trae la integración de FastAPI/Starlette.
 sentry-sdk[fastapi]>=2.0,<3.0
+# Pillow se usaba de rebote (venia con weasyprint) para incrustar fotos; ahora
+# tambien recorta la foto al producto, asi que es una dependencia directa.
+Pillow>=10.0,<12.0
+# Las fotos de iPhone son HEIC y Pillow no las lee de fabrica. Rango en vez de
+# version fija porque trae binarios por plataforma y el patch cambia seguido.
+pillow-heif>=0.18,<1.0
