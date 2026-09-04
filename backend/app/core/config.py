@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Monitoreo de errores (Sentry). Si SENTRY_DSN está vacío, Sentry NO se inicia
-    # (comportamiento por defecto en local y tests). En producción, poné el DSN del
+    # (comportamiento por defecto en local y tests). En producción, pon el DSN del
     # proyecto para recibir el stack trace de cada error al instante.
     SENTRY_DSN: str = ""
     # Etiqueta el entorno en Sentry (production / staging / etc.).
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         if len(self.SECRET_KEY) < 32:
             raise ValueError(
                 f"SECRET_KEY es demasiado corta ({len(self.SECRET_KEY)} caracteres); "
-                "usá al menos 32 caracteres aleatorios."
+                "usa al menos 32 caracteres aleatorios."
             )
         if not self.DATABASE_URL:
             raise ValueError(

@@ -42,7 +42,7 @@ class ErrorBoundary extends Component<Props, State> {
         <div style={{ fontSize: 40 }}>😕</div>
         <h1 style={{ fontWeight: 700, fontSize: 22 }}>Algo salió mal</h1>
         <p style={{ color: 'var(--yuda-text-secondary)', maxWidth: 360 }}>
-          Ocurrió un error inesperado. Recargá la página; si el problema sigue, avisá al equipo.
+          Ocurrió un error inesperado. Recarga la página; si el problema sigue, avisa al equipo.
         </p>
         <button
           type="button"

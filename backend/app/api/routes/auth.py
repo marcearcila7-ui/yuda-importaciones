@@ -26,7 +26,7 @@ def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) 
     ):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiados intentos fallidos. Esperá unos minutos e intentá de nuevo.",
+            detail="Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.",
         )
 
     user = db.query(User).filter(User.email == datos.email).first()

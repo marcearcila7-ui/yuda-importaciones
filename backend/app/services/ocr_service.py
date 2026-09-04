@@ -159,7 +159,7 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
 
 Reglas:
 - SIEMPRE identifica el producto y completa descripcion_es y descripcion_en mirando la foto, aunque el cartel no traiga descripción. Debe ser específica del producto que ves, no genérica.
-- material y uso: infiérelos de la imagen aunque no estén escritos; si no podés deducirlo, null.
+- material y uso: infiérelos de la imagen aunque no estén escritos; si no puedes deducirlo, null.
 - Si un dato NUMÉRICO no aparece, usa null; nunca inventes números. Pero si en el tablero SÍ está el precio, las piezas por caja, el CBM o la cantidad mínima (en cualquiera de sus variantes de arriba), DEBES extraerlos: no los dejes en null.
 - largo_cm, ancho_cm y alto_cm van SIEMPRE en null: son las medidas de la CAJA FINAL, que se cargan a mano después. Aunque el cartel muestre medidas (ej "28x23x12"), NO las pongas ahí.
 - price_rmb, qty_por_ctn, cbm_directo, cantidad_minima, cantidad_minima_tienda deben ser números (float o int) o null, nunca strings.
