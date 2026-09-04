@@ -12,7 +12,6 @@ export interface OCRResultado {
   ancho_cm: number | null
   alto_cm: number | null
   cbm_directo: number | null
-  gw: number | null
   colores: string | null
   cantidad_minima: number | null
   // Minimo de compra de TODA la tienda. Solo llega cuando el cartel trae los dos

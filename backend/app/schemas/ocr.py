@@ -14,7 +14,6 @@ class OCRResultado(BaseModel):
     ancho_cm: Optional[float] = None
     alto_cm: Optional[float] = None
     cbm_directo: Optional[float] = None
-    gw: Optional[float] = None
     colores: Optional[str] = None
     cantidad_minima: Optional[int] = None
     # Mínimo para comprarle a la tienda en total; solo viene cuando el cartel

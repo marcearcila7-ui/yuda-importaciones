@@ -28,7 +28,6 @@ const CAMPOS_NUMERO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
   { clave: 'largo_cm', i18n: 'largoCm' },
   { clave: 'ancho_cm', i18n: 'anchoCm' },
   { clave: 'alto_cm', i18n: 'altoCm' },
-  { clave: 'gw', i18n: 'pesoKg' },
 ]
 
 // Datos obligatorios (por su clave i18n) para resaltar los que faltan.

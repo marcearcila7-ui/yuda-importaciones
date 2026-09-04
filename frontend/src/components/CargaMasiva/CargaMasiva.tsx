@@ -236,7 +236,7 @@ function CargaMasiva() {
         uso: d.uso ?? undefined,
         qty_por_ctn: d.qty_por_ctn ?? 1,
         price_rmb: d.price_rmb ?? 0,
-        gw: d.gw ?? 0,
+        gw: 0,
         largo_cm: d.largo_cm ?? 0,
         ancho_cm: d.ancho_cm ?? 0,
         alto_cm: d.alto_cm ?? 0,
@@ -573,8 +573,6 @@ function CargaMasiva() {
                     onChange={(v) => actualizarNumero(r.id, 'ancho_cm', v)} />
                   <CampoLote label={t('ocr.altoCm')} valor={r.datos.alto_cm} tipo="number"
                     onChange={(v) => actualizarNumero(r.id, 'alto_cm', v)} />
-                  <CampoLote label={t('ocr.pesoKg')} valor={r.datos.gw} tipo="number"
-                    onChange={(v) => actualizarNumero(r.id, 'gw', v)} />
                 </div>
               )}
 
