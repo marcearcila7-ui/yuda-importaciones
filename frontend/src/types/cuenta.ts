@@ -1,6 +1,10 @@
 export type Moneda = 'USD' | 'COP' | 'RMB' | 'EUR'
 export const MONEDAS: Moneda[] = ['USD', 'COP', 'RMB', 'EUR']
 
+// En las que el cliente puede abonar. USDT va aparte del dolar bancario porque
+// se recibe y se anota distinto.
+export const MONEDAS_ORIGEN = ['USDT', 'USD', 'COP', 'RMB', 'EUR'] as const
+
 export interface Movimiento {
   id: string
   cliente_id: string
@@ -14,6 +18,10 @@ export interface Movimiento {
   valor_mercancia: number
   comision_yuda: number
   abono: number
+  // Como entro el abono cuando se pago en otra moneda
+  monto_origen?: number | null
+  moneda_origen?: string | null
+  tasa_cambio?: number | null
   saldo: number
   nota: string | null
   created_at: string
@@ -62,5 +70,10 @@ export interface MovimientoCreate {
   valor_mercancia: number
   comision_yuda?: number | null
   abono: number
+  // Con monto y tasa el backend calcula el abono; asi queda el rastro de cuanto
+  // entro de verdad y a que cambio, que es lo que se revisa cuando no cuadra.
+  monto_origen?: number | null
+  moneda_origen?: string | null
+  tasa_cambio?: number | null
   nota?: string | null
 }

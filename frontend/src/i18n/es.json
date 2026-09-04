@@ -740,7 +740,16 @@
     "esCotizacion": "Cotización",
     "agregarAqui": "Agregar aquí",
     "moneda": "Moneda",
-    "monedaFijada": "Este pedido ya usa esta moneda"
+    "monedaFijada": "Este pedido ya usa esta moneda",
+    "montoOrigen": "Monto recibido",
+    "montoOrigenAyuda": "Como entró, antes de convertir",
+    "monedaOrigen": "Moneda recibida",
+    "tasa": "Tasa del día",
+    "abonoCalculado": "Calculado con la tasa",
+    "descargarExcel": "Descargar cuenta (Excel)",
+    "descargarPdf": "Descargar cuenta (PDF)",
+    "descargando": "Generando...",
+    "errorDescargar": "No se pudo generar el estado de cuenta"
   },
   "cuentas": {
     "titulo": "Cuentas de clientes",

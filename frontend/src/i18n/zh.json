@@ -740,7 +740,16 @@
     "esCotizacion": "报价单",
     "agregarAqui": "在此添加",
     "moneda": "货币",
-    "monedaFijada": "该订单已使用此货币"
+    "monedaFijada": "该订单已使用此货币",
+    "montoOrigen": "收到金额",
+    "montoOrigenAyuda": "换算前的原始金额",
+    "monedaOrigen": "收到币种",
+    "tasa": "当日汇率",
+    "abonoCalculado": "按汇率计算",
+    "descargarExcel": "下载对账单 (Excel)",
+    "descargarPdf": "下载对账单 (PDF)",
+    "descargando": "生成中...",
+    "errorDescargar": "无法生成对账单"
   },
   "cuentas": {
     "titulo": "客户账户",

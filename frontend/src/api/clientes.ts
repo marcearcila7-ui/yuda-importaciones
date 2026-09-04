@@ -108,3 +108,4 @@ export async function subirAdjuntoSeguimiento(
   )
   return data
 }
+

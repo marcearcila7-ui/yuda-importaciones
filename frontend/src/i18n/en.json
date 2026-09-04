@@ -740,7 +740,16 @@
     "esCotizacion": "Quotation",
     "agregarAqui": "Add here",
     "moneda": "Currency",
-    "monedaFijada": "This order already uses this currency"
+    "monedaFijada": "This order already uses this currency",
+    "montoOrigen": "Amount received",
+    "montoOrigenAyuda": "As it came in, before converting",
+    "monedaOrigen": "Currency received",
+    "tasa": "Rate of the day",
+    "abonoCalculado": "Calculated with the rate",
+    "descargarExcel": "Download account (Excel)",
+    "descargarPdf": "Download account (PDF)",
+    "descargando": "Generating...",
+    "errorDescargar": "The account statement could not be generated"
   },
   "cuentas": {
     "titulo": "Client accounts",

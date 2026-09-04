@@ -35,3 +35,20 @@ export async function eliminarMovimiento(
   )
   return data
 }
+
+
+// Estado de cuenta como documento, con el formato del libro contable. Hasta ahora
+// esa hoja se llevaba a mano por fuera del sistema.
+export async function exportarCuentaExcel(cliente_id: string): Promise<Blob> {
+  const { data } = await apiClient.post(`/clientes/${cliente_id}/cuenta/excel`, null, {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export async function exportarCuentaPDF(cliente_id: string): Promise<Blob> {
+  const { data } = await apiClient.post(`/clientes/${cliente_id}/cuenta/pdf`, null, {
+    responseType: 'blob',
+  })
+  return data
+}

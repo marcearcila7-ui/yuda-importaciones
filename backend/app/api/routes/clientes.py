@@ -4,7 +4,7 @@ import string
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,11 @@ from app.services.borrado_service import (
     tiene_movimientos_cliente,
 )
 from app.models.cliente import Cliente
-from app.models.cuenta import MovimientoCuenta, calcular_comision
+from app.models.cuenta import MovimientoCuenta, calcular_comision, convertir_abono
+from app.services.estado_cuenta_service import (
+    generar_estado_cuenta_excel,
+    generar_estado_cuenta_pdf,
+)
 from app.models.seguimiento import (
     CAMPOS_SOLO_ADMIN,
     ESTADO_DISPARA_AVISO,
@@ -608,6 +612,44 @@ def obtener_estado_cuenta(
     return _estado_cuenta(db, cliente)
 
 
+@router.post("/clientes/{cliente_id}/cuenta/excel")
+def exportar_estado_cuenta_excel(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Estado de cuenta del cliente en Excel, con el formato del libro contable."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    cuenta = _estado_cuenta(db, cliente)
+    ahora = datetime.now()
+    contenido = generar_estado_cuenta_excel(cuenta, ahora)
+    nombre = f"Cuenta_{cliente.nombre}_{ahora:%Y%m%d}.xlsx".replace(" ", "_")
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
+
+
+@router.post("/clientes/{cliente_id}/cuenta/pdf")
+def exportar_estado_cuenta_pdf(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Estado de cuenta del cliente en PDF, para enviarselo tal cual."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    cuenta = _estado_cuenta(db, cliente)
+    ahora = datetime.now()
+    contenido = generar_estado_cuenta_pdf(cuenta, ahora)
+    nombre = f"Cuenta_{cliente.nombre}_{ahora:%Y%m%d}.pdf".replace(" ", "_")
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
+
+
 @router.post(
     "/clientes/{cliente_id}/movimientos",
     response_model=EstadoCuentaResponse,
@@ -628,6 +670,9 @@ def crear_movimiento(
         if datos.comision_yuda is not None
         else calcular_comision(datos.valor_mercancia)
     )
+    # Si dijeron cuanto entro y a que tasa, el abono en la moneda de la cuenta se
+    # calcula: escribirlo a mano es donde se cuelan los errores de digitacion.
+    convertido = convertir_abono(datos.monto_origen, datos.tasa_cambio)
     movimiento = MovimientoCuenta(
         cliente_id=cliente.id,
         sesion_id=datos.sesion_id,
@@ -639,7 +684,10 @@ def crear_movimiento(
         descripcion=datos.descripcion,
         valor_mercancia=datos.valor_mercancia,
         comision_yuda=comision,
-        abono=datos.abono,
+        abono=convertido if convertido is not None else datos.abono,
+        monto_origen=datos.monto_origen,
+        moneda_origen=datos.moneda_origen,
+        tasa_cambio=datos.tasa_cambio,
         nota=datos.nota,
     )
     db.add(movimiento)
@@ -683,6 +731,15 @@ def actualizar_movimiento(
     # Si cambió el valor y NO se envió comisión explícita, recalcular la comisión.
     if "valor_mercancia" in cambios and "comision_yuda" not in cambios:
         cambios["comision_yuda"] = calcular_comision(cambios["valor_mercancia"])
+    # Lo mismo con el abono: si cambió el monto que entró o la tasa, se recalcula
+    # salvo que hayan mandado el abono a mano.
+    if ("monto_origen" in cambios or "tasa_cambio" in cambios) and "abono" not in cambios:
+        convertido = convertir_abono(
+            cambios.get("monto_origen", movimiento.monto_origen),
+            cambios.get("tasa_cambio", movimiento.tasa_cambio),
+        )
+        if convertido is not None:
+            cambios["abono"] = convertido
     for campo, valor in cambios.items():
         setattr(movimiento, campo, valor)
     db.commit()

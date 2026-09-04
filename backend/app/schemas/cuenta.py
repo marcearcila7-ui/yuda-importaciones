@@ -29,6 +29,11 @@ class MovimientoCreate(BaseModel):
     valor_mercancia: float = 0
     comision_yuda: float | None = None
     abono: float = 0
+    # De donde salio el abono: monto como entro, su moneda y la tasa del dia.
+    # Con los tres, el backend calcula el abono y no hace falta mandarlo.
+    monto_origen: float | None = None
+    moneda_origen: str | None = None
+    tasa_cambio: float | None = None
     nota: str | None = None
 
     @field_validator("moneda")
@@ -50,6 +55,9 @@ class MovimientoUpdate(BaseModel):
     valor_mercancia: float | None = None
     comision_yuda: float | None = None
     abono: float | None = None
+    monto_origen: float | None = None
+    moneda_origen: str | None = None
+    tasa_cambio: float | None = None
     nota: str | None = None
 
     @field_validator("moneda")
@@ -73,6 +81,10 @@ class MovimientoResponse(BaseModel):
     valor_mercancia: float
     comision_yuda: float
     abono: float
+    # Como entro el abono, cuando se pago en otra moneda
+    monto_origen: float | None = None
+    moneda_origen: str | None = None
+    tasa_cambio: float | None = None
     saldo: float  # acumulado hasta este movimiento
     nota: str | None
     created_at: datetime

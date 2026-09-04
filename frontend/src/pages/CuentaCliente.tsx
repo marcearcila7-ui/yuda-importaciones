@@ -2,17 +2,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { ArrowLeft, Download, FileText, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
 import {
   actualizarMovimiento,
   crearMovimiento,
   eliminarMovimiento,
+  exportarCuentaExcel,
+  exportarCuentaPDF,
   getEstadoCuenta,
 } from '../api/cuentas'
 import { getContenedores } from '../api/contenedores'
 import { getCotizacionesCliente } from '../api/clientes'
-import { MONEDAS } from '../types/cuenta'
+import { MONEDAS, MONEDAS_ORIGEN } from '../types/cuenta'
 import type { EstadoCuenta, Movimiento, MovimientoCreate, PedidoCuenta } from '../types/cuenta'
 import type { Contenedor } from '../types/contenedor'
 import type { Sesion } from '../types/packing'
@@ -28,12 +30,17 @@ type FormMov = {
   valor_mercancia: string
   comision_yuda: string
   abono: string
+  // De donde salio el abono: se guarda como entro y a que tasa
+  monto_origen: string
+  moneda_origen: string
+  tasa_cambio: string
   nota: string
 }
 
 const FORM_VACIO: FormMov = {
   sesion_id: '', moneda: 'USD', contenedor_id: '', envio: '', fecha: '', guia: '', descripcion: '',
-  valor_mercancia: '', comision_yuda: '', abono: '', nota: '',
+  valor_mercancia: '', comision_yuda: '', abono: '',
+  monto_origen: '', moneda_origen: 'USDT', tasa_cambio: '', nota: '',
 }
 
 // Mismo formato de número que el backend (YUDA-AAAAMMDD-ID6).
@@ -81,6 +88,36 @@ function CuentaCliente() {
   const fmtMon = (n: number, moneda: string) => `${moneda} ${fmt(n)}`
   const setCampo = (k: keyof FormMov, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
+  const [descargando, setDescargando] = useState<'excel' | 'pdf' | null>(null)
+
+  const descargar = async (tipo: 'excel' | 'pdf') => {
+    if (!clienteId) return
+    setDescargando(tipo)
+    try {
+      const blob = tipo === 'excel'
+        ? await exportarCuentaExcel(clienteId)
+        : await exportarCuentaPDF(clienteId)
+      const url = URL.createObjectURL(blob)
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = `Cuenta_${cuenta?.nombre ?? ''}.${tipo === 'excel' ? 'xlsx' : 'pdf'}`
+      enlace.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      toast.error(t('cuenta.errorDescargar'))
+    } finally {
+      setDescargando(null)
+    }
+  }
+
+  // El abono en la moneda de la cuenta sale de lo que entro por la tasa. Se
+  // muestra calculado para que la contadora vea el resultado antes de guardar y
+  // no tenga que hacer la cuenta aparte, que es donde se cuelan los errores.
+  const abonoCalculado =
+    form.monto_origen !== '' && form.tasa_cambio !== ''
+      ? Math.round(Number(form.monto_origen) * Number(form.tasa_cambio) * 100) / 100
+      : null
+
   // Moneda ya fijada de un pedido (por sus movimientos), o null si aún no tiene.
   const monedaDelPedido = (sesionId: string): string | null => {
     if (!sesionId || !cuenta) return null
@@ -111,6 +148,9 @@ function CuentaCliente() {
       valor_mercancia: String(m.valor_mercancia ?? ''),
       comision_yuda: String(m.comision_yuda ?? ''),
       abono: String(m.abono ?? ''),
+      monto_origen: m.monto_origen != null ? String(m.monto_origen) : '',
+      moneda_origen: m.moneda_origen || 'USDT',
+      tasa_cambio: m.tasa_cambio != null ? String(m.tasa_cambio) : '',
       nota: m.nota ?? '',
     })
     setEditandoId(m.id)
@@ -132,6 +172,9 @@ function CuentaCliente() {
         // Vacío → el backend calcula la comisión (5%).
         comision_yuda: form.comision_yuda === '' ? null : Number(form.comision_yuda),
         abono: Number(form.abono) || 0,
+        monto_origen: form.monto_origen === '' ? null : Number(form.monto_origen),
+        moneda_origen: form.monto_origen === '' ? null : form.moneda_origen,
+        tasa_cambio: form.tasa_cambio === '' ? null : Number(form.tasa_cambio),
         nota: form.nota.trim() || null,
       }
       const actualizada = editandoId
@@ -190,16 +233,39 @@ function CuentaCliente() {
             {cuenta.empresa ? ` · ${cuenta.empresa}` : ''}
           </p>
         </div>
-        {!mostrarForm && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/* El estado de cuenta como documento: es lo que se le manda al cliente */}
           <button
             type="button"
-            onClick={() => abrirNuevo()}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white"
-            style={{ backgroundColor: 'var(--yuda-primary)' }}
+            onClick={() => descargar('excel')}
+            disabled={descargando !== null}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+            style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-success)' }}
           >
-            <Plus size={16} /> {t('cuenta.nuevo')}
+            <Download size={16} />
+            {descargando === 'excel' ? t('cuenta.descargando') : t('cuenta.descargarExcel')}
           </button>
-        )}
+          <button
+            type="button"
+            onClick={() => descargar('pdf')}
+            disabled={descargando !== null}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+            style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-primary)' }}
+          >
+            <FileText size={16} />
+            {descargando === 'pdf' ? t('cuenta.descargando') : t('cuenta.descargarPdf')}
+          </button>
+          {!mostrarForm && (
+            <button
+              type="button"
+              onClick={() => abrirNuevo()}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white"
+              style={{ backgroundColor: 'var(--yuda-primary)' }}
+            >
+              <Plus size={16} /> {t('cuenta.nuevo')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Saldo pendiente del cliente por moneda (no se suman monedas distintas) */}
@@ -262,7 +328,26 @@ function CuentaCliente() {
             <Campo label={t('cuenta.descripcion')} value={form.descripcion} onChange={(v) => setCampo('descripcion', v)} />
             <Campo label={t('cuenta.valor')} type="number" value={form.valor_mercancia} onChange={(v) => setCampo('valor_mercancia', v)} />
             <Campo label={t('cuenta.comisionCol')} type="number" value={form.comision_yuda} onChange={(v) => setCampo('comision_yuda', v)} hint={t('cuenta.comisionAuto')} />
-            <Campo label={t('cuenta.abono')} type="number" value={form.abono} onChange={(v) => setCampo('abono', v)} />
+            <Campo label={t('cuenta.montoOrigen')} type="number" value={form.monto_origen} onChange={(v) => setCampo('monto_origen', v)} hint={t('cuenta.montoOrigenAyuda')} />
+            <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('cuenta.monedaOrigen')}
+              <select
+                value={form.moneda_origen}
+                onChange={(e) => setCampo('moneda_origen', e.target.value)}
+                className="rounded-lg border px-2 py-1.5 text-sm"
+                style={{ borderColor: 'var(--yuda-border)' }}
+              >
+                {MONEDAS_ORIGEN.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </label>
+            <Campo label={t('cuenta.tasa')} type="number" value={form.tasa_cambio} onChange={(v) => setCampo('tasa_cambio', v)} />
+            <Campo
+              label={t('cuenta.abono')}
+              type="number"
+              value={abonoCalculado !== null ? String(abonoCalculado) : form.abono}
+              onChange={(v) => setCampo('abono', v)}
+              hint={abonoCalculado !== null ? t('cuenta.abonoCalculado') : undefined}
+            />
             <Campo label={t('cuenta.nota')} value={form.nota} onChange={(v) => setCampo('nota', v)} />
           </div>
           <div className="mt-3 flex gap-2">

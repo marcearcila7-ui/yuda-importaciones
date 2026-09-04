@@ -14,6 +14,21 @@ COMISION_YUDA_PCT = 0.05
 # Monedas en las que se le puede cobrar al cliente (por pedido). Sin conversión:
 # los montos se registran y se muestran en la moneda elegida.
 MONEDAS = ("USD", "COP", "RMB", "EUR")
+
+# Monedas en las que el cliente puede abonar. USDT entra aparte porque en la
+# practica se recibe y se anota distinto del dolar bancario.
+MONEDAS_ORIGEN = ("USD", "USDT", "COP", "RMB", "EUR")
+
+
+def convertir_abono(monto_origen: float | None, tasa: float | None) -> float | None:
+    """Abono en la moneda de la cuenta = monto que entro x tasa del dia.
+
+    Devuelve None si falta alguno de los dos: ahi el abono se toma tal cual lo
+    escribieron, que es como funcionaba antes de guardar la moneda de origen.
+    """
+    if monto_origen is None or tasa is None:
+        return None
+    return round(float(monto_origen) * float(tasa), 2)
 MONEDA_DEFAULT = "USD"
 
 
@@ -55,5 +70,11 @@ class MovimientoCuenta(Base):
     valor_mercancia: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
     comision_yuda: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
     abono: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    # De donde salio ese abono. El cliente paga en dolares o USDT y la cuenta se
+    # lleva en otra moneda: guardar solo el resultado borraba el rastro de cuanto
+    # entro y a que tasa, que es justo lo que se revisa cuando algo no cuadra.
+    monto_origen: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    moneda_origen: Mapped[str | None] = mapped_column(String, nullable=True)
+    tasa_cambio: Mapped[float | None] = mapped_column(Numeric(12, 4), nullable=True)
     nota: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
