@@ -517,7 +517,11 @@
     "eliminarCotizacion": "删除",
     "confirmarEliminarCotizacion": "确定删除报价单 {{numero}}？如果已发送给客户，也会从其门户中消失。此操作无法撤销。",
     "cotizacionEliminada": "报价单已删除",
-    "errorEliminarCotizacion": "无法删除该报价单"
+    "errorEliminarCotizacion": "无法删除该报价单",
+    "volverALista": "返回列表",
+    "cotizacionesTitulo": "该客户的报价",
+    "buscar": "按姓名、公司或邮箱搜索",
+    "sinResultados": "没有与「{{texto}}」匹配的客户。"
   },
   "envio": {
     "titulo": "客户与发货",

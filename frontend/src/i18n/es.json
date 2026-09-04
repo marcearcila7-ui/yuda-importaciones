@@ -517,7 +517,11 @@
     "eliminarCotizacion": "Eliminar",
     "confirmarEliminarCotizacion": "¿Eliminar la cotización {{numero}}? Si ya se la enviaste, también desaparecerá de su portal. Esta acción no se puede deshacer.",
     "cotizacionEliminada": "Cotización eliminada",
-    "errorEliminarCotizacion": "No se pudo eliminar la cotización"
+    "errorEliminarCotizacion": "No se pudo eliminar la cotización",
+    "volverALista": "Volver a la lista",
+    "cotizacionesTitulo": "Cotizaciones de este cliente",
+    "buscar": "Busca por nombre, empresa o correo",
+    "sinResultados": "Ningún cliente coincide con «{{texto}}»."
   },
   "envio": {
     "titulo": "Cliente y envío",

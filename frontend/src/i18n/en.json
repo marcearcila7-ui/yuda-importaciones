@@ -517,7 +517,11 @@
     "eliminarCotizacion": "Delete",
     "confirmarEliminarCotizacion": "Delete quotation {{numero}}? If it was already sent, it will also disappear from their portal. This cannot be undone.",
     "cotizacionEliminada": "Quotation deleted",
-    "errorEliminarCotizacion": "Could not delete the quotation"
+    "errorEliminarCotizacion": "Could not delete the quotation",
+    "volverALista": "Back to the list",
+    "cotizacionesTitulo": "This client's quotations",
+    "buscar": "Search by name, company or email",
+    "sinResultados": "No client matches «{{texto}}»."
   },
   "envio": {
     "titulo": "Client and shipment",

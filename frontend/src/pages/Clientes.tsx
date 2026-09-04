@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Check, ChevronDown, ChevronRight, Copy, FileText, KeyRound, Plus, RefreshCw, Trash2, UserPlus, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, Check, ChevronDown, ChevronRight, Copy, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, Users, Wallet } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -78,26 +78,32 @@ function Clientes() {
   const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
   const portalUrl = `${window.location.origin}/portal/login`
 
-  // Expansión: cotizaciones del cliente + seguimiento
-  const [expandido, setExpandido] = useState<Set<string>>(new Set())
+  // Un solo cliente abierto a la vez, en su propia pantalla. Antes era un acordeon
+  // dentro de la lista y quedaban tres niveles de cajas anidadas: cliente, acceso
+  // al portal, cotizacion y seguimiento, todo apilado en la misma pagina.
+  // Se guarda el id y no el objeto: si el cliente se borra o cambia de estado, la
+  // pantalla se entera sola y vuelve a la lista.
+  const [clienteAbiertoId, setClienteAbiertoId] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
   const [cotizaciones, setCotizaciones] = useState<Record<string, Sesion[]>>({})
   const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
 
   const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
-  const toggleCliente = (c: Cliente) => {
-    const s = new Set(expandido)
-    if (s.has(c.id)) {
-      s.delete(c.id)
-    } else {
-      s.add(c.id)
-      if (cotizaciones[c.id] === undefined) {
-        getCotizacionesCliente(c.id)
-          .then((cots) => setCotizaciones((m) => ({ ...m, [c.id]: cots })))
-          .catch(() => setCotizaciones((m) => ({ ...m, [c.id]: [] })))
-      }
+  const abrirCliente = (c: Cliente) => {
+    setClienteAbiertoId(c.id)
+    setCotAbierta(new Set())
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (cotizaciones[c.id] === undefined) {
+      getCotizacionesCliente(c.id)
+        .then((cots) => setCotizaciones((m) => ({ ...m, [c.id]: cots })))
+        .catch(() => setCotizaciones((m) => ({ ...m, [c.id]: [] })))
     }
-    setExpandido(s)
+  }
+
+  const volverALista = () => {
+    setClienteAbiertoId(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const recargarCotizaciones = (clienteId: string) => {
@@ -255,15 +261,220 @@ ${t('clientes.email')}: ${c.email}`
     try {
       await resetPasswordCliente(c.id, nueva)
       setNuevasPass((m) => ({ ...m, [c.id]: nueva }))
-      setExpandido((s) => new Set(s).add(c.id))
       toast.success(t('clientes.passwordReseteada'))
     } catch {
       toast.error(t('clientes.errorActualizar'))
     }
   }
 
+  const clienteAbierto = clientes.find((c) => c.id === clienteAbiertoId) ?? null
+
+  const clientesFiltrados = (() => {
+    const texto = busqueda.trim().toLowerCase()
+    if (!texto) return clientes
+    return clientes.filter((c) =>
+      `${c.nombre} ${c.email} ${c.empresa ?? ''} ${c.pais ?? ''}`.toLowerCase().includes(texto),
+    )
+  })()
+
+  // ---------- PANTALLA 2: la ficha de un cliente ----------
+  if (clienteAbierto) {
+    const c = clienteAbierto
+    const cots = cotizaciones[c.id]
+    return (
+      <div className="flex flex-col gap-5">
+        <button
+          type="button"
+          onClick={volverALista}
+          className="flex items-center gap-2 self-start text-sm font-semibold"
+          style={{ color: 'var(--yuda-primary)' }}
+        >
+          <ArrowLeft size={16} /> {t('clientes.volverALista')}
+        </button>
+
+        {/* Quien es y que se puede hacer con el */}
+        <div className="card flex flex-col gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span
+                className="flex flex-shrink-0 items-center justify-center font-bold"
+                style={{ width: 44, height: 44, borderRadius: 999, fontSize: 18, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
+              >
+                {(c.nombre || '?').trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <h1 className="truncate" style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>
+                  {c.nombre}
+                </h1>
+                <p className="truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {[c.empresa, c.email, c.pais].filter(Boolean).join('  ')}
+                </p>
+              </div>
+            </div>
+            <span
+              className="rounded-full px-3 py-1 text-xs font-semibold"
+              style={
+                c.activo
+                  ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                  : { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }
+              }
+            >
+              {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${c.id}/cuenta`)}
+              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+              style={{ color: 'var(--yuda-primary)' }}
+            >
+              <Wallet size={16} /> {t('cuentas.verCuenta')}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleActivo(c)}
+              className="flex min-h-[42px] items-center rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+              style={{ color: c.activo ? 'var(--yuda-error)' : 'var(--yuda-success)' }}
+            >
+              {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
+            </button>
+            <button
+              type="button"
+              onClick={() => eliminar(c)}
+              className="flex min-h-[42px] items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
+              style={{ borderColor: '#FCA5A5', color: 'var(--yuda-error)' }}
+            >
+              <Trash2 size={16} /> {t('clientes.eliminar')}
+            </button>
+          </div>
+        </div>
+
+        {/* Como entra este cliente a su portal */}
+        <div className="card flex flex-col gap-3">
+          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            {t('clientes.accesoTitulo')}
+          </h2>
+          <dl className="grid gap-2 text-sm sm:grid-cols-[130px_1fr]">
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.portalLink')}</dt>
+            <dd className="break-all">
+              <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--yuda-primary)' }}>
+                {portalUrl}
+              </a>
+            </dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.email')}</dt>
+            <dd className="break-all" style={{ color: 'var(--yuda-accent)' }}>{c.email}</dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.password')}</dt>
+            <dd>
+              {nuevasPass[c.id] ? (
+                <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
+              ) : (
+                <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
+              )}
+            </dd>
+          </dl>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => resetear(c)}
+              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+              style={{ color: 'var(--yuda-primary)' }}
+            >
+              <KeyRound size={16} /> {t('clientes.resetPassword')}
+            </button>
+            <button
+              type="button"
+              onClick={() => copiarCredenciales(c)}
+              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+              style={{ color: 'var(--yuda-success)' }}
+            >
+              <Copy size={16} /> {t('clientes.copiar')}
+            </button>
+          </div>
+        </div>
+
+        {/* Sus cotizaciones */}
+        <div className="card flex flex-col gap-3">
+          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            {t('clientes.cotizacionesTitulo')}
+          </h2>
+
+          {cots === undefined ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('equipo.cargando')}</p>
+          ) : cots.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.sinCotizaciones')}</p>
+          ) : (
+            <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
+              {cots.map((s) => (
+                <div key={s.id} className="py-3 first:pt-0">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2">
+                        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
+                        <span
+                          className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                          style={
+                            s.enviada_cliente
+                              ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                              : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
+                          }
+                        >
+                          {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
+                        </span>
+                        {s.pedido_recibido_at && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                            style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                          >
+                            {t('clientes.pedidoRecibido')}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</p>
+                    </div>
+                    <div className="flex flex-shrink-0 flex-wrap items-center gap-1">
+                      <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="min-h-[40px] rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                        {t('clientes.verDetalle')}
+                      </button>
+                      <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center gap-1 rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                        {cotAbierta.has(s.id) ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                        {t('clientes.seguimiento')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => eliminarCotizacion(s, c.id)}
+                        title={t('clientes.eliminarCotizacion')}
+                        className="flex min-h-[40px] items-center rounded-lg px-3"
+                        style={{ color: 'var(--yuda-error)' }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {s.pedido_recibido_at && (
+                    <div className="mt-3">
+                      <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
+                    </div>
+                  )}
+                  {cotAbierta.has(s.id) && (
+                    <div className="mt-3">
+                      <SeguimientoEditor sesionId={s.id} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ---------- PANTALLA 1: la lista de clientes ----------
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{t('clientes.titulo')}</h1>
@@ -278,25 +489,6 @@ ${t('clientes.email')}: ${c.email}`
           style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
         >
           <UserPlus size={18} /> {t('clientes.nuevo')}
-        </button>
-      </div>
-
-      {/* Link del portal, siempre a mano para compartir con los clientes */}
-      <div className="card flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>{t('clientes.portalTitulo')}</p>
-          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: 'var(--yuda-primary)' }}>
-            {portalUrl}
-          </a>
-          <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.portalAyuda')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={copiarLink}
-          className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
-          style={{ color: 'var(--yuda-primary)' }}
-        >
-          {copiadoLink ? <Check size={16} /> : <Copy size={16} />} {copiadoLink ? t('clientes.copiado') : t('clientes.copiarLink')}
         </button>
       </div>
 
@@ -343,10 +535,25 @@ ${t('clientes.email')}: ${c.email}`
       )}
 
       {/* Lista de clientes */}
-      <div className="card">
-        <h2 className="mb-4 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
-          <Users size={18} /> {t('clientes.listaTitulo')}
-        </h2>
+      <div className="card flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
+            <Users size={18} /> {t('clientes.listaTitulo')}
+          </h2>
+          {clientes.length >= 6 && (
+            <div className="relative">
+              <Search size={16} className="absolute" style={{ left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--yuda-text-secondary)' }} />
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder={t('clientes.buscar')}
+                style={{ ...inputStyle, paddingLeft: 36 }}
+                className={inputClase}
+              />
+            </div>
+          )}
+        </div>
 
         {cargandoClientes ? (
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.cargando')}</p>
@@ -366,183 +573,65 @@ ${t('clientes.email')}: ${c.email}`
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('clientes.sinClientes')}
           </p>
+        ) : clientesFiltrados.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('clientes.sinResultados', { texto: busqueda })}
+          </p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {clientes.map((c) => {
-              const abierto = expandido.has(c.id)
-              const cots = cotizaciones[c.id]
-              return (
-                <div key={c.id} className="rounded-xl border border-gray-200">
-                  <div className="flex flex-wrap items-center justify-between gap-3 p-3">
-                    <button type="button" onClick={() => toggleCliente(c)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-                      {abierto ? <ChevronDown size={18} style={{ color: 'var(--yuda-text-secondary)' }} /> : <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)' }} />}
-                      <div className="min-w-0">
-                        <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                          {c.nombre}
-                          {c.empresa ? <span style={{ color: 'var(--yuda-text-secondary)' }}> · {c.empresa}</span> : null}
-                        </p>
-                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                          {c.email}
-                          {c.pais ? ` · ${c.pais}` : ''}
-                        </p>
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                        style={
-                          c.activo
-                            ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                            : { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }
-                        }
-                      >
-                        {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/clientes/${c.id}/cuenta`)}
-                        className="flex min-h-[40px] items-center gap-1 rounded-lg border border-gray-200 px-3 text-xs font-medium"
-                        style={{ color: 'var(--yuda-primary)' }}
-                      >
-                        <Wallet size={14} /> {t('cuentas.verCuenta')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleActivo(c)}
-                        className="flex min-h-[40px] items-center rounded-lg border border-gray-200 px-3 text-xs font-medium"
-                        style={{ color: c.activo ? 'var(--yuda-error)' : 'var(--yuda-success)' }}
-                      >
-                        {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => eliminar(c)}
-                        title={t('clientes.eliminar')}
-                        className="flex min-h-[40px] items-center gap-1 rounded-lg border px-3 text-xs font-medium"
-                        style={{ borderColor: '#FCA5A5', color: 'var(--yuda-error)' }}
-                      >
-                        <Trash2 size={14} /> {t('clientes.eliminar')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Cotizaciones del cliente + seguimiento */}
-                  {abierto && (
-                    <div className="border-t border-gray-100 p-3">
-                      {/* Acceso al portal de este cliente (para reenviar) */}
-                      <div className="mb-3 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)', backgroundColor: '#F9FAFB' }}>
-                        <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                          {t('clientes.accesoTitulo')}
-                        </p>
-                        <div className="grid gap-1 text-sm" style={{ color: 'var(--yuda-text)' }}>
-                          <p className="break-all">
-                            <strong>{t('clientes.portalLink')}:</strong>{' '}
-                            <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--yuda-primary)' }}>
-                              {portalUrl}
-                            </a>
-                          </p>
-                          <p className="break-all">
-                            <strong>{t('clientes.email')}:</strong> {c.email}
-                          </p>
-                          <p>
-                            <strong>{t('clientes.password')}:</strong>{' '}
-                            {nuevasPass[c.id] ? (
-                              <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
-                            ) : (
-                              <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => resetear(c)}
-                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
-                            style={{ color: 'var(--yuda-primary)' }}
-                          >
-                            <KeyRound size={14} /> {t('clientes.resetPassword')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => copiarCredenciales(c)}
-                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium"
-                            style={{ color: 'var(--yuda-success)' }}
-                          >
-                            <Copy size={14} /> {t('clientes.copiar')}
-                          </button>
-                        </div>
-                      </div>
-
-                      {cots === undefined ? (
-                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('equipo.cargando')}</p>
-                      ) : cots.length === 0 ? (
-                        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.sinCotizaciones')}</p>
-                      ) : (
-                        <div className="flex flex-col gap-2">
-                          {cots.map((s) => (
-                            <div key={s.id} className="rounded-lg" style={{ backgroundColor: '#F9FAFB' }}>
-                              <div className="flex flex-wrap items-center justify-between gap-2 p-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <FileText size={15} style={{ color: 'var(--yuda-text-secondary)' }} />
-                                  <span className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
-                                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</span>
-                                  <span
-                                    className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                    style={
-                                      s.enviada_cliente
-                                        ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                                        : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
-                                    }
-                                  >
-                                    {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
-                                  </span>
-                                  {s.pedido_recibido_at && (
-                                    <span
-                                      className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
-                                    >
-                                      {t('clientes.pedidoRecibido')}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-shrink-0 items-center gap-1">
-                                  <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                                    {t('clientes.verDetalle')}
-                                  </button>
-                                  <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                                    {t('clientes.seguimiento')}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => eliminarCotizacion(s, c.id)}
-                                    className="flex min-h-[40px] items-center rounded-lg px-3 text-sm font-semibold"
-                                    style={{ color: 'var(--yuda-error)' }}
-                                  >
-                                    {t('clientes.eliminarCotizacion')}
-                                  </button>
-                                </div>
-                              </div>
-                              {s.pedido_recibido_at && (
-                                <div className="px-2 pb-2">
-                                  <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
-                                </div>
-                              )}
-                              {cotAbierta.has(s.id) && (
-                                <div className="border-t border-gray-100 p-3">
-                                  <SeguimientoEditor sesionId={s.id} />
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+          <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
+            {clientesFiltrados.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => abrirCliente(c)}
+                className="flex w-full items-center gap-3 py-3 text-left transition-colors first:pt-0 hover:bg-[var(--yuda-primary-soft)]"
+              >
+                <span
+                  className="flex flex-shrink-0 items-center justify-center font-bold"
+                  style={{ width: 38, height: 38, borderRadius: 999, fontSize: 15, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
+                >
+                  {(c.nombre || '?').trim().charAt(0).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
+                    {c.nombre}
+                  </span>
+                  <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {[c.empresa, c.email].filter(Boolean).join('  ')}
+                  </span>
+                </span>
+                {!c.activo && (
+                  <span
+                    className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
+                  >
+                    {t('clientes.inactivo')}
+                  </span>
+                )}
+                <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
+              </button>
+            ))}
           </div>
         )}
+      </div>
+
+      {/* Link del portal, al final: es informacion de referencia, no la tarea principal */}
+      <div className="card flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>{t('clientes.portalTitulo')}</p>
+          <a href={portalUrl} target="_blank" rel="noreferrer" className="break-all text-sm" style={{ color: 'var(--yuda-primary)' }}>
+            {portalUrl}
+          </a>
+          <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.portalAyuda')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={copiarLink}
+          className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium"
+          style={{ color: 'var(--yuda-primary)' }}
+        >
+          {copiadoLink ? <Check size={16} /> : <Copy size={16} />} {copiadoLink ? t('clientes.copiado') : t('clientes.copiarLink')}
+        </button>
       </div>
     </div>
   )
