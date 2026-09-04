@@ -7,6 +7,8 @@ from app.core.config import settings
 from app.database import SessionLocal
 from app.models.lote import LoteItem, LoteOCR
 from app.services.ocr_service import es_error_sistema, extraer_datos_etiqueta
+from app.services.recorte_service import recortar_producto
+from app.services.storage_service import subir_foto
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,35 @@ CONCURRENCIA = settings.OCR_CONCURRENCIA_LOTE
 # una vendedora reintentó tres veces —268 fotos— porque la app no le dijo que el
 # problema era nuestro.
 FALLOS_SEGUIDOS_PARA_CORTAR = 3
+
+
+async def adjuntar_recorte(datos: dict | None, imagen_bytes: bytes) -> None:
+    """Recorta el producto y guarda el recorte en `datos["foto_recorte_url"]`.
+
+    Es la foto que despues va a los documentos del cliente y del proveedor. Si el
+    modelo no marco un recuadro usable, o el recorte o la subida fallan, se deja
+    en None y los documentos usan la foto completa como siempre: nunca se pierde
+    el producto por no haber podido recortarlo.
+    """
+    if not datos:
+        return
+    recuadro = datos.get("recuadro_producto")
+    if not recuadro:
+        return
+    recorte = recortar_producto(imagen_bytes, recuadro)
+    if recorte is None:
+        return
+    try:
+        import uuid
+
+        loop = asyncio.get_event_loop()
+        nombre = f"{uuid.uuid4()}.jpg"
+        url = await loop.run_in_executor(
+            None, lambda: subir_foto(recorte, nombre, "image/jpeg")
+        )
+        datos["foto_recorte_url"] = url
+    except Exception:
+        logger.exception("No se pudo guardar el recorte del producto")
 
 
 def _media_type(url: str) -> str:
@@ -42,6 +73,7 @@ async def ocr_de_url(foto_url: str) -> tuple[dict | None, str]:
             resp = await cli.get(foto_url, timeout=20)
         if resp.status_code == 200:
             datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url))
+            await adjuntar_recorte(datos, resp.content)
             return datos, "ok"
     except Exception:
         logger.exception("Error reanalizando foto %s", foto_url)
@@ -52,6 +84,7 @@ async def ocr_de_bytes(imagen_bytes: bytes, media_type: str) -> tuple[dict | Non
     """Corre el OCR sobre una imagen ya en memoria. Devuelve (datos, estado)."""
     try:
         datos = await extraer_datos_etiqueta(imagen_bytes, media_type)
+        await adjuntar_recorte(datos, imagen_bytes)
         return datos, "ok"
     except Exception:
         logger.exception("Error analizando imagen subida al lote")
@@ -95,6 +128,8 @@ async def procesar_lote(lote_id: str) -> None:
                     # Un fallo del sistema NO es una foto "procesada": marcarla 'ok'
                     # hacia la vendedora como "no legible" es echarle la culpa a ella.
                     estado = "error" if es_error_sistema(datos) else "ok"
+                    if estado == "ok":
+                        await adjuntar_recorte(datos, resp.content)
             except Exception:
                 logger.exception("Error procesando ítem de lote %s", item_id)
 

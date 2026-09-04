@@ -1,13 +1,13 @@
 import asyncio
-import os
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
+import httpx
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_roles, get_current_user
-from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.contenedor import Contenedor
@@ -24,6 +24,7 @@ from app.schemas.packing import (
     ItemCreate,
     ItemResponse,
     ItemUpdate,
+    RecorteRequest,
     ReordenarItem,
     SesionCreate,
     SesionResponse,
@@ -45,14 +46,12 @@ from app.services.borrado_service import (
 from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
+from app.services.recorte_service import recortar_producto, recuadro_valido
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_foto
 
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
 router = APIRouter(tags=["packing"])
 
-# Tipos de imagen permitidos para la foto final del producto
-_TIPOS_FOTO = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-_MAX_FOTO_BYTES = 25 * 1024 * 1024
 
 
 def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse:
@@ -290,18 +289,19 @@ def actualizar_item(
     return _construir_item_response(item, sesion.tipo_cambio_usd)
 
 
-@router.post("/sesiones/{sesion_id}/items/{item_id}/foto-final", response_model=ItemResponse)
-async def subir_foto_final(
+@router.post("/sesiones/{sesion_id}/items/{item_id}/recorte", response_model=ItemResponse)
+async def guardar_recorte(
     sesion_id: str,
     item_id: str,
-    foto: UploadFile,
+    datos: RecorteRequest,
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ItemResponse:
-    """Sube/reemplaza la foto FINAL (limpia) de un producto.
+    """Recorta a mano la foto de un producto, cuando el recorte automatico salio mal.
 
-    Esta foto solo se muestra en los documentos del cliente y del proveedor;
-    el OCR sigue usando la foto de datos (foto_url). Solo admin y vendedora.
+    Recibe el recuadro que dibujo la vendedora sobre la foto original y hace el
+    mismo recorte que hace el OCR por su cuenta. Con `recuadro` en null se vuelve
+    a la foto completa. Solo admin y vendedora.
     """
     exigir_roles(usuario, "admin", "vendedora")
     sesion = _obtener_sesion(db, sesion_id, usuario)
@@ -314,25 +314,38 @@ async def subir_foto_final(
     if item is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
 
-    if foto.content_type not in _TIPOS_FOTO:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Solo se permiten imágenes JPG, PNG o WEBP"
-        )
-    imagen_bytes = await foto.read()
-    if len(imagen_bytes) > _MAX_FOTO_BYTES:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La imagen no debe superar 25MB")
-    # Validar el contenido REAL (magic bytes), no solo el content-type declarado
-    tipo_real = detectar_tipo_imagen(imagen_bytes)
-    if tipo_real not in _TIPOS_FOTO:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "El archivo no es una imagen JPG, PNG o WEBP válida"
-        )
+    # Sin recuadro: se descarta el recorte y los documentos usan la foto entera.
+    if datos.recuadro is None:
+        item.foto_final_url = None
+        db.commit()
+        db.refresh(item)
+        return _construir_item_response(item, sesion.tipo_cambio_usd)
 
-    extension = os.path.splitext(foto.filename or "")[1] or _TIPOS_FOTO[tipo_real]
-    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    recuadro = recuadro_valido(datos.recuadro)
+    if recuadro is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El recorte no es válido")
+    if not item.foto_url:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El producto no tiene foto para recortar")
+
     loop = asyncio.get_event_loop()
+    try:
+        async with httpx.AsyncClient() as cli:
+            resp = await cli.get(item.foto_url, timeout=20)
+        if resp.status_code != 200:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+        original = resp.content
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+
+    recorte = recortar_producto(original, recuadro)
+    if recorte is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
+
+    nombre_archivo = f"{uuid.uuid4()}.jpg"
     url = await loop.run_in_executor(
-        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+        None, lambda: subir_foto(recorte, nombre_archivo, "image/jpeg")
     )
 
     item.foto_final_url = url

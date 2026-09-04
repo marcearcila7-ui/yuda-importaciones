@@ -7,7 +7,11 @@ import {
   type ColumnDef,
 } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
+import { Crop } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
+import { guardarRecorte } from '../../api/packing'
+import RecorteFoto from '../RecorteFoto/RecorteFoto'
 import type { ItemResponse } from '../../types/packing'
 
 interface PackingListTableProps {
@@ -139,20 +143,42 @@ function CeldaEditable({
 }
 
 // Celda de solo lectura
-function CeldaSoloLectura({ item, meta }: { item: ItemResponse; meta: ColMeta }) {
+function CeldaSoloLectura({
+  item,
+  meta,
+  onRecortar,
+}: {
+  item: ItemResponse
+  meta: ColMeta
+  onRecortar?: (item: ItemResponse) => void
+}) {
+  const { t } = useTranslation()
   if (meta.kind === 'unit') {
     return <div className="px-1 py-1 text-center text-gray-600">PCS</div>
   }
   if (meta.kind === 'photo') {
-    return item.foto_url ? (
-      <img
-        src={item.foto_url}
-        alt="foto"
+    // Se muestra la foto que de verdad sale en los documentos: el recorte al
+    // producto si existe, y si no la foto entera con el cartel.
+    const foto = item.foto_final_url || item.foto_url
+    if (!foto) {
+      return <div style={{ width: 40, height: 40 }} className="rounded bg-gray-200" />
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => onRecortar?.(item)}
+        title={t('recorte.tocaAjustar')}
+        className="relative rounded"
         style={{ width: 40, height: 40 }}
-        className="rounded object-cover"
-      />
-    ) : (
-      <div style={{ width: 40, height: 40 }} className="rounded bg-gray-200" />
+      >
+        <img src={foto} alt="foto" className="h-full w-full rounded object-cover" />
+        <span
+          className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
+          style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
+        >
+          <Crop size={9} color="#fff" />
+        </span>
+      </button>
     )
   }
   const valor = item[meta.campo as keyof ItemResponse]
@@ -258,6 +284,26 @@ function TarjetaMovil({
 
 function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   const { t } = useTranslation()
+  const sesionActual = usePackingStore((s) => s.sesionActual)
+  // Producto cuyo recorte se esta ajustando a mano (null = ninguno)
+  const [itemRecorte, setItemRecorte] = useState<ItemResponse | null>(null)
+  const [guardandoRecorte, setGuardandoRecorte] = useState(false)
+
+  const aplicarRecorte = async (recuadro: number[] | null) => {
+    if (!itemRecorte || !sesionActual) return
+    setGuardandoRecorte(true)
+    try {
+      await guardarRecorte(sesionActual.id, itemRecorte.id, recuadro)
+      toast.success(t('recorte.guardado'))
+      setItemRecorte(null)
+      onItemActualizado()
+    } catch {
+      toast.error(t('recorte.error'))
+    } finally {
+      setGuardandoRecorte(false)
+    }
+  }
+
   // Construye las definiciones de columna para TanStack Table
   const columnas: ColumnDef<ItemResponse>[] = COLUMNAS.map((col) => ({
     id: col.id,
@@ -274,7 +320,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           />
         )
       }
-      return <CeldaSoloLectura item={row.original} meta={meta} />
+      return <CeldaSoloLectura item={row.original} meta={meta} onRecortar={setItemRecorte} />
     },
   }))
 
@@ -394,6 +440,15 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
         </tfoot>
       </table>
       </div>
+
+      {itemRecorte?.foto_url && (
+        <RecorteFoto
+          fotoUrl={itemRecorte.foto_url}
+          guardando={guardandoRecorte}
+          onGuardar={aplicarRecorte}
+          onCerrar={() => setItemRecorte(null)}
+        />
+      )}
     </>
   )
 }

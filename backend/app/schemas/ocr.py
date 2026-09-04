@@ -21,6 +21,10 @@ class OCRResultado(BaseModel):
     cantidad_minima_tienda: Optional[int] = None
     descripcion_zh: Optional[str] = None
     notas: Optional[str] = None
+    # Recuadro del producto que marco el modelo, en fracciones de 0 a 1.
+    recuadro_producto: Optional[list[float]] = None
+    # Foto ya recortada al producto: es la que va a los documentos.
+    foto_recorte_url: Optional[str] = None
     confianza: str = "baja"
     # Calidad de la foto: si es False, la vendedora debe volver a tomarla
     legible: bool = True

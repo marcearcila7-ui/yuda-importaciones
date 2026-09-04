@@ -39,8 +39,6 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const sinDatos = items.filter(
     (i) => !i.price_rmb || !(i.descripcion_es || i.descripcion_en || i.descripcion_zh),
   ).length
-  // Foto 2 (final): opcional; las que no la tengan usan la de datos como respaldo.
-  const conFotoFinal = items.filter((i) => i.foto_final_url).length
   const sinProductos = items.length === 0
   // No se puede generar sin productos, sin la foto de datos en todos, ni sin confirmar.
   const bloqueado = sinProductos || sinFotoDatos > 0 || !confirmado
@@ -131,10 +129,6 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
                 <AlertTriangle size={15} /> {t('cotizacion.revisarDatos', { n: sinDatos })}
               </p>
             )}
-            {/* Foto final (opcional, con respaldo) */}
-            <p style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('cotizacion.fotoFinalResumen', { con: conFotoFinal, sin: items.length - conFotoFinal })}
-            </p>
             {/* Confirmación explícita */}
             <label className="mt-1 flex items-start gap-2" style={{ color: 'var(--yuda-accent)' }}>
               <input

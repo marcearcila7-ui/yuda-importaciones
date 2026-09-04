@@ -7,6 +7,7 @@ from anthropic import AsyncAnthropic
 
 from app.core.config import settings
 from app.core.ocr_limiter import slot_ocr
+from app.services.recorte_service import recuadro_valido
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,7 @@ El JSON debe tener exactamente estas claves:
   "cantidad_minima": número entero de la mínima cantidad de compra DE ESTE PRODUCTO o null,
   "cantidad_minima_tienda": número entero de la mínima de compra de TODA LA TIENDA (sumando todos sus productos) o null,
   "notas": "cualquier otra información relevante o null",
+  "recuadro_producto": [x0, y0, x1, y1] con el recuadro del PRODUCTO en la foto, en fracciones de 0 a 1 (0,0 = esquina superior izquierda; 1,1 = inferior derecha), o null,
   "confianza": "alta, media o baja según tu certeza en la extracción",
   "legible": true o false (booleano),
   "motivo_ilegible": "si legible es false, el problema en una o dos palabras (ej: 'borrosa', 'oscura', 'recortada'); si legible es true, null"
@@ -157,6 +159,13 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
 
 • Puede haber otros rótulos: "DESCRIPCION" (texto libre del producto; en inglés "DESCRIPTION" / "ITEM", en chino "品名", "名称", "产品"), "TAMAÑO"/medidas (ej "20x10x9"; en inglés "SIZE", en chino "尺寸", "规格"), "LOGO", colores/variantes (ej "PLATA/TIRA/CADENA"; en inglés "COLOR", en chino "颜色", "色"). Usa la descripción y los colores si ayudan, pero NO pongas las medidas en largo/ancho/alto.
 
+RECUADRO DEL PRODUCTO — además de leer los datos, marca dónde está EL PRODUCTO en la foto, para poder recortarlo y que en la cotización salga solo el producto y no el cartel.
+- recuadro_producto = [x0, y0, x1, y1] en fracciones de 0 a 1: x0/y0 es la esquina superior izquierda del recuadro y x1/y1 la inferior derecha. Ejemplo: un producto que ocupa la mitad derecha y la mitad de abajo de la foto sería [0.5, 0.5, 1.0, 1.0].
+- El recuadro debe contener el producto COMPLETO y dejar fuera todo lo demás: el cartel o tablero de datos, la tarjeta del proveedor, las manos, el piso, la mesa y los productos vecinos que no son el que se está cotizando.
+- Deja un poco de aire alrededor del producto, no lo cortes al ras.
+- Si hay varias unidades del MISMO producto juntas (un exhibidor, una pila), encuádralas todas.
+- Si el producto no se distingue, si ocupa prácticamente toda la foto, o si no estás seguro, devuelve null: es mejor no recortar que recortar mal.
+
 Reglas:
 - SIEMPRE identifica el producto y completa descripcion_es y descripcion_en mirando la foto, aunque el cartel no traiga descripción. Debe ser específica del producto que ves, no genérica.
 - material y uso: infiérelos de la imagen aunque no estén escritos; si no puedes deducirlo, null.
@@ -190,6 +199,9 @@ def _resultado_vacio(motivo: str = "no_procesada") -> dict:
         "cantidad_minima": None,
         "cantidad_minima_tienda": None,
         "notas": None,
+        "recuadro_producto": None,
+        # URL del recorte ya subido (lo completa el backend, no el modelo)
+        "foto_recorte_url": None,
         "confianza": "baja",
         # Si no se pudo procesar la foto, se considera no legible: la vendedora
         # deberá volver a tomarla.
@@ -353,6 +365,8 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # con un aviso falso de "hay dos mínimos".
     if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
         datos["cantidad_minima_tienda"] = None
+
+    datos["recuadro_producto"] = recuadro_valido(datos.get("recuadro_producto"))
 
     # confianza es obligatorio, nunca null
     if not datos.get("confianza"):

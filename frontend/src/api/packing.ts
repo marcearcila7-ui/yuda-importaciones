@@ -53,17 +53,18 @@ export async function eliminarItem(sesion_id: string, item_id: string): Promise<
 
 // Sube/reemplaza la foto FINAL (limpia) de un producto. Solo se usa en los
 // documentos del cliente y del proveedor; el OCR no la toca.
-export async function subirFotoFinal(
+// Recorta a mano la foto de un producto cuando el recorte automatico salio mal.
+// `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1; en null se vuelve a la
+// foto completa. El recorte lo hace el backend, con el mismo codigo que el automatico.
+export async function guardarRecorte(
   sesion_id: string,
   item_id: string,
-  archivo: File,
+  recuadro: number[] | null,
 ): Promise<ItemResponse> {
-  const form = new FormData()
-  form.append('foto', archivo)
   const { data } = await apiClient.post<ItemResponse>(
-    `/sesiones/${sesion_id}/items/${item_id}/foto-final`,
-    form,
-    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: TIMEOUT_SUBIDA },
+    `/sesiones/${sesion_id}/items/${item_id}/recorte`,
+    { recuadro },
+    { timeout: TIMEOUT_SUBIDA },
   )
   return data
 }

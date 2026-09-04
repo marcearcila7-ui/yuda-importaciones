@@ -210,7 +210,6 @@
       "supplier_nombre": "PROVEEDOR",
       "supplier_numero": "N° STAND",
       "foto_url": "FOTO",
-      "foto_final": "FOTO FINAL",
       "referencia": "REF. CLIENTE",
       "item_no": "N° ÍTEM",
       "descripcion_es": "ESPAÑOL",
@@ -237,9 +236,7 @@
     },
     "fFotoFinal": "Foto final",
     "fotoFinalSubir": "Subir foto final",
-    "fotoFinalCambiar": "Cambiar foto final",
-    "fotoFinalSubida": "Foto final actualizada",
-    "fotoFinalError": "No se pudo subir la foto final"
+    "fotoFinalCambiar": "Cambiar foto final"
   },
   "pedidos": {
     "generar": "Generar Pedidos",
@@ -399,7 +396,6 @@
     "faltaFotoDatos": "{{n}} sin la foto del producto con datos. Cárgala antes de generar.",
     "fotoDatosOk": "Todos los productos tienen su foto de datos (la que lee la IA).",
     "revisarDatos": "{{n}} productos sin precio o descripción. Revisa que se hayan extraído bien.",
-    "fotoFinalResumen": "Foto final: {{con}} cargadas · {{sin}} usarán la foto de datos como respaldo.",
     "confirmCheck": "Confirmo que la información se extrajo correctamente y que las fotos están cargadas según su propósito."
   },
   "lote": {
@@ -808,12 +804,16 @@
     "confirmar": "Confirmo que mis fotos cumplen",
     "cancelar": "Todavía no"
   },
-  "fotosProveedor": {
-    "titulo": "Fotos para el proveedor",
-    "contador": "{{n}} de {{total}} con foto final",
-    "ayuda": "Esta es la foto que verá el proveedor en el Excel y el PDF del pedido: es la referencia de lo que se pidió si algo llega mal. Sube la foto limpia del producto (sin el cartel de datos). Si no subes ninguna, se usa la foto con la que cargaste el producto.",
-    "conFotoFinal": "Tiene foto final",
-    "usaraFotoCarga": "Se usará la foto de la carga",
-    "subiendo": "Subiendo…"
+  "recorte": {
+    "titulo": "Ajustar el recorte de la foto",
+    "ayuda": "Esta es la foto original. Arrastra sobre el producto para marcar la parte que quieres que salga en la cotización y en el pedido al proveedor.",
+    "guardar": "Guardar recorte",
+    "guardando": "Guardando...",
+    "cancelar": "Cancelar",
+    "fotoCompleta": "Usar la foto completa",
+    "muyChico": "El recuadro es muy pequeño. Marca un área más grande sobre el producto.",
+    "guardado": "Recorte guardado",
+    "error": "No se pudo guardar el recorte",
+    "tocaAjustar": "Toca para ajustar el recorte"
   }
 }

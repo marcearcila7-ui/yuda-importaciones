@@ -235,6 +235,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         supplier_nombre: d.supplier_nombre ?? undefined,
         supplier_numero: d.supplier_numero ?? undefined,
         foto_url: r.foto_url,
+        // El recorte automatico al producto: es lo que se incrusta en los
+        // documentos. Si no se pudo recortar, queda vacio y se usa la foto entera.
+        foto_final_url: r.datos.foto_recorte_url ?? undefined,
         descripcion_es: d.descripcion_es ?? undefined,
         descripcion_en: d.descripcion_en ?? undefined,
         descripcion_zh: d.descripcion_zh ?? undefined,

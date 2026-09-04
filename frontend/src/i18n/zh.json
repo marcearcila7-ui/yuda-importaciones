@@ -210,7 +210,6 @@
       "supplier_nombre": "供应商",
       "supplier_numero": "摊位号",
       "foto_url": "照片",
-      "foto_final": "成品图",
       "referencia": "客户编号",
       "item_no": "货号",
       "descripcion_es": "西班牙语",
@@ -237,9 +236,7 @@
     },
     "fFotoFinal": "成品图",
     "fotoFinalSubir": "上传成品图",
-    "fotoFinalCambiar": "更换成品图",
-    "fotoFinalSubida": "成品图已更新",
-    "fotoFinalError": "无法上传成品图"
+    "fotoFinalCambiar": "更换成品图"
   },
   "pedidos": {
     "generar": "生成订单",
@@ -399,7 +396,6 @@
     "faltaFotoDatos": "{{n}} 件缺少带数据的产品照片。生成前请先上传。",
     "fotoDatosOk": "所有产品都有数据照片（AI 读取用）。",
     "revisarDatos": "{{n}} 件缺少价格或描述。请检查提取结果。",
-    "fotoFinalResumen": "成品图：已上传 {{con}} 件 · {{sin}} 件将使用数据照片作为备用。",
     "confirmCheck": "我确认信息已正确提取，且两张照片均按用途上传。"
   },
   "lote": {
@@ -808,12 +804,16 @@
     "confirmar": "我确认我的照片符合要求",
     "cancelar": "还没有"
   },
-  "fotosProveedor": {
-    "titulo": "给供应商的产品照片",
-    "contador": "{{total}} 个产品中有 {{n}} 个已上传成品照",
-    "ayuda": "这是供应商在订单 Excel 和 PDF 中看到的照片：如果收到的货有问题，它就是下单内容的凭据。请上传干净的产品照片（不带写数据的白板）。若不上传，则使用录入产品时的照片。",
-    "conFotoFinal": "已有成品照",
-    "usaraFotoCarga": "将使用录入时的照片",
-    "subiendo": "上传中…"
+  "recorte": {
+    "titulo": "调整照片裁剪",
+    "ayuda": "这是原始照片。在产品上拖动，标出您希望出现在报价单和供应商订单中的部分。",
+    "guardar": "保存裁剪",
+    "guardando": "保存中...",
+    "cancelar": "取消",
+    "fotoCompleta": "使用完整照片",
+    "muyChico": "框选区域太小。请在产品上标出更大的区域。",
+    "guardado": "裁剪已保存",
+    "error": "无法保存裁剪",
+    "tocaAjustar": "点击调整裁剪"
   }
 }

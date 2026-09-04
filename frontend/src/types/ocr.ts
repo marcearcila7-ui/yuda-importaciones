@@ -12,6 +12,10 @@ export interface OCRResultado {
   ancho_cm: number | null
   alto_cm: number | null
   cbm_directo: number | null
+  // Recuadro del producto que marco el modelo, en fracciones de 0 a 1.
+  recuadro_producto?: number[] | null
+  // Foto ya recortada al producto: es la que va a los documentos.
+  foto_recorte_url?: string | null
   colores: string | null
   cantidad_minima: number | null
   // Minimo de compra de TODA la tienda. Solo llega cuando el cartel trae los dos

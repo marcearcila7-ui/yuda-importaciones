@@ -32,6 +32,16 @@ class ItemCreate(BaseModel):
     orden: int = 0
 
 
+class RecorteRequest(BaseModel):
+    """Recuadro para recortar a mano la foto de un producto.
+
+    [x0, y0, x1, y1] en fracciones de 0 a 1. En null se descarta el recorte y los
+    documentos vuelven a usar la foto completa.
+    """
+
+    recuadro: Optional[list[float]] = None
+
+
 class ItemUpdate(BaseModel):
     """Campos opcionales para actualización parcial (PATCH) de un ítem"""
 
