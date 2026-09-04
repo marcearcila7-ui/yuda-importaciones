@@ -290,7 +290,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <BarraPasos pasos={PASOS} activo={pasoActual} />
+      <BarraPasos pasos={PASOS} activo={pasoActual} compacta />
 
       <p
         className="rounded-lg px-3 py-2 text-sm"

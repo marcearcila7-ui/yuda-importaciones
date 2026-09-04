@@ -277,8 +277,9 @@ function Dashboard() {
       {/* Métricas por vendedora (solo Marcela / admin) */}
       {esAdmin && <MetricasVendedoras />}
 
-      {/* Crear / abrir cotización (solo staff de ventas) */}
-      {esStaffVentas && <SesionSelector />}
+      {/* Crear / abrir cotización. Con una ya abierta desaparece: manda el asistente,
+          y dejarlo arriba era volver a mostrar dos etapas en la misma pantalla. */}
+      {esStaffVentas && !sesionActual && <SesionSelector />}
 
       {/* Cotización activa */}
       {sesionActual && (

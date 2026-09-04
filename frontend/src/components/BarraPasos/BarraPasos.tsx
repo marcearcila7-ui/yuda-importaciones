@@ -8,19 +8,24 @@ import { Check } from 'lucide-react'
 // `pasos` son claves de i18n; `activo` es el numero de paso (empieza en 1).
 // Con `onIr` la barra tambien sirve para moverse: se puede tocar cualquier paso
 // hasta `maxAlcanzable`, para volver atras sin perder de vista donde se estaba.
+// `compacta` es para una barra anidada dentro de un paso: mas chica y sin
+// numeros, para que se lea como sub-paso y no compita con la barra principal.
 function BarraPasos({
   pasos,
   activo,
   onIr,
   maxAlcanzable,
+  compacta,
 }: {
   pasos: readonly string[]
   activo: number
   onIr?: (paso: number) => void
   maxAlcanzable?: number
+  compacta?: boolean
 }) {
   const { t } = useTranslation()
   const tope = maxAlcanzable ?? pasos.length
+  const diametro = compacta ? 16 : 26
   return (
     <ol className="flex items-start">
       {pasos.map((clave, i) => {
@@ -48,8 +53,8 @@ function BarraPasos({
                 className="flex flex-shrink-0 items-center justify-center font-bold"
                 style={{
                   cursor: navegable ? 'pointer' : 'default',
-                  width: 26,
-                  height: 26,
+                  width: diametro,
+                  height: diametro,
                   borderRadius: 999,
                   fontSize: 12,
                   border: `2px solid ${color}`,
@@ -57,7 +62,7 @@ function BarraPasos({
                   color: hecho || actual ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
                 }}
               >
-                {hecho ? <Check size={14} /> : numero}
+                {compacta ? null : hecho ? <Check size={14} /> : numero}
               </button>
               <span
                 className="h-0.5 flex-1"
@@ -67,7 +72,7 @@ function BarraPasos({
             <span
               className="px-1"
               style={{
-                fontSize: 12,
+                fontSize: compacta ? 11 : 12,
                 fontWeight: actual ? 700 : 500,
                 color: actual ? 'var(--yuda-accent)' : 'var(--yuda-text-secondary)',
               }}
