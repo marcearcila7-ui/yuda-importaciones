@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Download, FileText, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
+import { useAuthStore } from '../store/authStore'
 import {
   actualizarMovimiento,
   crearMovimiento,
@@ -89,6 +90,13 @@ function CuentaCliente() {
   const setCampo = (k: keyof FormMov, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const [descargando, setDescargando] = useState<'excel' | 'pdf' | null>(null)
+
+  // La contabilidad la llevan Marcela y la contadora. La vendedora entra a
+  // consultar y a descargar la cuenta de su cliente, pero no registra movimientos:
+  // el backend se lo rechaza, asi que mostrarle el formulario era ofrecerle un
+  // boton que siempre iba a fallar.
+  const rol = useAuthStore((e) => e.usuario?.rol)
+  const puedeEditar = rol === 'admin' || rol === 'contadora'
 
   const descargar = async (tipo: 'excel' | 'pdf') => {
     if (!clienteId) return
@@ -255,7 +263,7 @@ function CuentaCliente() {
             <FileText size={16} />
             {descargando === 'pdf' ? t('cuenta.descargando') : t('cuenta.descargarPdf')}
           </button>
-          {!mostrarForm && (
+          {puedeEditar && !mostrarForm && (
             <button
               type="button"
               onClick={() => abrirNuevo()}
@@ -267,6 +275,15 @@ function CuentaCliente() {
           )}
         </div>
       </div>
+
+      {!puedeEditar && (
+        <p
+          className="rounded-lg px-3 py-2 text-sm"
+          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-accent)' }}
+        >
+          {t('cuenta.soloLectura')}
+        </p>
+      )}
 
       {/* Saldo pendiente del cliente por moneda (no se suman monedas distintas) */}
       {cuenta.totales_por_moneda.length > 0 && (
@@ -284,7 +301,7 @@ function CuentaCliente() {
       )}
 
       {/* Formulario de alta/edición de movimiento */}
-      {mostrarForm && (
+      {puedeEditar && mostrarForm && (
         <div className="card rounded-lg border p-3" style={{ borderColor: 'var(--yuda-primary)' }}>
           <h3 className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-text)' }}>
             {editandoId ? t('cuenta.editar') : t('cuenta.nuevo')}
@@ -423,10 +440,12 @@ function CuentaCliente() {
                       <td className="px-3 py-2 text-right">{fmt(m.abono)}</td>
                       <td className="px-3 py-2 text-right font-semibold">{fmt(m.saldo)}</td>
                       <td className="px-3 py-2">
-                        <div className="flex justify-end gap-2">
-                          <button type="button" onClick={() => abrirEdicion(m)} aria-label={t('cuenta.editar')} style={{ color: 'var(--yuda-primary)' }}><Pencil size={16} /></button>
-                          <button type="button" onClick={() => borrar(m)} aria-label={t('cuenta.eliminar')} style={{ color: 'var(--yuda-error)' }}><Trash2 size={16} /></button>
-                        </div>
+                        {puedeEditar && (
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => abrirEdicion(m)} aria-label={t('cuenta.editar')} style={{ color: 'var(--yuda-primary)' }}><Pencil size={16} /></button>
+                            <button type="button" onClick={() => borrar(m)} aria-label={t('cuenta.eliminar')} style={{ color: 'var(--yuda-error)' }}><Trash2 size={16} /></button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

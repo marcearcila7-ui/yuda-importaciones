@@ -749,7 +749,8 @@
     "descargarExcel": "Download account (Excel)",
     "descargarPdf": "Download account (PDF)",
     "descargando": "Generating...",
-    "errorDescargar": "The account statement could not be generated"
+    "errorDescargar": "The account statement could not be generated",
+    "soloLectura": "You can view and download this account. Registering deposits and charges is done by Marcela and the accountant."
   },
   "cuentas": {
     "titulo": "Client accounts",

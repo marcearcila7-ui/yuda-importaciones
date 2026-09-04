@@ -749,7 +749,8 @@
     "descargarExcel": "下载对账单 (Excel)",
     "descargarPdf": "下载对账单 (PDF)",
     "descargando": "生成中...",
-    "errorDescargar": "无法生成对账单"
+    "errorDescargar": "无法生成对账单",
+    "soloLectura": "您可以查看和下载此对账单。登记款项由 Marcela 和会计负责。"
   },
   "cuentas": {
     "titulo": "客户账户",

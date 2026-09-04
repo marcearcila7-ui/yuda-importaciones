@@ -749,7 +749,8 @@
     "descargarExcel": "Descargar cuenta (Excel)",
     "descargarPdf": "Descargar cuenta (PDF)",
     "descargando": "Generando...",
-    "errorDescargar": "No se pudo generar el estado de cuenta"
+    "errorDescargar": "No se pudo generar el estado de cuenta",
+    "soloLectura": "Puedes consultar y descargar esta cuenta. Registrar abonos y cargos lo hacen Marcela y la contadora."
   },
   "cuentas": {
     "titulo": "Cuentas de clientes",
