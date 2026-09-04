@@ -129,7 +129,8 @@
     "pasoSiguiente": "下一步",
     "pasoTerminar": "完成",
     "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。",
-    "pasoFotos": "照片"
+    "pasoFotos": "照片",
+    "ocultarCotizador": "隐藏"
   },
   "ocr": {
     "titulo": "上传标签照片",
@@ -381,7 +382,8 @@
     "vendedora": "销售员",
     "cotizaciones": "报价数",
     "totalGeneral": "总计",
-    "sinVendedoras": "尚未注册销售员"
+    "sinVendedoras": "尚未注册销售员",
+    "esteMes": "本月"
   },
   "cotizacion": {
     "titulo": "导出客户报价单",

@@ -129,7 +129,8 @@
     "pasoSiguiente": "Next",
     "pasoTerminar": "Finish",
     "avisoSinProductosAvanzar": "Add at least one product to continue.",
-    "pasoFotos": "Photos"
+    "pasoFotos": "Photos",
+    "ocultarCotizador": "Hide"
   },
   "ocr": {
     "titulo": "Upload label photo",
@@ -381,7 +382,8 @@
     "vendedora": "Salesperson",
     "cotizaciones": "Quotations",
     "totalGeneral": "Grand total",
-    "sinVendedoras": "No salespeople registered yet"
+    "sinVendedoras": "No salespeople registered yet",
+    "esteMes": "This month"
   },
   "cotizacion": {
     "titulo": "Export quotation for the client",

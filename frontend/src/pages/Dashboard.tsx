@@ -4,14 +4,13 @@ import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { ArrowLeft, ArrowRight, Check, Coins, DollarSign, Download, FileText, Images, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Download, FileText, Images, ShoppingBag, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
 import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
-import MetricCard from '../components/MetricCard'
 import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
@@ -50,12 +49,22 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>{titulo}</h1>
-        {/* La fecha en mobile se muestra en el saludo personalizado */}
-        <p className="hidden text-sm sm:block" style={{ color: 'var(--yuda-text-secondary)' }}>
+        <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {fechaCap}
         </p>
       </div>
       {accesorio}
+    </div>
+  )
+}
+
+// Cifra del mes, en texto y sin tarjeta. Antes cada una vivia en su propia
+// tarjeta blanca con icono, y seis tarjetas seguidas tapaban lo importante.
+function DatoDelMes({ etiqueta, valor }: { etiqueta: string; valor: string | number }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>{valor}</span>
+      <span className="text-sm leading-tight" style={{ color: 'var(--yuda-text-secondary)' }}>{etiqueta}</span>
     </div>
   )
 }
@@ -87,7 +96,7 @@ function GroupHeading({ texto }: { texto: string }) {
 
 function Dashboard() {
   const location = useLocation()
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { usuario } = useAuthStore()
   const {
     sesionActual,
@@ -102,6 +111,8 @@ function Dashboard() {
   // Pantalla del asistente de cotización en la que está parada la vendedora.
   // Cada paso es una pantalla propia: se avanza y se vuelve, nunca se ve todo junto.
   const [pasoVista, setPasoVista] = useState(1)
+  // Marcela abre el cotizador solo cuando lo necesita
+  const [mostrarCotizador, setMostrarCotizador] = useState(false)
   // Sesión para la que ya confirmaron la advertencia de fotos (se reinicia en cada
   // carga y al abrir otra cotización → la alerta vuelve a salir cada vez).
   const [confirmadoParaSesion, setConfirmadoParaSesion] = useState<string | null>(null)
@@ -222,22 +233,12 @@ function Dashboard() {
 
   const fmt = (n: number) => n.toLocaleString('es-ES')
 
-  // Fecha actual localizada (para el saludo mobile)
-  const saludoFecha = (() => {
-    const f = new Date().toLocaleDateString(LOCALES[i18n.language] || 'es-ES', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
-    return f.charAt(0).toUpperCase() + f.slice(1)
-  })()
-
   return (
     <div className="flex flex-col gap-6">
-      {esAdmin && <PanelVentas />}
+      {/* Encabezado. Para Marcela el saludo, que entra a ver como va el negocio;
+          para la vendedora el nombre de la tarea, que entra a cotizar. */}
       <PageHeader
-        titulo={t('dashboard.titulo')}
+        titulo={esAdmin && usuario ? t('dashboard.saludo', { nombre: usuario.nombre }) : t('dashboard.titulo')}
         accesorio={
           sesionActual ? (
             <span
@@ -250,36 +251,63 @@ function Dashboard() {
         }
       />
 
-      {/* Saludo personalizado: solo mobile */}
-      {usuario && (
-        <div className="sm:hidden">
-          <h2 style={{ fontWeight: 700, fontSize: 20, color: 'var(--yuda-accent)' }}>
-            {t('dashboard.saludo', { nombre: usuario.nombre })}
-          </h2>
-          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-            {saludoFecha}
-          </p>
-        </div>
-      )}
+      {/* Lo primero para Marcela: como va el negocio en el periodo que elija */}
+      {esAdmin && <PanelVentas />}
 
-      {/* Métricas del mes (solo Marcela / admin) */}
+      {/* Las cifras del mes, en una sola tira de texto en vez de seis tarjetas */}
       {esAdmin && metricas && (
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-          <MetricCard titulo={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} icono={<ShoppingBag size={20} />} color="var(--yuda-primary)" />
-          <MetricCard titulo={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
-          <MetricCard titulo={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} icono={<DollarSign size={20} />} color="var(--yuda-success)" />
-          <MetricCard titulo={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} icono={<Package size={20} />} color="var(--yuda-primary)" />
-          <MetricCard titulo={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} icono={<Store size={20} />} color="var(--yuda-accent)" />
-          <MetricCard titulo={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} icono={<FileText size={20} />} color="var(--yuda-primary)" />
-        </div>
+        <section className="card">
+          <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            {t('metricas.esteMes')}
+          </h2>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
+            <DatoDelMes etiqueta={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} />
+            <DatoDelMes etiqueta={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} />
+            <DatoDelMes etiqueta={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} />
+            <DatoDelMes etiqueta={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} />
+            <DatoDelMes etiqueta={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} />
+            <DatoDelMes etiqueta={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} />
+          </div>
+        </section>
       )}
 
-      {/* Métricas por vendedora (solo Marcela / admin) */}
       {esAdmin && <MetricasVendedoras />}
 
-      {/* Crear / abrir cotización. Con una ya abierta desaparece: manda el asistente,
-          y dejarlo arriba era volver a mostrar dos etapas en la misma pantalla. */}
-      {esStaffVentas && !sesionActual && <SesionSelector />}
+      {/* Marcela casi nunca cotiza: el formulario queda guardado detras de un boton
+          en vez de ocupar media pantalla debajo de sus numeros. */}
+      {esAdmin && !sesionActual && (
+        mostrarCotizador ? (
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setMostrarCotizador(false)}
+              className="flex items-center gap-1 self-start text-sm font-semibold"
+              style={{ color: 'var(--yuda-text-secondary)' }}
+            >
+              <X size={15} /> {t('dashboard.ocultarCotizador')}
+            </button>
+            <SesionSelector />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMostrarCotizador(true)}
+            className="flex items-center justify-center gap-2 self-start font-semibold"
+            style={{
+              minHeight: 48,
+              borderRadius: 8,
+              padding: '0 20px',
+              border: '2px solid var(--yuda-primary)',
+              color: 'var(--yuda-primary)',
+              backgroundColor: 'var(--yuda-white)',
+            }}
+          >
+            <ShoppingBag size={18} /> {t('dashboard.nuevaCotizacion')}
+          </button>
+        )
+      )}
+
+      {esStaffVentas && !esAdmin && !sesionActual && <SesionSelector />}
 
       {/* Cotización activa */}
       {sesionActual && (

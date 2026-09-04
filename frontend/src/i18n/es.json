@@ -129,7 +129,8 @@
     "pasoSiguiente": "Siguiente",
     "pasoTerminar": "Terminar",
     "avisoSinProductosAvanzar": "Agrega al menos un producto para continuar.",
-    "pasoFotos": "Fotos"
+    "pasoFotos": "Fotos",
+    "ocultarCotizador": "Ocultar"
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
@@ -381,7 +382,8 @@
     "vendedora": "Vendedora",
     "cotizaciones": "Cotizaciones",
     "totalGeneral": "Total general",
-    "sinVendedoras": "Aún no hay vendedoras registradas"
+    "sinVendedoras": "Aún no hay vendedoras registradas",
+    "esteMes": "Este mes"
   },
   "cotizacion": {
     "titulo": "Exportar cotización para el cliente",
