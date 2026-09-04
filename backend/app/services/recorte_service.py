@@ -15,10 +15,22 @@ from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
-# Aire que se deja alrededor del recuadro que marco el modelo, en fraccion del
-# lado del recorte. Un recorte al ras se ve apretado y ademas castiga cualquier
-# imprecision del modelo cortando un pedazo del producto.
-MARGEN = 0.04
+# Aire que se deja alrededor del recuadro final, en fraccion de su lado. Un
+# recorte al ras se ve apretado; con el afinado por pixeles ya no hace falta tanto.
+MARGEN = 0.025
+
+# Cuanto se agranda el recuadro del modelo antes de buscar el borde real del
+# producto. El modelo suele quedarse corto y cortar un pedazo, asi que se mira
+# tambien un poco afuera de lo que marco.
+BUSQUEDA = 0.10
+
+# Que tan distinto de la mesa tiene que ser un pixel para contarlo como producto.
+# Bajo de mas agarra la veta de la madera; alto de mas se come los bordes claros.
+UMBRAL_FONDO = 34
+
+# Lado al que se achica la region para buscar el borde. No hace falta full
+# resolucion para saber donde termina un producto, y asi el analisis es instantaneo.
+LADO_ANALISIS = 420
 
 # Calidad del JPEG del recorte. La misma que usa imagen_service para incrustar.
 CALIDAD_JPEG = 88
@@ -52,6 +64,81 @@ def recuadro_valido(valor, area_maxima: float = 0.92) -> list[float] | None:
     if area < 0.03 or area > area_maxima:
         return None
     return [x0, y0, x1, y1]
+
+
+def _color_de_fondo(region):
+    """Color de la mesa o el piso, estimado con el marco exterior de la region.
+
+    Se mira el borde y no el centro a proposito: en el centro esta el producto.
+    Se usa la mediana y no el promedio para que una esquina con sombra o un
+    pedazo de cartel no arrastren el resultado.
+    """
+    ancho, alto = region.size
+    grosor = max(2, min(ancho, alto) // 40)
+    pixeles = []
+    datos = region.load()
+    for x in range(0, ancho, 2):
+        for y in list(range(grosor)) + list(range(alto - grosor, alto)):
+            pixeles.append(datos[x, y])
+    for y in range(0, alto, 2):
+        for x in list(range(grosor)) + list(range(ancho - grosor, ancho)):
+            pixeles.append(datos[x, y])
+    if not pixeles:
+        return None
+    canal = lambda i: sorted(p[i] for p in pixeles)[len(pixeles) // 2]  # noqa: E731
+    return (canal(0), canal(1), canal(2))
+
+
+def _borde_real(pil, caja_px):
+    """Devuelve donde termina de verdad el producto dentro de `caja_px`, o None.
+
+    El modelo marca de memoria y se pasa o se queda corto. Aca se mira la imagen:
+    se estima el color de la mesa con el marco de la region, se marcan los pixeles
+    que se apartan de ese color y se toma el rectangulo que los contiene. Funciona
+    porque en estas fotos el producto esta apoyado sobre una superficie lisa.
+
+    Nunca lanza: ante cualquier duda devuelve None y manda el recuadro del modelo.
+    """
+    try:
+        from PIL import Image as PILImage
+        from PIL import ImageChops, ImageFilter
+
+        region = pil.crop(caja_px)
+        if region.width < 40 or region.height < 40:
+            return None
+        escala = min(1.0, LADO_ANALISIS / max(region.size))
+        chica = region.resize(
+            (max(1, round(region.width * escala)), max(1, round(region.height * escala))),
+            PILImage.BILINEAR,
+        )
+
+        fondo = _color_de_fondo(chica)
+        if fondo is None:
+            return None
+
+        diferencia = ImageChops.difference(chica, PILImage.new("RGB", chica.size, fondo))
+        gris = diferencia.convert("L")
+        # La mediana borra la veta de la madera y el ruido sin comerse los bordes
+        gris = gris.filter(ImageFilter.MedianFilter(5))
+        mascara = gris.point(lambda v: 255 if v > UMBRAL_FONDO else 0)
+
+        caja = mascara.getbbox()
+        if caja is None:
+            return None
+
+        x0, y0, x1, y1 = (round(v / escala) for v in caja)
+        area = (x1 - x0) * (y1 - y0)
+        total = region.width * region.height
+        # Si ocupa casi toda la region, el fondo no se pudo separar (mesa con
+        # dibujo, foto a contraluz): no se afina nada. Si ocupa casi nada, el
+        # umbral se comio el producto.
+        if area > total * 0.97 or area < total * 0.05:
+            return None
+
+        return (caja_px[0] + x0, caja_px[1] + y0, caja_px[0] + x1, caja_px[1] + y1)
+    except Exception:
+        logger.exception("No se pudo afinar el recuadro")
+        return None
 
 
 def recuadro_fuera_del_cartel(cartel: list[float]) -> list[float] | None:
@@ -134,25 +221,45 @@ def recortar_producto(
 
 
 def _recortar(pil, recuadro: list[float]):
-    """Recorta al recuadro dejando un poco de aire alrededor."""
+    """Recorta al producto: el recuadro del modelo, afinado contra la imagen."""
     try:
         ancho, alto = pil.size
         x0, y0, x1, y1 = recuadro
 
-        # Aire alrededor, sin salirse de la foto
-        margen_x = (x1 - x0) * MARGEN
-        margen_y = (y1 - y0) * MARGEN
-        x0 = max(0.0, x0 - margen_x)
-        y0 = max(0.0, y0 - margen_y)
-        x1 = min(1.0, x1 + margen_x)
-        y1 = min(1.0, y1 + margen_y)
-
-        caja = (
-            int(x0 * ancho),
-            int(y0 * alto),
-            int(x1 * ancho),
-            int(y1 * alto),
+        # 1. Se agranda lo que marco el modelo para mirar tambien un poco afuera:
+        #    si se quedo corto, el borde real del producto esta ahi.
+        bx = (x1 - x0) * BUSQUEDA
+        by = (y1 - y0) * BUSQUEDA
+        busqueda = (
+            int(max(0.0, x0 - bx) * ancho),
+            int(max(0.0, y0 - by) * alto),
+            int(min(1.0, x1 + bx) * ancho),
+            int(min(1.0, y1 + by) * alto),
         )
+
+        # 2. Donde termina de verdad el producto, mirando los pixeles
+        caja = _borde_real(pil, busqueda)
+        if caja is None:
+            # Sin afinado: se usa lo que marco el modelo, como antes
+            caja = (
+                int(x0 * ancho),
+                int(y0 * alto),
+                int(x1 * ancho),
+                int(y1 * alto),
+            )
+
+        # 3. Un respiro alrededor para que no quede apretado
+        ancho_caja = caja[2] - caja[0]
+        alto_caja = caja[3] - caja[1]
+        margen_x = round(ancho_caja * MARGEN)
+        margen_y = round(alto_caja * MARGEN)
+        caja = (
+            max(0, caja[0] - margen_x),
+            max(0, caja[1] - margen_y),
+            min(ancho, caja[2] + margen_x),
+            min(alto, caja[3] + margen_y),
+        )
+
         if caja[2] - caja[0] < 40 or caja[3] - caja[1] < 40:
             # Recorte de menos de 40 px de lado: no sirve para ningun documento.
             return None

@@ -174,7 +174,8 @@ Las coordenadas van en fracciones de 0 a 1, como [x0, y0, x1, y1]: x0/y0 es la e
 • recuadro_cartel = dónde está el cartel, tablero, tarjeta o papel del que acabas de leer los datos. Si los datos estaban escritos directamente sobre el piso o la mesa, encuadra esa zona escrita. Acabas de leerlo, así que sabes exactamente dónde está: márcalo SIEMPRE que haya leído algo.
 
 • recuadro_producto = dónde está el producto que se está cotizando, o sea TODO LO QUE NO ES EL CARTEL. Piénsalo así: quita el cartel de la foto y lo que queda es el producto. Casi siempre están separados, uno arriba y el otro abajo, o uno a cada lado.
-  - Encuadra el producto COMPLETO, con un poco de aire alrededor, sin cortarlo al ras.
+  - PEGA el recuadro a los bordes del producto. Que sea ajustado: si adentro del recuadro queda mucha mesa, piso o pared vacia, achicalo hasta que sobre poco. El aire se lo agrega despues el sistema.
+  - Al mismo tiempo, no cortes el producto: si dudas entre dejar afuera una parte o incluir un poco de mesa, incluye la mesa.
   - Deja fuera el cartel, la tarjeta del proveedor, las manos, el piso vacío y la mesa vacía.
   - Si hay varias unidades del MISMO producto juntas (un exhibidor, una pila, una caja abierta con su contenido), encuádralas todas como un solo bloque.
   - Si hay productos vecinos que claramente no son el que se cotiza, déjalos fuera.
