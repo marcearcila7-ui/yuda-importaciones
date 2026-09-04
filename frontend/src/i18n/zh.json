@@ -121,7 +121,11 @@
     "clienteCreado": "已完成，{{nombre}} 已保存到您的客户中。",
     "pasoCrear": "确认汇率并创建报价",
     "avisoElegirOpcion": "请先选择这份报价是给谁的。",
-    "avisoCrearCliente": "请先创建客户以继续。"
+    "avisoCrearCliente": "请先创建客户以继续。",
+    "pasoProductos": "添加产品",
+    "pasoCliente": "发送给客户",
+    "pasoPedidos": "供应商订单",
+    "aunSinProductos": "此报价中还没有产品。添加第一批产品后，完整清单、客户文件和供应商订单会显示在这里。"
   },
   "ocr": {
     "titulo": "上传标签照片",
@@ -203,6 +207,7 @@
       "supplier_numero": "摊位号",
       "foto_url": "照片",
       "foto_final": "成品图",
+      "referencia": "客户编号",
       "item_no": "货号",
       "descripcion_es": "西班牙语",
       "descripcion_en": "英文",

@@ -121,7 +121,11 @@
     "clienteCreado": "Done, {{nombre}} was saved to your clients.",
     "pasoCrear": "Confirm the exchange rate and create the quotation",
     "avisoElegirOpcion": "First choose who this quotation is for.",
-    "avisoCrearCliente": "Create the client to continue."
+    "avisoCrearCliente": "Create the client to continue.",
+    "pasoProductos": "Add products",
+    "pasoCliente": "Send to the client",
+    "pasoPedidos": "Supplier orders",
+    "aunSinProductos": "There are no products in this quotation yet. Once you add the first ones, the full list, the client document and the supplier orders will appear here."
   },
   "ocr": {
     "titulo": "Upload label photo",
@@ -203,6 +207,7 @@
       "supplier_numero": "BOOTH No.",
       "foto_url": "PHOTO",
       "foto_final": "FINAL PHOTO",
+      "referencia": "CLIENT REF.",
       "item_no": "ITEM NO",
       "descripcion_es": "SPANISH",
       "descripcion_en": "ENGLISH",

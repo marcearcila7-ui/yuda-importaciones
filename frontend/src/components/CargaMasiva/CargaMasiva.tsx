@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Check, ChevronDown, ChevronUp, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
 import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
+import BarraPasos from '../BarraPasos/BarraPasos'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
@@ -59,63 +60,7 @@ function CampoLote({
 
 // Las vendedoras se perdian dentro del bloque de carga: no sabian en que momento
 // del proceso estaban, cuanto faltaba, ni que iba a pasar despues de cada boton.
-// Esta barra esta siempre visible y responde esas tres preguntas de un vistazo.
 const PASOS = ['lote.paso1', 'lote.paso2', 'lote.paso3'] as const
-
-function PasosCarga({ activo }: { activo: number }) {
-  const { t } = useTranslation()
-  return (
-    <ol className="flex items-start">
-      {PASOS.map((clave, i) => {
-        const numero = i + 1
-        const hecho = numero < activo
-        const actual = numero === activo
-        const color = hecho
-          ? 'var(--yuda-success)'
-          : actual
-            ? 'var(--yuda-primary)'
-            : 'var(--yuda-border)'
-        return (
-          <li key={clave} className="flex flex-1 flex-col items-center gap-1 text-center">
-            <div className="flex w-full items-center">
-              <span
-                className="h-0.5 flex-1"
-                style={{ backgroundColor: i === 0 ? 'transparent' : hecho || actual ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
-              />
-              <span
-                className="flex flex-shrink-0 items-center justify-center font-bold"
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 999,
-                  fontSize: 12,
-                  border: `2px solid ${color}`,
-                  backgroundColor: hecho || actual ? color : 'var(--yuda-white)',
-                  color: hecho || actual ? 'var(--yuda-white)' : 'var(--yuda-text-secondary)',
-                }}
-              >
-                {hecho ? <Check size={14} /> : numero}
-              </span>
-              <span
-                className="h-0.5 flex-1"
-                style={{ backgroundColor: i === PASOS.length - 1 ? 'transparent' : hecho ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
-              />
-            </div>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: actual ? 700 : 500,
-                color: actual ? 'var(--yuda-accent)' : 'var(--yuda-text-secondary)',
-              }}
-            >
-              {t(clave)}
-            </span>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
 
 function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   if (c === 'alta') return { style: { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }, texto: t('ocr.confianzaAlta') }
@@ -344,7 +289,7 @@ function CargaMasiva() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <PasosCarga activo={pasoActual} />
+      <BarraPasos pasos={PASOS} activo={pasoActual} />
 
       <p
         className="rounded-lg px-3 py-2 text-sm"

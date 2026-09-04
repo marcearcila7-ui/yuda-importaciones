@@ -121,7 +121,11 @@
     "clienteCreado": "Listo, {{nombre}} quedó guardado en tus clientes.",
     "pasoCrear": "Confirma el tipo de cambio y crea la cotización",
     "avisoElegirOpcion": "Primero elige para quién es esta cotización.",
-    "avisoCrearCliente": "Crea el cliente para poder continuar."
+    "avisoCrearCliente": "Crea el cliente para poder continuar.",
+    "pasoProductos": "Agregar productos",
+    "pasoCliente": "Enviar al cliente",
+    "pasoPedidos": "Pedidos a proveedores",
+    "aunSinProductos": "Todavía no hay productos en esta cotización. Cuando agregues los primeros, aquí aparecen la lista completa, el documento para el cliente y los pedidos a proveedores."
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
@@ -203,6 +207,7 @@
       "supplier_numero": "N° STAND",
       "foto_url": "FOTO",
       "foto_final": "FOTO FINAL",
+      "referencia": "REF. CLIENTE",
       "item_no": "N° ÍTEM",
       "descripcion_es": "ESPAÑOL",
       "descripcion_en": "INGLÉS",

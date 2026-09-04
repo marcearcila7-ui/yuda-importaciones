@@ -7,6 +7,7 @@ import axios from 'axios'
 import { Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
+import BarraPasos from '../components/BarraPasos/BarraPasos'
 import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
@@ -21,6 +22,10 @@ import { useAuthStore } from '../store/authStore'
 import PanelVentas from '../components/ventas/PanelVentas'
 import { usePackingStore } from '../store/packingStore'
 import type { MetricasDashboard } from '../types/admin'
+
+// Las tres etapas de una cotizacion. Se muestran con la misma barra que la carga
+// de fotos para que la secuencia se lea igual en toda la app.
+const PASOS_COTIZACION = ['dashboard.pasoProductos', 'dashboard.pasoCliente', 'dashboard.pasoPedidos'] as const
 
 // Mapea el idioma de i18n a un locale para fechas
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
@@ -92,6 +97,12 @@ function Dashboard() {
   // Sesión para la que ya confirmaron la advertencia de fotos (se reinicia en cada
   // carga y al abrir otra cotización → la alerta vuelve a salir cada vez).
   const [confirmadoParaSesion, setConfirmadoParaSesion] = useState<string | null>(null)
+
+  // Hasta que no hay productos, todo lo que viene despues (documento del cliente,
+  // pedidos a proveedores, registros internos) es ruido: no se puede usar todavia
+  // y llena la pantalla de botones que no llevan a ninguna parte.
+  const hayProductos = items.length > 0
+  const pasoCotizacion = !hayProductos ? 1 : sesionActual?.enviada_cliente ? 3 : 2
 
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
@@ -279,79 +290,91 @@ function Dashboard() {
             </div>
           </div>
 
+          <BarraPasos pasos={PASOS_COTIZACION} activo={pasoCotizacion} />
+
           {/* 1. Agregar productos */}
           <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
             <CargaMasiva />
           </SectionCard>
 
-          {/* 2. Revisar productos */}
-          <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
-            <PackingListTable
-              items={items}
-              tipo_cambio_usd={sesionActual.tipo_cambio_usd}
-              onItemActualizado={cargarItems}
-            />
-          </SectionCard>
-
-          {/* 3. Para el cliente */}
-          <GroupHeading texto={t('dashboard.grupoCliente')} />
-
-          <ExportarCotizacion
-            sesion_id={sesionActual.id}
-            nombre_cliente={sesionActual.nombre_cliente}
-          />
-
-          {esStaffVentas && (
-            <SectionCard titulo={t('envio.titulo')}>
-              <ClienteEnvio
-                sesionId={sesionActual.id}
-                clienteIdInicial={sesionActual.cliente_id ?? null}
-                enviadaInicial={sesionActual.enviada_cliente ?? false}
-                nombreClienteSesion={sesionActual.nombre_cliente}
-              />
-            </SectionCard>
+          {!hayProductos && (
+            <p className="card text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('dashboard.aunSinProductos')}
+            </p>
           )}
 
-          {/* 4. Pedidos a proveedores */}
-          <GroupHeading texto={t('dashboard.grupoProveedores')} />
+          {hayProductos && (
+            <>
+            {/* 2. Revisar productos */}
+            <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
+              <PackingListTable
+                items={items}
+                tipo_cambio_usd={sesionActual.tipo_cambio_usd}
+                onItemActualizado={cargarItems}
+              />
+            </SectionCard>
 
-          <SectionCard titulo={t('dashboard.generarPedidos')}>
-            <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('dashboard.generarPedidosAyuda')}
-            </p>
-            <GenerarPedidos
+            {/* 3. Para el cliente */}
+            <GroupHeading texto={t('dashboard.grupoCliente')} />
+
+            <ExportarCotizacion
               sesion_id={sesionActual.id}
               nombre_cliente={sesionActual.nombre_cliente}
-              permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
             />
-          </SectionCard>
 
-          {/* 5. Uso interno (tus registros) */}
-          <GroupHeading texto={t('dashboard.grupoInterno')} />
+            {esStaffVentas && (
+              <SectionCard titulo={t('envio.titulo')}>
+                <ClienteEnvio
+                  sesionId={sesionActual.id}
+                  clienteIdInicial={sesionActual.cliente_id ?? null}
+                  enviadaInicial={sesionActual.enviada_cliente ?? false}
+                  nombreClienteSesion={sesionActual.nombre_cliente}
+                />
+              </SectionCard>
+            )}
 
-          <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
-            <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('dashboard.exportarPackingAyuda')}
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => descargarPacking('excel')}
-                className="flex items-center justify-center gap-2 font-semibold text-white"
-                style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
-              >
-                <Download size={18} /> {t('dashboard.exportarPacking')}
-              </button>
-              <button
-                type="button"
-                onClick={() => descargarPacking('pdf')}
-                className="flex items-center justify-center gap-2 font-semibold text-white"
-                style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
-              >
-                <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
-              </button>
-            </div>
-          </SectionCard>
+            {/* 4. Pedidos a proveedores */}
+            <GroupHeading texto={t('dashboard.grupoProveedores')} />
+
+            <SectionCard titulo={t('dashboard.generarPedidos')}>
+              <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('dashboard.generarPedidosAyuda')}
+              </p>
+              <GenerarPedidos
+                sesion_id={sesionActual.id}
+                nombre_cliente={sesionActual.nombre_cliente}
+                permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
+              />
+            </SectionCard>
+
+            {/* 5. Uso interno (tus registros) */}
+            <GroupHeading texto={t('dashboard.grupoInterno')} />
+
+            <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
+              <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('dashboard.exportarPackingAyuda')}
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => descargarPacking('excel')}
+                  className="flex items-center justify-center gap-2 font-semibold text-white"
+                  style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
+                >
+                  <Download size={18} /> {t('dashboard.exportarPacking')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => descargarPacking('pdf')}
+                  className="flex items-center justify-center gap-2 font-semibold text-white"
+                  style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
+                >
+                  <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
+                </button>
+              </div>
+            </SectionCard>
+            </>
+          )}
         </>
       )}
 
