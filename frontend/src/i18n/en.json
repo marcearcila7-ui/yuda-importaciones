@@ -122,14 +122,14 @@
     "pasoCrear": "Confirm the exchange rate and create the quotation",
     "avisoElegirOpcion": "First choose who this quotation is for.",
     "avisoCrearCliente": "Create the client to continue.",
-    "pasoProductos": "Add products",
+    "pasoProductos": "Products",
     "pasoCliente": "Send to the client",
     "pasoPedidos": "Supplier orders",
-    "aunSinProductos": "There are no products in this quotation yet. Add the first ones with the photos above and you will be able to move to the next step.",
     "pasoAtras": "Back",
     "pasoSiguiente": "Next",
     "pasoTerminar": "Finish",
-    "avisoSinProductosAvanzar": "Add at least one product to continue."
+    "avisoSinProductosAvanzar": "Add at least one product to continue.",
+    "pasoFotos": "Photos"
   },
   "ocr": {
     "titulo": "Upload label photo",

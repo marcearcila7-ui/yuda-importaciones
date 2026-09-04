@@ -79,7 +79,7 @@ function irASeccion(id: string) {
   })
 }
 
-function CargaMasiva() {
+function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
   const { t } = useTranslation()
   const sesionActual = usePackingStore((s) => s.sesionActual)
   const agregarItem = usePackingStore((s) => s.agregarItem)
@@ -258,8 +258,8 @@ function CargaMasiva() {
     if (quedan <= 0) {
       await finalizar()
       toast.success(t('lote.exitoFinal', { n }))
-      // Ya no queda nada por corregir: se muestran los productos como quedaron.
-      irASeccion('seccion-productos')
+      // Ya no queda nada por corregir: este paso terminó y se pasa al siguiente.
+      onTerminado?.()
     } else {
       toast.success(t('lote.exitoParcial', { n, quedan }))
       // Quedan fotos por corregir: se vuelve arriba del bloque de carga.

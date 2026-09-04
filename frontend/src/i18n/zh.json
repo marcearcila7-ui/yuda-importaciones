@@ -122,14 +122,14 @@
     "pasoCrear": "确认汇率并创建报价",
     "avisoElegirOpcion": "请先选择这份报价是给谁的。",
     "avisoCrearCliente": "请先创建客户以继续。",
-    "pasoProductos": "添加产品",
+    "pasoProductos": "产品",
     "pasoCliente": "发送给客户",
     "pasoPedidos": "供应商订单",
-    "aunSinProductos": "此报价中还没有产品。用上方的照片添加第一批产品后，就可以进入下一步。",
     "pasoAtras": "返回",
     "pasoSiguiente": "下一步",
     "pasoTerminar": "完成",
-    "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。"
+    "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。",
+    "pasoFotos": "照片"
   },
   "ocr": {
     "titulo": "上传标签照片",

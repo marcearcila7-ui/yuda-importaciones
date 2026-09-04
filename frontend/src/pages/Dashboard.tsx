@@ -4,7 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { ArrowLeft, ArrowRight, Check, Coins, DollarSign, Download, FileText, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Coins, DollarSign, Download, FileText, Images, Package, ShoppingBag, Store, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
@@ -25,7 +25,12 @@ import type { MetricasDashboard } from '../types/admin'
 
 // Las tres etapas de una cotizacion. Se muestran con la misma barra que la carga
 // de fotos para que la secuencia se lea igual en toda la app.
-const PASOS_COTIZACION = ['dashboard.pasoProductos', 'dashboard.pasoCliente', 'dashboard.pasoPedidos'] as const
+const PASOS_COTIZACION = [
+  'dashboard.pasoFotos',
+  'dashboard.pasoProductos',
+  'dashboard.pasoCliente',
+  'dashboard.pasoPedidos',
+] as const
 
 // Mapea el idioma de i18n a un locale para fechas
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
@@ -316,31 +321,40 @@ function Dashboard() {
             onIr={irAPaso}
           />
 
-          {/* PANTALLA 1: cargar las fotos y revisar los productos */}
+          {/* PANTALLA 1: solo las fotos. Nada mas: ni la tabla ni lo que viene despues. */}
           {pasoVista === 1 && (
-            <>
-              <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
-                <CargaMasiva />
-              </SectionCard>
-
-              {hayProductos ? (
-                <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
-                  <PackingListTable
-                    items={items}
-                    tipo_cambio_usd={sesionActual.tipo_cambio_usd}
-                    onItemActualizado={cargarItems}
-                  />
-                </SectionCard>
-              ) : (
-                <p className="card text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {t('dashboard.aunSinProductos')}
-                </p>
-              )}
-            </>
+            <SectionCard titulo={t('lote.titulo')} id="seccion-carga">
+              <CargaMasiva onTerminado={() => irAPaso(2)} />
+            </SectionCard>
           )}
 
-          {/* PANTALLA 2: el documento del cliente y el envío a su portal */}
+          {/* PANTALLA 2: la lista de productos ya cargados */}
           {pasoVista === 2 && (
+            <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
+              <PackingListTable
+                items={items}
+                tipo_cambio_usd={sesionActual.tipo_cambio_usd}
+                onItemActualizado={cargarItems}
+              />
+              <button
+                type="button"
+                onClick={() => irAPaso(1)}
+                className="mt-4 flex items-center justify-center gap-2 font-semibold"
+                style={{
+                  minHeight: 48,
+                  borderRadius: 8,
+                  padding: '0 20px',
+                  backgroundColor: 'var(--yuda-primary-soft)',
+                  color: 'var(--yuda-primary)',
+                }}
+              >
+                <Images size={18} /> {t('lote.agregarMas')}
+              </button>
+            </SectionCard>
+          )}
+
+          {/* PANTALLA 3: el documento del cliente y el envío a su portal */}
+          {pasoVista === 3 && (
             <>
               <ExportarCotizacion
                 sesion_id={sesionActual.id}
@@ -360,8 +374,8 @@ function Dashboard() {
             </>
           )}
 
-          {/* PANTALLA 3: pedidos a proveedores y los registros internos */}
-          {pasoVista === 3 && (
+          {/* PANTALLA 4: pedidos a proveedores y los registros internos */}
+          {pasoVista === 4 && (
             <>
               <SectionCard titulo={t('dashboard.generarPedidos')}>
                 <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
