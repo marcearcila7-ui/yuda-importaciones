@@ -79,9 +79,8 @@ LABELS = {
         "numero": "N° Cotización",
         "emision": "Fecha de emisión",
         "cliente": "Cliente",
-        "tipoCambio": "Tipo de cambio",
         "totales": "TOTALES",
-        "nota": "Los precios están sujetos a confirmación del proveedor. Tipo de cambio: 1 USD = {tc} RMB",
+        "nota": "Los precios están sujetos a confirmación del proveedor.",
         "resumen": "RESUMEN:   {n} productos   ·   {cajas} cajas   ·   Total USD ${usd}   ·   Peso total {gw} kg   ·   CBM {cbm}",
     },
     "en": {
@@ -119,9 +118,8 @@ LABELS = {
         "numero": "Quotation No.",
         "emision": "Issue date",
         "cliente": "Client",
-        "tipoCambio": "Exchange rate",
         "totales": "TOTALS",
-        "nota": "Prices are subject to supplier confirmation. Exchange rate: 1 USD = {tc} RMB",
+        "nota": "Prices are subject to supplier confirmation.",
         "resumen": "SUMMARY:   {n} products   ·   {cajas} boxes   ·   Total USD ${usd}   ·   Total weight {gw} kg   ·   CBM {cbm}",
     },
     "zh": {
@@ -159,9 +157,8 @@ LABELS = {
         "numero": "报价单号",
         "emision": "签发日期",
         "cliente": "客户",
-        "tipoCambio": "汇率",
         "totales": "合计",
-        "nota": "价格以供应商确认为准。汇率：1 USD = {tc} RMB",
+        "nota": "价格以供应商确认为准。",
         "resumen": "汇总：   {n} 件产品   ·   {cajas} 箱   ·   总计 USD ${usd}   ·   总毛重 {gw} kg   ·   CBM {cbm}",
     },
 }
@@ -297,7 +294,6 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     ws["A7"] = f"{lab['numero']}: {numero}"
     ws["A8"] = f"{lab['emision']}: {fecha.strftime('%Y-%m-%d')}"
     ws["A9"] = f"{lab['cliente']}: {sesion.nombre_cliente}"
-    ws["A10"] = f"{lab['tipoCambio']}: 1 USD = {tipo_cambio} RMB"
 
     # Headers de columnas
     fila_head = 12
@@ -398,7 +394,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     # Nota
     fila_nota = fila + 2
     ws.merge_cells(f"A{fila_nota}:{ultima_col}{fila_nota}")
-    ws.cell(row=fila_nota, column=1, value=lab["nota"].format(tc=tipo_cambio))
+    ws.cell(row=fila_nota, column=1, value=lab["nota"])
 
     # Contacto completo
     fila_contacto = fila_nota + 2
@@ -491,7 +487,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
         else ""
     )
     aviso_html = "".join(f"<p>{linea}</p>" for linea in AVISO_AGENCIA)
-    nota = lab["nota"].format(tc=tipo_cambio)
+    nota = lab["nota"]
 
     html = f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
@@ -530,7 +526,6 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     <div><strong>{lab['numero']}:</strong> {numero}</div>
     <div><strong>{lab['emision']}:</strong> {fecha.strftime('%Y-%m-%d')}</div>
     <div><strong>{lab['cliente']}:</strong> {sesion.nombre_cliente}</div>
-    <div><strong>{lab['tipoCambio']}:</strong> 1 USD = {tipo_cambio} RMB</div>
   </div>
   <div class="resumen">{lab['resumen'].format(n=len(items), cajas=int(tot_cajas), usd=round(tot_usd, 2), gw=round(tot_gw, 2), cbm=round(tot_cbm, 6))}</div>
   <table>
