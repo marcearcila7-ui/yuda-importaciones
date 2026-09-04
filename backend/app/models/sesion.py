@@ -43,6 +43,9 @@ class Sesion(Base):
     )
     # Pedido del cliente desde el portal: notas/observaciones y cuándo lo envió.
     notas_cliente: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Marca de embarque: identifica la carga de este cliente dentro del contenedor.
+    # Es la misma para todos los productos, por eso vive en la cotizacion.
+    shipping_mark: Mapped[str | None] = mapped_column(String, nullable=True)
     pedido_recibido_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

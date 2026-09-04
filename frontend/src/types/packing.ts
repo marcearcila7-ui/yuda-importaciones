@@ -4,6 +4,9 @@ export interface ItemCreate {
   foto_url?: string
   // Foto final (limpia) para los documentos de cliente/proveedor; si falta se usa foto_url.
   foto_final_url?: string | null
+  // Marca de fabrica y fecha de entrega del proveedor: los llena la vendedora
+  marca?: string | null
+  fecha_recibo?: string | null
   item_no?: string
   descripcion_es?: string
   descripcion_en?: string
@@ -48,6 +51,8 @@ export interface Sesion {
   user_id: string
   cliente_id?: string | null
   contenedor_id?: string | null
+  // Marca de embarque: identifica la carga del cliente dentro del contenedor
+  shipping_mark?: string | null
   enviada_cliente?: boolean
   notas_cliente?: string | null
   pedido_recibido_at?: string | null

@@ -53,6 +53,13 @@ export async function eliminarItem(sesion_id: string, item_id: string): Promise<
 
 // Sube/reemplaza la foto FINAL (limpia) de un producto. Solo se usa en los
 // documentos del cliente y del proveedor; el OCR no la toca.
+// Marca de embarque de la cotizacion: la misma para todos sus productos, por eso
+// se guarda en la cotizacion y no en cada uno.
+export async function guardarShippingMark(sesion_id: string, shipping_mark: string) {
+  const { data } = await apiClient.patch(`/sesiones/${sesion_id}`, { shipping_mark })
+  return data
+}
+
 // Recorta a mano la foto de un producto cuando el recorte automatico salio mal.
 // `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1; en null se vuelve a la
 // foto completa. El recorte lo hace el backend, con el mismo codigo que el automatico.

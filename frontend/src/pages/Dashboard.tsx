@@ -13,6 +13,7 @@ import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizac
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
+import ShippingMark from '../components/ShippingMark/ShippingMark'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
 import { eliminarSesion, exportarPackingExcel, exportarPackingPDF } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
@@ -360,6 +361,10 @@ function Dashboard() {
           {/* PANTALLA 2: la lista de productos ya cargados */}
           {pasoVista === 2 && (
             <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
+              <ShippingMark
+                sesionId={sesionActual.id}
+                valorInicial={sesionActual.shipping_mark ?? ''}
+              />
               <PackingListTable
                 items={items}
                 tipo_cambio_usd={sesionActual.tipo_cambio_usd}

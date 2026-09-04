@@ -234,11 +234,18 @@
       "cbm": "VOL. m³",
       "t_cbm": "VOL. TOTAL",
       "gw": "PESO",
-      "t_gw": "PESO TOTAL"
+      "t_gw": "PESO TOTAL",
+      "marca": "MARCA",
+      "fecha_recibo": "FECHA RECIBO"
     },
     "fFotoFinal": "Foto final",
     "fotoFinalSubir": "Subir foto final",
-    "fotoFinalCambiar": "Cambiar foto final"
+    "fotoFinalCambiar": "Cambiar foto final",
+    "shippingMark": "Marca de embarque:",
+    "shippingMarkEjemplo": "Ej: ABC",
+    "shippingMarkAyuda": "Identifica la carga de este cliente en el contenedor. Va en todos los productos.",
+    "shippingMarkGuardada": "Marca de embarque guardada",
+    "shippingMarkError": "No se pudo guardar la marca de embarque"
   },
   "pedidos": {
     "generar": "Generar Pedidos",

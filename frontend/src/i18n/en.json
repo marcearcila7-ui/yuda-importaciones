@@ -234,11 +234,18 @@
       "cbm": "VOL. m³",
       "t_cbm": "TOTAL VOL",
       "gw": "G.W",
-      "t_gw": "T.G.W"
+      "t_gw": "T.G.W",
+      "marca": "BRAND",
+      "fecha_recibo": "RECEIPT DATE"
     },
     "fFotoFinal": "Final photo",
     "fotoFinalSubir": "Upload final photo",
-    "fotoFinalCambiar": "Change final photo"
+    "fotoFinalCambiar": "Change final photo",
+    "shippingMark": "Shipping mark:",
+    "shippingMarkEjemplo": "e.g. ABC",
+    "shippingMarkAyuda": "Identifies this client's cargo in the container. It goes on every product.",
+    "shippingMarkGuardada": "Shipping mark saved",
+    "shippingMarkError": "The shipping mark could not be saved"
   },
   "pedidos": {
     "generar": "Generate Orders",

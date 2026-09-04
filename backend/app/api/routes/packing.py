@@ -28,6 +28,7 @@ from app.schemas.packing import (
     ReordenarItem,
     SesionCreate,
     SesionResponse,
+    SesionUpdate,
 )
 from app.services.cotizacion_service import (
     generar_cotizacion_excel,
@@ -47,6 +48,7 @@ from app.services.excel_service import generar_packing_list_excel
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
 from app.services.recorte_service import recortar_producto, recuadro_valido
+from app.services.traduccion_service import completar_descripciones
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_foto
 
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
@@ -65,6 +67,8 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         supplier_nombre=item.supplier_nombre,
         supplier_numero=item.supplier_numero,
         item_no=item.item_no,
+        marca=item.marca,
+        fecha_recibo=item.fecha_recibo,
         descripcion_es=item.descripcion_es,
         descripcion_en=item.descripcion_en,
         descripcion_zh=item.descripcion_zh,
@@ -236,6 +240,28 @@ def crear_item(
     db.commit()
     db.refresh(item)
     return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+
+@router.patch("/sesiones/{sesion_id}", response_model=SesionResponse)
+def actualizar_sesion(
+    sesion_id: str,
+    datos: SesionUpdate,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Sesion:
+    """Actualiza datos de la cotizacion. Hoy solo la marca de embarque.
+
+    El shipping mark identifica la carga de este cliente dentro del contenedor,
+    asi que es el mismo para todos sus productos y vive en la cotizacion, no en
+    cada item. Solo admin y vendedora.
+    """
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    if datos.shipping_mark is not None:
+        sesion.shipping_mark = datos.shipping_mark.strip() or None
+    db.commit()
+    db.refresh(sesion)
+    return sesion
 
 
 @router.patch("/sesiones/{sesion_id}/items/reordenar")
@@ -461,6 +487,10 @@ def exportar_cotizacion_excel(
         .order_by(Item.orden.asc())
         .all()
     )
+    # La cotización del cliente lleva la descripción en los tres idiomas y el uso.
+    # Lo que el OCR no alcanzó a sacar se completa acá, una sola vez por producto:
+    # una celda vacía en el documento que ve el cliente no es aceptable.
+    completar_descripciones(db, items)
 
     contenido = generar_cotizacion_excel(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
 
@@ -489,6 +519,7 @@ def exportar_cotizacion_pdf(
         .order_by(Item.orden.asc())
         .all()
     )
+    completar_descripciones(db, items)
 
     contenido = generar_cotizacion_pdf(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
 

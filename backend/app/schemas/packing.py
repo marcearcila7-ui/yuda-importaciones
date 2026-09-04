@@ -13,6 +13,9 @@ class ItemCreate(BaseModel):
     # Foto final (limpia) para los documentos de cliente/proveedor; si falta se usa foto_url.
     foto_final_url: Optional[str] = None
     item_no: Optional[str] = None
+    # Marca de fabrica y fecha en que el proveedor entrego. Los llena la vendedora.
+    marca: Optional[str] = None
+    fecha_recibo: Optional[str] = None
     descripcion_es: Optional[str] = None
     descripcion_en: Optional[str] = None
     descripcion_zh: Optional[str] = None
@@ -51,6 +54,8 @@ class ItemUpdate(BaseModel):
     supplier_numero: Optional[str] = None
     foto_final_url: Optional[str] = None
     item_no: Optional[str] = None
+    marca: Optional[str] = None
+    fecha_recibo: Optional[str] = None
     descripcion_es: Optional[str] = None
     descripcion_en: Optional[str] = None
     descripcion_zh: Optional[str] = None
@@ -96,6 +101,12 @@ class SesionCreate(BaseModel):
     cliente_id: str | None = None
 
 
+class SesionUpdate(BaseModel):
+    """Cambios sobre una cotizacion ya creada"""
+
+    shipping_mark: str | None = None
+
+
 class SesionResponse(BaseModel):
     """Sesión de cotización"""
 
@@ -106,6 +117,8 @@ class SesionResponse(BaseModel):
     user_id: str
     cliente_id: str | None = None
     contenedor_id: str | None = None  # embarque al que pertenece (define la TRM al facturar)
+    # Marca de embarque del cliente, la misma para todos los productos
+    shipping_mark: str | None = None
     enviada_cliente: bool = False
     notas_cliente: str | None = None  # observaciones que dejó el cliente en su pedido
     pedido_recibido_at: datetime | None = None  # cuándo el cliente envió su pedido

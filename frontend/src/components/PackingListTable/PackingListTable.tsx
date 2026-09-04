@@ -41,6 +41,9 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   // Referencia que ve el cliente en su cotización. La asigna el sistema, no se edita.
   { id: 'referencia', header: 'REF. CLIENTE', meta: { campo: 'referencia', kind: 'ro-num', width: 110 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
+  // Los pide el formato de la agencia de carga; el OCR no los puede sacar del cartel
+  { id: 'marca', header: 'MARCA', meta: { campo: 'marca', kind: 'text-edit', width: 110 } },
+  { id: 'fecha_recibo', header: 'FECHA RECIBO', meta: { campo: 'fecha_recibo', kind: 'text-edit', width: 120 } },
   { id: 'descripcion_es', header: 'ESPAÑOL', meta: { campo: 'descripcion_es', kind: 'text-edit', width: 200, stickyLeft: 160 } },
   { id: 'descripcion_en', header: 'ENGLISH', meta: { campo: 'descripcion_en', kind: 'text-edit', width: 200 } },
   { id: 'descripcion_zh', header: '中文', meta: { campo: 'descripcion_zh', kind: 'text-edit', width: 160 } },

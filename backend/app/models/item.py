@@ -41,6 +41,10 @@ class Item(Base):
         String, nullable=True, index=True, default=nueva_referencia
     )
     item_no: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Marca de fabrica del producto. No sale del cartel: la escribe la vendedora.
+    marca: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Cuando el proveedor entrego la mercancia. Se llena despues de la cotizacion.
+    fecha_recibo: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_es: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_en: Mapped[str | None] = mapped_column(String, nullable=True)
     descripcion_zh: Mapped[str | None] = mapped_column(String, nullable=True)

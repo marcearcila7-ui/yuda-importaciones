@@ -234,11 +234,18 @@
       "cbm": "体积 m³",
       "t_cbm": "总体积",
       "gw": "毛重",
-      "t_gw": "总毛重"
+      "t_gw": "总毛重",
+      "marca": "品牌",
+      "fecha_recibo": "收货日期"
     },
     "fFotoFinal": "成品图",
     "fotoFinalSubir": "上传成品图",
-    "fotoFinalCambiar": "更换成品图"
+    "fotoFinalCambiar": "更换成品图",
+    "shippingMark": "唛头：",
+    "shippingMarkEjemplo": "例如 ABC",
+    "shippingMarkAyuda": "用于在货柜中识别该客户的货物，会显示在所有产品上。",
+    "shippingMarkGuardada": "唛头已保存",
+    "shippingMarkError": "无法保存唛头"
   },
   "pedidos": {
     "generar": "生成订单",
