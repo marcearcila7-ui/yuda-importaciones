@@ -93,6 +93,7 @@ function CargaMasiva() {
     resultados,
     errores,
     erroresSubida,
+    causaSubida,
     falloSistema,
     motivoFallo,
     sinProcesar,
@@ -329,11 +330,17 @@ function CargaMasiva() {
 
       {aviso && <p className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>{aviso}</p>}
 
-      {/* Fotos que no llegaron a subir (red/servidor) — no se pierden en silencio */}
+      {/* Fotos que no llegaron a subir. El mensaje depende de DE QUIEN fue la culpa:
+          si se cayo nuestro almacenamiento, volver a tomarlas no arregla nada. */}
       {erroresSubida > 0 && (
-        <p className="rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }}>
-          {t('lote.fallidasSubida', { n: erroresSubida })}
-        </p>
+        <div className="rounded-lg px-3 py-2" style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error-dark)' }}>
+          <p className="text-sm font-semibold">
+            {t(causaSubida === 'servidor' ? 'lote.fallidasSubidaSistemaTitulo' : 'lote.fallidasSubidaTitulo', { n: erroresSubida })}
+          </p>
+          <p className="mt-1 text-sm">
+            {t(causaSubida === 'servidor' ? 'lote.fallidasSubidaSistemaTexto' : 'lote.fallidasSubidaTexto')}
+          </p>
+        </div>
       )}
 
       {/* Paso 2: selección en curso — armar la tanda y luego procesar */}

@@ -420,7 +420,6 @@
     "segundoPlano": "Puedes cerrar la app: el proceso continúa y al volver verás los resultados.",
     "noLegibles": "{{n}} foto(s) no legible(s). Vuelve a tomarlas para poder agregar esos productos.",
     "agregarMas": "Agregar más fotos",
-    "fallidasSubida": "No se pudieron subir {{n}} foto(s); revisa tu conexión e inténtalo de nuevo.",
     "listas": "{{n}} foto(s) en esta tanda",
     "procesar": "Analizar {{n}} foto(s)",
     "agregar": "Agregar",
@@ -449,7 +448,11 @@
     "ayudaPaso1": "Elige las fotos de los carteles que tomaste en el mercado, hasta {{max}} de una vez. No tienes que escribir nada todavía: la app las lee sola.",
     "ayudaPaso1Elegidas": "Mira que estén todas las que quieres. Agrega más con el botón «+» o quita las que no sirvan. Cuando estés lista, toca «Analizar».",
     "ayudaPaso2": "La app está leyendo los carteles, esto tarda un poco. Puedes cerrar la pantalla e irte a otra cosa: al volver los resultados están aquí.",
-    "ayudaPaso3": "Revisa lo que leyó la app y corrige lo que falte. Al final toca el botón verde y los productos pasan a la lista de la cotización."
+    "ayudaPaso3": "Revisa lo que leyó la app y corrige lo que falte. Al final toca el botón verde y los productos pasan a la lista de la cotización.",
+    "fallidasSubidaTitulo": "No se pudieron subir {{n}} foto(s)",
+    "fallidasSubidaTexto": "Parece un problema de conexión. Revisa tu internet y vuelve a intentarlo: las fotos siguen en tu teléfono, no las perdiste.",
+    "fallidasSubidaSistemaTitulo": "No pudimos guardar {{n}} foto(s)",
+    "fallidasSubidaSistemaTexto": "El problema es nuestro, no de tus fotos ni de tu conexión: el sistema donde se guardan no está respondiendo. NO vuelvas a tomarlas. Avisa a Marcela o a soporte e inténtalo de nuevo más tarde."
   },
   "roles": {
     "admin": "Administrador",

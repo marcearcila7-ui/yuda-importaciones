@@ -420,7 +420,6 @@
     "segundoPlano": "You can close the app: processing continues and you'll see the results when you return.",
     "noLegibles": "{{n}} photo(s) not legible. Retake them to add those products.",
     "agregarMas": "Add more photos",
-    "fallidasSubida": "{{n}} photo(s) could not be uploaded; check your connection and try again.",
     "listas": "{{n}} photo(s) in this batch",
     "procesar": "Analyse {{n}} photo(s)",
     "agregar": "Add",
@@ -449,7 +448,11 @@
     "ayudaPaso1": "Choose the photos of the signs you took at the market, up to {{max}} at a time. You don't have to type anything yet: the app reads them for you.",
     "ayudaPaso1Elegidas": "Check that they are all here. Add more with the «+» button or remove the ones you don't need. When you are ready, tap «Analyse».",
     "ayudaPaso2": "The app is reading the signs, this takes a moment. You can close the screen and do something else: the results will be here when you come back.",
-    "ayudaPaso3": "Review what the app read and fix whatever is missing. At the end tap the green button and the products move to the quotation list."
+    "ayudaPaso3": "Review what the app read and fix whatever is missing. At the end tap the green button and the products move to the quotation list.",
+    "fallidasSubidaTitulo": "{{n}} photo(s) could not be uploaded",
+    "fallidasSubidaTexto": "This looks like a connection problem. Check your internet and try again: the photos are still on your phone, you haven't lost them.",
+    "fallidasSubidaSistemaTitulo": "We could not save {{n}} photo(s)",
+    "fallidasSubidaSistemaTexto": "This one is on us, not on your photos or your connection: the system that stores them is not responding. Do NOT take them again. Tell Marcela or support and try again later."
   },
   "roles": {
     "admin": "Administrator",

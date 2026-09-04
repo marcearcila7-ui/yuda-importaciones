@@ -12,6 +12,7 @@ import {
   type LoteEstadoResp,
 } from '../api/lotes'
 import { comprimirImagen } from '../lib/comprimirImagen'
+import { causaDelFallo, type CausaFallo } from '../lib/causaFallo'
 import type { OCRResultado } from '../types/ocr'
 
 export interface ResultadoLote {
@@ -57,6 +58,9 @@ interface LoteState {
   resultados: ResultadoLote[]
   errores: number
   erroresSubida: number
+  // Por que fallo la subida: 'servidor' (culpa nuestra) o 'conexion' (su internet).
+  // Cambia por completo el mensaje que ve la vendedora y si debe reintentar o no.
+  causaSubida: CausaFallo | null
   // El lote fallo por un problema NUESTRO (API caida/sin credito), no por las fotos
   falloSistema: boolean
   // Motivo concreto del fallo del sistema (p. ej. 'sin_saldo')
@@ -100,6 +104,7 @@ const ESTADO_INICIAL = {
   resultados: [] as ResultadoLote[],
   errores: 0,
   erroresSubida: 0,
+  causaSubida: null,
   falloSistema: false,
   motivoFallo: null,
   sinProcesar: 0,
@@ -167,16 +172,22 @@ export const useLoteStore = create<LoteState>((set, get) => {
       while (idx < files.length) {
         const f = files[idx++]
         let ok = false
+        let causa: CausaFallo | null = null
         try {
           const comprimido = await comprimirImagen(f)
           await subirFotoLote(loteId, comprimido)
           ok = true
-        } catch {
-          // no se pudo subir esta foto (red/servidor): se cuenta como error
+        } catch (err) {
+          // No se pudo subir esta foto. Se guarda POR QUE: no es lo mismo que se
+          // haya caido nuestro almacenamiento a que ella este sin senal.
+          causa = causaDelFallo(err)
         }
         set((s) => ({
           subidas: s.subidas + 1,
           erroresSubida: ok ? s.erroresSubida : s.erroresSubida + 1,
+          // Si alguna fallo por el servidor, ese es el motivo que manda: es el que
+          // le dice que NO tiene que volver a tomar las fotos.
+          causaSubida: causa === 'servidor' ? 'servidor' : (s.causaSubida ?? causa),
         }))
       }
     }
@@ -232,6 +243,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
         resultados: [],
         errores: 0,
         erroresSubida: 0,
+        causaSubida: null,
       })
       // Limpiar un lote previo de la sesión, si quedó
       try {
@@ -260,7 +272,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
       const loteId = get().loteId
       if (!loteId || files.length === 0) return
       detenerPoll()
-      set({ fase: 'subiendo', subidas: 0, totalSubir: files.length, erroresSubida: 0 })
+      set({ fase: 'subiendo', subidas: 0, totalSubir: files.length, erroresSubida: 0, causaSubida: null })
       await subirFotos(loteId, files)
       await procesarLoteApi(loteId)
       set({ fase: 'procesando' })
