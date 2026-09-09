@@ -9,7 +9,6 @@ import { confirmar } from '../../store/confirmStore'
 import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
-import BarraPasos from '../BarraPasos/BarraPasos'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResultado } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
@@ -60,7 +59,10 @@ function CampoLote({
 
 // Las vendedoras se perdian dentro del bloque de carga: no sabian en que momento
 // del proceso estaban, cuanto faltaba, ni que iba a pasar despues de cada boton.
-const PASOS = ['lote.paso1', 'lote.paso2', 'lote.paso3'] as const
+// Antes esto tenia ademas su propia barra de "Paso 1/2/3" (BarraPasos compacta),
+// pero competia con la barra grande del asistente de arriba (Dashboard.tsx), que
+// ya muestra "Fotos" como su paso 1: dos numeradores de "paso 1" a la vez
+// confundian mas de lo que ayudaban. Se dejo solo este texto.
 
 function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   if (c === 'alta') return { style: { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }, texto: t('ocr.confianzaAlta') }
@@ -300,8 +302,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         ? (procesadas / totalProc) * 100
         : 0
 
-  // En que paso de la secuencia esta parada ahora mismo
-  const pasoActual = fase === 'completado' ? 3 : enProgreso ? 2 : 1
   // Cuando ya se agregaron TODOS los productos de una tanda, el lote se cierra y
   // esta pantalla vuelve a quedar vacía (correcto: ya no hay nada pendiente que
   // revisar acá). Pero para la vendedora, volver a ver el botón de "Seleccionar
@@ -320,8 +320,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <BarraPasos pasos={PASOS} activo={pasoActual} compacta />
-
       <p
         className="rounded-lg px-3 py-2 text-sm"
         style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-accent)' }}

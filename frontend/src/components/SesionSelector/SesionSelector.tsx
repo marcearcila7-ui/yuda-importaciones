@@ -23,26 +23,15 @@ type Modo = 'existente' | 'nuevo' | 'libre'
 // a ojo y aparece el buscador.
 const CLIENTES_PARA_BUSCADOR = 6
 
-// Rótulo del paso, para que se vea que es una secuencia y no un formulario suelto
-function Paso({ numero, titulo, children }: { numero: number; titulo: string; children: ReactNode }) {
+// Encabezado de sección. Antes cada una llevaba un círculo numerado (1, 2, 3),
+// pero este formulario es corto y de una sola pantalla, no un asistente largo:
+// numerarlo como si lo fuera competía con el "Paso 1" real de arriba (el de
+// Dashboard.tsx, que sí abarca toda la cotización) y sumaba una confusión más
+// de "¿en qué paso estoy?" sin necesidad.
+function Paso({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <div className="mt-5">
-      <div className="flex items-center gap-2">
-        <span
-          className="flex items-center justify-center font-bold"
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 999,
-            fontSize: 12,
-            backgroundColor: 'var(--yuda-primary)',
-            color: 'var(--yuda-white)',
-          }}
-        >
-          {numero}
-        </span>
-        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>{titulo}</span>
-      </div>
+      <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>{titulo}</span>
       <div className="mt-3">{children}</div>
     </div>
   )
@@ -267,7 +256,7 @@ function SesionSelector() {
       </h2>
 
       {/* PASO 1: la primera decisión, cliente que ya existe o cliente nuevo */}
-      <Paso numero={1} titulo={t('dashboard.paraQuien')}>
+      <Paso titulo={t('dashboard.paraQuien')}>
         <div className="grid gap-3 sm:grid-cols-3">
           <OpcionCard
             activo={modo === 'existente'}
@@ -301,7 +290,7 @@ function SesionSelector() {
 
       {/* PASO 2: depende de lo elegido arriba */}
       {modo === 'existente' && (
-        <Paso numero={2} titulo={t('dashboard.elegirCliente')}>
+        <Paso titulo={t('dashboard.elegirCliente')}>
           {cargandoClientes ? (
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('dashboard.cargandoClientes')}
@@ -384,7 +373,7 @@ function SesionSelector() {
       )}
 
       {modo === 'nuevo' && (
-        <Paso numero={2} titulo={t('clientes.nuevo')}>
+        <Paso titulo={t('clientes.nuevo')}>
           {clienteElegido ? (
             <div
               className="flex items-center gap-3 p-3"
@@ -423,7 +412,7 @@ function SesionSelector() {
       )}
 
       {modo === 'libre' && (
-        <Paso numero={2} titulo={t('dashboard.nombreCliente')}>
+        <Paso titulo={t('dashboard.nombreCliente')}>
           <div className="flex flex-col gap-2">
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('dashboard.libreAyuda')}
@@ -445,7 +434,7 @@ function SesionSelector() {
 
       {/* PASO 3: tipo de cambio y crear. Solo aparece con el paso 1 resuelto. */}
       {modo && (
-        <Paso numero={3} titulo={t('dashboard.pasoCrear')}>
+        <Paso titulo={t('dashboard.pasoCrear')}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <label className="flex flex-col gap-1 text-sm sm:w-44" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('dashboard.tipoCambio')}
