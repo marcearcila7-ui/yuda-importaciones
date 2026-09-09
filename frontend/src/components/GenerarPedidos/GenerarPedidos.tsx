@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
-import { descargarZip, generarPedidos } from '../../api/pedidos'
+import { descargarZip, generarPedidos, getPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
 import Button from '../ui/Button'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
@@ -21,6 +21,32 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
+
+  // Este componente vive en dos lugares (el asistente de cotizacion y la ficha
+  // del cliente), y antes ninguno de los dos sabia si ya se habian generado
+  // pedidos: cada vez que se montaba arrancaba en blanco, aunque el backend ya
+  // los tenia guardados. Se sentia como que el sistema "no se acordaba" de lo
+  // ya hecho. Ahora consulta al entrar y, si hay, los muestra de entrada.
+  useEffect(() => {
+    getPedidos(sesion_id)
+      .then((lista) => {
+        if (lista.length === 0) return
+        setResultado({
+          pedidos: lista.map((p) => ({
+            supplier: p.supplier,
+            archivo_nombre: p.supplier,
+            url_descarga: p.archivo_xlsx_url,
+            url_pdf: p.archivo_pdf_url ?? undefined,
+            // No viene guardado en el registro persistido; 0 oculta el conteo
+            // en vez de mostrar "(0 items)" para algo que sí tiene productos.
+            items_count: 0,
+          })),
+          warnings: [],
+        })
+      })
+      .catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesion_id])
 
   const handleGenerar = async (usarCantidadesCliente = false) => {
     let mensajeConfirm: string
@@ -142,7 +168,9 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
             >
               <span className="min-w-0 truncate text-sm" style={{ color: 'var(--yuda-accent)' }}>
                 {pedido.supplier}{' '}
-                <span style={{ color: 'var(--yuda-text-secondary)' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
+                {pedido.items_count > 0 && (
+                  <span style={{ color: 'var(--yuda-text-secondary)' }}>({t('pedidos.itemsCount', { n: pedido.items_count })})</span>
+                )}
               </span>
               <div className="flex flex-shrink-0 gap-2">
                 <button

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { Link as LinkIcon, Plus, Send, UserCheck, UserPlus } from 'lucide-react'
 import { crearCliente, enviarACliente, getClientes, vincularCliente } from '../../api/clientes'
 import CredencialesCliente from '../CredencialesCliente'
+import SelectorCliente from '../SelectorCliente/SelectorCliente'
 import type { Cliente, ClienteCreado } from '../../types/cliente'
 
 interface Props {
@@ -22,6 +23,8 @@ const inputClase =
 function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClienteSesion }: Props) {
   const { t } = useTranslation()
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [cargandoClientes, setCargandoClientes] = useState(true)
+  const [errorClientes, setErrorClientes] = useState(false)
   const [clienteId, setClienteId] = useState<string | null>(clienteIdInicial)
   const [enviada, setEnviada] = useState(enviadaInicial)
   const [seleccion, setSeleccion] = useState('')
@@ -35,10 +38,20 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
   const [nuevaPass, setNuevaPass] = useState('')
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
 
-  useEffect(() => {
+  // Antes esto fallaba en silencio total, igual que ya se corrigió en
+  // SesionSelector: con mala señal el selector de cliente se quedaba vacío
+  // para siempre sin avisar nada.
+  const cargarClientes = () => {
+    setCargandoClientes(true)
+    setErrorClientes(false)
     getClientes()
       .then(setClientes)
-      .catch(() => undefined)
+      .catch(() => setErrorClientes(true))
+      .finally(() => setCargandoClientes(false))
+  }
+
+  useEffect(() => {
+    cargarClientes()
   }, [])
 
   // Sincroniza con la cotización seleccionada
@@ -133,33 +146,44 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, nombreClient
         <div className="flex flex-col gap-3">
           {!creandoForm ? (
             <>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {t('envio.elegirCliente')}
-                  <select
-                    value={seleccion}
-                    onChange={(e) => setSeleccion(e.target.value)}
-                    style={inputStyle}
-                    className={inputClase}
-                  >
-                    <option value="">{t('envio.selecciona')}</option>
-                    {clientes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} · {c.email}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={asignar}
-                  disabled={trabajando || !seleccion}
-                  className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-60"
-                  style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+              {cargandoClientes ? (
+                <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('dashboard.cargandoClientes')}
+                </p>
+              ) : errorClientes ? (
+                <div
+                  className="flex flex-col items-start gap-2 p-4"
+                  style={{ borderRadius: 12, backgroundColor: '#FEF2F2' }}
                 >
-                  <LinkIcon size={18} /> {t('envio.asignar')}
-                </button>
-              </div>
+                  <p className="text-sm" style={{ color: 'var(--yuda-error-dark)' }}>
+                    {t('dashboard.errorCargarClientes')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cargarClientes}
+                    className="flex items-center gap-2 font-semibold text-white"
+                    style={{ minHeight: 40, backgroundColor: 'var(--yuda-error)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+                  >
+                    {t('dashboard.reintentarCargarClientes')}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('envio.elegirCliente')}
+                  </span>
+                  <SelectorCliente clientes={clientes} valor={seleccion} onElegir={setSeleccion} />
+                  <button
+                    type="button"
+                    onClick={asignar}
+                    disabled={trabajando || !seleccion}
+                    className="flex items-center justify-center gap-2 self-start font-semibold text-white disabled:opacity-60"
+                    style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
+                  >
+                    <LinkIcon size={18} /> {t('envio.asignar')}
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {

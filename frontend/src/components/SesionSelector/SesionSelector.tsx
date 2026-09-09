@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Check, FileText, Plus, Search, UserPlus, Users } from 'lucide-react'
+import { Check, FileText, Plus, UserPlus, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { crearCliente, getClientes } from '../../api/clientes'
 import { getConfiguracion } from '../../api/admin'
 import CredencialesCliente from '../CredencialesCliente'
+import SelectorCliente from '../SelectorCliente/SelectorCliente'
 import type { Cliente, ClienteCreado } from '../../types/cliente'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -18,10 +19,6 @@ const inputClase =
 // ninguno todavía. Arranca sin elegir a propósito: mientras no se elija, no se
 // muestra ningún formulario, y así queda claro que esto es lo primero que hay que hacer.
 type Modo = 'existente' | 'nuevo' | 'libre'
-
-// A partir de esta cantidad de clientes la lista se vuelve incómoda de recorrer
-// a ojo y aparece el buscador.
-const CLIENTES_PARA_BUSCADOR = 6
 
 // Encabezado de sección. Antes cada una llevaba un círculo numerado (1, 2, 3),
 // pero este formulario es corto y de una sola pantalla, no un asistente largo:
@@ -76,57 +73,6 @@ function OpcionCard({
   )
 }
 
-// Fila de cliente guardado
-function FilaCliente({
-  cliente,
-  activo,
-  onClick,
-}: {
-  cliente: Cliente
-  activo: boolean
-  onClick: () => void
-}) {
-  const inicial = (cliente.nombre || '?').trim().charAt(0).toUpperCase()
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 text-left transition-colors"
-      style={{
-        minHeight: 56,
-        padding: '8px 12px',
-        borderRadius: 10,
-        border: `1px solid ${activo ? 'var(--yuda-primary)' : 'var(--yuda-border)'}`,
-        backgroundColor: activo ? 'var(--yuda-primary-soft)' : 'var(--yuda-white)',
-      }}
-    >
-      <span
-        className="flex items-center justify-center font-bold"
-        style={{
-          width: 34,
-          height: 34,
-          flexShrink: 0,
-          borderRadius: 999,
-          fontSize: 14,
-          backgroundColor: 'var(--yuda-primary)',
-          color: 'var(--yuda-white)',
-        }}
-      >
-        {inicial}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
-          {cliente.nombre}
-        </span>
-        <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {cliente.empresa ? `${cliente.empresa}, ${cliente.email}` : cliente.email}
-        </span>
-      </span>
-      {activo && <Check size={18} style={{ color: 'var(--yuda-primary)', flexShrink: 0 }} />}
-    </button>
-  )
-}
-
 function SesionSelector() {
   const { t } = useTranslation()
   const { isLoading, crearSesion } = usePackingStore()
@@ -141,7 +87,6 @@ function SesionSelector() {
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
   const [clienteSel, setClienteSel] = useState('')
-  const [busqueda, setBusqueda] = useState('')
 
   // Crear cliente nuevo
   const [guardandoCliente, setGuardandoCliente] = useState(false)
@@ -173,21 +118,13 @@ function SesionSelector() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const clientesFiltrados = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase()
-    if (!texto) return clientes
-    return clientes.filter((c) =>
-      `${c.nombre} ${c.email} ${c.empresa ?? ''}`.toLowerCase().includes(texto),
-    )
-  }, [clientes, busqueda])
-
   const clienteElegido = clientes.find((c) => c.id === clienteSel) ?? null
 
   const elegirModo = (m: Modo) => {
     setModo(m)
     setAviso(null)
-    // Cambiar de opción no debe arrastrar lo elegido en la anterior.
-    if (m !== 'existente') setBusqueda('')
+    // Cambiar de opción no debe arrastrar lo elegido en la anterior. (El texto
+    // buscado vive dentro de SelectorCliente y se reinicia solo al desmontarse.)
     if (m === 'libre') setClienteSel('')
     if (m === 'existente') setCredenciales(null)
   }
@@ -330,44 +267,14 @@ function SesionSelector() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {clientes.length >= CLIENTES_PARA_BUSCADOR && (
-                <div className="relative">
-                  <Search
-                    size={16}
-                    className="absolute"
-                    style={{ left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--yuda-text-secondary)' }}
-                  />
-                  <input
-                    type="text"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder={t('dashboard.buscarCliente')}
-                    style={{ ...inputStyle, paddingLeft: 36 }}
-                    className={`${inputClase} min-h-[44px] w-full`}
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2" style={{ maxHeight: 280, overflowY: 'auto' }}>
-                {clientesFiltrados.map((c) => (
-                  <FilaCliente
-                    key={c.id}
-                    cliente={c}
-                    activo={c.id === clienteSel}
-                    onClick={() => {
-                      setClienteSel(c.id)
-                      setAviso(null)
-                    }}
-                  />
-                ))}
-                {clientesFiltrados.length === 0 && (
-                  <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                    {t('dashboard.sinResultados', { texto: busqueda })}
-                  </p>
-                )}
-              </div>
-            </div>
+            <SelectorCliente
+              clientes={clientes}
+              valor={clienteSel}
+              onElegir={(id) => {
+                setClienteSel(id)
+                setAviso(null)
+              }}
+            />
           )}
         </Paso>
       )}

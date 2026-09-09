@@ -132,7 +132,7 @@
     "avisoElegirOpcion": "Primero elige para quién es esta cotización.",
     "avisoCrearCliente": "Crea el cliente para poder continuar.",
     "pasoProductos": "Productos",
-    "pasoCliente": "Enviar al cliente",
+    "pasoCliente": "Documento",
     "pasoPedidos": "Pedidos a proveedores",
     "pasoAtras": "Volver",
     "pasoSiguiente": "Siguiente",
@@ -415,7 +415,8 @@
     "faltaFotoDatos": "{{n}} sin la foto del producto con datos. Cárgala antes de generar.",
     "fotoDatosOk": "Todos los productos tienen su foto de datos (la que lee la IA).",
     "revisarDatos": "{{n}} productos sin precio o descripción. Revisa que se hayan extraído bien.",
-    "confirmCheck": "Confirmo que la información se extrajo correctamente y que las fotos están cargadas según su propósito."
+    "confirmCheck": "Confirmo que la información se extrajo correctamente y que las fotos están cargadas según su propósito.",
+    "faltaConfirmar": "Marca la casilla de confirmación para poder descargar."
   },
   "lote": {
     "titulo": "Agregar productos",
@@ -553,7 +554,6 @@
     "titulo": "Cliente y envío",
     "intro": "Publica esta cotización en el portal del cliente para que la vea en línea y siga el avance del envío. Primero elige el cliente.",
     "elegirCliente": "Cliente",
-    "selecciona": "Selecciona un cliente",
     "asignar": "Asignar",
     "clienteAsignado": "Cliente asignado a la cotización",
     "errorAsignar": "No se pudo asignar el cliente",

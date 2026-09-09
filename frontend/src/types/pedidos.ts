@@ -16,5 +16,6 @@ export interface PedidoGenerado {
   sesion_id: string
   supplier: string
   archivo_xlsx_url: string
+  archivo_pdf_url?: string | null
   fecha_generacion: string
 }

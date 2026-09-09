@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { AlertTriangle, CheckCircle2, FileSpreadsheet, FileText } from 'lucide-react'
 import { exportarCotizacionExcel, exportarCotizacionPDF } from '../../api/packing'
 import { usePackingStore } from '../../store/packingStore'
@@ -42,9 +43,22 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const sinProductos = items.length === 0
   // No se puede generar sin productos, sin la foto de datos en todos, ni sin confirmar.
   const bloqueado = sinProductos || sinFotoDatos > 0 || !confirmado
+  // Antes el boton bloqueado simplemente no respondia (disabled nativo no dispara
+  // onClick): habia que leer la lista de arriba para entender por que. Ahora, al
+  // tocarlo, dice exactamente cual de los tres motivos falta.
+  const motivoBloqueo = sinProductos
+    ? t('cotizacion.sinProductos')
+    : sinFotoDatos > 0
+      ? t('cotizacion.faltaFotoDatos', { n: sinFotoDatos })
+      : !confirmado
+        ? t('cotizacion.faltaConfirmar')
+        : null
 
   const descargar = async (tipo: 'excel' | 'pdf') => {
-    if (bloqueado) return
+    if (bloqueado) {
+      if (motivoBloqueo) toast.error(motivoBloqueo)
+      return
+    }
     setError(null)
     setGenerando(tipo)
     // En iPhone/Safari la pestaña debe abrirse dentro del toque (antes del await)
@@ -147,9 +161,10 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
         <button
           type="button"
           onClick={() => descargar('excel')}
-          disabled={generando !== null || bloqueado}
+          disabled={generando !== null}
+          aria-disabled={bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
-          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-success)' }}
+          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-success)', opacity: bloqueado ? 0.6 : 1 }}
         >
           {generando === 'excel' ? (
             t('cotizacion.generando')
@@ -162,9 +177,10 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
         <button
           type="button"
           onClick={() => descargar('pdf')}
-          disabled={generando !== null || bloqueado}
+          disabled={generando !== null}
+          aria-disabled={bloqueado}
           className="flex flex-1 items-center justify-center gap-2 text-white disabled:opacity-60"
-          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-primary)' }}
+          style={{ ...btnDescarga, backgroundColor: 'var(--yuda-primary)', opacity: bloqueado ? 0.6 : 1 }}
         >
           {generando === 'pdf' ? (
             t('cotizacion.generando')

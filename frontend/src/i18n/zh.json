@@ -132,7 +132,7 @@
     "avisoElegirOpcion": "请先选择这份报价是给谁的。",
     "avisoCrearCliente": "请先创建客户以继续。",
     "pasoProductos": "产品",
-    "pasoCliente": "发送给客户",
+    "pasoCliente": "文件",
     "pasoPedidos": "供应商订单",
     "pasoAtras": "返回",
     "pasoSiguiente": "下一步",
@@ -415,7 +415,8 @@
     "faltaFotoDatos": "{{n}} 件缺少带数据的产品照片。生成前请先上传。",
     "fotoDatosOk": "所有产品都有数据照片（AI 读取用）。",
     "revisarDatos": "{{n}} 件缺少价格或描述。请检查提取结果。",
-    "confirmCheck": "我确认信息已正确提取，且两张照片均按用途上传。"
+    "confirmCheck": "我确认信息已正确提取，且两张照片均按用途上传。",
+    "faltaConfirmar": "请勾选确认框才能下载。"
   },
   "lote": {
     "titulo": "添加产品",
@@ -553,7 +554,6 @@
     "titulo": "客户与发货",
     "intro": "将此报价发布到客户门户，让客户在线查看并跟踪发货。请先选择客户。",
     "elegirCliente": "客户",
-    "selecciona": "选择一个客户",
     "asignar": "分配",
     "clienteAsignado": "已将客户分配到报价",
     "errorAsignar": "无法分配客户",

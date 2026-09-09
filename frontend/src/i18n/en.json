@@ -132,7 +132,7 @@
     "avisoElegirOpcion": "First choose who this quotation is for.",
     "avisoCrearCliente": "Create the client to continue.",
     "pasoProductos": "Products",
-    "pasoCliente": "Send to the client",
+    "pasoCliente": "Document",
     "pasoPedidos": "Supplier orders",
     "pasoAtras": "Back",
     "pasoSiguiente": "Next",
@@ -415,7 +415,8 @@
     "faltaFotoDatos": "{{n}} without the product-with-data photo. Upload it before generating.",
     "fotoDatosOk": "All products have their data photo (the one the AI reads).",
     "revisarDatos": "{{n}} products without price or description. Check the extraction.",
-    "confirmCheck": "I confirm the information was extracted correctly and both photos are loaded for their purpose."
+    "confirmCheck": "I confirm the information was extracted correctly and both photos are loaded for their purpose.",
+    "faltaConfirmar": "Check the confirmation box to be able to download."
   },
   "lote": {
     "titulo": "Add products",
@@ -553,7 +554,6 @@
     "titulo": "Client and shipment",
     "intro": "Publish this quotation in the client's portal so they can view it online and follow the shipment. First choose the client.",
     "elegirCliente": "Client",
-    "selecciona": "Select a client",
     "asignar": "Assign",
     "clienteAsignado": "Client assigned to the quotation",
     "errorAsignar": "Could not assign the client",
