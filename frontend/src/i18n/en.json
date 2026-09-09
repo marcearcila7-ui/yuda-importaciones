@@ -65,6 +65,8 @@
     "credenciales": "Enter your credentials to continue",
     "email": "Email",
     "contrasena": "Password",
+    "verContrasena": "Show password",
+    "ocultarContrasena": "Hide password",
     "ingresar": "Sign in",
     "ingresando": "Signing in...",
     "error": "Incorrect credentials",

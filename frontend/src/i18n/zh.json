@@ -65,6 +65,8 @@
     "credenciales": "请输入您的账号信息以继续",
     "email": "邮箱",
     "contrasena": "密码",
+    "verContrasena": "显示密码",
+    "ocultarContrasena": "隐藏密码",
     "ingresar": "登录",
     "ingresando": "正在登录...",
     "error": "账号或密码错误",

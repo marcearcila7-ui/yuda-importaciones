@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 // font-size 16 evita el zoom automático en iOS
@@ -29,6 +30,9 @@ function Login() {
   })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Escriben con el pulgar y presión de tiempo (en el mercado, frente al
+  // cliente): poder ver lo que tipearon evita errores de dedo sin darse cuenta.
+  const [verPassword, setVerPassword] = useState(false)
 
   // La sesión vive en un token guardado, no en qué pantalla se está viendo: si el
   // gesto de "volver" del celular trae de regreso a esta URL con el token todavía
@@ -130,16 +134,27 @@ function Login() {
             <label htmlFor="password" style={{ ...labelStyle, marginTop: 20 }}>
               {t('login.contrasena')}
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={inputBase}
-              className={inputClase}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={verPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={{ ...inputBase, paddingRight: 32 }}
+                className={inputClase}
+              />
+              <button
+                type="button"
+                onClick={() => setVerPassword((v) => !v)}
+                aria-label={t(verPassword ? 'login.ocultarContrasena' : 'login.verContrasena')}
+                className="absolute bottom-2 right-0 flex items-center justify-center"
+                style={{ width: 28, height: 28, color: 'var(--yuda-text-secondary)' }}
+              >
+                {verPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             <button
               type="submit"

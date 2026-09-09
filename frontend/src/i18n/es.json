@@ -65,6 +65,8 @@
     "credenciales": "Ingresa tus credenciales para continuar",
     "email": "Email",
     "contrasena": "Contraseña",
+    "verContrasena": "Ver contraseña",
+    "ocultarContrasena": "Ocultar contraseña",
     "ingresar": "Ingresar",
     "ingresando": "Iniciando sesión...",
     "error": "Credenciales incorrectas",
