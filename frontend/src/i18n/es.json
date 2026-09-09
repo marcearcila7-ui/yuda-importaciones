@@ -112,6 +112,10 @@
     "opcionExistente": "Un cliente que ya tengo",
     "opcionExistenteAyuda": "Elige uno de los clientes que ya creaste y sigue trabajando con él.",
     "opcionExistenteVacio": "Todavía no has creado ningún cliente.",
+    "opcionExistenteCargando": "Cargando tus clientes…",
+    "cargandoClientes": "Cargando tus clientes…",
+    "errorCargarClientes": "No se pudo cargar tu lista de clientes. Revisa tu conexión.",
+    "reintentarCargarClientes": "Reintentar",
     "opcionNuevo": "Un cliente nuevo",
     "opcionNuevoAyuda": "Lo creas ahora y queda guardado para las próximas cotizaciones.",
     "opcionLibre": "Sin cliente por ahora",
@@ -246,7 +250,8 @@
     "shippingMarkEjemplo": "Ej: ABC",
     "shippingMarkAyuda": "Identifica la carga de este cliente en el contenedor. Va en todos los productos.",
     "shippingMarkGuardada": "Marca de embarque guardada",
-    "shippingMarkError": "No se pudo guardar la marca de embarque"
+    "shippingMarkError": "No se pudo guardar la marca de embarque",
+    "errorGuardarCampo": "No se pudo guardar el cambio. Vuelve a intentarlo."
   },
   "pedidos": {
     "generar": "Generar Pedidos",

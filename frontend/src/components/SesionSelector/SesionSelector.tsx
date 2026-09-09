@@ -149,6 +149,8 @@ function SesionSelector() {
 
   // Clientes guardados de la cuenta
   const [clientes, setClientes] = useState<Cliente[]>([])
+  const [cargandoClientes, setCargandoClientes] = useState(true)
+  const [errorClientes, setErrorClientes] = useState(false)
   const [clienteSel, setClienteSel] = useState('')
   const [busqueda, setBusqueda] = useState('')
 
@@ -159,15 +161,27 @@ function SesionSelector() {
   const [nuevaPass, setNuevaPass] = useState('')
   const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
 
-  useEffect(() => {
+  // Antes esto fallaba en silencio total: con mala señal en el mercado, la
+  // lista de clientes se quedaba vacía para siempre, sin spinner ni error ni
+  // forma de reintentar, y la vendedora no tenía cómo saber si seguía cargando
+  // o si ya había fallado. Ahora se distingue cargando / error / vacío de verdad.
+  const cargarClientes = () => {
+    setCargandoClientes(true)
+    setErrorClientes(false)
     getClientes()
       .then(setClientes)
-      .catch(() => undefined)
+      .catch(() => setErrorClientes(true))
+      .finally(() => setCargandoClientes(false))
+  }
+
+  useEffect(() => {
+    cargarClientes()
     // Precargar el tipo de cambio que configuró la admin (evita cotizar con una
     // tasa vieja); si falla, queda el valor por defecto.
     getConfiguracion()
       .then((c) => setTipoCambio(String(c.tipo_cambio_usd)))
       .catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const clientesFiltrados = useMemo(() => {
@@ -260,9 +274,11 @@ function SesionSelector() {
             icono={<Users size={18} />}
             titulo={t('dashboard.opcionExistente')}
             ayuda={
-              clientes.length
-                ? t('dashboard.opcionExistenteAyuda')
-                : t('dashboard.opcionExistenteVacio')
+              cargandoClientes
+                ? t('dashboard.opcionExistenteCargando')
+                : clientes.length
+                  ? t('dashboard.opcionExistenteAyuda')
+                  : t('dashboard.opcionExistenteVacio')
             }
             onClick={() => elegirModo('existente')}
           />
@@ -286,7 +302,28 @@ function SesionSelector() {
       {/* PASO 2: depende de lo elegido arriba */}
       {modo === 'existente' && (
         <Paso numero={2} titulo={t('dashboard.elegirCliente')}>
-          {clientes.length === 0 ? (
+          {cargandoClientes ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('dashboard.cargandoClientes')}
+            </p>
+          ) : errorClientes ? (
+            <div
+              className="flex flex-col items-start gap-2 p-4"
+              style={{ borderRadius: 12, backgroundColor: '#FEF2F2' }}
+            >
+              <p className="text-sm" style={{ color: 'var(--yuda-error-dark)' }}>
+                {t('dashboard.errorCargarClientes')}
+              </p>
+              <button
+                type="button"
+                onClick={cargarClientes}
+                className="flex items-center gap-2 font-semibold text-white"
+                style={{ minHeight: 40, backgroundColor: 'var(--yuda-error)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+              >
+                {t('dashboard.reintentarCargarClientes')}
+              </button>
+            </div>
+          ) : clientes.length === 0 ? (
             <div
               className="flex flex-col items-start gap-2 p-4"
               style={{ borderRadius: 12, backgroundColor: 'var(--yuda-primary-soft)' }}

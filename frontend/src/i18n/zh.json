@@ -112,6 +112,10 @@
     "opcionExistente": "已有的客户",
     "opcionExistenteAyuda": "从已创建的客户中选择一位，继续为他工作。",
     "opcionExistenteVacio": "您还没有创建任何客户。",
+    "opcionExistenteCargando": "正在加载您的客户…",
+    "cargandoClientes": "正在加载您的客户…",
+    "errorCargarClientes": "无法加载客户列表，请检查网络连接。",
+    "reintentarCargarClientes": "重试",
     "opcionNuevo": "新客户",
     "opcionNuevoAyuda": "现在创建，之后的报价都能直接使用。",
     "opcionLibre": "暂时不指定客户",
@@ -246,7 +250,8 @@
     "shippingMarkEjemplo": "例如 ABC",
     "shippingMarkAyuda": "用于在货柜中识别该客户的货物，会显示在所有产品上。",
     "shippingMarkGuardada": "唛头已保存",
-    "shippingMarkError": "无法保存唛头"
+    "shippingMarkError": "无法保存唛头",
+    "errorGuardarCampo": "无法保存修改，请重试。"
   },
   "pedidos": {
     "generar": "生成订单",

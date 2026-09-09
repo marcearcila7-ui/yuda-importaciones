@@ -103,6 +103,14 @@ function CeldaEditable({
     setGuardando(true)
     await actualizarItem(item.id, { [campo]: nuevoValor })
     setGuardando(false)
+    // actualizarItem nunca lanza (el store se traga el error), así que sin este
+    // chequeo una falla de red quedaba en silencio total: el campo volvía a su
+    // valor viejo sin ningún aviso y la vendedora creía que había guardado.
+    if (usePackingStore.getState().error) {
+      toast.error(t('packing.errorGuardarCampo'))
+      usePackingStore.getState().clearError()
+      return
+    }
     onItemActualizado()
   }
 
@@ -212,6 +220,7 @@ function CampoMovil({
   tipo: TipoCampo
   onSaved: () => void
 }) {
+  const { t } = useTranslation()
   const actualizarItem = usePackingStore((s) => s.actualizarItem)
   const actual = item[campo]
   const [valor, setValor] = useState<string>(actual == null ? '' : String(actual))
@@ -229,6 +238,13 @@ function CampoMovil({
     setGuardando(true)
     await actualizarItem(item.id, { [campo]: nuevo })
     setGuardando(false)
+    // Ver el comentario equivalente en CeldaEditable: sin esto, una falla de red
+    // en el celular (el caso normal en el mercado) borraba el cambio en silencio.
+    if (usePackingStore.getState().error) {
+      toast.error(t('packing.errorGuardarCampo'))
+      usePackingStore.getState().clearError()
+      return
+    }
     onSaved()
   }
 

@@ -112,6 +112,10 @@
     "opcionExistente": "A client I already have",
     "opcionExistenteAyuda": "Pick one of the clients you already created and keep working with them.",
     "opcionExistenteVacio": "You haven't created any client yet.",
+    "opcionExistenteCargando": "Loading your clients…",
+    "cargandoClientes": "Loading your clients…",
+    "errorCargarClientes": "Could not load your client list. Check your connection.",
+    "reintentarCargarClientes": "Retry",
     "opcionNuevo": "A new client",
     "opcionNuevoAyuda": "Create them now and they stay saved for future quotations.",
     "opcionLibre": "No client for now",
@@ -246,7 +250,8 @@
     "shippingMarkEjemplo": "e.g. ABC",
     "shippingMarkAyuda": "Identifies this client's cargo in the container. It goes on every product.",
     "shippingMarkGuardada": "Shipping mark saved",
-    "shippingMarkError": "The shipping mark could not be saved"
+    "shippingMarkError": "The shipping mark could not be saved",
+    "errorGuardarCampo": "Could not save the change. Please try again."
   },
   "pedidos": {
     "generar": "Generate Orders",

@@ -81,9 +81,12 @@ export async function eliminarSesion(sesion_id: string): Promise<void> {
   await apiClient.delete(`/sesiones/${sesion_id}`)
 }
 
+// Estos 4 generan un PDF/Excel con fotos incrustadas: pueden tardar más que el
+// timeout por default de apiClient, así que usan el mismo margen que las subidas.
 export async function exportarPackingExcel(sesion_id: string): Promise<Blob> {
   const { data } = await apiClient.get(`/sesiones/${sesion_id}/exportar/packing-excel`, {
     responseType: 'blob',
+    timeout: TIMEOUT_SUBIDA,
   })
   return data as Blob
 }
@@ -91,6 +94,7 @@ export async function exportarPackingExcel(sesion_id: string): Promise<Blob> {
 export async function exportarPackingPDF(sesion_id: string): Promise<Blob> {
   const { data } = await apiClient.get(`/sesiones/${sesion_id}/exportar/packing-pdf`, {
     responseType: 'blob',
+    timeout: TIMEOUT_SUBIDA,
   })
   return data as Blob
 }
@@ -99,7 +103,7 @@ export async function exportarCotizacionExcel(sesion_id: string, idioma: string)
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/cotizacion-excel`,
     { idioma },
-    { responseType: 'blob' },
+    { responseType: 'blob', timeout: TIMEOUT_SUBIDA },
   )
   return data as Blob
 }
@@ -108,7 +112,7 @@ export async function exportarCotizacionPDF(sesion_id: string, idioma: string): 
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/cotizacion-pdf`,
     { idioma },
-    { responseType: 'blob' },
+    { responseType: 'blob', timeout: TIMEOUT_SUBIDA },
   )
   return data as Blob
 }

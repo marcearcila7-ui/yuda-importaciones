@@ -2,10 +2,20 @@ import axios from 'axios'
 
 // Instancia axios base. En producción usa VITE_API_URL (frontend y backend en
 // orígenes distintos); en desarrollo cae a la ruta relativa /api/v1 (proxeada por Vite).
+//
+// timeout: sin esto axios espera para siempre (default 0). En el mercado, con
+// handoffs de antena o zonas muertas, una conexión se queda "colgada" sin fallar
+// limpio: ni resuelve ni rechaza. Como TODO el manejo de errores de la app depende
+// de que la promesa se resuelva o rechace, eso dejaba botones en "Ingresando…",
+// "Generando…" o "Guardando…" trabados para siempre, sin mensaje ni forma de
+// reintentar salvo recargar. Las llamadas que de verdad tardan (subir fotos,
+// generar documentos) ya fijan su propio timeout más largo por request, que
+// pisa este default.
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL
     ? `${import.meta.env.VITE_API_URL}/api/v1`
     : '/api/v1',
+  timeout: 20_000,
 })
 
 // Auto-logout ante sesión vencida: si el backend responde 401 a una llamada

@@ -114,9 +114,21 @@ function Dashboard() {
   const [pasoVista, setPasoVista] = useState(1)
   // Marcela abre el cotizador solo cuando lo necesita
   const [mostrarCotizador, setMostrarCotizador] = useState(false)
-  // Sesión para la que ya confirmaron la advertencia de fotos (se reinicia en cada
-  // carga y al abrir otra cotización → la alerta vuelve a salir cada vez).
-  const [confirmadoParaSesion, setConfirmadoParaSesion] = useState<string | null>(null)
+  // Sesión para la que ya confirmaron la advertencia de fotos. Se guarda en
+  // localStorage (no solo en memoria) para que sobreviva a un cierre de sesión,
+  // una recarga o quedarse sin señal: sin esto, la vendedora volvía a ver la
+  // advertencia bloqueante cada vez que reabría la MISMA cotización en la que ya
+  // estaba trabajando, no solo al abrir una nueva. Al abrir una cotización distinta
+  // el id no coincide y la alerta vuelve a salir, que es el comportamiento que sí
+  // se quiere (recordar en cada cliente nuevo).
+  const CLAVE_FOTOS_CONFIRMADAS = 'yuda_fotos_confirmadas'
+  const [confirmadoParaSesion, setConfirmadoParaSesionState] = useState<string | null>(() =>
+    localStorage.getItem(CLAVE_FOTOS_CONFIRMADAS),
+  )
+  const confirmarFotosParaSesion = (id: string) => {
+    localStorage.setItem(CLAVE_FOTOS_CONFIRMADAS, id)
+    setConfirmadoParaSesionState(id)
+  }
 
   // Hasta que no hay productos, todo lo que viene despues (documento del cliente,
   // pedidos a proveedores, registros internos) es ruido: no se puede usar todavia
@@ -128,10 +140,36 @@ function Dashboard() {
   // El bloque de cliente y envío lo gestionan admin y vendedoras
   const esStaffVentas = usuario?.rol === 'admin' || usuario?.rol === 'vendedora'
 
-  // Al abrir otra cotización se empieza de nuevo por la primera pantalla.
+  // Al abrir otra cotización se empieza de nuevo por la primera pantalla. Esto
+  // pasa a andar dentro de una sola URL (/dashboard) sin rutas por paso, así que
+  // el gesto de "volver" del celular no tenía ninguna entrada propia del asistente
+  // a la que retroceder: saltaba directo a lo que hubiera antes de abrir la
+  // cotización, sacando a la vendedora de la app a medio armar un pedido. Se
+  // empuja una entrada de historial por paso (acá y en irAPaso) para que "volver"
+  // retroceda un paso a la vez; el listener de popstate más abajo la escucha.
   useEffect(() => {
+    if (!sesionActual) return
     setPasoVista(1)
+    window.history.pushState({ yudaPaso: 1 }, '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionActual?.id])
+
+  // "Volver" del celular: retrocede un paso si había uno guardado en el
+  // historial, o cierra la cotización si ya no queda ninguno (llegó al punto de
+  // antes de abrirla).
+  useEffect(() => {
+    const alVolver = (e: PopStateEvent) => {
+      const estado = e.state as { yudaPaso?: number } | null
+      if (estado?.yudaPaso) {
+        setPasoVista(estado.yudaPaso)
+      } else {
+        volverAlInicio()
+      }
+    }
+    window.addEventListener('popstate', alVolver)
+    return () => window.removeEventListener('popstate', alVolver)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Si se quedó sin productos (los borró todos), las pantallas siguientes ya no
   // aplican: se la devuelve a la primera en vez de dejarla en una pantalla muerta.
@@ -139,9 +177,11 @@ function Dashboard() {
     if (!hayProductos && pasoVista !== 1) setPasoVista(1)
   }, [hayProductos, pasoVista])
 
-  // Cambiar de pantalla debe empezar arriba, no a media página.
+  // Cambiar de pantalla debe empezar arriba, no a media página. Cada paso es su
+  // propia entrada de historial (ver el useEffect de arriba).
   const irAPaso = (paso: number) => {
     setPasoVista(paso)
+    window.history.pushState({ yudaPaso: paso }, '')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -504,7 +544,7 @@ function Dashboard() {
           una cotización y bloquea hasta que la vendedora confirma que sus fotos cumplen. */}
       {sesionActual && confirmadoParaSesion !== sesionActual.id && (
         <AdvertenciaFotos
-          onConfirmar={() => setConfirmadoParaSesion(sesionActual.id)}
+          onConfirmar={() => confirmarFotosParaSesion(sesionActual.id)}
           onCancelar={volverAlInicio}
         />
       )}
