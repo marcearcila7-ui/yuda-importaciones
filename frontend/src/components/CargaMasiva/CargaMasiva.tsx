@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ChevronDown, ChevronUp, Image as ImageIcon, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
@@ -83,6 +83,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
   const { t } = useTranslation()
   const sesionActual = usePackingStore((s) => s.sesionActual)
   const agregarItem = usePackingStore((s) => s.agregarItem)
+  const items = usePackingStore((s) => s.items)
   const {
     fase,
     seleccionadas,
@@ -284,9 +285,16 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
   // En que paso de la secuencia esta parada ahora mismo
   const pasoActual = fase === 'completado' ? 3 : enProgreso ? 2 : 1
+  // Cuando ya se agregaron TODOS los productos de una tanda, el lote se cierra y
+  // esta pantalla vuelve a quedar vacía (correcto: ya no hay nada pendiente que
+  // revisar acá). Pero para la vendedora, volver a ver el botón de "Seleccionar
+  // fotos" vacío daba la impresión de que sus fotos habían desaparecido, cuando en
+  // realidad ya están en Productos convertidas en ítems. Se lo aclara acá.
   const ayudaPaso =
     fase === 'idle'
-      ? t('lote.ayudaPaso1', { max: MAX_LOTE })
+      ? items.length > 0
+        ? t('lote.ayudaPaso1ConProductos', { n: items.length })
+        : t('lote.ayudaPaso1', { max: MAX_LOTE })
       : fase === 'seleccion'
         ? t('lote.ayudaPaso1Elegidas')
         : enProgreso
@@ -430,9 +438,18 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         </div>
       )}
 
-      {/* Progreso (subiendo o procesando) */}
+      {/* Progreso (subiendo o procesando). La barra pasaba de subir al 100% a
+          "reiniciar" en 0% para leer las etiquetas, y sin nada que lo explicara
+          parecía que se había colgado o vuelto a empezar. Esta línea con el visto
+          queda fija al pasar a "procesando" para que se vea que subir SÍ terminó
+          bien y lo que sigue es un paso nuevo, no un reinicio. */}
       {enProgreso && (
         <div>
+          {fase === 'procesando' && (
+            <p className="mb-2 flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--yuda-success)' }}>
+              <CheckCircle2 size={14} /> {t('lote.fotosSubidasListo', { n: totalSubir })}
+            </p>
+          )}
           <p className="mb-2 text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
             {fase === 'subiendo'
               ? t('lote.subiendo', { hechas: subidas, total: totalSubir })

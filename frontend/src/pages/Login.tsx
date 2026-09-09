@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../store/authStore'
 
@@ -19,7 +19,7 @@ const IDIOMAS = [
 function Login() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
-  const { login, isLoading, error } = useAuthStore()
+  const { login, isLoading, error, token, usuario } = useAuthStore()
   // Si el usuario llego aca porque se le vencio la sesion, hay que decirselo:
   // de otro modo parece que la app lo hubiera echado sin motivo.
   const [sesionVencida] = useState(() => {
@@ -29,6 +29,15 @@ function Login() {
   })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // La sesión vive en un token guardado, no en qué pantalla se está viendo: si el
+  // gesto de "volver" del celular trae de regreso a esta URL con el token todavía
+  // vigente (nadie cerró sesión, solo cambió de pantalla), mostrar el formulario
+  // era engañoso, parecía pedir la contraseña de nuevo y en realidad no la pedía
+  // (al avanzar quedaba adentro igual). Si ya hay sesión, se salta directo.
+  if (token && usuario && !sesionVencida) {
+    return <Navigate to={usuario.rol === 'contadora' ? '/historial' : '/dashboard'} replace />
+  }
 
   const cambiarIdioma = (code: string) => {
     i18n.changeLanguage(code)
@@ -40,8 +49,10 @@ function Login() {
     const ok = await login(email, password)
     if (ok) {
       // La contadora no crea cotizaciones: su inicio es el historial.
+      // replace: true para que el login no quede en el historial como destino de
+      // "volver" (ver también el redirect de arriba si igual se llega acá logueada).
       const rol = useAuthStore.getState().usuario?.rol
-      navigate(rol === 'contadora' ? '/historial' : '/dashboard')
+      navigate(rol === 'contadora' ? '/historial' : '/dashboard', { replace: true })
     }
   }
 

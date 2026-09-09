@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import toast from 'react-hot-toast'
+import i18n from '../i18n'
 import {
   borrarLote,
   crearLote,
@@ -298,9 +300,34 @@ export const useLoteStore = create<LoteState>((set, get) => {
       if (!resp.lote_id) return
       const loteId = resp.lote_id
       if (resp.estado === 'cargando') {
-        // Lote abandonado durante la subida: limpiarlo
+        // Lote interrumpido a mitad de la subida (el celular se bloqueó, se quedó
+        // sin señal, etc.). Antes esto se borraba entero en silencio, incluidas las
+        // fotos que sí habían llegado a subir: la vendedora volvía a abrir la app y
+        // se encontraba con la pantalla vacía sin ningún aviso de qué había pasado.
+        // Cada foto que sube ya queda guardada en el servidor apenas se sube (no
+        // hace falta que el lote haya terminado), así que si alguna llegó a subir,
+        // se retoma el análisis con esas en vez de perderlas. Solo se descarta si
+        // de verdad no había ninguna.
+        let est: LoteEstadoResp
         try {
-          await borrarLote(loteId)
+          est = await estadoLote(loteId)
+        } catch {
+          return
+        }
+        if (est.items.length === 0) {
+          try {
+            await borrarLote(loteId)
+          } catch {
+            // ignorar
+          }
+          return
+        }
+        set({ loteId })
+        try {
+          await procesarLoteApi(loteId)
+          set({ fase: 'procesando', procesadas: 0, totalProc: est.items.length })
+          iniciarPoll(loteId)
+          toast(i18n.t('lote.retomadoParcial', { n: est.items.length }), { icon: '↻' })
         } catch {
           // ignorar
         }
