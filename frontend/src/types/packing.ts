@@ -25,6 +25,19 @@ export interface ItemCreate {
   moq_cajas?: number | null
   ctns: number
   orden?: number
+  // Colores/variantes: el OCR ya lo lee siempre, no solo en bolsos.
+  colores?: string | null
+  // Campos propios de una cotización de bolsos (sesion.tipo_cotizacion === 'bolsos').
+  tamano?: string | null
+  empaque?: string | null
+  etiqueta?: string | null
+  herrajes?: string | null
+  riata?: string | null
+  // Mínimo que exige la TIENDA en total: puede ser solo cajas, o cajas + piezas.
+  minimo_cajas_tienda?: number | null
+  minimo_piezas_caja_tienda?: number | null
+  // Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
+  fotos_extra?: Record<string, string> | null
 }
 
 export interface ItemResponse extends ItemCreate {
@@ -47,6 +60,8 @@ export interface Sesion {
   id: string
   nombre_cliente: string
   fecha: string
+  // "productos" (default) o "bolsos": cambia qué datos pide el OCR.
+  tipo_cotizacion: 'productos' | 'bolsos'
   tipo_cambio_usd: number
   user_id: string
   cliente_id?: string | null

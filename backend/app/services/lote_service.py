@@ -6,6 +6,7 @@ import httpx
 from app.core.config import settings
 from app.database import SessionLocal
 from app.models.lote import LoteItem, LoteOCR
+from app.models.sesion import Sesion
 from app.services.ocr_service import es_error_sistema, extraer_datos_etiqueta
 from app.services.recorte_service import recortar_producto, recuadro_fuera_del_cartel
 from app.services.storage_service import subir_foto
@@ -71,7 +72,7 @@ def _media_type(url: str) -> str:
     return "image/jpeg"
 
 
-async def ocr_de_url(foto_url: str) -> tuple[dict | None, str]:
+async def ocr_de_url(foto_url: str, tipo_cotizacion: str = "productos") -> tuple[dict | None, str]:
     """Descarga una foto y le corre el OCR. Devuelve (datos, estado 'ok'|'error').
 
     'ok' significa que el modelo respondió (aunque la marque ilegible; eso se
@@ -81,7 +82,7 @@ async def ocr_de_url(foto_url: str) -> tuple[dict | None, str]:
         async with httpx.AsyncClient() as cli:
             resp = await cli.get(foto_url, timeout=20)
         if resp.status_code == 200:
-            datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url))
+            datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url), tipo_cotizacion)
             await adjuntar_recorte(datos, resp.content)
             return datos, "ok"
     except Exception:
@@ -89,10 +90,12 @@ async def ocr_de_url(foto_url: str) -> tuple[dict | None, str]:
     return None, "error"
 
 
-async def ocr_de_bytes(imagen_bytes: bytes, media_type: str) -> tuple[dict | None, str]:
+async def ocr_de_bytes(
+    imagen_bytes: bytes, media_type: str, tipo_cotizacion: str = "productos"
+) -> tuple[dict | None, str]:
     """Corre el OCR sobre una imagen ya en memoria. Devuelve (datos, estado)."""
     try:
-        datos = await extraer_datos_etiqueta(imagen_bytes, media_type)
+        datos = await extraer_datos_etiqueta(imagen_bytes, media_type, tipo_cotizacion)
         await adjuntar_recorte(datos, imagen_bytes)
         return datos, "ok"
     except Exception:
@@ -106,7 +109,8 @@ async def procesar_lote(lote_id: str) -> None:
     Corre fuera del request: la vendedora puede cerrar la app y al volver
     consulta el estado. Nunca lanza excepción hacia afuera.
     """
-    # 1. Tomar los ítems pendientes
+    # 1. Tomar los ítems pendientes y el tipo de cotización de la sesión (una
+    # sola vez: le dice al OCR si tiene que leer también los campos de bolso).
     db = SessionLocal()
     try:
         items = (
@@ -115,6 +119,9 @@ async def procesar_lote(lote_id: str) -> None:
             .all()
         )
         trabajos = [(i.id, i.foto_url) for i in items]
+        lote = db.query(LoteOCR).filter(LoteOCR.id == lote_id).first()
+        sesion = db.query(Sesion).filter(Sesion.id == lote.sesion_id).first() if lote else None
+        tipo_cotizacion = sesion.tipo_cotizacion if sesion else "productos"
     finally:
         db.close()
 
@@ -133,7 +140,9 @@ async def procesar_lote(lote_id: str) -> None:
                 async with httpx.AsyncClient() as cli:
                     resp = await cli.get(foto_url, timeout=20)
                 if resp.status_code == 200:
-                    datos = await extraer_datos_etiqueta(resp.content, _media_type(foto_url))
+                    datos = await extraer_datos_etiqueta(
+                        resp.content, _media_type(foto_url), tipo_cotizacion
+                    )
                     # Un fallo del sistema NO es una foto "procesada": marcarla 'ok'
                     # hacia la vendedora como "no legible" es echarle la culpa a ella.
                     estado = "error" if es_error_sistema(datos) else "ok"

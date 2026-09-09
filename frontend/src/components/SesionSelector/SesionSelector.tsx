@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Check, FileText, Plus, UserPlus, Users } from 'lucide-react'
+import { Check, FileText, Package, Plus, ShoppingBag, UserPlus, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { crearCliente, getClientes } from '../../api/clientes'
 import { getConfiguracion } from '../../api/admin'
@@ -19,6 +19,10 @@ const inputClase =
 // ninguno todavía. Arranca sin elegir a propósito: mientras no se elija, no se
 // muestra ningún formulario, y así queda claro que esto es lo primero que hay que hacer.
 type Modo = 'existente' | 'nuevo' | 'libre'
+
+// Qué se va a cotizar: cambia qué datos pide el OCR (bolsos necesita más rigor:
+// tamaño, empaque, herrajes, riata, mínimos de la tienda, fotos de detalle).
+type TipoCotizacion = 'productos' | 'bolsos'
 
 // Encabezado de sección. Antes cada una llevaba un círculo numerado (1, 2, 3),
 // pero este formulario es corto y de una sola pantalla, no un asistente largo:
@@ -77,6 +81,7 @@ function SesionSelector() {
   const { t } = useTranslation()
   const { isLoading, crearSesion } = usePackingStore()
 
+  const [tipoCotizacion, setTipoCotizacion] = useState<TipoCotizacion | null>(null)
   const [modo, setModo] = useState<Modo | null>(null)
   const [nombreLibre, setNombreLibre] = useState('')
   const [tipoCambio, setTipoCambio] = useState('6.7')
@@ -161,8 +166,17 @@ function SesionSelector() {
     }
   }
 
+  const elegirTipoCotizacion = (tp: TipoCotizacion) => {
+    setTipoCotizacion(tp)
+    setAviso(null)
+  }
+
   const handleCrear = async () => {
     const tc = Number(tipoCambio) || 6.7
+    if (!tipoCotizacion) {
+      setAviso(t('dashboard.avisoQueCotizar'))
+      return
+    }
     if (!modo) {
       setAviso(t('dashboard.avisoElegirOpcion'))
       return
@@ -173,7 +187,7 @@ function SesionSelector() {
         return
       }
       setAviso(null)
-      await crearSesion(nombreLibre.trim(), tc, null)
+      await crearSesion(nombreLibre.trim(), tc, null, tipoCotizacion)
       setNombreLibre('')
     } else {
       if (!clienteSel) {
@@ -181,7 +195,7 @@ function SesionSelector() {
         return
       }
       setAviso(null)
-      await crearSesion(clienteElegido?.nombre ?? '', tc, clienteSel)
+      await crearSesion(clienteElegido?.nombre ?? '', tc, clienteSel, tipoCotizacion)
     }
     setTipoCambio('6.7')
   }
@@ -192,7 +206,29 @@ function SesionSelector() {
         {t('dashboard.nuevaCotizacion')}
       </h2>
 
+      {/* PASO 0: qué se va a cotizar. Cambia qué datos pide el OCR más adelante. */}
+      <Paso titulo={t('dashboard.queCotizar')}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <OpcionCard
+            activo={tipoCotizacion === 'productos'}
+            icono={<Package size={18} />}
+            titulo={t('dashboard.opcionProductos')}
+            ayuda={t('dashboard.opcionProductosAyuda')}
+            onClick={() => elegirTipoCotizacion('productos')}
+          />
+          <OpcionCard
+            activo={tipoCotizacion === 'bolsos'}
+            icono={<ShoppingBag size={18} />}
+            titulo={t('dashboard.opcionBolsos')}
+            ayuda={t('dashboard.opcionBolsosAyuda')}
+            onClick={() => elegirTipoCotizacion('bolsos')}
+          />
+        </div>
+      </Paso>
+
       {/* PASO 1: la primera decisión, cliente que ya existe o cliente nuevo */}
+      {tipoCotizacion && (
+      <>
       <Paso titulo={t('dashboard.paraQuien')}>
         <div className="grid gap-3 sm:grid-cols-3">
           <OpcionCard
@@ -365,6 +401,8 @@ function SesionSelector() {
             </button>
           </div>
         </Paso>
+      )}
+      </>
       )}
 
       {aviso && <p className="mt-3 text-sm" style={{ color: 'var(--yuda-error)' }}>{aviso}</p>}

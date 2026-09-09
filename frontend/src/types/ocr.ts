@@ -22,6 +22,19 @@ export interface OCRResultado {
   // Minimo de compra de TODA la tienda. Solo llega cuando el cartel trae los dos
   // minimos; la app avisa y la vendedora elige cual usar. Falta en items viejos.
   cantidad_minima_tienda?: number | null
+  // Campos propios de una cotización de bolsos (sesion.tipo_cotizacion === 'bolsos').
+  // El OCR solo los completa en ese modo; en productos varios quedan siempre null.
+  tamano?: string | null
+  empaque?: string | null
+  etiqueta?: string | null
+  herrajes?: string | null
+  riata?: string | null
+  // Mínimo que exige la TIENDA en total (distinto de cantidad_minima_tienda de
+  // arriba, que es la suma de productos): puede ser solo cajas, o cajas + piezas.
+  minimo_cajas_tienda?: number | null
+  minimo_piezas_caja_tienda?: number | null
+  // Fotos de detalle del bolso subidas aparte (interior/herrajes/riata/exterior).
+  fotos_extra?: Record<string, string> | null
   notas: string | null
   confianza: 'alta' | 'media' | 'baja'
   // Calidad de la foto evaluada por el modelo. Puede faltar en ítems viejos.

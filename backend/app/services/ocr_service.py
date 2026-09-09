@@ -201,6 +201,30 @@ Reglas:
 - legible es obligatorio, nunca null: evalúa SOLO si se puede LEER el texto. Un reflejo/brillo o que la foto esté rotada NO la hacen ilegible por sí solos. Marca legible=false SOLO si el texto realmente no se distingue (muy borroso, movido, muy oscuro, tapado o cortado). Ante la duda por buena calidad, marca true.
 """
 
+# Se agrega al PROMPT base SOLO cuando la cotización es de bolsos/carteras: un
+# bolso necesita más rigor que un producto genérico (tamaño, empaque, etiqueta,
+# herrajes, riata) y un mínimo de compra que puede ser de LA TIENDA (no del
+# modelo puntual), que a su vez puede venir de dos formas.
+PROMPT_BOLSOS_EXTRA = """
+
+ESTE PRODUCTO ES UN BOLSO/CARTERA — además de las claves de arriba, el JSON debe
+traer también estas, con la misma exigencia de leer los tres idiomas:
+
+{
+  "tamano": "tamaño o dimensiones del bolso tal como aparecen en el cartel (ej: 'GRANDE', 'M', '30x20x10') o null",
+  "empaque": "cómo viene empacado (ej: 'bolsa individual', 'caja', 'con relleno') o null",
+  "etiqueta": "qué etiqueta o marca lleva el bolso (ej: 'con etiqueta de tela', 'sin marca', el nombre de una marca) o null",
+  "herrajes": "material/color de los herrajes (hebillas, argollas, cierres, remaches) que veas en la foto o que diga el cartel (ej: 'dorado', 'plateado', 'níquel') o null",
+  "riata": "descripción de la riata/correa/asa (ej: 'ajustable', 'cadena', 'cuero sintético', 'desmontable') o null",
+  "minimo_cajas_tienda": número entero del mínimo de CAJAS que exige la tienda en total (sin importar cuántas piezas trae cada una) o null,
+  "minimo_piezas_caja_tienda": número entero del mínimo de PIEZAS POR CAJA que exige la tienda (cuando el mínimo viene como "cajas + piezas por caja", no solo cajas) o null
+}
+
+Rótulos típicos para el mínimo de la TIENDA (distinto de cantidad_minima/cantidad_minima_tienda de arriba, que son por producto): "MIN CAJAS TIENDA", "MINIMO TIENDA", chino "全店起订箱数". Si el cartel dice, por ejemplo, "mínimo 5 cajas" sin más, es minimo_cajas_tienda=5 y minimo_piezas_caja_tienda=null. Si dice "mínimo 5 cajas de 10 piezas", es minimo_cajas_tienda=5 y minimo_piezas_caja_tienda=10. Si el cartel no menciona nada de esto, deja los dos en null: no lo inventes ni lo confundas con cantidad_minima.
+
+Para tamano, empaque, etiqueta, herrajes y riata: si el cartel no trae el dato por escrito, mira la foto e infiere lo que puedas (por ejemplo los herrajes casi siempre se ven); si de verdad no se puede saber ni leyendo ni mirando, deja null.
+"""
+
 
 def _resultado_vacio(motivo: str = "no_procesada") -> dict:
     """Resultado con todos los campos en null. `motivo` distingue si fue un fallo
@@ -222,6 +246,15 @@ def _resultado_vacio(motivo: str = "no_procesada") -> dict:
         "colores": None,
         "cantidad_minima": None,
         "cantidad_minima_tienda": None,
+        # Solo se piden/completan en modo bolsos; en una cotización de productos
+        # varios quedan siempre en None (el prompt base no las menciona).
+        "tamano": None,
+        "empaque": None,
+        "etiqueta": None,
+        "herrajes": None,
+        "riata": None,
+        "minimo_cajas_tienda": None,
+        "minimo_piezas_caja_tienda": None,
         "notas": None,
         "hacia_donde_mira_el_texto": None,
         "giro_necesario": 0,
@@ -313,12 +346,20 @@ def _a_numero(valor, entero: bool = False):
     return None
 
 
-async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
+async def extraer_datos_etiqueta(
+    imagen_bytes: bytes, media_type: str, tipo_cotizacion: str = "productos"
+) -> dict:
     """Extrae datos de una etiqueta de proveedor usando Claude Vision.
+
+    `tipo_cotizacion` "bolsos" agrega al prompt base el bloque de campos
+    propios de bolsos (tamaño, empaque, herrajes, riata, mínimos de tienda);
+    el prompt de productos varios no se toca.
 
     Nunca lanza excepciones: ante cualquier fallo devuelve un resultado vacío
     con confianza baja.
     """
+    prompt = PROMPT + PROMPT_BOLSOS_EXTRA if tipo_cotizacion == "bolsos" else PROMPT
+
     # 1. Imagen a base64
     base64_string = base64.standard_b64encode(imagen_bytes).decode("utf-8")
 
@@ -345,7 +386,7 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
                             },
                             {
                                 "type": "text",
-                                "text": PROMPT,
+                                "text": prompt,
                             },
                         ],
                     }
@@ -392,6 +433,8 @@ async def extraer_datos_etiqueta(imagen_bytes: bytes, media_type: str) -> dict:
     # con un aviso falso de "hay dos mínimos".
     if datos["cantidad_minima_tienda"] == datos["cantidad_minima"]:
         datos["cantidad_minima_tienda"] = None
+    datos["minimo_cajas_tienda"] = _a_numero(datos["minimo_cajas_tienda"], entero=True)
+    datos["minimo_piezas_caja_tienda"] = _a_numero(datos["minimo_piezas_caja_tienda"], entero=True)
 
     # Se le pide una observacion ("hacia donde apunta el techo de las letras") y
     # el giro se calcula aca. Pedirle directamente los grados salia mal: contesta

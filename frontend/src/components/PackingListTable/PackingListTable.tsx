@@ -20,7 +20,7 @@ interface PackingListTableProps {
   onItemActualizado: () => void
 }
 
-type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'photo' | 'unit'
+type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'photo' | 'unit' | 'fotos-extra'
 
 interface ColMeta {
   campo?: keyof ItemResponse
@@ -49,6 +49,7 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'descripcion_zh', header: '中文', meta: { campo: 'descripcion_zh', kind: 'text-edit', width: 160 } },
   { id: 'material', header: 'MATERIAL', meta: { campo: 'material', kind: 'text-edit', width: 120 } },
   { id: 'uso', header: 'USO', meta: { campo: 'uso', kind: 'text-edit', width: 100 } },
+  { id: 'colores', header: 'COLORES', meta: { campo: 'colores', kind: 'text-edit', width: 120 } },
   { id: 'ctns', header: 'CTNS', meta: { campo: 'ctns', kind: 'num-edit', width: 80, ctns: true } },
   { id: 'moq_cajas', header: 'MQT', meta: { campo: 'moq_cajas', kind: 'num-edit', width: 80 } },
   { id: 'qty_por_ctn', header: 'QTY/CTN', meta: { campo: 'qty_por_ctn', kind: 'num-edit', width: 90 } },
@@ -65,6 +66,20 @@ const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 't_cbm', header: 'T.CBM', meta: { campo: 't_cbm', kind: 'ro-num', width: 90 } },
   { id: 'gw', header: 'GW', meta: { campo: 'gw', kind: 'num-edit', width: 70 } },
   { id: 't_gw', header: 'T.GW', meta: { campo: 't_gw', kind: 'ro-num', width: 80 } },
+]
+
+// Columnas propias de una cotización de bolsos (sesion.tipo_cotizacion === 'bolsos').
+// Se agregan al final de COLUMNAS solo en ese caso: con este producto hay que ser
+// minuciosos, así que se ven en la tabla en vez de esconderse en un modal aparte.
+const COLUMNAS_BOLSOS: Array<{ id: string; header: string; meta: ColMeta }> = [
+  { id: 'tamano', header: 'TAMAÑO', meta: { campo: 'tamano', kind: 'text-edit', width: 100 } },
+  { id: 'empaque', header: 'EMPAQUE', meta: { campo: 'empaque', kind: 'text-edit', width: 120 } },
+  { id: 'etiqueta', header: 'ETIQUETA', meta: { campo: 'etiqueta', kind: 'text-edit', width: 120 } },
+  { id: 'herrajes', header: 'HERRAJES', meta: { campo: 'herrajes', kind: 'text-edit', width: 120 } },
+  { id: 'riata', header: 'RIATA', meta: { campo: 'riata', kind: 'text-edit', width: 120 } },
+  { id: 'minimo_cajas_tienda', header: 'MÍN. CAJAS (TIENDA)', meta: { campo: 'minimo_cajas_tienda', kind: 'num-edit', width: 110 } },
+  { id: 'minimo_piezas_caja_tienda', header: 'MÍN. PZS/CAJA (TIENDA)', meta: { campo: 'minimo_piezas_caja_tienda', kind: 'num-edit', width: 120 } },
+  { id: 'fotos_extra', header: 'FOTOS DETALLE', meta: { kind: 'fotos-extra', width: 160 } },
 ]
 
 const TEXTO: Array<ColMeta['kind']> = ['text-edit']
@@ -192,6 +207,22 @@ function CeldaSoloLectura({
       </button>
     )
   }
+  if (meta.kind === 'fotos-extra') {
+    const fotos = item.fotos_extra
+    const urls = fotos ? Object.values(fotos).filter(Boolean) : []
+    if (urls.length === 0) {
+      return <div className="px-1 py-1 text-center text-gray-400">—</div>
+    }
+    return (
+      <div className="flex gap-1 px-1 py-1">
+        {urls.map((url, i) => (
+          <button key={i} type="button" onClick={() => window.open(url, '_blank')} className="flex-shrink-0">
+            <img src={url} alt="" style={{ width: 28, height: 28 }} className="rounded object-cover" />
+          </button>
+        ))}
+      </div>
+    )
+  }
   const valor = item[meta.campo as keyof ItemResponse]
   return (
     <div
@@ -271,6 +302,8 @@ function TarjetaMovil({
   onItemActualizado: () => void
 }) {
   const { t } = useTranslation()
+  const esBolsos = usePackingStore((s) => s.sesionActual?.tipo_cotizacion === 'bolsos')
+  const fotosExtra = item.fotos_extra ? Object.entries(item.fotos_extra).filter(([, url]) => url) : []
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-3">
       <div className="flex gap-3">
@@ -293,6 +326,30 @@ function TarjetaMovil({
         <CampoMovil item={item} campo="price_rmb" label={t('packing.fPrecioRmb')} tipo="num" onSaved={onItemActualizado} />
       </div>
 
+      {esBolsos && (
+        <div className="flex flex-col gap-2 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+          <div className="grid grid-cols-2 gap-2">
+            <CampoMovil item={item} campo="tamano" label={t('packing.campoTamano')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="empaque" label={t('packing.campoEmpaque')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="etiqueta" label={t('packing.campoEtiqueta')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="herrajes" label={t('packing.campoHerrajes')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="riata" label={t('packing.campoRiata')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="colores" label={t('ocr.colores')} tipo="text" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="minimo_cajas_tienda" label={t('packing.campoMinimoCajasTienda')} tipo="num" onSaved={onItemActualizado} />
+            <CampoMovil item={item} campo="minimo_piezas_caja_tienda" label={t('packing.campoMinimoPiezasCajaTienda')} tipo="num" onSaved={onItemActualizado} />
+          </div>
+          {fotosExtra.length > 0 && (
+            <div className="flex gap-2">
+              {fotosExtra.map(([tipo, url]) => (
+                <button key={tipo} type="button" onClick={() => window.open(url, '_blank')} className="flex-shrink-0">
+                  <img src={url} alt={tipo} style={{ width: 40, height: 40 }} className="rounded-lg object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex justify-between border-t border-gray-100 pt-2 text-sm">
         <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('packing.fTotalUsd')}</span>
         <span style={{ fontWeight: 700, color: 'var(--yuda-accent)' }}>$ {(item.total_usd || 0).toFixed(2)}</span>
@@ -304,6 +361,8 @@ function TarjetaMovil({
 function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   const { t } = useTranslation()
   const sesionActual = usePackingStore((s) => s.sesionActual)
+  const esBolsos = sesionActual?.tipo_cotizacion === 'bolsos'
+  const columnasDef = esBolsos ? [...COLUMNAS, ...COLUMNAS_BOLSOS] : COLUMNAS
   // Producto cuyo recorte se esta ajustando a mano (null = ninguno)
   const [itemRecorte, setItemRecorte] = useState<ItemResponse | null>(null)
   const [guardandoRecorte, setGuardandoRecorte] = useState(false)
@@ -329,7 +388,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   }
 
   // Construye las definiciones de columna para TanStack Table
-  const columnas: ColumnDef<ItemResponse>[] = COLUMNAS.map((col) => ({
+  const columnas: ColumnDef<ItemResponse>[] = columnasDef.map((col) => ({
     id: col.id,
     header: t(`packing.cols.${col.id}`),
     meta: col.meta,
@@ -440,7 +499,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
         </tbody>
         <tfoot className="sticky bottom-0">
           <tr style={{ backgroundColor: 'var(--yuda-accent)' }} className="font-bold">
-            {COLUMNAS.map((col) => {
+            {columnasDef.map((col) => {
               let contenido = ''
               if (col.id === 'supplier_nombre') contenido = `${t('packing.totales')}:`
               else if (col.id === 'ctns') contenido = String(totales.ctns)

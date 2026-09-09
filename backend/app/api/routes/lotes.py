@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
@@ -30,6 +30,9 @@ TIPOS_PERMITIDOS = {
 _DECLARADOS_HEIC = {"image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"}
 MAX_BYTES = 25 * 1024 * 1024
 
+# Fotos de detalle propias de un bolso, aparte de la que ya lee el OCR.
+TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior"}
+
 
 def _verificar_dueno(db: Session, sesion_id: str, usuario: User) -> None:
     """Una vendedora solo puede operar sobre cotizaciones propias (403 si no);
@@ -50,6 +53,12 @@ def _obtener_lote(db: Session, lote_id: str, usuario: User) -> LoteOCR:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado")
     _verificar_dueno(db, lote.sesion_id, usuario)
     return lote
+
+
+def _tipo_cotizacion(db: Session, lote: LoteOCR) -> str:
+    """Le dice al OCR si esta sesión es de bolsos (para leer también esos campos)."""
+    sesion = db.query(Sesion).filter(Sesion.id == lote.sesion_id).first()
+    return sesion.tipo_cotizacion if sesion else "productos"
 
 
 @router.post("/sesiones/{sesion_id}/lotes", response_model=LoteCreado, status_code=status.HTTP_201_CREATED)
@@ -187,9 +196,12 @@ async def reanalizar_item(
     db: Session = Depends(get_db),
 ) -> LoteItem:
     """Vuelve a correr el OCR sobre la MISMA foto de un ítem puntual (reintento con IA)"""
-    _obtener_lote(db, lote_id, usuario)
+    lote = _obtener_lote(db, lote_id, usuario)
     item = _obtener_item(db, lote_id, item_id)
-    datos, estado = await ocr_de_url(item.foto_url)
+    fotos_extra = (item.datos or {}).get("fotos_extra")
+    datos, estado = await ocr_de_url(item.foto_url, _tipo_cotizacion(db, lote))
+    if fotos_extra and datos is not None:
+        datos["fotos_extra"] = fotos_extra
     item.datos = datos
     item.estado = estado
     db.commit()
@@ -206,7 +218,7 @@ async def reemplazar_item(
     db: Session = Depends(get_db),
 ) -> LoteItem:
     """Reemplaza la foto de un ítem por otra y la reanaliza al instante"""
-    _obtener_lote(db, lote_id, usuario)
+    lote = _obtener_lote(db, lote_id, usuario)
     item = _obtener_item(db, lote_id, item_id)
 
     if foto.content_type not in TIPOS_PERMITIDOS and foto.content_type not in _DECLARADOS_HEIC:
@@ -246,13 +258,77 @@ async def reemplazar_item(
         None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
     )
 
-    datos, estado = await ocr_de_bytes(imagen_bytes, tipo_real)
+    fotos_extra = (item.datos or {}).get("fotos_extra")
+    datos, estado = await ocr_de_bytes(imagen_bytes, tipo_real, _tipo_cotizacion(db, lote))
+    if fotos_extra and datos is not None:
+        datos["fotos_extra"] = fotos_extra
     item.foto_url = foto_url
     item.datos = datos
     item.estado = estado
     db.commit()
     db.refresh(item)
     return item
+
+
+@router.post("/lotes/{lote_id}/items/{item_id}/foto-extra")
+async def subir_foto_extra(
+    lote_id: str,
+    item_id: str,
+    foto: UploadFile,
+    tipo: str = Form(...),
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sube una foto de detalle del bolso (interior/herrajes/riata/exterior),
+    aparte de la que ya lee el OCR. Se guarda dentro de `datos.fotos_extra`."""
+    _obtener_lote(db, lote_id, usuario)
+    item = _obtener_item(db, lote_id, item_id)
+
+    if tipo not in TIPOS_FOTO_EXTRA:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tipo de foto inválido")
+
+    if foto.content_type not in TIPOS_PERMITIDOS and foto.content_type not in _DECLARADOS_HEIC:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se permiten imágenes JPG, PNG o WEBP",
+        )
+    imagen_bytes = await foto.read()
+    if len(imagen_bytes) > MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La imagen no debe superar 25MB",
+        )
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen JPG, PNG o WEBP válida",
+        )
+
+    if tipo_real == "image/heic":
+        convertida = convertir_a_jpeg(imagen_bytes)
+        if convertida is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se pudo leer la foto del iPhone. Vuelve a intentarlo.",
+            )
+        imagen_bytes = convertida
+        tipo_real = "image/jpeg"
+
+    extension = TIPOS_PERMITIDOS[tipo_real]
+    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    loop = asyncio.get_event_loop()
+    foto_url = await loop.run_in_executor(
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+    )
+
+    datos = dict(item.datos or {})
+    fotos_extra = dict(datos.get("fotos_extra") or {})
+    fotos_extra[tipo] = foto_url
+    datos["fotos_extra"] = fotos_extra
+    item.datos = datos
+    db.commit()
+    return {"tipo": tipo, "foto_url": foto_url}
 
 
 @router.get("/lotes/{lote_id}", response_model=LoteEstado)

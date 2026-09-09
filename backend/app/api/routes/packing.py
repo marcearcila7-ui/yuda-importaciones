@@ -85,6 +85,15 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         referencia=item.referencia,
         cantidad_solicitada=item.cantidad_solicitada,
         orden=item.orden,
+        colores=item.colores,
+        tamano=item.tamano,
+        empaque=item.empaque,
+        etiqueta=item.etiqueta,
+        herrajes=item.herrajes,
+        riata=item.riata,
+        minimo_cajas_tienda=item.minimo_cajas_tienda,
+        minimo_piezas_caja_tienda=item.minimo_piezas_caja_tienda,
+        fotos_extra=item.fotos_extra,
         **calculados,
     )
 
@@ -150,6 +159,7 @@ def crear_sesion(
         nombre_cliente=nombre,
         fecha=datetime.now().date(),
         tipo_cambio_usd=datos.tipo_cambio_usd,
+        tipo_cotizacion=datos.tipo_cotizacion,
         user_id=usuario.id,
         cliente_id=datos.cliente_id,
     )

@@ -124,6 +124,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     reintentar,
     reanalizarUno,
     reemplazarUno,
+    subirFotoExtraUno,
     actualizarDato,
     quitar,
     finalizar,
@@ -149,6 +150,12 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
       return n
     })
   const sesionId = sesionActual?.id
+  const esBolsos = sesionActual?.tipo_cotizacion === 'bolsos'
+  // Foto extra subiéndose ahora mismo (id de la tarjeta + tipo), para deshabilitar
+  // el botón y no disparar dos subidas de la misma mientras la primera termina.
+  const [subiendoExtra, setSubiendoExtra] = useState<string | null>(null)
+  const inputExtraRef = useRef<HTMLInputElement>(null)
+  const [extraPedido, setExtraPedido] = useState<{ id: string; tipo: 'interior' | 'herrajes' | 'riata' | 'exterior' } | null>(null)
 
   // Al entrar, retomar un lote en curso de esta sesión (si la vendedora cerró y volvió)
   useEffect(() => {
@@ -257,6 +264,28 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     }
   }
 
+  // Foto de detalle del bolso (interior/herrajes/riata/exterior): abre el
+  // selector y, al elegir, la sube y la guarda dentro de datos.fotos_extra.
+  const pedirFotoExtra = (id: string, tipo: 'interior' | 'herrajes' | 'riata' | 'exterior') => {
+    setExtraPedido({ id, tipo })
+    inputExtraRef.current?.click()
+  }
+  const handleFotoExtra = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    const pedido = extraPedido
+    setExtraPedido(null)
+    if (!file || !pedido) return
+    setSubiendoExtra(`${pedido.id}-${pedido.tipo}`)
+    try {
+      await subirFotoExtraUno(pedido.id, pedido.tipo, file)
+    } catch {
+      toast.error(t('lote.errorReanalizar'))
+    } finally {
+      setSubiendoExtra(null)
+    }
+  }
+
   // Solo los productos con foto legible y datos completos se pueden agregar.
   const legibles = resultados.filter((r) => evaluarLegibilidad(r.datos).ok)
   const noLegibles = resultados.length - legibles.length
@@ -289,6 +318,17 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         cbm: d.cbm_directo ?? undefined,
         moq_cajas: d.cantidad_minima ?? undefined,
         ctns: 1,
+        colores: d.colores ?? undefined,
+        ...(esBolsos && {
+          tamano: d.tamano ?? undefined,
+          empaque: d.empaque ?? undefined,
+          etiqueta: d.etiqueta ?? undefined,
+          herrajes: d.herrajes ?? undefined,
+          riata: d.riata ?? undefined,
+          minimo_cajas_tienda: d.minimo_cajas_tienda ?? undefined,
+          minimo_piezas_caja_tienda: d.minimo_piezas_caja_tienda ?? undefined,
+          fotos_extra: d.fotos_extra ?? undefined,
+        }),
       }
       await agregarItem(item)
       quitar(r.id)
@@ -642,7 +682,63 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 </div>
                 <CampoLote label={t('ocr.cbm')} valor={r.datos.cbm_directo} tipo="number" requerido alerta={faltaSet.has('cbm')}
                   onChange={(v) => actualizarNumero(r.id, 'cbm_directo', v)} />
+                <CampoLote label={t('ocr.colores')} valor={r.datos.colores}
+                  onChange={(v) => actualizarTexto(r.id, 'colores', v)} />
               </div>
+
+              {/* Datos y fotos propios de una cotización de bolsos: con este producto
+                  hay que ser minuciosos, así que van siempre visibles, no en "ver más". */}
+              {esBolsos && (
+                <div className="flex flex-col gap-2 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+                  <div className="grid grid-cols-2 gap-2">
+                    <CampoLote label={t('packing.campoTamano')} valor={r.datos.tamano}
+                      onChange={(v) => actualizarTexto(r.id, 'tamano', v)} />
+                    <CampoLote label={t('packing.campoEmpaque')} valor={r.datos.empaque}
+                      onChange={(v) => actualizarTexto(r.id, 'empaque', v)} />
+                    <CampoLote label={t('packing.campoEtiqueta')} valor={r.datos.etiqueta}
+                      onChange={(v) => actualizarTexto(r.id, 'etiqueta', v)} />
+                    <CampoLote label={t('packing.campoHerrajes')} valor={r.datos.herrajes}
+                      onChange={(v) => actualizarTexto(r.id, 'herrajes', v)} />
+                    <CampoLote label={t('packing.campoRiata')} valor={r.datos.riata}
+                      onChange={(v) => actualizarTexto(r.id, 'riata', v)} />
+                    <CampoLote label={t('packing.campoMinimoCajasTienda')} valor={r.datos.minimo_cajas_tienda} tipo="number"
+                      onChange={(v) => actualizarNumero(r.id, 'minimo_cajas_tienda', v)} />
+                    <CampoLote label={t('packing.campoMinimoPiezasCajaTienda')} valor={r.datos.minimo_piezas_caja_tienda} tipo="number"
+                      onChange={(v) => actualizarNumero(r.id, 'minimo_piezas_caja_tienda', v)} />
+                  </div>
+
+                  <span className="text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                    {t('packing.fotosExtraTitulo')}
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(['interior', 'herrajes', 'riata', 'exterior'] as const).map((tipo) => {
+                      const url = r.datos.fotos_extra?.[tipo]
+                      const ocupadoExtra = subiendoExtra === `${r.id}-${tipo}`
+                      return (
+                        <button
+                          key={tipo}
+                          type="button"
+                          onClick={() => pedirFotoExtra(r.id, tipo)}
+                          disabled={ocupadoExtra}
+                          className="relative flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed text-center disabled:opacity-60"
+                          style={{ borderColor: url ? 'var(--yuda-success)' : 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
+                        >
+                          {url ? (
+                            <img src={url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <>
+                              <Upload size={16} style={{ color: 'var(--yuda-primary)' }} />
+                              <span className="px-1 text-[10px] font-medium leading-tight" style={{ color: 'var(--yuda-primary)' }}>
+                                {ocupadoExtra ? t('lote.analizando') : t(`packing.foto${tipo.charAt(0).toUpperCase()}${tipo.slice(1)}`)}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -658,8 +754,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 <div className="grid grid-cols-2 gap-2 rounded-lg bg-white p-2">
                   <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero}
                     onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
-                  <CampoLote label={t('ocr.colores')} valor={r.datos.colores}
-                    onChange={(v) => actualizarTexto(r.id, 'colores', v)} />
                   <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionEn')} valor={r.datos.descripcion_en}
                     onChange={(v) => actualizarTexto(r.id, 'descripcion_en', v)} />
                   <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionZh')} valor={r.datos.descripcion_zh}
@@ -734,6 +828,15 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         type="file"
         accept={ACCEPT_IMAGENES}
         onChange={handleReemplazo}
+        className="hidden"
+      />
+
+      {/* Input oculto para subir una foto de detalle del bolso */}
+      <input
+        ref={inputExtraRef}
+        type="file"
+        accept={ACCEPT_IMAGENES}
+        onChange={handleFotoExtra}
         className="hidden"
       />
 

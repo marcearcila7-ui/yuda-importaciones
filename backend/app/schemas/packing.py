@@ -33,6 +33,18 @@ class ItemCreate(BaseModel):
     moq_cajas: Optional[int] = None
     ctns: int = 1
     orden: int = 0
+    # Colores/variantes: el OCR ya lo lee siempre, no solo en bolsos.
+    colores: Optional[str] = None
+    # Campos propios de una cotización de bolsos (sesion.tipo_cotizacion == "bolsos").
+    tamano: Optional[str] = None
+    empaque: Optional[str] = None
+    etiqueta: Optional[str] = None
+    herrajes: Optional[str] = None
+    riata: Optional[str] = None
+    minimo_cajas_tienda: Optional[int] = None
+    minimo_piezas_caja_tienda: Optional[int] = None
+    # Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
+    fotos_extra: Optional[dict] = None
 
 
 class RecorteRequest(BaseModel):
@@ -71,6 +83,15 @@ class ItemUpdate(BaseModel):
     moq_cajas: Optional[int] = None
     ctns: Optional[int] = None
     orden: Optional[int] = None
+    colores: Optional[str] = None
+    tamano: Optional[str] = None
+    empaque: Optional[str] = None
+    etiqueta: Optional[str] = None
+    herrajes: Optional[str] = None
+    riata: Optional[str] = None
+    minimo_cajas_tienda: Optional[int] = None
+    minimo_piezas_caja_tienda: Optional[int] = None
+    fotos_extra: Optional[dict] = None
 
 
 class ItemResponse(ItemCreate):
@@ -97,6 +118,8 @@ class SesionCreate(BaseModel):
 
     nombre_cliente: str
     tipo_cambio_usd: float = 6.7
+    # "productos" (default) o "bolsos": cambia qué datos pide el OCR.
+    tipo_cotizacion: str = "productos"
     # Si se crea para un cliente del portal, su id (la cotización nace vinculada)
     cliente_id: str | None = None
 
@@ -113,6 +136,7 @@ class SesionResponse(BaseModel):
     id: str
     nombre_cliente: str
     fecha: date
+    tipo_cotizacion: str = "productos"
     tipo_cambio_usd: float
     user_id: str
     cliente_id: str | None = None

@@ -59,6 +59,25 @@ export async function reemplazarItemLote(
   return data
 }
 
+// Sube una foto de detalle del bolso (interior/herrajes/riata/exterior), aparte
+// de la que ya lee el OCR. Devuelve el ítem completo con `datos.fotos_extra` actualizado.
+export async function subirFotoExtra(
+  lote_id: string,
+  item_id: string,
+  tipo: 'interior' | 'herrajes' | 'riata' | 'exterior',
+  file: File,
+): Promise<{ tipo: string; foto_url: string }> {
+  const fd = new FormData()
+  fd.append('foto', file)
+  fd.append('tipo', tipo)
+  const { data } = await apiClient.post(
+    `/lotes/${lote_id}/items/${item_id}/foto-extra`,
+    fd,
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
 export async function estadoLote(lote_id: string): Promise<LoteEstadoResp> {
   const { data } = await apiClient.get(`/lotes/${lote_id}`)
   return data as LoteEstadoResp

@@ -10,7 +10,12 @@ interface PackingState {
   isLoading: boolean
   error: string | null
   cargarSesiones: () => Promise<void>
-  crearSesion: (nombre_cliente: string, tipo_cambio_usd?: number, cliente_id?: string | null) => Promise<void>
+  crearSesion: (
+    nombre_cliente: string,
+    tipo_cambio_usd?: number,
+    cliente_id?: string | null,
+    tipo_cotizacion?: 'productos' | 'bolsos',
+  ) => Promise<void>
   seleccionarSesion: (sesion: Sesion) => Promise<void>
   cargarItems: () => Promise<void>
   agregarItem: (data: ItemCreate) => Promise<void>
@@ -45,10 +50,15 @@ export const usePackingStore = create<PackingState>((set, get) => ({
     }
   },
 
-  crearSesion: async (nombre_cliente, tipo_cambio_usd, cliente_id) => {
+  crearSesion: async (nombre_cliente, tipo_cambio_usd, cliente_id, tipo_cotizacion) => {
     set({ isLoading: true, error: null })
     try {
-      const sesion = await packingApi.crearSesion({ nombre_cliente, tipo_cambio_usd, cliente_id })
+      const sesion = await packingApi.crearSesion({
+        nombre_cliente,
+        tipo_cambio_usd,
+        cliente_id,
+        tipo_cotizacion,
+      })
       set((s) => ({
         sesiones: [sesion, ...s.sesiones],
         sesionActual: sesion,

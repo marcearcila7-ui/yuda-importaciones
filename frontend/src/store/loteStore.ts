@@ -10,6 +10,7 @@ import {
   reanalizarItemLote,
   reemplazarItemLote,
   reprocesarLote,
+  subirFotoExtra,
   subirFotoLote,
   type LoteEstadoResp,
 } from '../api/lotes'
@@ -33,6 +34,8 @@ function datosVacios(): OCRResultado {
     cbm_directo: null, colores: null, cantidad_minima: null,
     recuadro_cartel: null, recuadro_producto: null, foto_recorte_url: null,
     cantidad_minima_tienda: null, notas: null,
+    tamano: null, empaque: null, etiqueta: null, herrajes: null, riata: null,
+    minimo_cajas_tienda: null, minimo_piezas_caja_tienda: null, fotos_extra: null,
     confianza: 'baja', legible: false, motivo_ilegible: 'no_procesada',
   }
 }
@@ -79,6 +82,11 @@ interface LoteState {
   reintentar: () => Promise<void>
   reanalizarUno: (id: string) => Promise<void>
   reemplazarUno: (id: string, file: File) => Promise<void>
+  subirFotoExtraUno: (
+    id: string,
+    tipo: 'interior' | 'herrajes' | 'riata' | 'exterior',
+    file: File,
+  ) => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
   quitar: (id: string) => void
   finalizar: () => Promise<void>
@@ -379,6 +387,21 @@ export const useLoteStore = create<LoteState>((set, get) => {
         resultados: s.resultados.map((r) =>
           r.id === id
             ? { ...r, foto_url: info.foto_url, datos: info.datos ? { ...info.datos } : datosVacios() }
+            : r,
+        ),
+      }))
+    },
+
+    // Sube una foto de detalle del bolso (interior/herrajes/riata/exterior).
+    subirFotoExtraUno: async (id, tipo, file) => {
+      const loteId = get().loteId
+      if (!loteId) return
+      const comprimido = await comprimirImagen(file)
+      const { foto_url } = await subirFotoExtra(loteId, id, tipo, comprimido)
+      set((s) => ({
+        resultados: s.resultados.map((r) =>
+          r.id === id
+            ? { ...r, datos: { ...r.datos, fotos_extra: { ...r.datos.fotos_extra, [tipo]: foto_url } } }
             : r,
         ),
       }))

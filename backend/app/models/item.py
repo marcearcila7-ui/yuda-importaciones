@@ -1,7 +1,7 @@
 import secrets
 import uuid
 
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -66,3 +66,25 @@ class Item(Base):
     # proveedor. Null hasta que el cliente envíe su pedido.
     cantidad_solicitada: Mapped[int | None] = mapped_column(Integer, nullable=True)
     orden: Mapped[int] = mapped_column(Integer, default=0)
+
+    # El OCR ya lee "colores" desde siempre, pero nunca se guardaba: se agregaba
+    # a la revisión y se perdía al agregar el producto. Se guarda para toda
+    # cotización, no solo bolsos.
+    colores: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Campos propios de una cotización de bolsos (sesion.tipo_cotizacion ==
+    # "bolsos"). Quedan nullable y sin usar en una cotización de productos
+    # varios, no hace falta separarlos en otra tabla.
+    tamano: Mapped[str | None] = mapped_column(String, nullable=True)
+    empaque: Mapped[str | None] = mapped_column(String, nullable=True)
+    etiqueta: Mapped[str | None] = mapped_column(String, nullable=True)
+    herrajes: Mapped[str | None] = mapped_column(String, nullable=True)
+    riata: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Minimo que exige la TIENDA (no el modelo puntual): puede ser solo cajas,
+    # o cajas + piezas por caja. Distinto de moq_cajas (el minimo del proveedor
+    # para ese modelo especifico).
+    minimo_cajas_tienda: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    minimo_piezas_caja_tienda: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Fotos aparte de la que lee el OCR: interior, herrajes, riata, exterior.
+    # {"interior": url, "herrajes": url, "riata": url, "exterior": url}
+    fotos_extra: Mapped[dict | None] = mapped_column(JSON, nullable=True)

@@ -15,6 +15,12 @@ PEDIDO_RECIBIDO = "recibido"
 PEDIDO_POR_CONFIRMAR = "por_confirmar"
 PEDIDO_CONFIRMADO = "confirmado"
 
+# Tipo de cotización: cambia qué datos pide el OCR y qué campos se ven al
+# revisar. "bolsos" necesita más rigor (tamaño, empaque, herrajes, riata,
+# minimos de tienda, fotos de detalle) que un producto genérico.
+TIPO_COTIZACION_PRODUCTOS = "productos"
+TIPO_COTIZACION_BOLSOS = "bolsos"
+
 
 class Sesion(Base):
     """Sesión de cotización asociada a un cliente y a un usuario"""
@@ -24,6 +30,9 @@ class Sesion(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     nombre_cliente: Mapped[str] = mapped_column(String, nullable=False)
     fecha: Mapped[date] = mapped_column(Date, nullable=False)
+    tipo_cotizacion: Mapped[str] = mapped_column(
+        String, default=TIPO_COTIZACION_PRODUCTOS, server_default=TIPO_COTIZACION_PRODUCTOS, nullable=False
+    )
     tipo_cambio_usd: Mapped[float] = mapped_column(Float, default=6.7)
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id"), nullable=False, index=True
