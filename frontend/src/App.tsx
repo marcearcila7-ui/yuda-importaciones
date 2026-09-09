@@ -24,8 +24,6 @@ const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'
 const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
 const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
-const OlvidePassword = lazy(() => import('./pages/OlvidePassword'))
-const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 function Cargando() {
   return (
@@ -60,8 +58,6 @@ function App() {
 
         {/* ── Área del equipo ── */}
         <Route path="/login" element={<Login />} />
-        <Route path="/olvide-password" element={<OlvidePassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Rutas protegidas (sin restricción de rol) */}
         <Route element={<ProtectedRoute />}>

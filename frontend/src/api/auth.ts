@@ -20,19 +20,3 @@ export function logout(): void {
   localStorage.removeItem('yuda_token')
   localStorage.removeItem('yuda_usuario')
 }
-
-// Pide el correo de recuperación. El backend responde siempre el mismo
-// mensaje, exista o no ese email, para no filtrar qué correos están registrados.
-export async function olvidePassword(email: string): Promise<string> {
-  const { data } = await apiClient.post<{ mensaje: string }>('/auth/olvide-password', { email })
-  return data.mensaje
-}
-
-// Elige una contraseña nueva con el token que llegó por correo
-export async function resetPassword(token: string, nueva_password: string): Promise<string> {
-  const { data } = await apiClient.post<{ mensaje: string }>('/auth/reset-password', {
-    token,
-    nueva_password,
-  })
-  return data.mensaje
-}

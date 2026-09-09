@@ -78,11 +78,6 @@ ya configura el SPA y los headers de cache.
 | CORS_ORIGINS | Orígenes permitidos, separados por coma | Sí |
 | ACCESS_TOKEN_EXPIRE_HOURS | Horas de validez del token | No (8) |
 | VITE_API_URL | URL del backend para el build del frontend | Sí (prod) |
-| SMTP_HOST | Servidor SMTP para el correo de "olvidé mi contraseña" (ej. smtp.gmail.com) | No (vacío = el enlace queda en los logs) |
-| SMTP_PORT | Puerto SMTP | No (587) |
-| SMTP_USER | Cuenta que manda el correo | No |
-| SMTP_PASSWORD | Contraseña de aplicación de esa cuenta (no la contraseña normal) | No |
-| SMTP_FROM | Remitente del correo | No (usa SMTP_USER) |
 
 ## Usuarios del sistema
 
