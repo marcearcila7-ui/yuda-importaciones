@@ -71,7 +71,7 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full"
         style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-text)' }}
         aria-label={t('notif.titulo')}
       >
