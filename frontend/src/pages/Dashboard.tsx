@@ -144,13 +144,17 @@ function Dashboard() {
   // pasa a andar dentro de una sola URL (/dashboard) sin rutas por paso, así que
   // el gesto de "volver" del celular no tenía ninguna entrada propia del asistente
   // a la que retroceder: saltaba directo a lo que hubiera antes de abrir la
-  // cotización, sacando a la vendedora de la app a medio armar un pedido. Se
-  // empuja una entrada de historial por paso (acá y en irAPaso) para que "volver"
-  // retroceda un paso a la vez; el listener de popstate más abajo la escucha.
+  // cotización, sacando a la vendedora de la app a medio armar un pedido. Se marca
+  // la entrada actual como "paso 1" (acá) y cada paso siguiente empuja la suya
+  // propia (en irAPaso), para que "volver" retroceda un paso a la vez; el listener
+  // de popstate más abajo la escucha. replaceState y no pushState: esta entrada ya
+  // existe (la creó React Router al llegar a /dashboard, con o sin cotización
+  // reabierta desde otra pantalla), solo se anota; empujar una nueva acá además
+  // de la que ya trae el propio arribo duplicaba una entrada por cotización abierta.
   useEffect(() => {
     if (!sesionActual) return
     setPasoVista(1)
-    window.history.pushState({ yudaPaso: 1 }, '')
+    window.history.replaceState({ yudaPaso: 1 }, '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionActual?.id])
 
@@ -178,10 +182,22 @@ function Dashboard() {
   }, [hayProductos, pasoVista])
 
   // Cambiar de pantalla debe empezar arriba, no a media página. Cada paso es su
-  // propia entrada de historial (ver el useEffect de arriba).
+  // propia entrada de historial (ver el useEffect de arriba). El botón "Volver"
+  // y la barra de pasos (que deja saltar a cualquier paso ya alcanzado) también
+  // pasan por acá para ir hacia atrás: antes SIEMPRE empujaban una entrada nueva,
+  // incluso yendo hacia atrás, así que el historial nunca se achicaba. Con
+  // suficientes idas y vueltas usando esos botones, un "volver" real del celular
+  // (o del navegador) terminaba retrocediendo mucho más de lo esperado, hasta
+  // salir de la cotización entera. Yendo hacia atrás se usa el historial de
+  // verdad (go), que sí lo achica y dispara el popstate que ya sincroniza el paso.
   const irAPaso = (paso: number) => {
-    setPasoVista(paso)
-    window.history.pushState({ yudaPaso: paso }, '')
+    if (paso === pasoVista) return
+    if (paso < pasoVista) {
+      window.history.go(paso - pasoVista)
+    } else {
+      setPasoVista(paso)
+      window.history.pushState({ yudaPaso: paso }, '')
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
