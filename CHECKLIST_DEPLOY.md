@@ -45,6 +45,12 @@ El repo ya trae `backend/railway.json` y `frontend/railway.json` que fijan `Dock
 - [ ] Login desde el navegador con un usuario del seed
 - [ ] Una vendedora sube una foto y el OCR responde
 
+## 6. Correo de "olvidé mi contraseña" (agregado después del alta inicial)
+- [ ] En Gmail (`soporteyuda26@gmail.com` o la cuenta que se use): activar verificación en 2 pasos si no la tiene
+- [ ] Generar una **contraseña de aplicación**: Cuenta de Google → Seguridad → Verificación en 2 pasos → Contraseñas de aplicaciones
+- [ ] Backend → agregar `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER=<esa cuenta>`, `SMTP_PASSWORD=<la contraseña de aplicación>` → redeploy
+- [ ] Sin esto configurado, el flujo funciona igual pero el enlace de recuperación solo queda en los logs del backend, no sale el correo de verdad
+
 ## Notas
 - El backend **no arranca** si falta `SECRET_KEY` o `DATABASE_URL` (falla explícito, a propósito).
 - `USE_WORKER=false` (default): el OCR corre en el backend web, un solo servicio. Para separarlo, crear un servicio worker con start command `python -m app.worker` y `USE_WORKER=true` en el backend.

@@ -34,4 +34,8 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False
     )
+    # Recuperar contraseña: se guarda el hash SHA-256 del token (no el token en
+    # texto plano) y su vencimiento. Ambos se borran al usarse o al vencer.
+    reset_token_hash: Mapped[str | None] = mapped_column(String, nullable=True)
+    reset_token_expira: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

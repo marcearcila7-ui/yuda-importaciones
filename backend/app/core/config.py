@@ -15,6 +15,15 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
 
+    # Correo de "olvidé mi contraseña" (SMTP de Gmail). Si SMTP_HOST está vacío
+    # (como con SENTRY_DSN), no falla: el enlace de recuperación queda solo en
+    # los logs, para poder probar el flujo en desarrollo sin credenciales reales.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+
     # Tope GLOBAL de llamadas de OCR (Anthropic) en simultáneo en todo el sistema.
     # Protege contra rate limits y agotamiento de conexiones bajo picos de carga.
     OCR_CONCURRENCIA_GLOBAL: int = 6
@@ -55,6 +64,10 @@ class Settings(BaseSettings):
         "SUPABASE_URL",
         "SUPABASE_SERVICE_KEY",
         "SENTRY_DSN",
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "SMTP_FROM",
         mode="before",
     )
     @classmethod
@@ -88,6 +101,17 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Convierte la cadena separada por comas en una lista de orígenes"""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def smtp_from_efectivo(self) -> str:
+        """Remitente del correo: SMTP_FROM si se definió, si no la misma cuenta SMTP_USER"""
+        return self.SMTP_FROM or self.SMTP_USER
+
+    @property
+    def frontend_url(self) -> str:
+        """Origen del frontend para armar enlaces (p. ej. el de recuperar contraseña)"""
+        origenes = self.cors_origins_list
+        return origenes[0] if origenes else ""
 
 
 # Instancia global de configuración usada en toda la aplicación
