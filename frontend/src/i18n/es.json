@@ -257,6 +257,7 @@
     "errorGuardarCampo": "No se pudo guardar el cambio. Vuelve a intentarlo."
   },
   "pedidos": {
+    "faltaMarca": "Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido: es con lo que el proveedor separa estas cajas de las de otro pedido.",
     "generar": "Generar Pedidos",
     "generando": "Generando pedidos...",
     "confirmar": "¿Generar pedidos para {{cliente}}? Se creará un archivo Excel por cada proveedor.",

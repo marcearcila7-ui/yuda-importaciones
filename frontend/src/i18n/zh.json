@@ -257,6 +257,7 @@
     "errorGuardarCampo": "无法保存修改，请重试。"
   },
   "pedidos": {
+    "faltaMarca": "生成订单前请填写唛头（客户缩写）：这是供应商区分不同订单箱子的方式。",
     "generar": "生成订单",
     "generando": "正在生成订单...",
     "confirmar": "确定为 {{cliente}} 生成订单吗？将为每个供应商创建一个 Excel 文件。",

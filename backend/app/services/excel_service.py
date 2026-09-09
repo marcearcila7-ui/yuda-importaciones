@@ -5,7 +5,7 @@ from io import BytesIO
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.drawing.image import Image as XLImage
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter, range_boundaries
 
 from app.services.imagen_service import descargar_imagen
@@ -212,16 +212,24 @@ def _expandir_pedido(ws, faltan: int) -> None:
 
 def generar_formato_pedido(
     supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
-    fotos: dict | None = None,
+    fotos: dict | None = None, shipping_mark: str | None = None,
 ) -> bytes:
     """Rellena la plantilla literal FORMATO PEDIDO con los productos del proveedor.
 
     El sistema completa: NO, foto, ITEM NO, descripción, CTN, QTY/CTN, precio,
     CBM y G.W. Las fórmulas (QTY, AMOUNT, T.CBM, totales) y todo lo demás
-    (membrete, fechas, firmas, notas) quedan tal cual el formato original.
+    (membrete, fechas, firmas, notas) quedan tal cual el formato original,
+    salvo la marca de embarque (ver más abajo).
 
     `fotos` mapea url→bytes PNG ya descargados (para no bajar la misma foto dos
     veces ni de forma secuencial). Si falta, cae a descargar la foto en el momento.
+
+    `shipping_mark`: iniciales con las que el proveedor marca las cajas de este
+    cliente en su bodega (p. ej. "KAES"), para no confundirlas con las de otro
+    pedido. En el formato de papel va dentro de un rombo dibujado a mano; acá se
+    escribe en la misma zona (entre "两张正唛" y "两张侧唛"), como texto grande y
+    con caja: openpyxl no dibuja formas nuevas con facilidad, pero el rombo en sí
+    es decorativo, lo que de verdad tiene que verse es la marca.
     """
     from io import BytesIO
     fotos = fotos or {}
@@ -229,6 +237,7 @@ def generar_formato_pedido(
     ws = wb.active
 
     n = len(items)
+    faltan = 0
     if n > PED_FILAS_PLANTILLA:
         faltan = n - PED_FILAS_PLANTILLA
         _expandir_pedido(ws, faltan)
@@ -281,6 +290,16 @@ def generar_formato_pedido(
         # proveedor como un dato real equivocado).
         ws.cell(row=f, column=12, value=round(largo * ancho * alto / 1_000_000, 6) or None)  # L: CBM
         ws.cell(row=f, column=14, value=getattr(item, "gw", None) or None)  # N: G.W
+
+    if shipping_mark:
+        # Fila de "两张正唛" / "两张侧唛" (2 filas debajo de los totales), columna
+        # del medio (L), corrida hacia abajo si el pedido se expandió.
+        fila_marca = PED_FILA_TOTALES + 2 + faltan
+        celda_marca = ws.cell(row=fila_marca, column=12, value=shipping_mark.strip().upper())
+        celda_marca.font = Font(bold=True, size=16)
+        celda_marca.alignment = Alignment(horizontal="center", vertical="center")
+        borde = Side(style="medium")
+        celda_marca.border = Border(top=borde, bottom=borde, left=borde, right=borde)
 
     buffer = BytesIO()
     wb.save(buffer)

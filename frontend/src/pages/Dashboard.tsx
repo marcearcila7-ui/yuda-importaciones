@@ -433,6 +433,7 @@ function Dashboard() {
                 sesion_id={sesionActual.id}
                 nombre_cliente={sesionActual.nombre_cliente}
                 permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
+                shippingMark={sesionActual.shipping_mark}
               />
             </SectionCard>
           )}

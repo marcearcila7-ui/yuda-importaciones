@@ -257,6 +257,7 @@
     "errorGuardarCampo": "Could not save the change. Please try again."
   },
   "pedidos": {
+    "faltaMarca": "Enter the shipping mark (client's initials) before generating the order: it's how the supplier tells these boxes apart from another order's.",
     "generar": "Generate Orders",
     "generando": "Generating orders...",
     "confirmar": "Generate orders for {{cliente}}? An Excel file will be created for each supplier.",

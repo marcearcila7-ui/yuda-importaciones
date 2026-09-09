@@ -125,7 +125,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             </p>
           )}
           <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>{t('gestionPedido.generarTitulo')}</p>
-          <GenerarPedidos sesion_id={sesion.id} nombre_cliente={sesion.nombre_cliente} permitirCantidadesCliente />
+          <GenerarPedidos
+            sesion_id={sesion.id}
+            nombre_cliente={sesion.nombre_cliente}
+            permitirCantidadesCliente
+            shippingMark={sesion.shipping_mark}
+          />
 
           {/* Opcional: pedirle al cliente que confirme (útil si ajustaste cantidades) */}
           {!confirmado && (

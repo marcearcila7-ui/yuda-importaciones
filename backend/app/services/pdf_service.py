@@ -36,6 +36,8 @@ tr.total td { background: #EEE; font-weight: bold; }
 .firmas, .notas, .notas tr, .marca { page-break-inside: avoid; break-inside: avoid; }
 .notas td { vertical-align: top; padding: 2px 6px; }
 .marca { border: 1px solid #999; padding: 4px; font-size: 8px; }
+.marca-inicial { border: 2px solid #000; padding: 4px 8px; font-size: 16px; font-weight: bold;
+  text-align: center; margin-bottom: 4px; }
 """
 
 
@@ -55,7 +57,7 @@ def render_pdf(html: str) -> bytes:
 
 def html_pedido(
     supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
-    fotos: dict | None = None,
+    fotos: dict | None = None, shipping_mark: str | None = None,
 ) -> str:
     """Arma el HTML del Formato Pedido del proveedor (réplica fiel, con fotos).
 
@@ -131,7 +133,13 @@ def html_pedido(
         "4.供方必须按照买方签订的时间准时交货.若不能如期交货，一切责任由供货方承担.<br>"
         "5.货品要保质、保量、不良货品可以退掉."
     )
+    # La marca (iniciales del cliente) es con lo que el proveedor separa las
+    # cajas de cada pedido en su bodega para no confundirlas; en el papel va
+    # dentro de un rombo dibujado a mano, acá es una caja destacada en el mismo
+    # lugar (antes de "两张正唛/两张侧唛"), que es lo que de verdad hace falta ver.
+    marca_inicial = f'<div class="marca-inicial">{shipping_mark.strip().upper()}</div>' if shipping_mark else ""
     marca = (
+        f"{marca_inicial}"
         "两张正唛 / 两张侧唛<br>ITEM NO.: 客户货号<br>QTY.: 装箱数 PCS<br>"
         "G.W.: 毛重 KGS<br>N.W.: KGS<br>MEAS.: X X CM<br>"
         "普货用五层硬纸箱 重大货加套编织袋<br>易碎液体等产品请贴向上易碎标<br>"

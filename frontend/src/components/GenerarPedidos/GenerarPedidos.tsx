@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
+import toast from 'react-hot-toast'
 import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos, getPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
 import Button from '../ui/Button'
+import ShippingMark from '../ShippingMark/ShippingMark'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
 interface GenerarPedidosProps {
@@ -13,14 +15,29 @@ interface GenerarPedidosProps {
   // El cliente ya envió sus cantidades desde el portal → se habilita generar con
   // las cajas que pidió (ya no hace falta una segunda confirmación).
   permitirCantidadesCliente?: boolean
+  // Iniciales con las que el proveedor separa las cajas de este pedido en su
+  // bodega (va en el "rombo" del formato). Sin esto el proveedor no tiene cómo
+  // distinguir estas cajas de las de otro pedido: se exige antes de generar,
+  // acá y también en el backend (por si se llama a la API sin pasar por acá).
+  shippingMark?: string | null
 }
 
-function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente = false }: GenerarPedidosProps) {
+function GenerarPedidos({
+  sesion_id,
+  nombre_cliente,
+  permitirCantidadesCliente = false,
+  shippingMark,
+}: GenerarPedidosProps) {
   const { t } = useTranslation()
   const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
+  const [marcaActual, setMarcaActual] = useState(shippingMark ?? '')
+
+  useEffect(() => {
+    setMarcaActual(shippingMark ?? '')
+  }, [shippingMark])
 
   // Este componente vive en dos lugares (el asistente de cotizacion y la ficha
   // del cliente), y antes ninguno de los dos sabia si ya se habian generado
@@ -49,6 +66,10 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
   }, [sesion_id])
 
   const handleGenerar = async (usarCantidadesCliente = false) => {
+    if (!marcaActual.trim()) {
+      toast.error(t('pedidos.faltaMarca'))
+      return
+    }
     let mensajeConfirm: string
     if (usarCantidadesCliente) {
       mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
@@ -103,6 +124,22 @@ function GenerarPedidos({ sesion_id, nombre_cliente, permitirCantidadesCliente =
 
   return (
     <div className="flex w-full flex-col gap-4">
+      {/* Sin esto el proveedor no tiene cómo separar estas cajas de las de otro
+          pedido en su bodega. Se pide acá mismo, justo antes de generar, para
+          no mandarla a buscarlo en otra pantalla. */}
+      {!marcaActual.trim() && (
+        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
+          <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
+            {t('pedidos.faltaMarca')}
+          </p>
+          <ShippingMark
+            sesionId={sesion_id}
+            valorInicial={marcaActual}
+            onGuardado={setMarcaActual}
+          />
+        </div>
+      )}
+
       {/* SECCIÓN 0 — Fotos con las que se le pedirá al proveedor. Se decide aquí,
           justo antes de generar, porque es LA referencia de lo que se pidió. */}
 

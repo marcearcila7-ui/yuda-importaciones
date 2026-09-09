@@ -94,6 +94,16 @@ def generar_pedidos(
     # a. La sesión debe existir
     sesion = _obtener_sesion(db, sesion_id, usuario)
 
+    # a.2. Sin marca de embarque (iniciales del cliente) el proveedor no tiene
+    # cómo separar estas cajas de las de otro pedido en su bodega. Se exige acá
+    # (no solo en la pantalla) para que no se pueda generar sin ella por ningún
+    # camino.
+    if not (sesion.shipping_mark or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido",
+        )
+
     # b. Ítems ordenados por orden
     items = (
         db.query(Item)
@@ -190,12 +200,12 @@ def generar_pedidos(
         primero = grupo[0]
         excels[clave] = generar_formato_pedido(
             primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
-            fotos=fotos_bytes,
+            fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
         )
         htmls.append(
             html_pedido(
                 primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
-                fotos=fotos_datauri,
+                fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
             )
         )
 

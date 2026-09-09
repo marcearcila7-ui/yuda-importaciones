@@ -6,8 +6,20 @@ import { guardarShippingMark } from '../../api/packing'
 
 // Marca de embarque de la cotizacion. Identifica la carga de este cliente dentro
 // del contenedor, asi que es la misma para todos sus productos: por eso vive en
-// la cotizacion y no en cada uno. La pide el formato de la agencia de carga.
-function ShippingMark({ sesionId, valorInicial }: { sesionId: string; valorInicial: string }) {
+// la cotizacion y no en cada uno. La pide el formato de la agencia de carga, y
+// tambien es con lo que el proveedor separa las cajas de este pedido de las de
+// otro en su bodega (va en el "rombo" del formato de pedido).
+function ShippingMark({
+  sesionId,
+  valorInicial,
+  onGuardado,
+}: {
+  sesionId: string
+  valorInicial: string
+  // Para que quien la muestre en otro lado (ej. antes de generar el pedido al
+  // proveedor) se entere del valor nuevo sin recargar toda la cotizacion.
+  onGuardado?: (valor: string) => void
+}) {
   const { t } = useTranslation()
   const [valor, setValor] = useState(valorInicial)
   const [guardando, setGuardando] = useState(false)
@@ -26,6 +38,7 @@ function ShippingMark({ sesionId, valorInicial }: { sesionId: string; valorInici
       await guardarShippingMark(sesionId, valor.trim())
       setGuardado(true)
       toast.success(t('packing.shippingMarkGuardada'))
+      onGuardado?.(valor.trim())
     } catch {
       toast.error(t('packing.shippingMarkError'))
     } finally {
