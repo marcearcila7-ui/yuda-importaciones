@@ -704,41 +704,58 @@ ${t('clientes.email')}: ${c.email}`
         ) : (
           <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
             {clientesFiltrados.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => abrirCliente(c)}
-                className="flex w-full items-center gap-3 py-3 text-left transition-colors first:pt-0 hover:bg-[var(--yuda-primary-soft)]"
-              >
-                <span
-                  className="flex flex-shrink-0 items-center justify-center font-bold"
-                  style={{ width: 38, height: 38, borderRadius: 999, fontSize: 15, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
+              <div key={c.id} className="flex w-full items-center gap-1 py-2 first:pt-0">
+                <button
+                  type="button"
+                  onClick={() => abrirCliente(c)}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors hover:bg-[var(--yuda-primary-soft)]"
                 >
-                  {(c.nombre || '?').trim().charAt(0).toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
-                    {c.nombre}
+                  <span
+                    className="flex flex-shrink-0 items-center justify-center font-bold"
+                    style={{ width: 38, height: 38, borderRadius: 999, fontSize: 15, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
+                  >
+                    {(c.nombre || '?').trim().charAt(0).toUpperCase()}
                   </span>
-                  <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                    {[c.empresa, c.email].filter(Boolean).join('  ')}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
+                      {c.nombre}
+                    </span>
+                    <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {[c.empresa, c.email].filter(Boolean).join('  ')}
+                    </span>
+                    {esAdmin && nombreVendedora[c.vendedora_id] && (
+                      <span className="mt-0.5 flex items-center gap-1 text-xs" style={{ color: 'var(--yuda-primary)' }}>
+                        <UserRound size={12} /> {nombreVendedora[c.vendedora_id]}
+                      </span>
+                    )}
                   </span>
-                  {esAdmin && nombreVendedora[c.vendedora_id] && (
-                    <span className="mt-0.5 flex items-center gap-1 text-xs" style={{ color: 'var(--yuda-primary)' }}>
-                      <UserRound size={12} /> {nombreVendedora[c.vendedora_id]}
+                  {!c.activo && (
+                    <span
+                      className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
+                    >
+                      {t('clientes.inactivo')}
                     </span>
                   )}
-                </span>
-                {!c.activo && (
-                  <span
-                    className="flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold"
-                    style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
-                  >
-                    {t('clientes.inactivo')}
-                  </span>
-                )}
-                <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
-              </button>
+                  <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
+                </button>
+                {/* Borrar directo desde la lista: antes había que entrar a la
+                    ficha del cliente solo para eliminarlo. Reusa `eliminar`,
+                    que ya confirma y ofrece desactivar si tiene cotizaciones. */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    eliminar(c)
+                  }}
+                  aria-label={t('clientes.eliminar')}
+                  title={t('clientes.eliminar')}
+                  className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                  style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             ))}
           </div>
         )}
