@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { create } from 'zustand'
 import * as authApi from '../api/auth'
+import { tokenVencido } from '../lib/jwt'
 import type { Usuario } from '../types/auth'
 
 interface AuthState {
@@ -51,9 +52,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   initFromStorage: () => {
     const token = localStorage.getItem('yuda_token')
     const usuarioRaw = localStorage.getItem('yuda_usuario')
-    if (token && usuarioRaw) {
-      set({ token, usuario: JSON.parse(usuarioRaw) as Usuario })
+    if (!token || !usuarioRaw) return
+    // Antes esto restauraba el token sin fijarse si ya había vencido (8h): la
+    // app mostraba el panel completo por un instante y recién cuando la
+    // primera llamada a la API fallaba con 401 (uno o dos segundos después,
+    // tiempo real de red) cerraba la sesión. Se sentía como que la app "abría
+    // bien y después se rompía sola". Ahora se chequea el vencimiento ANTES
+    // de restaurar nada: una sesión vieja va directo al login, sin flash.
+    if (tokenVencido(token)) {
+      localStorage.removeItem('yuda_token')
+      localStorage.removeItem('yuda_usuario')
+      sessionStorage.setItem('yuda_sesion_vencida', '1')
+      return
     }
+    set({ token, usuario: JSON.parse(usuarioRaw) as Usuario })
   },
 
   clearError: () => set({ error: null }),

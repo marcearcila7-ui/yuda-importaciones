@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { create } from 'zustand'
 import { loginPortal } from '../api/portal'
+import { tokenVencido } from '../lib/jwt'
 import type { ClientePortal } from '../types/portal'
 
 interface PortalState {
@@ -50,9 +51,15 @@ export const usePortalStore = create<PortalState>((set) => ({
   initFromStorage: () => {
     const token = localStorage.getItem('yuda_portal_token')
     const clienteRaw = localStorage.getItem('yuda_portal_cliente')
-    if (token && clienteRaw) {
-      set({ token, cliente: JSON.parse(clienteRaw) as ClientePortal })
+    if (!token || !clienteRaw) return
+    // Mismo arreglo que en authStore.ts: sin esto, un token vencido se
+    // restauraba igual y el portal se rompía recién con la primera llamada.
+    if (tokenVencido(token)) {
+      localStorage.removeItem('yuda_portal_token')
+      localStorage.removeItem('yuda_portal_cliente')
+      return
     }
+    set({ token, cliente: JSON.parse(clienteRaw) as ClientePortal })
   },
 
   clearError: () => set({ error: null }),
