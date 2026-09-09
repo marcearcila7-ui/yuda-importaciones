@@ -69,10 +69,10 @@ function reducir(file: File): Promise<File> {
   })
 }
 
-// Una foto HEIC de iPhone. El canvas del navegador NO sabe decodificarla: el
-// decode no dispara ni onload ni onerror, se come los 10 segundos del timeout y
-// al final devuelve el original igual. Se detecta antes y se sube tal cual, que
-// el backend la convierte a JPEG al recibirla.
+// Una foto HEIC de iPhone. El canvas del navegador NO sabe decodificarla
+// directo: el decode no dispara ni onload ni onerror. Por eso se pasa antes
+// por heic2any (WASM de libheif), que sí la decodifica, y de ahí el resultado
+// entra al mismo pipeline de `reducir` de siempre.
 function esHeic(file: File): boolean {
   return (
     file.type === 'image/heic' ||
@@ -81,9 +81,32 @@ function esHeic(file: File): boolean {
   )
 }
 
+// Si heic2any no termina en este tiempo (celular viejo, poca memoria), se
+// sube el HEIC tal cual: el backend igual la convierte a JPEG al recibirla,
+// solo que llega más pesada. Mejor eso que quedarse colgada.
+const TIMEOUT_HEIC_MS = 15_000
+
+async function decodificarHeic(file: File): Promise<File> {
+  const heic2any = (await import('heic2any')).default
+  const resultado = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
+  const blob = Array.isArray(resultado) ? resultado[0] : resultado
+  const nombre = file.name.replace(/\.[^.]+$/, '') + '.jpg'
+  return new File([blob], nombre, { type: 'image/jpeg' })
+}
+
 export async function comprimirImagen(file: File): Promise<File> {
-  // El HEIC no pasa por el canvas: el navegador no lo sabe abrir.
-  if (esHeic(file)) return file
+  if (esHeic(file)) {
+    try {
+      const jpeg = await Promise.race([
+        decodificarHeic(file),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout heic')), TIMEOUT_HEIC_MS)),
+      ])
+      // Ya es un JPEG normal: pasa por el mismo redimensionado a 2576px que las demás.
+      return reducir(jpeg)
+    } catch {
+      return file
+    }
+  }
   // Atajo solo si ya es liviana Y viene con un tipo que el backend acepta.
   // Si el tipo es dudoso hay que pasarla por el canvas aunque sea pequeña.
   if (file.size < 1_500_000 && TIPOS_OK.has(file.type)) return file
