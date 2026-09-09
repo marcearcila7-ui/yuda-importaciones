@@ -154,7 +154,7 @@ function CotizacionDetalle() {
         >
           <ArrowLeft size={16} /> {rol === 'vendedora' ? t('detalle.volverClientes') : t('detalle.volver')}
         </button>
-        {esAdmin && sesion && (
+        {(esAdmin || rol === 'vendedora') && sesion && (
           <button
             type="button"
             onClick={() => navigate('/dashboard', { state: { sesion_id: id } })}
