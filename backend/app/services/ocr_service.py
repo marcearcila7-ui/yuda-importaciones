@@ -436,6 +436,16 @@ async def extraer_datos_etiqueta(
     datos["minimo_cajas_tienda"] = _a_numero(datos["minimo_cajas_tienda"], entero=True)
     datos["minimo_piezas_caja_tienda"] = _a_numero(datos["minimo_piezas_caja_tienda"], entero=True)
 
+    # En bolsos hay un solo mecanismo de "mínimo de toda la tienda": el nuevo par
+    # minimo_cajas_tienda/minimo_piezas_caja_tienda (siempre en cajas). El mecanismo
+    # genérico cantidad_minima_tienda es para productos varios (en piezas) y mostrar
+    # los dos a la vez confunde con dos avisos de "mínimo de tienda" distintos: si el
+    # cartel trae el patrón "por modelo / por tienda", el de tienda se vuelca acá.
+    if tipo_cotizacion == "bolsos":
+        if datos["minimo_cajas_tienda"] is None and datos["cantidad_minima_tienda"] is not None:
+            datos["minimo_cajas_tienda"] = datos["cantidad_minima_tienda"]
+        datos["cantidad_minima_tienda"] = None
+
     # Se le pide una observacion ("hacia donde apunta el techo de las letras") y
     # el giro se calcula aca. Pedirle directamente los grados salia mal: contesta
     # el sentido contrario y la foto quedaba de cabeza en el PDF del cliente.
