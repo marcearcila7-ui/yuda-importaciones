@@ -29,6 +29,7 @@ function CampoLote({
   ancho,
   requerido,
   alerta,
+  multilinea,
 }: {
   label: string
   valor: string | number | null | undefined
@@ -39,6 +40,10 @@ function CampoLote({
   requerido?: boolean
   // alerta = obligatorio y todavía vacío (se resalta en rojo)
   alerta?: boolean
+  // La descripción que arma la IA puede ser larga: en un <input> de una sola
+  // línea solo se veía el principio, y sin poder ver el texto completo no
+  // había forma de leerlo ni de corregirlo si algo salía mal.
+  multilinea?: boolean
 }) {
   return (
     <label className={`flex flex-col gap-0.5 text-xs ${ancho ?? ''}`} style={{ color: 'var(--yuda-text)' }}>
@@ -46,13 +51,23 @@ function CampoLote({
         {label}
         {requerido && <span style={{ color: 'var(--yuda-error)' }}> *</span>}
       </span>
-      <input
-        type={tipo}
-        value={valor ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ ...inputStyle, borderColor: alerta ? 'var(--yuda-error)' : undefined }}
-        className={inputClase}
-      />
+      {multilinea ? (
+        <textarea
+          value={valor ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          style={{ ...inputStyle, borderColor: alerta ? 'var(--yuda-error)' : undefined, resize: 'vertical' }}
+          className={inputClase}
+        />
+      ) : (
+        <input
+          type={tipo}
+          value={valor ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ ...inputStyle, borderColor: alerta ? 'var(--yuda-error)' : undefined }}
+          className={inputClase}
+        />
+      )}
     </label>
   )
 }
@@ -610,7 +625,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
               <div className="grid grid-cols-2 gap-2">
                 <CampoLote ancho="col-span-2" label={t('ocr.proveedor')} valor={r.datos.supplier_nombre} requerido alerta={faltaSet.has('proveedor')}
                   onChange={(v) => actualizarTexto(r.id, 'supplier_nombre', v)} />
-                <CampoLote ancho="col-span-2" label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
+                <CampoLote ancho="col-span-2" multilinea label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
                   onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
                 <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number" requerido alerta={faltaSet.has('precioRMB')}
                   onChange={(v) => actualizarNumero(r.id, 'price_rmb', v)} />
@@ -645,9 +660,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                     onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
                   <CampoLote label={t('ocr.colores')} valor={r.datos.colores}
                     onChange={(v) => actualizarTexto(r.id, 'colores', v)} />
-                  <CampoLote ancho="col-span-2" label={t('ocr.descripcionEn')} valor={r.datos.descripcion_en}
+                  <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionEn')} valor={r.datos.descripcion_en}
                     onChange={(v) => actualizarTexto(r.id, 'descripcion_en', v)} />
-                  <CampoLote ancho="col-span-2" label={t('ocr.descripcionZh')} valor={r.datos.descripcion_zh}
+                  <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionZh')} valor={r.datos.descripcion_zh}
                     onChange={(v) => actualizarTexto(r.id, 'descripcion_zh', v)} />
                   <CampoLote label={t('ocr.material')} valor={r.datos.material}
                     onChange={(v) => actualizarTexto(r.id, 'material', v)} />

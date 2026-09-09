@@ -4,7 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { ArrowLeft, ArrowRight, Check, Download, FileText, Images, ShoppingBag, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Images, ShoppingBag, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
@@ -15,7 +15,7 @@ import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
 import ShippingMark from '../components/ShippingMark/ShippingMark'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
-import { eliminarSesion, exportarPackingExcel, exportarPackingPDF } from '../api/packing'
+import { eliminarSesion } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
@@ -80,18 +80,6 @@ function SectionCard({ titulo, children, id }: { titulo: string; children: React
       </h2>
       {children}
     </section>
-  )
-}
-
-// Separador que agrupa secciones (ej. "Para el cliente", "Documentos internos")
-function GroupHeading({ texto }: { texto: string }) {
-  return (
-    <div className="mt-2 flex items-center gap-3">
-      <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: 'var(--yuda-text-secondary)' }}>
-        {texto.toUpperCase()}
-      </span>
-      <span className="h-px flex-1" style={{ backgroundColor: 'var(--yuda-border)' }} />
-    </div>
   )
 }
 
@@ -252,35 +240,6 @@ function Dashboard() {
     } catch (err) {
       const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
       toast.error(typeof detalle === 'string' ? detalle : t('dashboard.errorEliminarCotizacion'))
-    }
-  }
-
-  // Descarga el Packing List interno (Excel o PDF)
-  const descargarPacking = async (tipo: 'excel' | 'pdf') => {
-    if (!sesionActual) return
-    // En iPhone/Safari la pestaña debe abrirse DENTRO del toque (antes del await),
-    // si no el navegador la bloquea o saca de la app.
-    const ventana = window.open('', '_blank')
-    try {
-      const blob =
-        tipo === 'excel'
-          ? await exportarPackingExcel(sesionActual.id)
-          : await exportarPackingPDF(sesionActual.id)
-      const url = URL.createObjectURL(blob)
-      if (ventana) {
-        ventana.location.href = url
-      } else {
-        // Fallback (si el navegador bloqueó la pestaña): descarga directa
-        const enlace = document.createElement('a')
-        enlace.href = url
-        enlace.download = `PackingList_${sesionActual.nombre_cliente}.${tipo === 'excel' ? 'xlsx' : 'pdf'}`
-        enlace.click()
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
-      toast.success(t('dashboard.listaDescargada'))
-    } catch {
-      ventana?.close()
-      toast.error(t('dashboard.errorDescargar'))
     }
   }
 
@@ -464,46 +423,18 @@ function Dashboard() {
             </>
           )}
 
-          {/* PANTALLA 4: pedidos a proveedores y los registros internos */}
+          {/* PANTALLA 4: pedidos a proveedores */}
           {pasoVista === 4 && (
-            <>
-              <SectionCard titulo={t('dashboard.generarPedidos')}>
-                <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {t('dashboard.generarPedidosAyuda')}
-                </p>
-                <GenerarPedidos
-                  sesion_id={sesionActual.id}
-                  nombre_cliente={sesionActual.nombre_cliente}
-                  permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
-                />
-              </SectionCard>
-
-              <GroupHeading texto={t('dashboard.grupoInterno')} />
-
-              <SectionCard titulo={t('dashboard.exportarPackingTitulo')}>
-                <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {t('dashboard.exportarPackingAyuda')}
-                </p>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => descargarPacking('excel')}
-                    className="flex items-center justify-center gap-2 font-semibold text-white"
-                    style={{ minHeight: 48, backgroundColor: 'var(--yuda-success)', borderRadius: 8, padding: '0 20px' }}
-                  >
-                    <Download size={18} /> {t('dashboard.exportarPacking')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => descargarPacking('pdf')}
-                    className="flex items-center justify-center gap-2 font-semibold text-white"
-                    style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px' }}
-                  >
-                    <FileText size={18} /> {t('dashboard.exportarPackingPdf')}
-                  </button>
-                </div>
-              </SectionCard>
-            </>
+            <SectionCard titulo={t('dashboard.generarPedidos')}>
+              <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('dashboard.generarPedidosAyuda')}
+              </p>
+              <GenerarPedidos
+                sesion_id={sesionActual.id}
+                nombre_cliente={sesionActual.nombre_cliente}
+                permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
+              />
+            </SectionCard>
           )}
 
           {/* Avanzar y volver: siempre al pie de la pantalla, siempre en el mismo lugar */}
