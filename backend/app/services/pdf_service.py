@@ -40,6 +40,26 @@ tr.total td { background: #EEE; font-weight: bold; }
   text-align: center; margin-bottom: 4px; }
 """
 
+# CSS del Packing List interno (documento para el CLIENTE). Bug preexistente
+# encontrado al agregar las columnas de bolso: esta constante se llamaba "CSS"
+# hasta que el commit 520d415 la renombró a PED_CSS para el pedido al proveedor
+# y no actualizó la referencia en generar_packing_list_pdf, que quedó rota
+# (NameError) desde entonces — la descarga en PDF del Packing List al cliente
+# nunca funcionó desde ese commit. Se restaura con nombre propio.
+PACKING_CSS = """
+@page { size: A4 landscape; margin: 1.2cm; }
+* { font-family: 'Helvetica', 'Arial', sans-serif; }
+.empresa { text-align: center; font-size: 14px; font-weight: bold; color: #0D0D0D; }
+.sub { text-align: center; font-size: 10px; color: #444; margin-bottom: 2px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px; }
+th { background: #404040; color: #fff; padding: 5px 4px; border: 1px solid #555; }
+td { padding: 4px; border: 1px solid #ccc; text-align: center; vertical-align: middle; }
+td.desc { text-align: left; }
+td.foto img { width: 50px; height: 50px; object-fit: cover; }
+tr.alt td { background: #F7F7FA; }
+tr.total td { background: #EEE; font-weight: bold; }
+"""
+
 
 def render_pdf(html: str) -> bytes:
     """Renderiza un HTML a PDF.
@@ -178,9 +198,16 @@ def generar_pedido_pdf(
 
 
 def generar_packing_list_pdf(
-    items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float
+    items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float,
+    tipo_cotizacion: str = "productos",
 ) -> bytes:
-    """Genera el PDF del Packing List interno (con fotos) y devuelve sus bytes."""
+    """Genera el PDF del Packing List interno (con fotos) y devuelve sus bytes.
+
+    En modo bolsos agrega columnas propias (colores, tamaño, empaque, etiqueta,
+    herrajes, riata, los dos mínimos de tienda) al final; en productos varios el
+    PDF queda exactamente igual que siempre.
+    """
+    es_bolsos = tipo_cotizacion == "bolsos"
     tc = tipo_cambio_usd or 1
     filas_html = []
     tot_ctns = tot_rmb = tot_usd = tot_tcbm = tot_tgw = 0.0
@@ -209,6 +236,18 @@ def generar_packing_list_pdf(
 
         foto = f'<img src="{item.foto_url}" />' if getattr(item, "foto_url", None) else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
+        cols_bolsos = ""
+        if es_bolsos:
+            cols_bolsos = (
+                f"<td>{getattr(item, 'colores', None) or ''}</td>"
+                f"<td>{getattr(item, 'tamano', None) or ''}</td>"
+                f"<td>{getattr(item, 'empaque', None) or ''}</td>"
+                f"<td>{getattr(item, 'etiqueta', None) or ''}</td>"
+                f"<td>{getattr(item, 'herrajes', None) or ''}</td>"
+                f"<td>{getattr(item, 'riata', None) or ''}</td>"
+                f"<td>{getattr(item, 'minimo_cajas_tienda', None) or ''}</td>"
+                f"<td>{getattr(item, 'minimo_piezas_caja_tienda', None) or ''}</td>"
+            )
         filas_html.append(
             f"<tr{alt}>"
             f"<td>{n}</td>"
@@ -227,22 +266,31 @@ def generar_packing_list_pdf(
             f"<td>{t_cbm}</td>"
             f"<td>{gw}</td>"
             f"<td>{t_gw}</td>"
+            f"{cols_bolsos}"
             f"</tr>"
         )
 
+    encab_bolsos = (
+        "<th>COLORES</th><th>TAMAÑO</th><th>EMPAQUE</th><th>ETIQUETA</th>"
+        "<th>HERRAJES</th><th>RIATA</th><th>MÍN. CAJAS<br>(TIENDA)</th>"
+        "<th>MÍN. PZS/CAJA<br>(TIENDA)</th>"
+    ) if es_bolsos else ""
     encabezado = (
         "<tr><th>N°</th><th>FOTO</th><th>PROVEEDOR</th><th>N° ÍTEM</th><th>DESCRIPCIÓN</th>"
         "<th>CAJAS</th><th>UN/CAJA</th><th>T.UN</th><th>PRECIO ¥</th><th>TOTAL ¥</th>"
-        "<th>PRECIO $</th><th>TOTAL $</th><th>CBM</th><th>T.CBM</th><th>GW</th><th>T.GW</th></tr>"
+        "<th>PRECIO $</th><th>TOTAL $</th><th>CBM</th><th>T.CBM</th><th>GW</th><th>T.GW</th>"
+        f"{encab_bolsos}</tr>"
     )
+    total_bolsos = "<td></td>" * 8 if es_bolsos else ""
     total = (
         f'<tr class="total"><td colspan="5">TOTALES</td>'
         f"<td>{int(tot_ctns)}</td><td></td><td></td><td></td>"
         f"<td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>"
-        f"<td></td><td>{round(tot_tcbm, 6)}</td><td></td><td>{round(tot_tgw, 2)}</td></tr>"
+        f"<td></td><td>{round(tot_tcbm, 6)}</td><td></td><td>{round(tot_tgw, 2)}</td>"
+        f"{total_bolsos}</tr>"
     )
 
-    html = f"""<html><head><meta charset="utf-8"><style>{CSS}</style></head><body>
+    html = f"""<html><head><meta charset="utf-8"><style>{PACKING_CSS}</style></head><body>
       <p class="empresa">YUDA — Packing List</p>
       <p class="sub">{sesion_nombre_cliente} · 1 USD = {tipo_cambio_usd} RMB</p>
       <table>

@@ -440,7 +440,7 @@ def exportar_packing_excel(
     )
 
     contenido = generar_packing_list_excel(
-        items, sesion.nombre_cliente, sesion.tipo_cambio_usd
+        items, sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
     )
 
     fecha = datetime.now().strftime("%Y%m%d")
@@ -469,7 +469,7 @@ def exportar_packing_pdf(
     )
 
     contenido = generar_packing_list_pdf(
-        items, sesion.nombre_cliente, sesion.tipo_cambio_usd
+        items, sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
     )
 
     fecha = datetime.now().strftime("%Y%m%d")

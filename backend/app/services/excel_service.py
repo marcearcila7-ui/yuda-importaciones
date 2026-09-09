@@ -25,14 +25,32 @@ ENCABEZADOS = [
 # Anchos de columna aproximados (en el mismo orden que ENCABEZADOS)
 ANCHOS = [20, 12, 12, 25, 25, 20, 15, 12, 8, 10, 8, 10, 12, 12, 12, 12, 8, 8, 8, 10, 10, 8, 8]
 
+# Columnas propias de una cotización de bolsos (sesion.tipo_cotizacion == "bolsos"),
+# agregadas al final SOLO en ese caso. Van después de T.GW.
+ENCABEZADOS_BOLSOS = [
+    "COLORES", "TAMAÑO", "EMPAQUE", "ETIQUETA", "HERRAJES", "RIATA",
+    "MÍN. CAJAS (TIENDA)", "MÍN. PZS/CAJA (TIENDA)",
+]
+ANCHOS_BOLSOS = [15, 12, 15, 15, 12, 15, 14, 14]
+
 
 def generar_packing_list_excel(
-    items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float
+    items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float,
+    tipo_cotizacion: str = "productos",
 ) -> bytes:
-    """Genera el Excel del Packing List con fórmulas vivas y devuelve sus bytes"""
+    """Genera el Excel del Packing List con fórmulas vivas y devuelve sus bytes.
+
+    En modo bolsos agrega columnas propias (colores, tamaño, empaque, etiqueta,
+    herrajes, riata, los dos mínimos de tienda) al final; en productos varios el
+    Excel queda exactamente igual que siempre.
+    """
     wb = Workbook()
     ws = wb.active
     ws.title = "Packing List"
+
+    es_bolsos = tipo_cotizacion == "bolsos"
+    encabezados = ENCABEZADOS + ENCABEZADOS_BOLSOS if es_bolsos else ENCABEZADOS
+    anchos = ANCHOS + ANCHOS_BOLSOS if es_bolsos else ANCHOS
 
     # Estilos reutilizables
     fill_header = PatternFill(start_color="404040", end_color="404040", fill_type="solid")
@@ -42,7 +60,7 @@ def generar_packing_list_excel(
     font_bold = Font(bold=True)
     centro = Alignment(horizontal="center", vertical="center")
 
-    ultima_col = len(ENCABEZADOS)  # 23
+    ultima_col = len(encabezados)  # 23, o 31 en modo bolsos
 
     # Fila 1 y 2: encabezado de la empresa, mergeados de A hasta T
     ws.merge_cells("A1:T1")
@@ -55,7 +73,7 @@ def generar_packing_list_excel(
     ws["A2"].alignment = centro
 
     # Fila 3: encabezados de columnas
-    for idx, titulo in enumerate(ENCABEZADOS, start=1):
+    for idx, titulo in enumerate(encabezados, start=1):
         celda = ws.cell(row=3, column=idx, value=titulo)
         celda.fill = fill_header
         celda.font = font_header
@@ -108,6 +126,15 @@ def generar_packing_list_excel(
         ws.cell(row=fila, column=22, value=getattr(item, "gw", None))
         # T.GW (col W) = V*I
         ws.cell(row=fila, column=23, value=f"=V{fila}*I{fila}")
+        if es_bolsos:
+            ws.cell(row=fila, column=24, value=getattr(item, "colores", None))
+            ws.cell(row=fila, column=25, value=getattr(item, "tamano", None))
+            ws.cell(row=fila, column=26, value=getattr(item, "empaque", None))
+            ws.cell(row=fila, column=27, value=getattr(item, "etiqueta", None))
+            ws.cell(row=fila, column=28, value=getattr(item, "herrajes", None))
+            ws.cell(row=fila, column=29, value=getattr(item, "riata", None))
+            ws.cell(row=fila, column=30, value=getattr(item, "minimo_cajas_tienda", None))
+            ws.cell(row=fila, column=31, value=getattr(item, "minimo_piezas_caja_tienda", None))
         fila += 1
 
     ultima_fila_datos = fila - 1 if items else 3
@@ -125,7 +152,7 @@ def generar_packing_list_excel(
         ws.cell(row=fila_totales, column=col).font = font_bold
 
     # Anchos de columna
-    for idx, ancho in enumerate(ANCHOS, start=1):
+    for idx, ancho in enumerate(anchos, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = ancho
 
     # Guardar en memoria y devolver los bytes
