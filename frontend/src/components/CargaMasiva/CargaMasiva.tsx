@@ -139,6 +139,23 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionId])
 
+  // Fotos elegidas o a mitad de subir que todavía NO llegaron al servidor: si son
+  // tomadas con la cámara del celular (no de la galería), viven solo en la memoria
+  // de la pestaña, iOS no las guarda en el rollo de fotos. Recargar por impaciencia
+  // ante una subida lenta las perdía sin ningún aviso. Esto no cubre que el
+  // sistema operativo mate la pestaña sola por poca memoria o al bloquear el
+  // celular (ver retomar() en loteStore, que sí recupera las que ya alcanzaron a
+  // subir), solo el caso de recargar o cerrar a propósito.
+  useEffect(() => {
+    if (fase !== 'seleccion' && fase !== 'subiendo') return
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', avisar)
+    return () => window.removeEventListener('beforeunload', avisar)
+  }, [fase])
+
   // Cuando el análisis termina, la barra de progreso (que la vendedora estaba
   // mirando abajo) se reemplaza por la lista de resultados: se lleva la vista al
   // principio del bloque para que empiece a revisarlos desde el primero.
