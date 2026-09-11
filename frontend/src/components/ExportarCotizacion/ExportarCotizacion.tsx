@@ -17,6 +17,22 @@ const IDIOMAS = [
   { code: 'zh', label: '中文' },
 ]
 
+// Mismo orden y claves que CLAVES_COLUMNAS en cotizacion_service.py: cambiar
+// una lista sin la otra hace que las columnas salgan desordenadas o con
+// nombres sin traducir.
+const CLAVES_COLUMNAS = [
+  'numero', 'fecha_recibo', 'shipping_mark', 'foto', 'referencia', 'codigo',
+  'desc_es', 'desc_en', 'desc_zh', 'material', 'uso',
+  'cajas', 'uds_caja', 'unidad', 'cant_total',
+  'precio_rmb', 'total_rmb', 'precio_usd', 'total_usd',
+  'largo', 'ancho', 'alto', 'cbm', 't_cbm',
+  'peso', 'peso_total', 'mqt', 'marca',
+] as const
+
+// Sin foto o referencia el cliente no puede identificar el producto: no se
+// pueden desmarcar (el backend también las fuerza, por si acaso).
+const COLUMNAS_OBLIGATORIAS = new Set(['foto', 'referencia'])
+
 const btnDescarga: CSSProperties = {
   minHeight: 48,
   borderRadius: 8,
@@ -32,6 +48,18 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const [generando, setGenerando] = useState<'excel' | 'pdf' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmado, setConfirmado] = useState(false)
+  // Qué columnas va a traer el documento. Todas marcadas por defecto: hay que
+  // desmarcar a propósito para ocultar algo, nunca al revés.
+  const [columnasActivas, setColumnasActivas] = useState<Set<string>>(() => new Set(CLAVES_COLUMNAS))
+  const toggleColumna = (clave: string) => {
+    if (COLUMNAS_OBLIGATORIAS.has(clave)) return
+    setColumnasActivas((prev) => {
+      const siguiente = new Set(prev)
+      if (siguiente.has(clave)) siguiente.delete(clave)
+      else siguiente.add(clave)
+      return siguiente
+    })
+  }
 
   const items = usePackingStore((s) => s.items)
   // Foto 1 (producto con datos): obligatoria para generar. La cargan el OCR.
@@ -64,10 +92,11 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
     // En iPhone/Safari la pestaña debe abrirse dentro del toque (antes del await)
     const ventana = window.open('', '_blank')
     try {
+      const columnas = Array.from(columnasActivas)
       const blob =
         tipo === 'excel'
-          ? await exportarCotizacionExcel(sesion_id, idioma)
-          : await exportarCotizacionPDF(sesion_id, idioma)
+          ? await exportarCotizacionExcel(sesion_id, idioma, columnas)
+          : await exportarCotizacionPDF(sesion_id, idioma, columnas)
       const url = URL.createObjectURL(blob)
       if (ventana) {
         ventana.location.href = url
@@ -113,6 +142,42 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
             </button>
           )
         })}
+      </div>
+
+      {/* Qué columnas va a traer el documento. Todas activas por defecto. */}
+      <div className="rounded-xl border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
+        <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+          {t('cotizacion.columnasTitulo')}
+        </p>
+        <p className="mb-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+          {t('cotizacion.columnasAyuda')}
+        </p>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
+          {CLAVES_COLUMNAS.map((clave) => {
+            const obligatoria = COLUMNAS_OBLIGATORIAS.has(clave)
+            return (
+              <label
+                key={clave}
+                className="flex items-center gap-1.5 text-sm"
+                style={{ color: obligatoria ? 'var(--yuda-text-secondary)' : 'var(--yuda-accent)' }}
+              >
+                <input
+                  type="checkbox"
+                  checked={obligatoria || columnasActivas.has(clave)}
+                  disabled={obligatoria}
+                  onChange={() => toggleColumna(clave)}
+                  style={{ width: 15, height: 15, flexShrink: 0 }}
+                />
+                <span className="truncate">
+                  {t(`cotizacion.columnas.${clave}`)}
+                  {obligatoria && (
+                    <span className="text-xs italic"> ({t('cotizacion.columnaObligatoria')})</span>
+                  )}
+                </span>
+              </label>
+            )
+          })}
+        </div>
       </div>
 
       {/* Antes de generar: confirmar extracción y fotos según su propósito */}

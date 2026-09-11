@@ -46,36 +46,6 @@ AVISO_AGENCIA = [
 LABELS = {
     "es": {
         "empresa": "YUDA IMPORTACIONES",
-        "cols": [
-            "N°",
-            "Fecha de recibo",
-            "Shipping mark",
-            "Foto",
-            "Referencia",
-            "Código",
-            "Descripción (Español)",
-            "Description (English)",
-            "描述 (中文)",
-            "Material",
-            "Uso",
-            "Cajas",
-            "Uds/Caja",
-            "Unidad",
-            "Cantidad total",
-            "Precio RMB",
-            "Total RMB",
-            "Precio USD",
-            "Total USD",
-            "Largo cm",
-            "Ancho cm",
-            "Alto cm",
-            "CBM",
-            "T.CBM",
-            "Peso kg",
-            "Peso total kg",
-            "MQT (mín. cajas)",
-            "Marca",
-        ],
         "numero": "N° Cotización",
         "emision": "Fecha de emisión",
         "cliente": "Cliente",
@@ -85,36 +55,6 @@ LABELS = {
     },
     "en": {
         "empresa": "YIWU YUDA TRADING CO.,LTD",
-        "cols": [
-            "N°",
-            "Receipt date",
-            "Shipping mark",
-            "Photo",
-            "Reference",
-            "Code",
-            "Descripción (Español)",
-            "Description (English)",
-            "描述 (中文)",
-            "Material",
-            "Use",
-            "Boxes",
-            "Units/Box",
-            "Unit",
-            "Total quantity",
-            "Price RMB",
-            "Total RMB",
-            "Price USD",
-            "Total USD",
-            "Length cm",
-            "Width cm",
-            "Height cm",
-            "CBM",
-            "T.CBM",
-            "Weight kg",
-            "Total weight kg",
-            "MOQ (min. boxes)",
-            "Brand",
-        ],
         "numero": "Quotation No.",
         "emision": "Issue date",
         "cliente": "Client",
@@ -124,36 +64,6 @@ LABELS = {
     },
     "zh": {
         "empresa": "义乌市与达贸易有限公司",
-        "cols": [
-            "序号",
-            "收货日期",
-            "唛头",
-            "图片",
-            "参考号",
-            "货号",
-            "描述 (西班牙语)",
-            "描述 (英语)",
-            "描述 (中文)",
-            "材质",
-            "用途",
-            "箱数",
-            "每箱数量",
-            "单位",
-            "总数量",
-            "单价(元)",
-            "总价(元)",
-            "单价(USD)",
-            "总价(USD)",
-            "长 cm",
-            "宽 cm",
-            "高 cm",
-            "CBM",
-            "总CBM",
-            "毛重kg",
-            "总毛重kg",
-            "起订量(箱)",
-            "品牌",
-        ],
         "numero": "报价单号",
         "emision": "签发日期",
         "cliente": "客户",
@@ -162,6 +72,112 @@ LABELS = {
         "resumen": "汇总：   {n} 件产品   ·   {cajas} 箱   ·   总计 USD ${usd}   ·   总毛重 {gw} kg   ·   CBM {cbm}",
     },
 }
+
+# Columnas de la cotización al cliente: clave estable (no cambia con el
+# idioma) en el orden en que salen en el documento. La vendedora puede elegir
+# cuáles mostrar antes de descargar (ExportarCotizacion en el frontend);
+# "columnas" en generar_cotizacion_excel/pdf es la lista de claves elegidas.
+CLAVES_COLUMNAS = [
+    "numero", "fecha_recibo", "shipping_mark", "foto", "referencia", "codigo",
+    "desc_es", "desc_en", "desc_zh", "material", "uso",
+    "cajas", "uds_caja", "unidad", "cant_total",
+    "precio_rmb", "total_rmb", "precio_usd", "total_usd",
+    "largo", "ancho", "alto", "cbm", "t_cbm",
+    "peso", "peso_total", "mqt", "marca",
+]
+
+# Sin foto o sin referencia el cliente no puede identificar qué está
+# cotizando: no se pueden ocultar aunque la vendedora las desmarque.
+COLUMNAS_OBLIGATORIAS = {"foto", "referencia"}
+
+ETIQUETAS_COLUMNA = {
+    "es": {
+        "numero": "N°", "fecha_recibo": "Fecha de recibo", "shipping_mark": "Shipping mark",
+        "foto": "Foto", "referencia": "Referencia", "codigo": "Código",
+        "desc_es": "Descripción (Español)", "desc_en": "Description (English)", "desc_zh": "描述 (中文)",
+        "material": "Material", "uso": "Uso",
+        "cajas": "Cajas", "uds_caja": "Uds/Caja", "unidad": "Unidad", "cant_total": "Cantidad total",
+        "precio_rmb": "Precio RMB", "total_rmb": "Total RMB", "precio_usd": "Precio USD", "total_usd": "Total USD",
+        "largo": "Largo cm", "ancho": "Ancho cm", "alto": "Alto cm", "cbm": "CBM", "t_cbm": "T.CBM",
+        "peso": "Peso kg", "peso_total": "Peso total kg", "mqt": "MQT (mín. cajas)", "marca": "Marca",
+    },
+    "en": {
+        "numero": "N°", "fecha_recibo": "Receipt date", "shipping_mark": "Shipping mark",
+        "foto": "Photo", "referencia": "Reference", "codigo": "Code",
+        "desc_es": "Descripción (Español)", "desc_en": "Description (English)", "desc_zh": "描述 (中文)",
+        "material": "Material", "uso": "Use",
+        "cajas": "Boxes", "uds_caja": "Units/Box", "unidad": "Unit", "cant_total": "Total quantity",
+        "precio_rmb": "Price RMB", "total_rmb": "Total RMB", "precio_usd": "Price USD", "total_usd": "Total USD",
+        "largo": "Length cm", "ancho": "Width cm", "alto": "Height cm", "cbm": "CBM", "t_cbm": "T.CBM",
+        "peso": "Weight kg", "peso_total": "Total weight kg", "mqt": "MOQ (min. boxes)", "marca": "Brand",
+    },
+    "zh": {
+        "numero": "序号", "fecha_recibo": "收货日期", "shipping_mark": "唛头",
+        "foto": "图片", "referencia": "参考号", "codigo": "货号",
+        "desc_es": "描述 (西班牙语)", "desc_en": "描述 (英语)", "desc_zh": "描述 (中文)",
+        "material": "材质", "uso": "用途",
+        "cajas": "箱数", "uds_caja": "每箱数量", "unidad": "单位", "cant_total": "总数量",
+        "precio_rmb": "单价(元)", "total_rmb": "总价(元)", "precio_usd": "单价(USD)", "total_usd": "总价(USD)",
+        "largo": "长 cm", "ancho": "宽 cm", "alto": "高 cm", "cbm": "CBM", "t_cbm": "总CBM",
+        "peso": "毛重kg", "peso_total": "总毛重kg", "mqt": "起订量(箱)", "marca": "品牌",
+    },
+}
+
+ANCHOS_COLUMNA = {
+    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 18, "referencia": 13, "codigo": 12,
+    "desc_es": 30, "desc_en": 30, "desc_zh": 24, "material": 13, "uso": 16,
+    "cajas": 7, "uds_caja": 9, "unidad": 7, "cant_total": 11,
+    "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
+    "largo": 8, "ancho": 8, "alto": 8, "cbm": 8, "t_cbm": 9,
+    "peso": 8, "peso_total": 11, "mqt": 11, "marca": 14,
+}
+
+
+def _columnas_activas(columnas: list[str] | None) -> list[str]:
+    """Filtra y ordena las columnas a mostrar en la cotización del cliente.
+
+    Respeta siempre el orden canónico (CLAVES_COLUMNAS), ignora claves que no
+    existan, y agrega las obligatorias aunque no vengan elegidas. `columnas`
+    en None (nadie eligió nada, ej. el portal del cliente) muestra todas."""
+    if columnas is None:
+        return list(CLAVES_COLUMNAS)
+    elegidas = set(columnas) | COLUMNAS_OBLIGATORIAS
+    return [c for c in CLAVES_COLUMNAS if c in elegidas]
+
+
+def _valores_fila(n: int, item, calc: dict, sesion: Sesion) -> dict:
+    """Valor de cada columna posible para una fila de la cotización del
+    cliente. `foto` va en None: esa columna se llena aparte, como imagen."""
+    return {
+        "numero": n,
+        "fecha_recibo": item.fecha_recibo,
+        "shipping_mark": sesion.shipping_mark,
+        "foto": None,
+        "referencia": item.referencia,
+        "codigo": item.item_no,
+        "desc_es": item.descripcion_es,
+        "desc_en": item.descripcion_en,
+        "desc_zh": item.descripcion_zh,
+        "material": item.material,
+        "uso": item.uso,
+        "cajas": item.ctns,
+        "uds_caja": item.qty_por_ctn,
+        "unidad": UNIDAD,
+        "cant_total": calc["t_qty"],
+        "precio_rmb": item.price_rmb,
+        "total_rmb": calc["total_rmb"],
+        "precio_usd": calc["price_usd"],
+        "total_usd": calc["total_usd"],
+        "largo": item.largo_cm or None,
+        "ancho": item.ancho_cm or None,
+        "alto": item.alto_cm or None,
+        "cbm": calc["cbm"],
+        "t_cbm": calc["t_cbm"],
+        "peso": item.gw or None,
+        "peso_total": round((item.gw or 0) * (item.ctns or 0), 2) or None,
+        "mqt": item.moq_cajas,
+        "marca": item.marca,
+    }
 
 
 _LOGO: bytes | None = None
@@ -233,9 +249,17 @@ def _descargar_imagen(url: str):
         return None
 
 
-def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_cambio: float) -> bytes:
-    """Genera el Excel de la cotización para el cliente"""
+def generar_cotizacion_excel(
+    items: list, sesion: Sesion, idioma: str, tipo_cambio: float, columnas: list[str] | None = None,
+) -> bytes:
+    """Genera el Excel de la cotización para el cliente.
+
+    `columnas`: claves de CLAVES_COLUMNAS a mostrar (la vendedora las elige
+    antes de descargar); None muestra todas. Foto y Referencia salen siempre.
+    """
     lab = _labels(idioma)
+    etiquetas = ETIQUETAS_COLUMNA[idioma if idioma in ETIQUETAS_COLUMNA else "es"]
+    columnas_activas = _columnas_activas(columnas)
     fecha = datetime.now()
     wb = Workbook()
     ws = wb.active
@@ -252,8 +276,8 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     lado_borde = Side(style="thin", color="BFBFBF")
     borde_fino = Border(left=lado_borde, right=lado_borde, top=lado_borde, bottom=lado_borde)
 
-    ncols = len(lab["cols"])  # 15
-    ultima_col = get_column_letter(ncols)  # O
+    ncols = len(columnas_activas)
+    ultima_col = get_column_letter(ncols)
 
     # Logo de YUDA, sobre fondo blanco: el lockup tiene el texto en negro y no se
     # lee sobre el azul del encabezado.
@@ -299,50 +323,24 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
 
     # Headers de columnas
     fila_head = 12
-    for idx, titulo in enumerate(lab["cols"], start=1):
-        celda = ws.cell(row=fila_head, column=idx, value=titulo)
+    for idx, clave in enumerate(columnas_activas, start=1):
+        celda = ws.cell(row=fila_head, column=idx, value=etiquetas[clave])
         celda.fill = fill_head
         celda.font = font_head
         celda.alignment = centro
         celda.border = borde_fino
+
+    # Columna de la foto: se resuelve una vez (siempre está en columnas_activas).
+    col_foto = get_column_letter(columnas_activas.index("foto") + 1)
 
     # Filas de datos
     fila = fila_head + 1
     tot_cajas = tot_rmb = tot_usd = tot_cbm = tot_gw = 0.0
     for n, item in enumerate(items, start=1):
         calc = _calcular(item, tipo_cambio)
-        valores = [
-            n,
-            item.fecha_recibo,
-            sesion.shipping_mark,
-            None,  # Foto (se agrega como imagen)
-            item.referencia,  # referencia de catálogo de YUDA (solo cliente)
-            item.item_no,
-            item.descripcion_es,
-            item.descripcion_en,
-            item.descripcion_zh,
-            item.material,
-            item.uso,
-            item.ctns,
-            item.qty_por_ctn,
-            UNIDAD,
-            calc["t_qty"],
-            item.price_rmb,
-            calc["total_rmb"],
-            calc["price_usd"],
-            calc["total_usd"],
-            item.largo_cm or None,
-            item.ancho_cm or None,
-            item.alto_cm or None,
-            calc["cbm"],
-            calc["t_cbm"],
-            item.gw or None,
-            round((item.gw or 0) * (item.ctns or 0), 2) or None,
-            item.moq_cajas,
-            item.marca,
-        ]
-        for idx, val in enumerate(valores, start=1):
-            celda = ws.cell(row=fila, column=idx, value=val)
+        valores = _valores_fila(n, item, calc, sesion)
+        for idx, clave in enumerate(columnas_activas, start=1):
+            celda = ws.cell(row=fila, column=idx, value=valores[clave])
             celda.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             celda.border = borde_fino
             if n % 2 == 0:
@@ -361,7 +359,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
                     escala = 110 / max(img.width, img.height)
                     img.width = round(img.width * escala)
                     img.height = round(img.height * escala)
-                    ws.add_image(img, f"D{fila}")
+                    ws.add_image(img, f"{col_foto}{fila}")
                 except Exception:
                     pass
 
@@ -372,13 +370,19 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         tot_gw += round((item.gw or 0) * (item.ctns or 0), 2)
         fila += 1
 
-    # Fila de totales (las columnas van corridas por la de Referencia)
+    # Fila de totales: "TOTALES" en la primera columna, cada total en la suya
+    # (si esa columna está oculta, ese total simplemente no sale).
+    totales_por_clave = {
+        "cajas": int(tot_cajas),
+        "total_rmb": round(tot_rmb, 2),
+        "total_usd": round(tot_usd, 2),
+        "t_cbm": round(tot_cbm, 6),
+        "peso_total": round(tot_gw, 2),
+    }
     ws.cell(row=fila, column=1, value=lab["totales"])
-    ws.cell(row=fila, column=12, value=int(tot_cajas))   # Cajas
-    ws.cell(row=fila, column=17, value=round(tot_rmb, 2))  # Total RMB
-    ws.cell(row=fila, column=19, value=round(tot_usd, 2))  # Total USD
-    ws.cell(row=fila, column=24, value=round(tot_cbm, 6))  # T.CBM
-    ws.cell(row=fila, column=26, value=round(tot_gw, 2))   # Peso total
+    for idx, clave in enumerate(columnas_activas, start=1):
+        if clave in totales_por_clave:
+            ws.cell(row=fila, column=idx, value=totales_por_clave[clave])
 
     # Recuadro de resumen amigable, arriba de la tabla
     ws.merge_cells(f"A11:{ultima_col}11")
@@ -416,26 +420,24 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         ws.cell(row=fila_contacto + i, column=1, value=linea)
 
     # Anchos de columna
-    anchos = [
-        5, 13, 13, 18, 13, 12,      # N°, fecha recibo, shipping mark, foto, referencia, código
-        30, 30, 24,                 # descripciones es / en / zh
-        13, 16,                     # material, uso
-        7, 9, 7, 11,                # cajas, uds/caja, unidad, cantidad total
-        10, 11, 10, 11,             # precios y totales
-        8, 8, 8,                    # largo, ancho, alto
-        8, 9, 8, 11, 11, 14,        # cbm, t.cbm, pesos, mqt, marca
-    ]
-    for idx, ancho in enumerate(anchos, start=1):
-        ws.column_dimensions[get_column_letter(idx)].width = ancho
+    for idx, clave in enumerate(columnas_activas, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = ANCHOS_COLUMNA[clave]
 
     buffer = BytesIO()
     wb.save(buffer)
     return buffer.getvalue()
 
 
-def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio: float) -> bytes:
-    """Genera el PDF de la cotización para el cliente con WeasyPrint"""
+def generar_cotizacion_pdf(
+    items: list, sesion: Sesion, idioma: str, tipo_cambio: float, columnas: list[str] | None = None,
+) -> bytes:
+    """Genera el PDF de la cotización para el cliente con WeasyPrint.
+
+    `columnas`: ver generar_cotizacion_excel.
+    """
     lab = _labels(idioma)
+    etiquetas = ETIQUETAS_COLUMNA[idioma if idioma in ETIQUETAS_COLUMNA else "es"]
+    columnas_activas = _columnas_activas(columnas)
     fecha = datetime.now()
     numero = _numero_cotizacion(sesion, fecha)
 
@@ -447,37 +449,38 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         foto = f'<img src="{foto_doc}" />' if foto_doc else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
+        celdas_por_clave = {
+            "numero": f"<td>{n}</td>",
+            "fecha_recibo": f"<td>{item.fecha_recibo or ''}</td>",
+            "shipping_mark": f"<td>{sesion.shipping_mark or ''}</td>",
+            "foto": f'<td class="foto">{foto}</td>',
+            "referencia": f"<td>{item.referencia or ''}</td>",
+            "codigo": f"<td>{item.item_no or ''}</td>",
+            "desc_es": f'<td class="desc">{item.descripcion_es or ""}</td>',
+            "desc_en": f'<td class="desc">{item.descripcion_en or ""}</td>',
+            "desc_zh": f'<td class="desc">{item.descripcion_zh or ""}</td>',
+            "material": f"<td>{item.material or ''}</td>",
+            "uso": f"<td>{item.uso or ''}</td>",
+            "cajas": f"<td>{item.ctns or 0}</td>",
+            "uds_caja": f"<td>{item.qty_por_ctn or 0}</td>",
+            "unidad": f"<td>{UNIDAD}</td>",
+            "cant_total": f"<td>{calc['t_qty']}</td>",
+            "precio_rmb": f"<td>{item.price_rmb or 0}</td>",
+            "total_rmb": f"<td>{calc['total_rmb']}</td>",
+            "precio_usd": f"<td>{calc['price_usd']}</td>",
+            "total_usd": f"<td>{calc['total_usd']}</td>",
+            "largo": f"<td>{item.largo_cm or ''}</td>",
+            "ancho": f"<td>{item.ancho_cm or ''}</td>",
+            "alto": f"<td>{item.alto_cm or ''}</td>",
+            "cbm": f"<td>{calc['cbm']}</td>",
+            "t_cbm": f"<td>{calc['t_cbm']}</td>",
+            "peso": f"<td>{item.gw or ''}</td>",
+            "peso_total": f"<td>{gw_total or ''}</td>",
+            "mqt": f"<td>{item.moq_cajas if item.moq_cajas is not None else ''}</td>",
+            "marca": f"<td>{item.marca or ''}</td>",
+        }
         filas_html.append(
-            f"<tr{alt}>"
-            f"<td>{n}</td>"
-            f"<td>{item.fecha_recibo or ''}</td>"
-            f"<td>{sesion.shipping_mark or ''}</td>"
-            f'<td class="foto">{foto}</td>'
-            f"<td>{item.referencia or ''}</td>"
-            f"<td>{item.item_no or ''}</td>"
-            f'<td class="desc">{item.descripcion_es or ""}</td>'
-            f'<td class="desc">{item.descripcion_en or ""}</td>'
-            f'<td class="desc">{item.descripcion_zh or ""}</td>'
-            f"<td>{item.material or ''}</td>"
-            f"<td>{item.uso or ''}</td>"
-            f"<td>{item.ctns or 0}</td>"
-            f"<td>{item.qty_por_ctn or 0}</td>"
-            f"<td>{UNIDAD}</td>"
-            f"<td>{calc['t_qty']}</td>"
-            f"<td>{item.price_rmb or 0}</td>"
-            f"<td>{calc['total_rmb']}</td>"
-            f"<td>{calc['price_usd']}</td>"
-            f"<td>{calc['total_usd']}</td>"
-            f"<td>{item.largo_cm or ''}</td>"
-            f"<td>{item.ancho_cm or ''}</td>"
-            f"<td>{item.alto_cm or ''}</td>"
-            f"<td>{calc['cbm']}</td>"
-            f"<td>{calc['t_cbm']}</td>"
-            f"<td>{item.gw or ''}</td>"
-            f"<td>{gw_total or ''}</td>"
-            f"<td>{item.moq_cajas if item.moq_cajas is not None else ''}</td>"
-            f"<td>{item.marca or ''}</td>"
-            f"</tr>"
+            f"<tr{alt}>" + "".join(celdas_por_clave[c] for c in columnas_activas) + "</tr>"
         )
         tot_cajas += item.ctns or 0
         tot_rmb += calc["total_rmb"]
@@ -485,7 +488,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
         tot_cbm += calc["t_cbm"]
         tot_gw += gw_total
 
-    headers_html = "".join(f"<th>{c}</th>" for c in lab["cols"])
+    headers_html = "".join(f"<th>{etiquetas[c]}</th>" for c in columnas_activas)
 
     logo = _logo_bytes()
     logo_html = (
@@ -496,6 +499,20 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     )
     aviso_html = "".join(f"<p>{linea}</p>" for linea in AVISO_AGENCIA)
     nota = lab["nota"]
+
+    # "TOTALES" va en la primera columna activa; cada total, en la suya (si
+    # esa columna está oculta, ese total simplemente no sale).
+    totales_por_clave = {
+        "cajas": int(tot_cajas),
+        "total_rmb": round(tot_rmb, 2),
+        "total_usd": round(tot_usd, 2),
+        "t_cbm": round(tot_cbm, 6),
+        "peso_total": round(tot_gw, 2),
+    }
+    celdas_totales_html = "".join(
+        f"<td>{lab['totales']}</td>" if i == 0 else f"<td>{totales_por_clave.get(clave, '')}</td>"
+        for i, clave in enumerate(columnas_activas)
+    )
 
     html = f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
@@ -540,15 +557,7 @@ def generar_cotizacion_pdf(items: list, sesion: Sesion, idioma: str, tipo_cambio
     <thead><tr>{headers_html}</tr></thead>
     <tbody>
       {''.join(filas_html)}
-      <tr class="totales">
-        <td colspan="11">{lab['totales']}</td>
-        <td>{int(tot_cajas)}</td><td></td><td></td><td></td>
-        <td></td><td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>
-        <td></td><td></td><td></td>
-        <td></td><td>{round(tot_cbm, 6)}</td>
-        <td></td><td>{round(tot_gw, 2)}</td>
-        <td></td><td></td>
-      </tr>
+      <tr class="totales">{celdas_totales_html}</tr>
     </tbody>
   </table>
   <p class="nota">{nota}</p>

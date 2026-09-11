@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -9,6 +10,10 @@ class CotizacionRequest(BaseModel):
     """Solicitud de exportación de cotización"""
 
     idioma: str
+    # Claves de CLAVES_COLUMNAS (cotizacion_service.py) a mostrar en el
+    # documento; None (o ausente) muestra todas, como siempre. Foto y
+    # Referencia salen sí o sí aunque no vengan en la lista.
+    columnas: Optional[list[str]] = None
 
     @field_validator("idioma")
     @classmethod

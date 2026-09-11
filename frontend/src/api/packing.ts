@@ -153,19 +153,29 @@ export async function exportarPackingPDF(sesion_id: string): Promise<Blob> {
   return data as Blob
 }
 
-export async function exportarCotizacionExcel(sesion_id: string, idioma: string): Promise<Blob> {
+// `columnas`: claves de columna a mostrar (ver CLAVES_COLUMNAS en el backend);
+// sin pasarlo (o null) salen todas, igual que siempre.
+export async function exportarCotizacionExcel(
+  sesion_id: string,
+  idioma: string,
+  columnas?: string[] | null,
+): Promise<Blob> {
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/cotizacion-excel`,
-    { idioma },
+    { idioma, columnas },
     { responseType: 'blob', timeout: TIMEOUT_SUBIDA },
   )
   return data as Blob
 }
 
-export async function exportarCotizacionPDF(sesion_id: string, idioma: string): Promise<Blob> {
+export async function exportarCotizacionPDF(
+  sesion_id: string,
+  idioma: string,
+  columnas?: string[] | null,
+): Promise<Blob> {
   const { data } = await apiClient.post(
     `/sesiones/${sesion_id}/exportar/cotizacion-pdf`,
-    { idioma },
+    { idioma, columnas },
     { responseType: 'blob', timeout: TIMEOUT_SUBIDA },
   )
   return data as Blob

@@ -712,7 +712,7 @@ def exportar_cotizacion_excel(
     # una celda vacía en el documento que ve el cliente no es aceptable.
     completar_descripciones(db, items)
 
-    contenido = generar_cotizacion_excel(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
+    contenido = generar_cotizacion_excel(items, sesion, datos.idioma, sesion.tipo_cambio_usd, datos.columnas)
 
     fecha = datetime.now().strftime("%Y%m%d")
     nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Cotizacion_{datos.idioma}.xlsx"
@@ -741,7 +741,7 @@ def exportar_cotizacion_pdf(
     )
     completar_descripciones(db, items)
 
-    contenido = generar_cotizacion_pdf(items, sesion, datos.idioma, sesion.tipo_cambio_usd)
+    contenido = generar_cotizacion_pdf(items, sesion, datos.idioma, sesion.tipo_cambio_usd, datos.columnas)
 
     fecha = datetime.now().strftime("%Y%m%d")
     nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Cotizacion_{datos.idioma}.pdf"
