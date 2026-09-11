@@ -476,7 +476,14 @@
       "peso": "毛重kg",
       "peso_total": "总毛重kg",
       "mqt": "起订量(箱)",
-      "marca": "品牌"
+      "marca": "品牌",
+      "tamano": "尺寸",
+      "empaque": "包装",
+      "etiqueta": "标签",
+      "herrajes": "五金件",
+      "riata": "背带",
+      "minimo_cajas_tienda": "最低箱数（全店）",
+      "minimo_piezas_caja_tienda": "每箱最低件数（全店）"
     }
   },
   "lote": {

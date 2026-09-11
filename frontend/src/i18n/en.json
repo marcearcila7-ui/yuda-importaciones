@@ -476,7 +476,14 @@
       "peso": "Weight kg",
       "peso_total": "Total weight kg",
       "mqt": "MOQ (min. boxes)",
-      "marca": "Brand"
+      "marca": "Brand",
+      "tamano": "Size",
+      "empaque": "Packaging",
+      "etiqueta": "Label",
+      "herrajes": "Hardware",
+      "riata": "Strap",
+      "minimo_cajas_tienda": "Minimum boxes (store)",
+      "minimo_piezas_caja_tienda": "Minimum pieces per box (store)"
     }
   },
   "lote": {

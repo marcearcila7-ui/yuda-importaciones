@@ -476,7 +476,14 @@
       "peso": "Peso kg",
       "peso_total": "Peso total kg",
       "mqt": "MQT (mín. cajas)",
-      "marca": "Marca"
+      "marca": "Marca",
+      "tamano": "Tamaño",
+      "empaque": "Empaque",
+      "etiqueta": "Etiqueta",
+      "herrajes": "Herrajes",
+      "riata": "Riata/correa",
+      "minimo_cajas_tienda": "Mínimo cajas (tienda)",
+      "minimo_piezas_caja_tienda": "Mínimo piezas por caja (tienda)"
     }
   },
   "lote": {

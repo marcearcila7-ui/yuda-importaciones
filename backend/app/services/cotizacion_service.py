@@ -86,6 +86,14 @@ CLAVES_COLUMNAS = [
     "peso", "peso_total", "mqt", "marca",
 ]
 
+# Propias de una cotización de bolsos (sesion.tipo_cotizacion == "bolsos"):
+# solo se ofrecen como opción, y solo salen en el documento, cuando la
+# cotización es de ese tipo. Van al final, después de las genéricas.
+CLAVES_COLUMNAS_BOLSOS = [
+    "tamano", "empaque", "etiqueta", "herrajes", "riata",
+    "minimo_cajas_tienda", "minimo_piezas_caja_tienda",
+]
+
 # Sin foto o sin referencia el cliente no puede identificar qué está
 # cotizando: no se pueden ocultar aunque la vendedora las desmarque.
 COLUMNAS_OBLIGATORIAS = {"foto", "referencia"}
@@ -100,6 +108,9 @@ ETIQUETAS_COLUMNA = {
         "precio_rmb": "Precio RMB", "total_rmb": "Total RMB", "precio_usd": "Precio USD", "total_usd": "Total USD",
         "largo": "Largo cm", "ancho": "Ancho cm", "alto": "Alto cm", "cbm": "CBM", "t_cbm": "T.CBM",
         "peso": "Peso kg", "peso_total": "Peso total kg", "mqt": "MQT (mín. cajas)", "marca": "Marca",
+        "tamano": "Tamaño", "empaque": "Empaque", "etiqueta": "Etiqueta", "herrajes": "Herrajes",
+        "riata": "Riata/correa", "minimo_cajas_tienda": "Mínimo cajas (tienda)",
+        "minimo_piezas_caja_tienda": "Mínimo piezas por caja (tienda)",
     },
     "en": {
         "numero": "N°", "fecha_recibo": "Receipt date", "shipping_mark": "Shipping mark",
@@ -110,6 +121,9 @@ ETIQUETAS_COLUMNA = {
         "precio_rmb": "Price RMB", "total_rmb": "Total RMB", "precio_usd": "Price USD", "total_usd": "Total USD",
         "largo": "Length cm", "ancho": "Width cm", "alto": "Height cm", "cbm": "CBM", "t_cbm": "T.CBM",
         "peso": "Weight kg", "peso_total": "Total weight kg", "mqt": "MOQ (min. boxes)", "marca": "Brand",
+        "tamano": "Size", "empaque": "Packaging", "etiqueta": "Label", "herrajes": "Hardware",
+        "riata": "Strap", "minimo_cajas_tienda": "Minimum boxes (store)",
+        "minimo_piezas_caja_tienda": "Minimum pieces per box (store)",
     },
     "zh": {
         "numero": "序号", "fecha_recibo": "收货日期", "shipping_mark": "唛头",
@@ -120,6 +134,9 @@ ETIQUETAS_COLUMNA = {
         "precio_rmb": "单价(元)", "total_rmb": "总价(元)", "precio_usd": "单价(USD)", "total_usd": "总价(USD)",
         "largo": "长 cm", "ancho": "宽 cm", "alto": "高 cm", "cbm": "CBM", "t_cbm": "总CBM",
         "peso": "毛重kg", "peso_total": "总毛重kg", "mqt": "起订量(箱)", "marca": "品牌",
+        "tamano": "尺寸", "empaque": "包装", "etiqueta": "标签", "herrajes": "五金件",
+        "riata": "背带", "minimo_cajas_tienda": "最低箱数（全店）",
+        "minimo_piezas_caja_tienda": "每箱最低件数（全店）",
     },
 }
 
@@ -130,19 +147,24 @@ ANCHOS_COLUMNA = {
     "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
     "largo": 8, "ancho": 8, "alto": 8, "cbm": 8, "t_cbm": 9,
     "peso": 8, "peso_total": 11, "mqt": 11, "marca": 14,
+    "tamano": 12, "empaque": 15, "etiqueta": 15, "herrajes": 12, "riata": 15,
+    "minimo_cajas_tienda": 14, "minimo_piezas_caja_tienda": 14,
 }
 
 
-def _columnas_activas(columnas: list[str] | None) -> list[str]:
+def _columnas_activas(columnas: list[str] | None, es_bolsos: bool = False) -> list[str]:
     """Filtra y ordena las columnas a mostrar en la cotización del cliente.
 
-    Respeta siempre el orden canónico (CLAVES_COLUMNAS), ignora claves que no
-    existan, y agrega las obligatorias aunque no vengan elegidas. `columnas`
-    en None (nadie eligió nada, ej. el portal del cliente) muestra todas."""
+    Respeta siempre el orden canónico (CLAVES_COLUMNAS, + CLAVES_COLUMNAS_BOLSOS
+    al final si `es_bolsos`), ignora claves que no existan o que no apliquen
+    para este tipo de cotización, y agrega las obligatorias aunque no vengan
+    elegidas. `columnas` en None (nadie eligió nada, ej. el portal del
+    cliente) muestra todas las que apliquen."""
+    disponibles = CLAVES_COLUMNAS + CLAVES_COLUMNAS_BOLSOS if es_bolsos else CLAVES_COLUMNAS
     if columnas is None:
-        return list(CLAVES_COLUMNAS)
+        return list(disponibles)
     elegidas = set(columnas) | COLUMNAS_OBLIGATORIAS
-    return [c for c in CLAVES_COLUMNAS if c in elegidas]
+    return [c for c in disponibles if c in elegidas]
 
 
 def _valores_fila(n: int, item, calc: dict, sesion: Sesion) -> dict:
@@ -177,6 +199,13 @@ def _valores_fila(n: int, item, calc: dict, sesion: Sesion) -> dict:
         "peso_total": round((item.gw or 0) * (item.ctns or 0), 2) or None,
         "mqt": item.moq_cajas,
         "marca": item.marca,
+        "tamano": item.tamano,
+        "empaque": item.empaque,
+        "etiqueta": item.etiqueta,
+        "herrajes": item.herrajes,
+        "riata": item.riata,
+        "minimo_cajas_tienda": item.minimo_cajas_tienda,
+        "minimo_piezas_caja_tienda": item.minimo_piezas_caja_tienda,
     }
 
 
@@ -254,12 +283,14 @@ def generar_cotizacion_excel(
 ) -> bytes:
     """Genera el Excel de la cotización para el cliente.
 
-    `columnas`: claves de CLAVES_COLUMNAS a mostrar (la vendedora las elige
-    antes de descargar); None muestra todas. Foto y Referencia salen siempre.
+    `columnas`: claves de CLAVES_COLUMNAS (+ CLAVES_COLUMNAS_BOLSOS si la
+    sesión es de bolsos) a mostrar, elegidas por la vendedora antes de
+    descargar; None muestra todas las que apliquen. Foto y Referencia salen
+    siempre.
     """
     lab = _labels(idioma)
     etiquetas = ETIQUETAS_COLUMNA[idioma if idioma in ETIQUETAS_COLUMNA else "es"]
-    columnas_activas = _columnas_activas(columnas)
+    columnas_activas = _columnas_activas(columnas, sesion.tipo_cotizacion == "bolsos")
     fecha = datetime.now()
     wb = Workbook()
     ws = wb.active
@@ -437,7 +468,7 @@ def generar_cotizacion_pdf(
     """
     lab = _labels(idioma)
     etiquetas = ETIQUETAS_COLUMNA[idioma if idioma in ETIQUETAS_COLUMNA else "es"]
-    columnas_activas = _columnas_activas(columnas)
+    columnas_activas = _columnas_activas(columnas, sesion.tipo_cotizacion == "bolsos")
     fecha = datetime.now()
     numero = _numero_cotizacion(sesion, fecha)
 
@@ -478,6 +509,15 @@ def generar_cotizacion_pdf(
             "peso_total": f"<td>{gw_total or ''}</td>",
             "mqt": f"<td>{item.moq_cajas if item.moq_cajas is not None else ''}</td>",
             "marca": f"<td>{item.marca or ''}</td>",
+            "tamano": f"<td>{item.tamano or ''}</td>",
+            "empaque": f"<td>{item.empaque or ''}</td>",
+            "etiqueta": f"<td>{item.etiqueta or ''}</td>",
+            "herrajes": f"<td>{item.herrajes or ''}</td>",
+            "riata": f"<td>{item.riata or ''}</td>",
+            "minimo_cajas_tienda": f"<td>{item.minimo_cajas_tienda if item.minimo_cajas_tienda is not None else ''}</td>",
+            "minimo_piezas_caja_tienda": (
+                f"<td>{item.minimo_piezas_caja_tienda if item.minimo_piezas_caja_tienda is not None else ''}</td>"
+            ),
         }
         filas_html.append(
             f"<tr{alt}>" + "".join(celdas_por_clave[c] for c in columnas_activas) + "</tr>"

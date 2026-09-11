@@ -29,6 +29,14 @@ const CLAVES_COLUMNAS = [
   'peso', 'peso_total', 'mqt', 'marca',
 ] as const
 
+// Propias de una cotización de bolsos: solo se muestran como opción (y solo
+// salen en el documento) cuando la sesión es de ese tipo. Mismo orden que
+// CLAVES_COLUMNAS_BOLSOS en cotizacion_service.py.
+const CLAVES_COLUMNAS_BOLSOS = [
+  'tamano', 'empaque', 'etiqueta', 'herrajes', 'riata',
+  'minimo_cajas_tienda', 'minimo_piezas_caja_tienda',
+] as const
+
 // Sin foto o referencia el cliente no puede identificar el producto: no se
 // pueden desmarcar (el backend también las fuerza, por si acaso).
 const COLUMNAS_OBLIGATORIAS = new Set(['foto', 'referencia'])
@@ -48,9 +56,12 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const [generando, setGenerando] = useState<'excel' | 'pdf' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirmado, setConfirmado] = useState(false)
-  // Qué columnas va a traer el documento. Todas marcadas por defecto: hay que
-  // desmarcar a propósito para ocultar algo, nunca al revés.
-  const [columnasActivas, setColumnasActivas] = useState<Set<string>>(() => new Set(CLAVES_COLUMNAS))
+  // Qué columnas va a traer el documento. Todas marcadas por defecto (incluidas
+  // las de bolsos: si la sesión no es de bolsos, el backend las ignora igual,
+  // así no hace falta reiniciar el estado según el tipo de cotización).
+  const [columnasActivas, setColumnasActivas] = useState<Set<string>>(
+    () => new Set([...CLAVES_COLUMNAS, ...CLAVES_COLUMNAS_BOLSOS]),
+  )
   const toggleColumna = (clave: string) => {
     if (COLUMNAS_OBLIGATORIAS.has(clave)) return
     setColumnasActivas((prev) => {
@@ -62,6 +73,8 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   }
 
   const items = usePackingStore((s) => s.items)
+  const esBolsos = usePackingStore((s) => s.sesionActual?.tipo_cotizacion === 'bolsos')
+  const clavesAMostrar = esBolsos ? [...CLAVES_COLUMNAS, ...CLAVES_COLUMNAS_BOLSOS] : CLAVES_COLUMNAS
   // Foto 1 (producto con datos): obligatoria para generar. La cargan el OCR.
   const sinFotoDatos = items.filter((i) => !i.foto_url).length
   // Datos clave que deberían haberse extraído (precio + alguna descripción).
@@ -153,7 +166,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           {t('cotizacion.columnasAyuda')}
         </p>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-3">
-          {CLAVES_COLUMNAS.map((clave) => {
+          {clavesAMostrar.map((clave) => {
             const obligatoria = COLUMNAS_OBLIGATORIAS.has(clave)
             return (
               <label
