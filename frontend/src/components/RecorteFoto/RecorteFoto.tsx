@@ -36,9 +36,44 @@ function RecorteFoto({
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null)
   const [arrastrando, setArrastrando] = useState(false)
   const inicio = useRef<{ x: number; y: number } | null>(null)
+  // Tamaño real de la foto (naturalWidth/Height), para saber dónde queda
+  // dibujada DENTRO del contenedor. Sin esto no se puede calcular el recuadro.
+  const [dimsFoto, setDimsFoto] = useState<{ w: number; h: number } | null>(null)
+
+  // La foto se muestra con object-fit:contain: si su proporción no coincide con
+  // la del contenedor, queda con franjas vacías arriba/abajo o a los costados
+  // (una foto de celular, vertical, casi siempre las tiene a los lados). Antes
+  // el recuadro se calculaba sobre el contenedor completo, franjas incluidas:
+  // la vendedora arrastraba justo sobre el producto pero las coordenadas que se
+  // guardaban quedaban corridas, así que el recorte final no era el que se veía
+  // en pantalla. Esto calcula el rectángulo real donde cae la imagen.
+  const cajaImagen = () => {
+    const cont = contenedor.current?.getBoundingClientRect()
+    if (!cont || cont.width === 0 || cont.height === 0 || !dimsFoto || !dimsFoto.w || !dimsFoto.h) {
+      return null
+    }
+    const ratioFoto = dimsFoto.w / dimsFoto.h
+    const ratioCaja = cont.width / cont.height
+    let width: number
+    let height: number
+    if (ratioFoto > ratioCaja) {
+      width = cont.width
+      height = width / ratioFoto
+    } else {
+      height = cont.height
+      width = height * ratioFoto
+    }
+    return {
+      left: cont.left + (cont.width - width) / 2,
+      top: cont.top + (cont.height - height) / 2,
+      width,
+      height,
+      cont,
+    }
+  }
 
   const posicion = (e: ReactPointerEvent) => {
-    const caja = contenedor.current?.getBoundingClientRect()
+    const caja = cajaImagen()
     if (!caja || caja.width === 0 || caja.height === 0) return null
     return {
       x: limitar((e.clientX - caja.left) / caja.width),
@@ -74,6 +109,20 @@ function RecorteFoto({
 
   const area = recuadro ? (recuadro.x1 - recuadro.x0) * (recuadro.y1 - recuadro.y0) : 0
   const sirve = area >= AREA_MINIMA
+
+  // El recuadro se guarda en fracciones DE LA FOTO (lo que espera el backend),
+  // pero se dibuja dentro del contenedor: si hay franjas vacías hay que
+  // convertirlo a fracciones del contenedor antes de posicionarlo en pantalla.
+  const cajaFoto = recuadro ? cajaImagen() : null
+  const recuadroEnPantalla =
+    recuadro && cajaFoto
+      ? {
+          x0: (cajaFoto.left - cajaFoto.cont.left + recuadro.x0 * cajaFoto.width) / cajaFoto.cont.width,
+          y0: (cajaFoto.top - cajaFoto.cont.top + recuadro.y0 * cajaFoto.height) / cajaFoto.cont.height,
+          x1: (cajaFoto.left - cajaFoto.cont.left + recuadro.x1 * cajaFoto.width) / cajaFoto.cont.width,
+          y1: (cajaFoto.top - cajaFoto.cont.top + recuadro.y1 * cajaFoto.height) / cajaFoto.cont.height,
+        }
+      : null
 
   return (
     <div
@@ -131,8 +180,8 @@ function RecorteFoto({
             <img
               src={recorteActual}
               alt=""
-              style={{ width: 64, height: 64 }}
-              className="flex-shrink-0 rounded-lg object-cover"
+              style={{ width: 112, height: 112 }}
+              className="flex-shrink-0 rounded-lg object-contain"
             />
             <span className="text-sm" style={{ color: 'var(--yuda-accent)' }}>
               {t('recorte.actual')}
@@ -155,24 +204,28 @@ function RecorteFoto({
             draggable={false}
             className="block w-full"
             style={{ maxHeight: '58vh', objectFit: 'contain' }}
+            onLoad={(e) => {
+              const img = e.currentTarget
+              setDimsFoto({ w: img.naturalWidth, h: img.naturalHeight })
+            }}
           />
-          {recuadro && (
+          {recuadroEnPantalla && (
             <>
               {/* Oscurecer lo que queda fuera del recuadro */}
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
                   backgroundColor: 'rgba(0,0,0,0.55)',
-                  clipPath: `polygon(0% 0%, 0% 100%, ${recuadro.x0 * 100}% 100%, ${recuadro.x0 * 100}% ${recuadro.y0 * 100}%, ${recuadro.x1 * 100}% ${recuadro.y0 * 100}%, ${recuadro.x1 * 100}% ${recuadro.y1 * 100}%, ${recuadro.x0 * 100}% ${recuadro.y1 * 100}%, ${recuadro.x0 * 100}% 100%, 100% 100%, 100% 0%)`,
+                  clipPath: `polygon(0% 0%, 0% 100%, ${recuadroEnPantalla.x0 * 100}% 100%, ${recuadroEnPantalla.x0 * 100}% ${recuadroEnPantalla.y0 * 100}%, ${recuadroEnPantalla.x1 * 100}% ${recuadroEnPantalla.y0 * 100}%, ${recuadroEnPantalla.x1 * 100}% ${recuadroEnPantalla.y1 * 100}%, ${recuadroEnPantalla.x0 * 100}% ${recuadroEnPantalla.y1 * 100}%, ${recuadroEnPantalla.x0 * 100}% 100%, 100% 100%, 100% 0%)`,
                 }}
               />
               <div
                 className="pointer-events-none absolute"
                 style={{
-                  left: `${recuadro.x0 * 100}%`,
-                  top: `${recuadro.y0 * 100}%`,
-                  width: `${(recuadro.x1 - recuadro.x0) * 100}%`,
-                  height: `${(recuadro.y1 - recuadro.y0) * 100}%`,
+                  left: `${recuadroEnPantalla.x0 * 100}%`,
+                  top: `${recuadroEnPantalla.y0 * 100}%`,
+                  width: `${(recuadroEnPantalla.x1 - recuadroEnPantalla.x0) * 100}%`,
+                  height: `${(recuadroEnPantalla.y1 - recuadroEnPantalla.y0) * 100}%`,
                   border: '2px solid var(--yuda-primary)',
                   boxShadow: '0 0 0 9999px rgba(0,0,0,0)',
                 }}

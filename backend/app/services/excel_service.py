@@ -39,6 +39,15 @@ ANCHOS_BOLSOS = [15, 12, 15, 15, 12, 15, 14, 14, 12, 12, 12, 12]
 TIPOS_FOTO_EXTRA_EXCEL = ["interior", "herrajes", "riata", "exterior"]
 
 
+def _encajar(img: XLImage, lado_max: int) -> None:
+    """Achica una imagen de openpyxl a que su lado más largo mida `lado_max`,
+    respetando la proporción original. Sin esto, fijar width/height por igual
+    en una foto que no es cuadrada la deja estirada/aplastada."""
+    escala = lado_max / max(img.width, img.height)
+    img.width = round(img.width * escala)
+    img.height = round(img.height * escala)
+
+
 def generar_packing_list_excel(
     items: list, sesion_nombre_cliente: str, tipo_cambio_usd: float,
     tipo_cotizacion: str = "productos",
@@ -96,8 +105,7 @@ def generar_packing_list_excel(
             if buf is not None:
                 try:
                     img = XLImage(buf)
-                    img.width = 55
-                    img.height = 55
+                    _encajar(img, 55)
                     ws.add_image(img, f"B{fila}")
                     ws.row_dimensions[fila].height = 45
                 except Exception:
@@ -152,8 +160,7 @@ def generar_packing_list_excel(
                 if buf is not None:
                     try:
                         img = XLImage(buf)
-                        img.width = 55
-                        img.height = 55
+                        _encajar(img, 55)
                         ws.add_image(img, f"{get_column_letter(32 + offset)}{fila}")
                         ws.row_dimensions[fila].height = 45
                     except Exception:

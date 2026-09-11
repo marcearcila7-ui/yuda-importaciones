@@ -37,7 +37,7 @@ const inputStyle: CSSProperties = { fontSize: 16 }
 const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'supplier_nombre', header: 'SUPPLIER', meta: { campo: 'supplier_nombre', kind: 'text-edit', width: 160, stickyLeft: 0 } },
   { id: 'supplier_numero', header: 'N° STAND', meta: { campo: 'supplier_numero', kind: 'text-edit', width: 100 } },
-  { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 60 } },
+  { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 84 } },
   // Referencia que ve el cliente en su cotización. La asigna el sistema, no se edita.
   { id: 'referencia', header: 'REF. CLIENTE', meta: { campo: 'referencia', kind: 'ro-num', width: 110 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
@@ -187,7 +187,7 @@ function CeldaSoloLectura({
     // producto si existe, y si no la foto entera con el cartel.
     const foto = item.foto_final_url || item.foto_url
     if (!foto) {
-      return <div style={{ width: 40, height: 40 }} className="rounded bg-gray-200" />
+      return <div style={{ width: 64, height: 64 }} className="rounded bg-gray-200" />
     }
     return (
       <button
@@ -195,14 +195,17 @@ function CeldaSoloLectura({
         onClick={() => onRecortar?.(item)}
         title={t('recorte.tocaAjustar')}
         className="relative rounded"
-        style={{ width: 40, height: 40 }}
+        style={{ width: 64, height: 64 }}
       >
-        <img src={foto} alt="foto" className="h-full w-full rounded object-cover" />
+        {/* object-contain, no cover: se ve la foto COMPLETA tal como queda en
+            los documentos. Con cover se recortaba más para llenar el cuadrado
+            y la miniatura mentía sobre cómo iba a quedar el recorte real. */}
+        <img src={foto} alt="foto" className="h-full w-full rounded object-contain" />
         <span
           className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
-          style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
+          style={{ width: 16, height: 16, backgroundColor: 'var(--yuda-primary)' }}
         >
-          <Crop size={9} color="#fff" />
+          <Crop size={10} color="#fff" />
         </span>
       </button>
     )
@@ -297,20 +300,34 @@ function CampoMovil({
 function TarjetaMovil({
   item,
   onItemActualizado,
+  onRecortar,
 }: {
   item: ItemResponse
   onItemActualizado: () => void
+  onRecortar?: (item: ItemResponse) => void
 }) {
   const { t } = useTranslation()
   const esBolsos = usePackingStore((s) => s.sesionActual?.tipo_cotizacion === 'bolsos')
   const fotosExtra = item.fotos_extra ? Object.entries(item.fotos_extra).filter(([, url]) => url) : []
+  // La foto que de verdad sale en los documentos: el recorte si existe, si no
+  // la foto entera con el cartel (antes esta tarjeta mostraba siempre la
+  // original sin recortar, sin importar el recorte guardado).
+  const foto = item.foto_final_url || item.foto_url
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gray-200 p-3">
       <div className="flex gap-3">
-        {item.foto_url ? (
-          <img src={item.foto_url} alt="" style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg object-cover" />
+        {foto ? (
+          <button type="button" onClick={() => onRecortar?.(item)} title={t('recorte.tocaAjustar')} className="relative flex-shrink-0">
+            <img src={foto} alt="" style={{ width: 64, height: 64 }} className="rounded-lg object-contain" />
+            <span
+              className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
+              style={{ width: 16, height: 16, backgroundColor: 'var(--yuda-primary)' }}
+            >
+              <Crop size={10} color="#fff" />
+            </span>
+          </button>
         ) : (
-          <div style={{ width: 56, height: 56 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
+          <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
         )}
         <div className="min-w-0 flex-1">
           <CampoMovil item={item} campo="supplier_nombre" label={t('packing.fProveedor')} tipo="text" onSaved={onItemActualizado} />
@@ -446,7 +463,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
         ) : (
           <>
             {items.map((it) => (
-              <TarjetaMovil key={it.id} item={it} onItemActualizado={onItemActualizado} />
+              <TarjetaMovil key={it.id} item={it} onItemActualizado={onItemActualizado} onRecortar={setItemRecorte} />
             ))}
             <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: 'var(--yuda-accent)' }}>
               <span className="text-sm font-bold text-white">

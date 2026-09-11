@@ -352,8 +352,11 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
             if buf is not None:
                 try:
                     img = XLImage(buf)
-                    img.width = 110
-                    img.height = 110
+                    # Respeta la proporción: forzar 110x110 parejo estiraba
+                    # cualquier foto que no fuera cuadrada.
+                    escala = 110 / max(img.width, img.height)
+                    img.width = round(img.width * escala)
+                    img.height = round(img.height * escala)
                     ws.add_image(img, f"D{fila}")
                 except Exception:
                     pass
