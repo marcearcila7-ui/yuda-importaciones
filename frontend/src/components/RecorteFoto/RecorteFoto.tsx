@@ -85,6 +85,36 @@ function aOriginal(u: number, v: number, giro: Giro): [number, number] {
   }
 }
 
+// Inversa de aOriginal: de coordenadas de la foto original a la vista girada.
+function deOriginal(x: number, y: number, giro: Giro): [number, number] {
+  switch (giro) {
+    case 90:
+      return [1 - y, x]
+    case 180:
+      return [1 - x, 1 - y]
+    case 270:
+      return [y, 1 - x]
+    default:
+      return [x, y]
+  }
+}
+
+// Recalcula el recuadro dibujado bajo un giro a como se ve bajo OTRO giro,
+// en vez de borrarlo: girar no debería obligar a recortar de nuevo.
+function recuadroTrasGirar(r: Recuadro, giroViejo: Giro, giroNuevo: Giro): Recuadro {
+  const esquinas = (
+    [
+      [r.x0, r.y0],
+      [r.x1, r.y0],
+      [r.x1, r.y1],
+      [r.x0, r.y1],
+    ] as const
+  ).map(([u, v]) => deOriginal(...aOriginal(u, v, giroViejo), giroNuevo))
+  const xs = esquinas.map((p) => p[0])
+  const ys = esquinas.map((p) => p[1])
+  return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) }
+}
+
 // Ajuste a mano del recorte, para cuando el automatico salio mal. La vendedora
 // gira y/o arrastra un recuadro sobre la foto, viendo siempre el resultado tal
 // como va a quedar, y un solo botón manda los dos cambios juntos al backend
@@ -110,8 +140,16 @@ function RecorteFoto({
   const imgRef = useRef<HTMLImageElement>(null)
   const previaRef = useRef<HTMLCanvasElement>(null)
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null)
-  const [arrastrando, setArrastrando] = useState(false)
   const inicio = useRef<{ x: number; y: number } | null>(null)
+  // Qué está arrastrando la vendedora ahora mismo: un recuadro nuevo desde
+  // cero, el recuadro entero (moverlo sin cambiar su tamaño), o una esquina
+  // (agrandar/achicar desde esa esquina, con la opuesta fija como ancla).
+  const modo = useRef<
+    | { tipo: 'nuevo' }
+    | { tipo: 'mover'; dx: number; dy: number }
+    | { tipo: 'esquina'; anclaX: number; anclaY: number }
+    | null
+  >(null)
   // Tamaño real de la foto ORIGINAL (naturalWidth/Height, sin girar).
   const [dimsFoto, setDimsFoto] = useState<{ w: number; h: number } | null>(null)
   // Giro elegido en ESTA sesión de edición. Antes cada click en girar guardaba
@@ -171,38 +209,89 @@ function RecorteFoto({
     }
   }
 
-  const empezar = (e: ReactPointerEvent) => {
+  // Click en el fondo (fuera del recuadro ya dibujado): empieza uno nuevo
+  // desde cero, reemplazando al anterior.
+  const empezarNuevo = (e: ReactPointerEvent) => {
     const p = posicion(e)
     if (!p) return
-    e.currentTarget.setPointerCapture(e.pointerId)
+    contenedor.current?.setPointerCapture(e.pointerId)
+    modo.current = { tipo: 'nuevo' }
     inicio.current = p
-    setArrastrando(true)
     setRecuadro({ x0: p.x, y0: p.y, x1: p.x, y1: p.y })
   }
 
-  const mover = (e: ReactPointerEvent) => {
-    if (!arrastrando || !inicio.current) return
+  // Click DENTRO del recuadro: lo mueve entero, sin cambiar su tamaño.
+  const empezarMover = (e: ReactPointerEvent) => {
+    if (!recuadro) return
     const p = posicion(e)
     if (!p) return
-    setRecuadro({
-      x0: Math.min(inicio.current.x, p.x),
-      y0: Math.min(inicio.current.y, p.y),
-      x1: Math.max(inicio.current.x, p.x),
-      y1: Math.max(inicio.current.y, p.y),
-    })
+    e.stopPropagation()
+    contenedor.current?.setPointerCapture(e.pointerId)
+    modo.current = { tipo: 'mover', dx: p.x - recuadro.x0, dy: p.y - recuadro.y0 }
+  }
+
+  // Click en una manija de esquina: agranda/achica arrastrando esa esquina,
+  // con la esquina OPUESTA fija como ancla.
+  const empezarEsquina = (
+    e: ReactPointerEvent,
+    esquina: 'x0y0' | 'x1y0' | 'x1y1' | 'x0y1',
+  ) => {
+    if (!recuadro) return
+    e.stopPropagation()
+    contenedor.current?.setPointerCapture(e.pointerId)
+    const ancla = {
+      x0y0: { x: recuadro.x1, y: recuadro.y1 },
+      x1y0: { x: recuadro.x0, y: recuadro.y1 },
+      x1y1: { x: recuadro.x0, y: recuadro.y0 },
+      x0y1: { x: recuadro.x1, y: recuadro.y0 },
+    }[esquina]
+    modo.current = { tipo: 'esquina', anclaX: ancla.x, anclaY: ancla.y }
+  }
+
+  const mover = (e: ReactPointerEvent) => {
+    const m = modo.current
+    if (!m) return
+    const p = posicion(e)
+    if (!p) return
+    if (m.tipo === 'nuevo') {
+      if (!inicio.current) return
+      setRecuadro({
+        x0: Math.min(inicio.current.x, p.x),
+        y0: Math.min(inicio.current.y, p.y),
+        x1: Math.max(inicio.current.x, p.x),
+        y1: Math.max(inicio.current.y, p.y),
+      })
+    } else if (m.tipo === 'mover') {
+      setRecuadro((r) => {
+        if (!r) return r
+        const ancho = r.x1 - r.x0
+        const alto = r.y1 - r.y0
+        const x0 = limitar(Math.min(p.x - m.dx, 1 - ancho))
+        const y0 = limitar(Math.min(p.y - m.dy, 1 - alto))
+        return { x0, y0, x1: x0 + ancho, y1: y0 + alto }
+      })
+    } else {
+      setRecuadro({
+        x0: Math.min(m.anclaX, p.x),
+        y0: Math.min(m.anclaY, p.y),
+        x1: Math.max(m.anclaX, p.x),
+        y1: Math.max(m.anclaY, p.y),
+      })
+    }
   }
 
   const terminar = () => {
-    setArrastrando(false)
+    modo.current = null
     inicio.current = null
   }
 
   // Gira la VISTA (no llama al backend): el guardado real pasa por "Guardar".
-  // El recuadro ya dibujado se descarta: quedaría en el lugar equivocado sobre
-  // la foto recién girada.
+  // El recuadro ya dibujado se recalcula a la nueva orientación en vez de
+  // borrarse: girar no debería obligar a recortar de nuevo desde cero.
   const girar = (delta: 90 | -90) => {
-    setGiro((g) => (((g + delta) % 360 + 360) % 360) as Giro)
-    setRecuadro(null)
+    const nuevo = (((giro + delta) % 360 + 360) % 360) as Giro
+    setGiro(nuevo)
+    setRecuadro((r) => (r ? recuadroTrasGirar(r, giro, nuevo) : null))
   }
 
   const area = recuadro ? (recuadro.x1 - recuadro.x0) * (recuadro.y1 - recuadro.y0) : 0
@@ -313,7 +402,7 @@ function RecorteFoto({
 
         <div
           ref={contenedor}
-          onPointerDown={empezar}
+          onPointerDown={empezarNuevo}
           onPointerMove={mover}
           onPointerUp={terminar}
           onPointerCancel={terminar}
@@ -355,8 +444,11 @@ function RecorteFoto({
                   clipPath: `polygon(0% 0%, 0% 100%, ${recuadroEnPantalla.x0 * 100}% 100%, ${recuadroEnPantalla.x0 * 100}% ${recuadroEnPantalla.y0 * 100}%, ${recuadroEnPantalla.x1 * 100}% ${recuadroEnPantalla.y0 * 100}%, ${recuadroEnPantalla.x1 * 100}% ${recuadroEnPantalla.y1 * 100}%, ${recuadroEnPantalla.x0 * 100}% ${recuadroEnPantalla.y1 * 100}%, ${recuadroEnPantalla.x0 * 100}% 100%, 100% 100%, 100% 0%)`,
                 }}
               />
+              {/* El recuadro en sí: arrastrarlo desde adentro lo mueve entero,
+                  sin cambiar su tamaño. */}
               <div
-                className="pointer-events-none absolute"
+                onPointerDown={empezarMover}
+                className="absolute"
                 style={{
                   left: `${recuadroEnPantalla.x0 * 100}%`,
                   top: `${recuadroEnPantalla.y0 * 100}%`,
@@ -364,8 +456,37 @@ function RecorteFoto({
                   height: `${(recuadroEnPantalla.y1 - recuadroEnPantalla.y0) * 100}%`,
                   border: '2px solid var(--yuda-primary)',
                   boxShadow: '0 0 0 9999px rgba(0,0,0,0)',
+                  touchAction: 'none',
+                  cursor: 'move',
                 }}
               />
+              {/* Manijas en las 4 esquinas: agrandan o achican el recuadro
+                  arrastrando esa esquina, con la opuesta fija. Antes solo se
+                  podía volver a dibujar el recuadro entero desde cero. */}
+              {(
+                [
+                  ['x0y0', recuadroEnPantalla.x0, recuadroEnPantalla.y0, 'nwse-resize'],
+                  ['x1y0', recuadroEnPantalla.x1, recuadroEnPantalla.y0, 'nesw-resize'],
+                  ['x1y1', recuadroEnPantalla.x1, recuadroEnPantalla.y1, 'nwse-resize'],
+                  ['x0y1', recuadroEnPantalla.x0, recuadroEnPantalla.y1, 'nesw-resize'],
+                ] as const
+              ).map(([esquina, left, top, cursor]) => (
+                <div
+                  key={esquina}
+                  onPointerDown={(e) => empezarEsquina(e, esquina)}
+                  className="absolute rounded-full border-2 bg-white"
+                  style={{
+                    left: `${left * 100}%`,
+                    top: `${top * 100}%`,
+                    width: 22,
+                    height: 22,
+                    transform: 'translate(-50%, -50%)',
+                    borderColor: 'var(--yuda-primary)',
+                    touchAction: 'none',
+                    cursor,
+                  }}
+                />
+              ))}
             </>
           )}
         </div>
