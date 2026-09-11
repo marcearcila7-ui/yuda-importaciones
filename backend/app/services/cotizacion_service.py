@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 CONTACTO = {
     "dir_china": "Room 0909-0911, Building A, Futian Building, No.1121, Chouzhou North Road, Yiwu City, China. Zip: 322023",
     "dir_colombia": "Cr 53 cll 45-115 piso 8 Edificio Multivariedades, Centro de Medellín",
-    "email": "info@yudaimport.com",
+    "email": "contacto@yudaimportaciones.com",
     "telefono": "+57 123 456 78 90",
-    "web": "yudaimport.com",
+    "web": "yudaimportaciones.com",
     "razon": "义乌市与达贸易有限公司 · YIWU YUDA TRADING CO.,LTD",
 }
 
