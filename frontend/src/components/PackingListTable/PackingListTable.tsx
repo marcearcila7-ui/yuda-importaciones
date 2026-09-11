@@ -37,7 +37,7 @@ const inputStyle: CSSProperties = { fontSize: 16 }
 const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'supplier_nombre', header: 'SUPPLIER', meta: { campo: 'supplier_nombre', kind: 'text-edit', width: 160, stickyLeft: 0 } },
   { id: 'supplier_numero', header: 'N° STAND', meta: { campo: 'supplier_numero', kind: 'text-edit', width: 100 } },
-  { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 84 } },
+  { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 136 } },
   // Referencia que ve el cliente en su cotización. La asigna el sistema, no se edita.
   { id: 'referencia', header: 'REF. CLIENTE', meta: { campo: 'referencia', kind: 'ro-num', width: 110 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
@@ -187,7 +187,7 @@ function CeldaSoloLectura({
     // producto si existe, y si no la foto entera con el cartel.
     const foto = item.foto_final_url || item.foto_url
     if (!foto) {
-      return <div style={{ width: 64, height: 64 }} className="rounded bg-gray-200" />
+      return <div style={{ width: 116, height: 116 }} className="rounded bg-gray-200" />
     }
     return (
       <button
@@ -195,17 +195,17 @@ function CeldaSoloLectura({
         onClick={() => onRecortar?.(item)}
         title={t('recorte.tocaAjustar')}
         className="relative rounded"
-        style={{ width: 64, height: 64 }}
+        style={{ width: 116, height: 116 }}
       >
         {/* object-contain, no cover: se ve la foto COMPLETA tal como queda en
             los documentos. Con cover se recortaba más para llenar el cuadrado
             y la miniatura mentía sobre cómo iba a quedar el recorte real. */}
         <img src={foto} alt="foto" className="h-full w-full rounded object-contain" />
         <span
-          className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
-          style={{ width: 16, height: 16, backgroundColor: 'var(--yuda-primary)' }}
+          className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded-full"
+          style={{ width: 22, height: 22, backgroundColor: 'var(--yuda-primary)' }}
         >
-          <Crop size={10} color="#fff" />
+          <Crop size={13} color="#fff" />
         </span>
       </button>
     )
@@ -388,14 +388,10 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     if (!itemRecorte || !sesionActual) return
     setGuardandoRecorte(true)
     try {
-      const actualizado = await guardarRecorte(sesionActual.id, itemRecorte.id, recuadro, giro)
+      await guardarRecorte(sesionActual.id, itemRecorte.id, recuadro, giro)
       toast.success(t('recorte.guardado'))
-      // Girar deja el modal abierto para poder seguir girando; recortar lo cierra.
-      if (giro) {
-        setItemRecorte(actualizado)
-      } else {
-        setItemRecorte(null)
-      }
+      // Recorte y giro se mandan juntos en un solo guardado: siempre se cierra.
+      setItemRecorte(null)
       onItemActualizado()
     } catch {
       toast.error(t('recorte.error'))

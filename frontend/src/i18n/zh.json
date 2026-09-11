@@ -886,6 +886,7 @@
     "actual": "这是目前在报价单和订单中显示的效果。只有需要更改时才在照片上拖动。",
     "girar": "旋转照片：",
     "girarIzquierda": "向左旋转",
-    "girarDerecha": "向右旋转"
+    "girarDerecha": "向右旋转",
+    "ayudaGirada": "照片已旋转。现在请按照这里显示的方向在产品上拖动框选，然后保存。"
   }
 }

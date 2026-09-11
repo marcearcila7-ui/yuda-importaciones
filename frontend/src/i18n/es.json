@@ -886,6 +886,7 @@
     "actual": "Así sale hoy en la cotización y en el pedido. Arrastra sobre la foto solo si quieres cambiarlo.",
     "girar": "Girar la foto:",
     "girarIzquierda": "Girar a la izquierda",
-    "girarDerecha": "Girar a la derecha"
+    "girarDerecha": "Girar a la derecha",
+    "ayudaGirada": "Ya giraste la foto. Ahora arrastra sobre el producto, tal como se ve aquí, y guarda."
   }
 }

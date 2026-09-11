@@ -3,8 +3,10 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Maximize2, RotateCcw, RotateCw, X } from 'lucide-react'
 
-// Recuadro en fracciones de 0 a 1 sobre la foto original
+// Recuadro en fracciones de 0 a 1, EN EL SISTEMA DE LA VISTA GIRADA (lo que la
+// vendedora ve y arrastra en pantalla, no necesariamente la foto original).
 type Recuadro = { x0: number; y0: number; x1: number; y1: number }
+type Giro = 0 | 90 | 180 | 270
 
 // Area minima para aceptar el recorte. Igual que la del backend: por debajo de
 // esto seguro fue un toque sin querer, no un recuadro.
@@ -12,9 +14,27 @@ const AREA_MINIMA = 0.03
 
 const limitar = (v: number) => Math.min(1, Math.max(0, v))
 
+// El recuadro se dibuja sobre la vista YA GIRADA, pero el backend recorta sobre
+// la foto ORIGINAL (sin girar) y gira después (ver backend/recorte_service.py).
+// Esto traduce un punto de la vista girada a coordenadas de la foto original.
+// Deducido geométricamente para cada giro posible (0/90/180/270, en sentido horario).
+function aOriginal(u: number, v: number, giro: Giro): [number, number] {
+  switch (giro) {
+    case 90:
+      return [v, 1 - u]
+    case 180:
+      return [1 - u, 1 - v]
+    case 270:
+      return [1 - v, u]
+    default:
+      return [u, v]
+  }
+}
+
 // Ajuste a mano del recorte, para cuando el automatico salio mal. La vendedora
-// arrastra un recuadro sobre la foto original y el backend lo recorta con el
-// mismo codigo que usa el OCR: aca solo se eligen las coordenadas.
+// gira y/o arrastra un recuadro sobre la foto, viendo siempre el resultado tal
+// como va a quedar, y un solo botón manda los dos cambios juntos al backend
+// (que recorta con el mismo código que usa el OCR).
 function RecorteFoto({
   fotoUrl,
   recorteActual,
@@ -36,23 +56,29 @@ function RecorteFoto({
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null)
   const [arrastrando, setArrastrando] = useState(false)
   const inicio = useRef<{ x: number; y: number } | null>(null)
-  // Tamaño real de la foto (naturalWidth/Height), para saber dónde queda
-  // dibujada DENTRO del contenedor. Sin esto no se puede calcular el recuadro.
+  // Tamaño real de la foto ORIGINAL (naturalWidth/Height, sin girar).
   const [dimsFoto, setDimsFoto] = useState<{ w: number; h: number } | null>(null)
+  // Giro elegido en ESTA sesión de edición. Antes cada click en girar guardaba
+  // de inmediato en el backend pero la foto grande de acá abajo seguía
+  // mostrándose sin girar (solo se actualizaba la miniatura de arriba): parecía
+  // que girar no hacía nada, y si después se dibujaba un recorte, se aplicaba
+  // sobre la foto SIN girar (se perdía el giro). Ahora el giro es local: se ve
+  // al instante en la foto grande, y "Guardar" manda recorte + giro juntos.
+  const [giro, setGiro] = useState<Giro>(0)
 
-  // La foto se muestra con object-fit:contain: si su proporción no coincide con
-  // la del contenedor, queda con franjas vacías arriba/abajo o a los costados
-  // (una foto de celular, vertical, casi siempre las tiene a los lados). Antes
-  // el recuadro se calculaba sobre el contenedor completo, franjas incluidas:
-  // la vendedora arrastraba justo sobre el producto pero las coordenadas que se
-  // guardaban quedaban corridas, así que el recorte final no era el que se veía
-  // en pantalla. Esto calcula el rectángulo real donde cae la imagen.
-  const cajaImagen = () => {
+  // La foto se muestra girada `giro` grados: si esta rotación es de 90/270, lo
+  // que ocupa el ancho y el alto se invierte. Esto calcula el rectángulo real
+  // (en coordenadas de pantalla) donde cae la foto YA GIRADA dentro del
+  // contenedor, para saber dónde caen los clics y dónde dibujar el recuadro.
+  const cajaImagen = (giroActual: Giro) => {
     const cont = contenedor.current?.getBoundingClientRect()
-    if (!cont || cont.width === 0 || cont.height === 0 || !dimsFoto || !dimsFoto.w || !dimsFoto.h) {
+    if (!cont || cont.width === 0 || cont.height === 0 || !dimsFoto?.w || !dimsFoto?.h) {
       return null
     }
-    const ratioFoto = dimsFoto.w / dimsFoto.h
+    const girado = giroActual === 90 || giroActual === 270
+    const anchoFoto = girado ? dimsFoto.h : dimsFoto.w
+    const altoFoto = girado ? dimsFoto.w : dimsFoto.h
+    const ratioFoto = anchoFoto / altoFoto
     const ratioCaja = cont.width / cont.height
     let width: number
     let height: number
@@ -73,7 +99,7 @@ function RecorteFoto({
   }
 
   const posicion = (e: ReactPointerEvent) => {
-    const caja = cajaImagen()
+    const caja = cajaImagen(giro)
     if (!caja || caja.width === 0 || caja.height === 0) return null
     return {
       x: limitar((e.clientX - caja.left) / caja.width),
@@ -107,20 +133,41 @@ function RecorteFoto({
     inicio.current = null
   }
 
+  // Gira la VISTA (no llama al backend): el guardado real pasa por "Guardar".
+  // El recuadro ya dibujado se descarta: quedaría en el lugar equivocado sobre
+  // la foto recién girada.
+  const girar = (delta: 90 | -90) => {
+    setGiro((g) => (((g + delta) % 360 + 360) % 360) as Giro)
+    setRecuadro(null)
+  }
+
   const area = recuadro ? (recuadro.x1 - recuadro.x0) * (recuadro.y1 - recuadro.y0) : 0
   const sirve = area >= AREA_MINIMA
+  const hayCambio = (recuadro && sirve) || giro !== 0
 
-  // El recuadro se guarda en fracciones DE LA FOTO (lo que espera el backend),
-  // pero se dibuja dentro del contenedor: si hay franjas vacías hay que
-  // convertirlo a fracciones del contenedor antes de posicionarlo en pantalla.
-  const cajaFoto = recuadro ? cajaImagen() : null
+  const guardar = () => {
+    if (recuadro && sirve) {
+      const [xa, ya] = aOriginal(recuadro.x0, recuadro.y0, giro)
+      const [xb, yb] = aOriginal(recuadro.x1, recuadro.y1, giro)
+      onGuardar([Math.min(xa, xb), Math.min(ya, yb), Math.max(xa, xb), Math.max(ya, yb)], giro)
+    } else if (giro !== 0) {
+      onGuardar(null, giro)
+    }
+  }
+
+  const caja = cajaImagen(giro)
+  const girado = giro === 90 || giro === 270
+
+  // El recuadro se guarda en fracciones DE LA VISTA GIRADA, pero se dibuja
+  // dentro del contenedor: si hay franjas vacías (la foto no llena el
+  // contenedor) hay que convertirlo a fracciones del contenedor.
   const recuadroEnPantalla =
-    recuadro && cajaFoto
+    recuadro && caja
       ? {
-          x0: (cajaFoto.left - cajaFoto.cont.left + recuadro.x0 * cajaFoto.width) / cajaFoto.cont.width,
-          y0: (cajaFoto.top - cajaFoto.cont.top + recuadro.y0 * cajaFoto.height) / cajaFoto.cont.height,
-          x1: (cajaFoto.left - cajaFoto.cont.left + recuadro.x1 * cajaFoto.width) / cajaFoto.cont.width,
-          y1: (cajaFoto.top - cajaFoto.cont.top + recuadro.y1 * cajaFoto.height) / cajaFoto.cont.height,
+          x0: (caja.left - caja.cont.left + recuadro.x0 * caja.width) / caja.cont.width,
+          y0: (caja.top - caja.cont.top + recuadro.y0 * caja.height) / caja.cont.height,
+          x1: (caja.left - caja.cont.left + recuadro.x1 * caja.width) / caja.cont.width,
+          y1: (caja.top - caja.cont.top + recuadro.y1 * caja.height) / caja.cont.height,
         }
       : null
 
@@ -141,18 +188,19 @@ function RecorteFoto({
           </button>
         </div>
         <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {t('recorte.ayuda')}
+          {giro !== 0 ? t('recorte.ayudaGirada') : t('recorte.ayuda')}
         </p>
 
         {/* Girar: las fotos del mercado salen de costado porque se toman
-            parandose al lado del producto */}
+            parandose al lado del producto. Se ve al instante en la foto de
+            abajo; recién se guarda al tocar "Guardar". */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('recorte.girar')}
           </span>
           <button
             type="button"
-            onClick={() => onGuardar(null, 270)}
+            onClick={() => girar(-90)}
             disabled={guardando}
             aria-label={t('recorte.girarIzquierda')}
             className="flex items-center justify-center rounded-lg border disabled:opacity-50"
@@ -162,7 +210,7 @@ function RecorteFoto({
           </button>
           <button
             type="button"
-            onClick={() => onGuardar(null, 90)}
+            onClick={() => girar(90)}
             disabled={guardando}
             aria-label={t('recorte.girarDerecha')}
             className="flex items-center justify-center rounded-lg border disabled:opacity-50"
@@ -196,18 +244,31 @@ function RecorteFoto({
           onPointerUp={terminar}
           onPointerCancel={terminar}
           className="relative select-none overflow-hidden rounded-lg"
-          style={{ touchAction: 'none', cursor: 'crosshair', backgroundColor: '#111' }}
+          style={{ touchAction: 'none', cursor: 'crosshair', backgroundColor: '#111', height: '58vh' }}
         >
           <img
             src={fotoUrl}
             alt=""
             draggable={false}
-            className="block w-full"
-            style={{ maxHeight: '58vh', objectFit: 'contain' }}
             onLoad={(e) => {
               const img = e.currentTarget
               setDimsFoto({ w: img.naturalWidth, h: img.naturalHeight })
             }}
+            style={
+              caja
+                ? {
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    width: girado ? caja.height : caja.width,
+                    height: girado ? caja.width : caja.height,
+                    transform: `translate(-50%, -50%) rotate(${giro}deg)`,
+                    objectFit: 'contain',
+                  }
+                : // Antes de saber el tamaño real de la foto (onLoad): visible pero
+                  // sin medidas todavía, solo para que el navegador la cargue.
+                  { display: 'block', maxWidth: '100%', maxHeight: '100%', margin: '0 auto' }
+            }
           />
           {recuadroEnPantalla && (
             <>
@@ -269,10 +330,8 @@ function RecorteFoto({
             </button>
             <button
               type="button"
-              onClick={() =>
-                recuadro && onGuardar([recuadro.x0, recuadro.y0, recuadro.x1, recuadro.y1], 0)
-              }
-              disabled={!sirve || guardando}
+              onClick={guardar}
+              disabled={!hayCambio || guardando}
               className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-50"
               style={{ minHeight: 46, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-primary)' }}
             >
