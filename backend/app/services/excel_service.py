@@ -88,9 +88,11 @@ def generar_packing_list_excel(
     fila = 4
     for item in items:
         ws.cell(row=fila, column=1, value=getattr(item, "supplier_nombre", None))
-        # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda
-        if getattr(item, "foto_url", None):
-            buf = descargar_imagen(item.foto_url, lado_px=120)
+        # Columna 2 (PHOTO): descargar la foto e incrustarla en la celda.
+        # Final (recortada a mano o por el OCR) si existe; si no, la original.
+        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        if foto_doc:
+            buf = descargar_imagen(foto_doc, lado_px=120)
             if buf is not None:
                 try:
                     img = XLImage(buf)

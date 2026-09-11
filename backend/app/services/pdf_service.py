@@ -240,7 +240,9 @@ def generar_packing_list_pdf(
         tot_tcbm += t_cbm
         tot_tgw += t_gw
 
-        foto = f'<img src="{item.foto_url}" />' if getattr(item, "foto_url", None) else ""
+        # Foto final (recortada a mano o por el OCR) si existe; si no, la original.
+        _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+        foto = f'<img src="{_foto_doc}" />' if _foto_doc else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
         cols_bolsos = ""
         if es_bolsos:
