@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { Crop } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
-import { guardarRecorte, guardarRecorteFotoExtra } from '../../api/packing'
+import { guardarRecorte, guardarRecorteFotoExtra, reemplazarFotoExtra, reemplazarFotoItem } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
 import type { ItemResponse } from '../../types/packing'
 
@@ -455,6 +455,36 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     }
   }
 
+  const reemplazarFoto = async (file: File) => {
+    if (!itemRecorte || !sesionActual) return
+    setGuardandoRecorte(true)
+    try {
+      await reemplazarFotoItem(sesionActual.id, itemRecorte.id, file)
+      toast.success(t('recorte.reemplazada'))
+      setItemRecorte(null)
+      onItemActualizado()
+    } catch {
+      toast.error(t('recorte.errorReemplazar'))
+    } finally {
+      setGuardandoRecorte(false)
+    }
+  }
+
+  const reemplazarFotoDeExtra = async (file: File) => {
+    if (!extraRecorte || !sesionActual) return
+    setGuardandoRecorteExtra(true)
+    try {
+      await reemplazarFotoExtra(sesionActual.id, extraRecorte.item.id, extraRecorte.tipo, file)
+      toast.success(t('recorte.reemplazada'))
+      setExtraRecorte(null)
+      onItemActualizado()
+    } catch {
+      toast.error(t('recorte.errorReemplazar'))
+    } finally {
+      setGuardandoRecorteExtra(false)
+    }
+  }
+
   // Construye las definiciones de columna para TanStack Table
   const columnas: ColumnDef<ItemResponse>[] = columnasDef.map((col) => ({
     id: col.id,
@@ -611,6 +641,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           recorteActual={itemRecorte.foto_final_url}
           guardando={guardandoRecorte}
           onGuardar={aplicarRecorte}
+          onReemplazar={reemplazarFoto}
           onCerrar={() => setItemRecorte(null)}
         />
       )}
@@ -620,6 +651,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           recorteActual={extraRecorte.item.fotos_extra_final?.[extraRecorte.tipo]}
           guardando={guardandoRecorteExtra}
           onGuardar={aplicarRecorteExtra}
+          onReemplazar={reemplazarFotoDeExtra}
           onCerrar={() => setExtraRecorte(null)}
         />
       )}

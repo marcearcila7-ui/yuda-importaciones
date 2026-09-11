@@ -888,6 +888,10 @@
     "girarIzquierda": "向左旋转",
     "girarDerecha": "向右旋转",
     "ayudaGirada": "照片已旋转。现在请按照这里显示的方向在产品上拖动框选，然后保存。",
-    "previaCambio": "这是应用裁剪后的效果（尚未保存）。"
+    "previaCambio": "这是应用裁剪后的效果（尚未保存）。",
+    "reemplazarFoto": "更换照片",
+    "reemplazando": "正在上传新照片...",
+    "reemplazada": "照片已更换",
+    "errorReemplazar": "无法上传新照片"
   }
 }

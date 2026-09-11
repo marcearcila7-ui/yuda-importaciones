@@ -4,10 +4,11 @@ from datetime import datetime
 
 import httpx
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_roles, get_current_user
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.contenedor import Contenedor
@@ -45,6 +46,7 @@ from app.services.borrado_service import (
     tiene_movimientos_sesion,
 )
 from app.services.excel_service import generar_packing_list_excel
+from app.services.imagen_service import convertir_a_jpeg
 from app.services.packing_service import calcular_campos_item
 from app.services.pdf_service import generar_packing_list_pdf
 from app.services.recorte_service import recortar_producto, recuadro_valido
@@ -54,6 +56,41 @@ from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_
 # El router se monta en main.py con prefijo /api/v1 (sin prefijo propio aquí)
 router = APIRouter(tags=["packing"])
 
+# Mismas reglas de validación de fotos que en lotes.py (donde se suben por
+# primera vez); se repiten acá porque son las que se usan para REEMPLAZAR la
+# foto de un producto ya agregado a la cotización.
+TIPOS_PERMITIDOS_FOTO = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+}
+DECLARADOS_HEIC = {"image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"}
+MAX_BYTES_FOTO = 25 * 1024 * 1024
+
+
+async def _leer_y_validar_foto(foto: UploadFile) -> tuple[bytes, str]:
+    """Lee, valida y normaliza una foto subida. Devuelve (bytes, content_type).
+
+    Convierte HEIC (iPhone) a JPEG. Nunca deja pasar algo que no sea una
+    imagen JPG/PNG/WEBP real."""
+    if foto.content_type not in TIPOS_PERMITIDOS_FOTO and foto.content_type not in DECLARADOS_HEIC:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Solo se permiten imágenes JPG, PNG o WEBP")
+    imagen_bytes = await foto.read()
+    if len(imagen_bytes) > MAX_BYTES_FOTO:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La imagen no debe superar 25MB")
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS_FOTO:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no es una imagen JPG, PNG o WEBP válida")
+    if tipo_real == "image/heic":
+        convertida = convertir_a_jpeg(imagen_bytes)
+        if convertida is None:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "No se pudo leer la foto del iPhone. Vuelve a intentarlo."
+            )
+        imagen_bytes = convertida
+        tipo_real = "image/jpeg"
+    return imagen_bytes, tipo_real
 
 
 def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse:
@@ -479,6 +516,89 @@ async def guardar_recorte_foto_extra(
 
     fotos_extra_final = dict(item.fotos_extra_final or {})
     fotos_extra_final[tipo] = url
+    item.fotos_extra_final = fotos_extra_final
+    db.commit()
+    db.refresh(item)
+    return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+
+@router.post("/sesiones/{sesion_id}/items/{item_id}/foto", response_model=ItemResponse)
+async def reemplazar_foto_item(
+    sesion_id: str,
+    item_id: str,
+    foto: UploadFile,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItemResponse:
+    """Reemplaza la foto de un producto ya agregado a la cotización por una
+    completamente distinta (al volver a editar, la vendedora puede querer
+    cambiarla, no solo recortarla). Descarta cualquier recorte anterior: no
+    tiene sentido sobre una foto que ya no es esa. Solo admin y vendedora."""
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    item = (
+        db.query(Item)
+        .filter(Item.id == item_id, Item.sesion_id == sesion_id)
+        .first()
+    )
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
+
+    imagen_bytes, tipo_real = await _leer_y_validar_foto(foto)
+    extension = TIPOS_PERMITIDOS_FOTO[tipo_real]  # ya viene normalizado a jpeg/png/webp
+    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+    )
+
+    item.foto_url = url
+    item.foto_final_url = None
+    db.commit()
+    db.refresh(item)
+    return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+
+@router.post(
+    "/sesiones/{sesion_id}/items/{item_id}/fotos-extra/{tipo}/foto",
+    response_model=ItemResponse,
+)
+async def reemplazar_foto_extra(
+    sesion_id: str,
+    item_id: str,
+    tipo: str,
+    foto: UploadFile,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItemResponse:
+    """Reemplaza una foto de detalle del bolso (interior/herrajes/riata/exterior)
+    por una completamente distinta. Descarta cualquier recorte anterior de ese
+    mismo tipo. Solo admin y vendedora."""
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    item = (
+        db.query(Item)
+        .filter(Item.id == item_id, Item.sesion_id == sesion_id)
+        .first()
+    )
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
+    if tipo not in TIPOS_FOTO_EXTRA:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tipo de foto inválido")
+
+    imagen_bytes, tipo_real = await _leer_y_validar_foto(foto)
+    extension = TIPOS_PERMITIDOS_FOTO[tipo_real]  # ya viene normalizado a jpeg/png/webp
+    nombre_archivo = f"{uuid.uuid4()}{extension}"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+    )
+
+    fotos_extra = dict(item.fotos_extra or {})
+    fotos_extra[tipo] = url
+    item.fotos_extra = fotos_extra
+    fotos_extra_final = dict(item.fotos_extra_final or {})
+    fotos_extra_final.pop(tipo, None)
     item.fotos_extra_final = fotos_extra_final
     db.commit()
     db.refresh(item)

@@ -888,6 +888,10 @@
     "girarIzquierda": "Rotate left",
     "girarDerecha": "Rotate right",
     "ayudaGirada": "You rotated the photo. Now drag over the product as it looks here, then save.",
-    "previaCambio": "This is how it will look with your crop (not saved yet)."
+    "previaCambio": "This is how it will look with your crop (not saved yet).",
+    "reemplazarFoto": "Replace photo",
+    "reemplazando": "Uploading the new photo...",
+    "reemplazada": "Photo replaced",
+    "errorReemplazar": "Couldn't upload the new photo"
   }
 }

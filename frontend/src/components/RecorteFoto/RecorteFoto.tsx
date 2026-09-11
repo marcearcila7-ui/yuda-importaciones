@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Maximize2, RotateCcw, RotateCw, X } from 'lucide-react'
+import { Check, Maximize2, RotateCcw, RotateCw, Upload, X } from 'lucide-react'
 
 // Lado del cuadro de la vista previa en vivo.
 const LADO_PREVIA = 112
@@ -124,6 +124,7 @@ function RecorteFoto({
   recorteActual,
   guardando,
   onGuardar,
+  onReemplazar,
   onCerrar,
 }: {
   fotoUrl: string
@@ -133,12 +134,17 @@ function RecorteFoto({
   guardando: boolean
   // recuadro null + giro 0 = volver a la foto completa; null + giro = solo girar
   onGuardar: (recuadro: number[] | null, giro: number) => void
+  // Sube una foto NUEVA en lugar de esta (no un recorte de la misma). Al
+  // volver a editar una cotización ya armada, a veces la foto que hace falta
+  // cambiar es la equivocada de entrada, no solo su encuadre.
+  onReemplazar?: (file: File) => void
   onCerrar: () => void
 }) {
   const { t } = useTranslation()
   const contenedor = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const previaRef = useRef<HTMLCanvasElement>(null)
+  const inputReemplazoRef = useRef<HTMLInputElement>(null)
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null)
   const inicio = useRef<{ x: number; y: number } | null>(null)
   // Qué está arrastrando la vendedora ahora mismo: un recuadro nuevo desde
@@ -371,6 +377,31 @@ function RecorteFoto({
           >
             <RotateCw size={18} />
           </button>
+
+          {onReemplazar && (
+            <>
+              <input
+                ref={inputReemplazoRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) onReemplazar(file)
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => inputReemplazoRef.current?.click()}
+                disabled={guardando}
+                className="ml-auto flex items-center gap-2 rounded-lg border px-3 font-medium disabled:opacity-50"
+                style={{ height: 40, borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }}
+              >
+                <Upload size={16} /> {t('recorte.reemplazarFoto')}
+              </button>
+            </>
+          )}
         </div>
 
         {(recorteActual || editando) && (

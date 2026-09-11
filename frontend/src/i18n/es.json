@@ -888,6 +888,10 @@
     "girarIzquierda": "Girar a la izquierda",
     "girarDerecha": "Girar a la derecha",
     "ayudaGirada": "Ya giraste la foto. Ahora arrastra sobre el producto, tal como se ve aquí, y guarda.",
-    "previaCambio": "Así va a quedar con tu recorte (sin guardar todavía)."
+    "previaCambio": "Así va a quedar con tu recorte (sin guardar todavía).",
+    "reemplazarFoto": "Reemplazar foto",
+    "reemplazando": "Subiendo la foto nueva...",
+    "reemplazada": "Foto reemplazada",
+    "errorReemplazar": "No se pudo subir la foto nueva"
   }
 }

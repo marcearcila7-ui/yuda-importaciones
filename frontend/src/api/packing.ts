@@ -96,6 +96,41 @@ export async function guardarRecorteFotoExtra(
   return data
 }
 
+// Reemplaza la foto de un producto ya agregado a la cotización por una
+// completamente distinta (no un recorte de la misma). Descarta cualquier
+// recorte anterior en el backend: no tiene sentido sobre una foto distinta.
+export async function reemplazarFotoItem(
+  sesion_id: string,
+  item_id: string,
+  file: File,
+): Promise<ItemResponse> {
+  const fd = new FormData()
+  fd.append('foto', file)
+  const { data } = await apiClient.post<ItemResponse>(
+    `/sesiones/${sesion_id}/items/${item_id}/foto`,
+    fd,
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
+// Igual, para una foto de detalle del bolso (interior/herrajes/riata/exterior).
+export async function reemplazarFotoExtra(
+  sesion_id: string,
+  item_id: string,
+  tipo: string,
+  file: File,
+): Promise<ItemResponse> {
+  const fd = new FormData()
+  fd.append('foto', file)
+  const { data } = await apiClient.post<ItemResponse>(
+    `/sesiones/${sesion_id}/items/${item_id}/fotos-extra/${tipo}/foto`,
+    fd,
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
 export async function eliminarSesion(sesion_id: string): Promise<void> {
   await apiClient.delete(`/sesiones/${sesion_id}`)
 }
