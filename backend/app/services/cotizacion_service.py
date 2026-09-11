@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from app.services.imagen_service import CALIDAD_JPEG
 from app.services.pdf_service import render_pdf
@@ -249,6 +249,8 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
     fill_tot = PatternFill(start_color="0D0D0D", end_color="0D0D0D", fill_type="solid")
     font_tot = Font(color="FFFFFF", bold=True)
     centro = Alignment(horizontal="center", vertical="center")
+    lado_borde = Side(style="thin", color="BFBFBF")
+    borde_fino = Border(left=lado_borde, right=lado_borde, top=lado_borde, bottom=lado_borde)
 
     ncols = len(lab["cols"])  # 15
     ultima_col = get_column_letter(ncols)  # O
@@ -302,6 +304,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         celda.fill = fill_head
         celda.font = font_head
         celda.alignment = centro
+        celda.border = borde_fino
 
     # Filas de datos
     fila = fila_head + 1
@@ -341,6 +344,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         for idx, val in enumerate(valores, start=1):
             celda = ws.cell(row=fila, column=idx, value=val)
             celda.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            celda.border = borde_fino
             if n % 2 == 0:
                 celda.fill = fill_alt
         ws.row_dimensions[fila].height = 90
@@ -393,6 +397,7 @@ def generar_cotizacion_excel(items: list, sesion: Sesion, idioma: str, tipo_camb
         c = ws.cell(row=fila, column=col)
         c.fill = fill_tot
         c.font = font_tot
+        c.border = borde_fino
 
     # Nota
     fila_nota = fila + 2

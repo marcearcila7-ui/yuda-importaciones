@@ -73,6 +73,8 @@ def generar_packing_list_excel(
     font_usd = Font(color="FF0000")
     font_bold = Font(bold=True)
     centro = Alignment(horizontal="center", vertical="center")
+    lado_borde = Side(style="thin", color="BFBFBF")
+    borde_fino = Border(left=lado_borde, right=lado_borde, top=lado_borde, bottom=lado_borde)
 
     ultima_col = len(encabezados)  # 23, o 31 en modo bolsos
 
@@ -92,6 +94,7 @@ def generar_packing_list_excel(
         celda.fill = fill_header
         celda.font = font_header
         celda.alignment = centro
+        celda.border = borde_fino
 
     # Filas de datos desde la fila 4
     fila = 4
@@ -167,6 +170,8 @@ def generar_packing_list_excel(
                         ws.row_dimensions[fila].height = 45
                     except Exception:
                         pass
+        for col in range(1, ultima_col + 1):
+            ws.cell(row=fila, column=col).border = borde_fino
         fila += 1
 
     ultima_fila_datos = fila - 1 if items else 3
@@ -179,9 +184,11 @@ def generar_packing_list_excel(
     ws.cell(row=fila_totales, column=14, value=f"=SUM(N4:N{ultima_fila_datos})")
     ws.cell(row=fila_totales, column=16, value=f"=SUM(P4:P{ultima_fila_datos})")
     ws.cell(row=fila_totales, column=21, value=f"=SUM(U4:U{ultima_fila_datos})")
-    # Toda la fila de totales en negrita
+    # Toda la fila de totales en negrita, con el mismo borde de cuadrícula
     for col in range(1, ultima_col + 1):
-        ws.cell(row=fila_totales, column=col).font = font_bold
+        celda = ws.cell(row=fila_totales, column=col)
+        celda.font = font_bold
+        celda.border = borde_fino
 
     # Anchos de columna
     for idx, ancho in enumerate(anchos, start=1):
