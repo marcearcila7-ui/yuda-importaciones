@@ -216,7 +216,18 @@ function Dashboard() {
         await cargarSesiones()
         sesion = usePackingStore.getState().sesiones.find((s) => s.id === sesionId)
       }
-      if (sesion) await seleccionarSesion(sesion)
+      if (sesion) {
+        await seleccionarSesion(sesion)
+        // Se llega acá para EDITAR una cotización ya existente (desde el Historial,
+        // la ficha del cliente, etc.). El efecto de arriba resetea a "paso 1" (subir
+        // fotos) apenas cambia sesionActual, sin saber todavía si ya tiene productos.
+        // Si ya los tiene, hay que aterrizar directo en la pantalla de edición: "voy a
+        // editar" y caer en "agregar fotos" es justo la confusión que se reportó.
+        const tieneProductos = usePackingStore.getState().items.length > 0
+        const pasoInicial = tieneProductos ? 2 : 1
+        setPasoVista(pasoInicial)
+        window.history.replaceState({ yudaPaso: pasoInicial }, '')
+      }
     }
     preseleccionar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
