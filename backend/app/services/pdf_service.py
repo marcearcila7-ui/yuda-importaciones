@@ -247,9 +247,11 @@ def generar_packing_list_pdf(
         cols_bolsos = ""
         if es_bolsos:
             fotos_extra_item = getattr(item, "fotos_extra", None) or {}
+            fotos_extra_final_item = getattr(item, "fotos_extra_final", None) or {}
             fotos_extra_html = ""
             for tipo_foto in tipos_foto_extra:
-                url = fotos_extra_item.get(tipo_foto)
+                # El recorte a mano si existe; si no, la original tal como se subió.
+                url = fotos_extra_final_item.get(tipo_foto) or fotos_extra_item.get(tipo_foto)
                 img_extra = f'<img src="{url}" />' if url else ""
                 fotos_extra_html += f'<td class="foto-extra">{img_extra}</td>'
             cols_bolsos = (

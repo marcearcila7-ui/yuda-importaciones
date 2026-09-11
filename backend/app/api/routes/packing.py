@@ -94,6 +94,7 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         minimo_cajas_tienda=item.minimo_cajas_tienda,
         minimo_piezas_caja_tienda=item.minimo_piezas_caja_tienda,
         fotos_extra=item.fotos_extra,
+        fotos_extra_final=item.fotos_extra_final,
         **calculados,
     )
 
@@ -393,6 +394,92 @@ async def guardar_recorte(
     )
 
     item.foto_final_url = url
+    db.commit()
+    db.refresh(item)
+    return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+
+# Tipos válidos de foto de detalle del bolso. Mismo set que lotes.py (donde se
+# suben), repetido acá para no acoplar los dos routers por un import cruzado.
+TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior"}
+
+
+@router.post(
+    "/sesiones/{sesion_id}/items/{item_id}/fotos-extra/{tipo}/recorte",
+    response_model=ItemResponse,
+)
+async def guardar_recorte_foto_extra(
+    sesion_id: str,
+    item_id: str,
+    tipo: str,
+    datos: RecorteRequest,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ItemResponse:
+    """Recorta/gira a mano una foto de detalle del bolso (interior/herrajes/riata/exterior).
+
+    Mismo mecanismo que el recorte de la foto principal, pero siempre parte de
+    `fotos_extra[tipo]` (la foto ORIGINAL tal como se subió, nunca se
+    sobreescribe) y guarda el resultado en `fotos_extra_final[tipo]`. Con
+    `recuadro` en null y sin giro se descarta el ajuste y vuelve la original.
+    """
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+
+    item = (
+        db.query(Item)
+        .filter(Item.id == item_id, Item.sesion_id == sesion_id)
+        .first()
+    )
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Ítem no encontrado")
+    if tipo not in TIPOS_FOTO_EXTRA:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tipo de foto inválido")
+
+    original_url = (item.fotos_extra or {}).get(tipo)
+    if not original_url:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El producto no tiene esa foto de detalle")
+
+    giro = datos.giro if datos.giro in (90, 180, 270) else 0
+
+    # Sin recuadro y sin giro: se descarta el ajuste y vuelve la foto original.
+    if datos.recuadro is None and giro == 0:
+        fotos_extra_final = dict(item.fotos_extra_final or {})
+        fotos_extra_final.pop(tipo, None)
+        item.fotos_extra_final = fotos_extra_final
+        db.commit()
+        db.refresh(item)
+        return _construir_item_response(item, sesion.tipo_cambio_usd)
+
+    recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
+    if datos.recuadro is not None and recuadro is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El recorte no es válido")
+
+    loop = asyncio.get_event_loop()
+    try:
+        async with httpx.AsyncClient() as cli:
+            resp = await cli.get(original_url, timeout=20)
+        if resp.status_code != 200:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+        original = resp.content
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+
+    # afinar=False: la dibujó la vendedora a mano, ya es exacta (ver guardar_recorte).
+    recorte = recortar_producto(original, recuadro, giro, afinar=False)
+    if recorte is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
+
+    nombre_archivo = f"{uuid.uuid4()}.jpg"
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(recorte, nombre_archivo, "image/jpeg")
+    )
+
+    fotos_extra_final = dict(item.fotos_extra_final or {})
+    fotos_extra_final[tipo] = url
+    item.fotos_extra_final = fotos_extra_final
     db.commit()
     db.refresh(item)
     return _construir_item_response(item, sesion.tipo_cambio_usd)

@@ -100,6 +100,8 @@ class ItemResponse(ItemCreate):
     id: str
     sesion_id: str
     foto_url: Optional[str] = None
+    # Recorte/giro a mano de fotos_extra, por tipo. Ver Item.fotos_extra_final.
+    fotos_extra_final: Optional[dict] = None
     referencia: Optional[str] = None  # referencia de catálogo (documentos del cliente)
     cantidad_solicitada: Optional[int] = None  # cajas que pidió el cliente en su portal
     t_qty: int

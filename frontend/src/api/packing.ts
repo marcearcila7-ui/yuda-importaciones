@@ -78,6 +78,24 @@ export async function guardarRecorte(
   return data
 }
 
+// Recorta/gira a mano una foto de detalle del bolso (interior/herrajes/riata/
+// exterior). Igual que guardarRecorte, pero siempre parte de la foto ORIGINAL
+// subida para ese tipo (fotos_extra), nunca de un recorte previo.
+export async function guardarRecorteFotoExtra(
+  sesion_id: string,
+  item_id: string,
+  tipo: string,
+  recuadro: number[] | null,
+  giro = 0,
+): Promise<ItemResponse> {
+  const { data } = await apiClient.post<ItemResponse>(
+    `/sesiones/${sesion_id}/items/${item_id}/fotos-extra/${tipo}/recorte`,
+    { recuadro, giro },
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
 export async function eliminarSesion(sesion_id: string): Promise<void> {
   await apiClient.delete(`/sesiones/${sesion_id}`)
 }

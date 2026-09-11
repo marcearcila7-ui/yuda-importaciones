@@ -151,9 +151,11 @@ def generar_packing_list_excel(
             ws.cell(row=fila, column=30, value=getattr(item, "minimo_cajas_tienda", None))
             ws.cell(row=fila, column=31, value=getattr(item, "minimo_piezas_caja_tienda", None))
             # Fotos de detalle (interior/herrajes/riata/exterior), columnas 32..35.
+            # El recorte a mano si existe; si no, la original tal como se subió.
             fotos_extra = getattr(item, "fotos_extra", None) or {}
+            fotos_extra_final = getattr(item, "fotos_extra_final", None) or {}
             for offset, tipo in enumerate(TIPOS_FOTO_EXTRA_EXCEL):
-                url = fotos_extra.get(tipo)
+                url = fotos_extra_final.get(tipo) or fotos_extra.get(tipo)
                 if not url:
                     continue
                 buf = descargar_imagen(url, lado_px=120)

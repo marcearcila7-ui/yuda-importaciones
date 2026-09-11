@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { Crop } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
-import { guardarRecorte } from '../../api/packing'
+import { guardarRecorte, guardarRecorteFotoExtra } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
 import type { ItemResponse } from '../../types/packing'
 
@@ -79,7 +79,7 @@ const COLUMNAS_BOLSOS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'riata', header: 'RIATA', meta: { campo: 'riata', kind: 'text-edit', width: 120 } },
   { id: 'minimo_cajas_tienda', header: 'MÍN. CAJAS (TIENDA)', meta: { campo: 'minimo_cajas_tienda', kind: 'num-edit', width: 110 } },
   { id: 'minimo_piezas_caja_tienda', header: 'MÍN. PZS/CAJA (TIENDA)', meta: { campo: 'minimo_piezas_caja_tienda', kind: 'num-edit', width: 120 } },
-  { id: 'fotos_extra', header: 'FOTOS DETALLE', meta: { kind: 'fotos-extra', width: 160 } },
+  { id: 'fotos_extra', header: 'FOTOS DETALLE', meta: { kind: 'fotos-extra', width: 210 } },
 ]
 
 const TEXTO: Array<ColMeta['kind']> = ['text-edit']
@@ -173,10 +173,12 @@ function CeldaSoloLectura({
   item,
   meta,
   onRecortar,
+  onRecortarExtra,
 }: {
   item: ItemResponse
   meta: ColMeta
   onRecortar?: (item: ItemResponse) => void
+  onRecortarExtra?: (item: ItemResponse, tipo: string) => void
 }) {
   const { t } = useTranslation()
   if (meta.kind === 'unit') {
@@ -212,17 +214,34 @@ function CeldaSoloLectura({
   }
   if (meta.kind === 'fotos-extra') {
     const fotos = item.fotos_extra
-    const urls = fotos ? Object.values(fotos).filter(Boolean) : []
-    if (urls.length === 0) {
+    const tipos = fotos ? Object.keys(fotos).filter((tipo) => fotos[tipo]) : []
+    if (tipos.length === 0) {
       return <div className="px-1 py-1 text-center text-gray-400">—</div>
     }
     return (
-      <div className="flex gap-1 px-1 py-1">
-        {urls.map((url, i) => (
-          <button key={i} type="button" onClick={() => window.open(url, '_blank')} className="flex-shrink-0">
-            <img src={url} alt="" style={{ width: 28, height: 28 }} className="rounded object-cover" />
-          </button>
-        ))}
+      <div className="flex gap-1.5 px-1 py-1">
+        {tipos.map((tipo) => {
+          // El recorte a mano si existe; si no, la original tal como se subió.
+          const foto = item.fotos_extra_final?.[tipo] || fotos![tipo]
+          return (
+            <button
+              key={tipo}
+              type="button"
+              onClick={() => onRecortarExtra?.(item, tipo)}
+              title={t('recorte.tocaAjustar')}
+              className="relative flex-shrink-0"
+              style={{ width: 44, height: 44 }}
+            >
+              <img src={foto} alt={tipo} className="h-full w-full rounded object-contain" />
+              <span
+                className="absolute bottom-0 right-0 flex items-center justify-center rounded-full"
+                style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
+              >
+                <Crop size={8} color="#fff" />
+              </span>
+            </button>
+          )
+        })}
       </div>
     )
   }
@@ -301,14 +320,16 @@ function TarjetaMovil({
   item,
   onItemActualizado,
   onRecortar,
+  onRecortarExtra,
 }: {
   item: ItemResponse
   onItemActualizado: () => void
   onRecortar?: (item: ItemResponse) => void
+  onRecortarExtra?: (item: ItemResponse, tipo: string) => void
 }) {
   const { t } = useTranslation()
   const esBolsos = usePackingStore((s) => s.sesionActual?.tipo_cotizacion === 'bolsos')
-  const fotosExtra = item.fotos_extra ? Object.entries(item.fotos_extra).filter(([, url]) => url) : []
+  const tiposFotoExtra = item.fotos_extra ? Object.keys(item.fotos_extra).filter((tipo) => item.fotos_extra![tipo]) : []
   // La foto que de verdad sale en los documentos: el recorte si existe, si no
   // la foto entera con el cartel (antes esta tarjeta mostraba siempre la
   // original sin recortar, sin importar el recorte guardado).
@@ -355,13 +376,28 @@ function TarjetaMovil({
             <CampoMovil item={item} campo="minimo_cajas_tienda" label={t('packing.campoMinimoCajasTienda')} tipo="num" onSaved={onItemActualizado} />
             <CampoMovil item={item} campo="minimo_piezas_caja_tienda" label={t('packing.campoMinimoPiezasCajaTienda')} tipo="num" onSaved={onItemActualizado} />
           </div>
-          {fotosExtra.length > 0 && (
+          {tiposFotoExtra.length > 0 && (
             <div className="flex gap-2">
-              {fotosExtra.map(([tipo, url]) => (
-                <button key={tipo} type="button" onClick={() => window.open(url, '_blank')} className="flex-shrink-0">
-                  <img src={url} alt={tipo} style={{ width: 40, height: 40 }} className="rounded-lg object-cover" />
-                </button>
-              ))}
+              {tiposFotoExtra.map((tipo) => {
+                const fotoExtra = item.fotos_extra_final?.[tipo] || item.fotos_extra![tipo]
+                return (
+                  <button
+                    key={tipo}
+                    type="button"
+                    onClick={() => onRecortarExtra?.(item, tipo)}
+                    title={t('recorte.tocaAjustar')}
+                    className="relative flex-shrink-0"
+                  >
+                    <img src={fotoExtra} alt={tipo} style={{ width: 48, height: 48 }} className="rounded-lg object-contain" />
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
+                      style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
+                    >
+                      <Crop size={8} color="#fff" />
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -383,6 +419,10 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   // Producto cuyo recorte se esta ajustando a mano (null = ninguno)
   const [itemRecorte, setItemRecorte] = useState<ItemResponse | null>(null)
   const [guardandoRecorte, setGuardandoRecorte] = useState(false)
+  // Foto de detalle de bolso (interior/herrajes/riata/exterior) que se está
+  // ajustando: además del ítem, hace falta saber CUÁL de las 4.
+  const [extraRecorte, setExtraRecorte] = useState<{ item: ItemResponse; tipo: string } | null>(null)
+  const [guardandoRecorteExtra, setGuardandoRecorteExtra] = useState(false)
 
   const aplicarRecorte = async (recuadro: number[] | null, giro = 0) => {
     if (!itemRecorte || !sesionActual) return
@@ -397,6 +437,21 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       toast.error(t('recorte.error'))
     } finally {
       setGuardandoRecorte(false)
+    }
+  }
+
+  const aplicarRecorteExtra = async (recuadro: number[] | null, giro = 0) => {
+    if (!extraRecorte || !sesionActual) return
+    setGuardandoRecorteExtra(true)
+    try {
+      await guardarRecorteFotoExtra(sesionActual.id, extraRecorte.item.id, extraRecorte.tipo, recuadro, giro)
+      toast.success(t('recorte.guardado'))
+      setExtraRecorte(null)
+      onItemActualizado()
+    } catch {
+      toast.error(t('recorte.error'))
+    } finally {
+      setGuardandoRecorteExtra(false)
     }
   }
 
@@ -416,7 +471,14 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           />
         )
       }
-      return <CeldaSoloLectura item={row.original} meta={meta} onRecortar={setItemRecorte} />
+      return (
+        <CeldaSoloLectura
+          item={row.original}
+          meta={meta}
+          onRecortar={setItemRecorte}
+          onRecortarExtra={(item, tipo) => setExtraRecorte({ item, tipo })}
+        />
+      )
     },
   }))
 
@@ -459,7 +521,13 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
         ) : (
           <>
             {items.map((it) => (
-              <TarjetaMovil key={it.id} item={it} onItemActualizado={onItemActualizado} onRecortar={setItemRecorte} />
+              <TarjetaMovil
+                key={it.id}
+                item={it}
+                onItemActualizado={onItemActualizado}
+                onRecortar={setItemRecorte}
+                onRecortarExtra={(item, tipo) => setExtraRecorte({ item, tipo })}
+              />
             ))}
             <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: 'var(--yuda-accent)' }}>
               <span className="text-sm font-bold text-white">
@@ -544,6 +612,15 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           guardando={guardandoRecorte}
           onGuardar={aplicarRecorte}
           onCerrar={() => setItemRecorte(null)}
+        />
+      )}
+      {extraRecorte && extraRecorte.item.fotos_extra?.[extraRecorte.tipo] && (
+        <RecorteFoto
+          fotoUrl={extraRecorte.item.fotos_extra[extraRecorte.tipo]}
+          recorteActual={extraRecorte.item.fotos_extra_final?.[extraRecorte.tipo]}
+          guardando={guardandoRecorteExtra}
+          onGuardar={aplicarRecorteExtra}
+          onCerrar={() => setExtraRecorte(null)}
         />
       )}
     </>

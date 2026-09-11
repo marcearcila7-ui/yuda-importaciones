@@ -44,6 +44,9 @@ export interface ItemResponse extends ItemCreate {
   id: string
   sesion_id: string
   foto_url?: string
+  // Recorte/giro a mano de fotos_extra, por tipo: {"interior": url, ...}.
+  // Si un tipo no está acá, se usa fotos_extra[tipo] tal cual (sin recortar).
+  fotos_extra_final?: Record<string, string> | null
   // Referencia de catálogo que ve el cliente (la asigna el sistema)
   referencia?: string | null
   cantidad_solicitada?: number | null

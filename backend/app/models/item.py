@@ -86,5 +86,10 @@ class Item(Base):
     minimo_cajas_tienda: Mapped[int | None] = mapped_column(Integer, nullable=True)
     minimo_piezas_caja_tienda: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Fotos aparte de la que lee el OCR: interior, herrajes, riata, exterior.
+    # SIEMPRE la foto original tal como se subio, nunca se sobreescribe.
     # {"interior": url, "herrajes": url, "riata": url, "exterior": url}
     fotos_extra: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Resultado de recortar/girar a mano una foto de fotos_extra, por tipo.
+    # Mismo patron que foto_url/foto_final_url: si un tipo no esta acá, se usa
+    # su foto en fotos_extra tal cual (sin recortar).
+    fotos_extra_final: Mapped[dict | None] = mapped_column(JSON, nullable=True)
