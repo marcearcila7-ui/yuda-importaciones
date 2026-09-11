@@ -56,6 +56,9 @@ th { background: #404040; color: #fff; padding: 5px 4px; border: 1px solid #555;
 td { padding: 4px; border: 1px solid #ccc; text-align: center; vertical-align: middle; }
 td.desc { text-align: left; }
 td.foto img { width: 50px; height: 50px; object-fit: cover; }
+/* Fotos de detalle del bolso (interior/herrajes/riata/exterior): van más chicas
+   que la foto principal, si no la tabla de bolsos no entra ni en A4 apaisado. */
+td.foto-extra img { width: 36px; height: 36px; object-fit: cover; }
 tr.alt td { background: #F7F7FA; }
 tr.total td { background: #EEE; font-weight: bold; }
 """
@@ -212,6 +215,9 @@ def generar_packing_list_pdf(
     filas_html = []
     tot_ctns = tot_rmb = tot_usd = tot_tcbm = tot_tgw = 0.0
 
+    # Fotos de detalle del bolso (item.fotos_extra), mismo orden que sus columnas.
+    tipos_foto_extra = ["interior", "herrajes", "riata", "exterior"]
+
     for n, item in enumerate(items, start=1):
         ctns = item.ctns or 0
         qty_ctn = item.qty_por_ctn or 0
@@ -238,6 +244,12 @@ def generar_packing_list_pdf(
         alt = ' class="alt"' if n % 2 == 0 else ""
         cols_bolsos = ""
         if es_bolsos:
+            fotos_extra_item = getattr(item, "fotos_extra", None) or {}
+            fotos_extra_html = ""
+            for tipo_foto in tipos_foto_extra:
+                url = fotos_extra_item.get(tipo_foto)
+                img_extra = f'<img src="{url}" />' if url else ""
+                fotos_extra_html += f'<td class="foto-extra">{img_extra}</td>'
             cols_bolsos = (
                 f"<td>{getattr(item, 'colores', None) or ''}</td>"
                 f"<td>{getattr(item, 'tamano', None) or ''}</td>"
@@ -247,6 +259,7 @@ def generar_packing_list_pdf(
                 f"<td>{getattr(item, 'riata', None) or ''}</td>"
                 f"<td>{getattr(item, 'minimo_cajas_tienda', None) or ''}</td>"
                 f"<td>{getattr(item, 'minimo_piezas_caja_tienda', None) or ''}</td>"
+                f"{fotos_extra_html}"
             )
         filas_html.append(
             f"<tr{alt}>"
@@ -274,6 +287,8 @@ def generar_packing_list_pdf(
         "<th>COLORES</th><th>TAMAÑO</th><th>EMPAQUE</th><th>ETIQUETA</th>"
         "<th>HERRAJES</th><th>RIATA</th><th>MÍN. CAJAS<br>(TIENDA)</th>"
         "<th>MÍN. PZS/CAJA<br>(TIENDA)</th>"
+        "<th>FOTO<br>INTERIOR</th><th>FOTO<br>HERRAJES</th>"
+        "<th>FOTO<br>RIATA</th><th>FOTO<br>EXTERIOR</th>"
     ) if es_bolsos else ""
     encabezado = (
         "<tr><th>N°</th><th>FOTO</th><th>PROVEEDOR</th><th>N° ÍTEM</th><th>DESCRIPCIÓN</th>"
@@ -281,7 +296,7 @@ def generar_packing_list_pdf(
         "<th>PRECIO $</th><th>TOTAL $</th><th>CBM</th><th>T.CBM</th><th>GW</th><th>T.GW</th>"
         f"{encab_bolsos}</tr>"
     )
-    total_bolsos = "<td></td>" * 8 if es_bolsos else ""
+    total_bolsos = "<td></td>" * 12 if es_bolsos else ""
     total = (
         f'<tr class="total"><td colspan="5">TOTALES</td>'
         f"<td>{int(tot_ctns)}</td><td></td><td></td><td></td>"

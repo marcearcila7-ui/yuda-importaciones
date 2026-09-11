@@ -30,8 +30,13 @@ ANCHOS = [20, 12, 12, 25, 25, 20, 15, 12, 8, 10, 8, 10, 12, 12, 12, 12, 8, 8, 8,
 ENCABEZADOS_BOLSOS = [
     "COLORES", "TAMAÑO", "EMPAQUE", "ETIQUETA", "HERRAJES", "RIATA",
     "MÍN. CAJAS (TIENDA)", "MÍN. PZS/CAJA (TIENDA)",
+    "FOTO INTERIOR", "FOTO HERRAJES", "FOTO RIATA", "FOTO EXTERIOR",
 ]
-ANCHOS_BOLSOS = [15, 12, 15, 15, 12, 15, 14, 14]
+ANCHOS_BOLSOS = [15, 12, 15, 15, 12, 15, 14, 14, 12, 12, 12, 12]
+
+# Fotos de detalle del bolso (item.fotos_extra), en el mismo orden en que se
+# agregan las columnas de arriba.
+TIPOS_FOTO_EXTRA_EXCEL = ["interior", "herrajes", "riata", "exterior"]
 
 
 def generar_packing_list_excel(
@@ -135,6 +140,22 @@ def generar_packing_list_excel(
             ws.cell(row=fila, column=29, value=getattr(item, "riata", None))
             ws.cell(row=fila, column=30, value=getattr(item, "minimo_cajas_tienda", None))
             ws.cell(row=fila, column=31, value=getattr(item, "minimo_piezas_caja_tienda", None))
+            # Fotos de detalle (interior/herrajes/riata/exterior), columnas 32..35.
+            fotos_extra = getattr(item, "fotos_extra", None) or {}
+            for offset, tipo in enumerate(TIPOS_FOTO_EXTRA_EXCEL):
+                url = fotos_extra.get(tipo)
+                if not url:
+                    continue
+                buf = descargar_imagen(url, lado_px=120)
+                if buf is not None:
+                    try:
+                        img = XLImage(buf)
+                        img.width = 55
+                        img.height = 55
+                        ws.add_image(img, f"{get_column_letter(32 + offset)}{fila}")
+                        ws.row_dimensions[fila].height = 45
+                    except Exception:
+                        pass
         fila += 1
 
     ultima_fila_datos = fila - 1 if items else 3

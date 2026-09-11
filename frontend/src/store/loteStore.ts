@@ -14,7 +14,7 @@ import {
   subirFotoLote,
   type LoteEstadoResp,
 } from '../api/lotes'
-import { comprimirImagen } from '../lib/comprimirImagen'
+import { comprimirImagen, comprimirFotoDetalle } from '../lib/comprimirImagen'
 import { causaDelFallo, type CausaFallo } from '../lib/causaFallo'
 import type { OCRResultado } from '../types/ocr'
 
@@ -396,7 +396,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
     subirFotoExtraUno: async (id, tipo, file) => {
       const loteId = get().loteId
       if (!loteId) return
-      const comprimido = await comprimirImagen(file)
+      const comprimido = await comprimirFotoDetalle(file)
       const { foto_url } = await subirFotoExtra(loteId, id, tipo, comprimido)
       set((s) => ({
         resultados: s.resultados.map((r) =>

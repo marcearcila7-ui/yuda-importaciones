@@ -15,7 +15,19 @@ const TIPOS_OK = new Set(['image/jpeg', 'image/png', 'image/webp'])
 // dispara ni onload ni onerror y la promesa se quedaba colgada para siempre.
 const TIMEOUT_MS = 10_000
 
-function reducir(file: File): Promise<File> {
+// Lado máximo que el modelo de visión aprovecha (Opus 5 lee hasta 2576px;
+// antes eran 1568 y por eso este valor estaba en 1600). Reducir más la foto
+// es tirar a la basura detalle que sirve para leer el chino manuscrito.
+const LADO_MAX_OCR = 2576
+
+// Fotos de detalle del bolso (interior/herrajes/riata/exterior): nadie las lee
+// con OCR, solo se ven en el PDF/Excel a tamaño de miniatura. Antes se les
+// aplicaba el mismo lado de 2576px que a la foto del cartel y por eso tardaban
+// varias veces más en subir (fotos de celular de 12+ MP) sin ninguna ganancia
+// visual. Con este tope quedan livianas y la subida es casi instantánea.
+const LADO_MAX_DETALLE = 1000
+
+function reducir(file: File, maxLado: number): Promise<File> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file)
     let resuelto = false
@@ -33,10 +45,6 @@ function reducir(file: File): Promise<File> {
     const img = new Image()
     img.onload = () => {
       let { width, height } = img
-      // Lado máximo que el modelo de visión aprovecha (Opus 5 lee hasta 2576px;
-      // antes eran 1568 y por eso este valor estaba en 1600). Reducir más la foto
-      // es tirar a la basura detalle que sirve para leer el chino manuscrito.
-      const maxLado = 2576
       if (Math.max(width, height) > maxLado) {
         const escala = maxLado / Math.max(width, height)
         width = Math.round(width * escala)
@@ -94,21 +102,33 @@ async function decodificarHeic(file: File): Promise<File> {
   return new File([blob], nombre, { type: 'image/jpeg' })
 }
 
-export async function comprimirImagen(file: File): Promise<File> {
+async function comprimir(file: File, maxLado: number, atajoBytes: number): Promise<File> {
   if (esHeic(file)) {
     try {
       const jpeg = await Promise.race([
         decodificarHeic(file),
         new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout heic')), TIMEOUT_HEIC_MS)),
       ])
-      // Ya es un JPEG normal: pasa por el mismo redimensionado a 2576px que las demás.
-      return reducir(jpeg)
+      // Ya es un JPEG normal: pasa por el mismo redimensionado que las demás.
+      return reducir(jpeg, maxLado)
     } catch {
       return file
     }
   }
   // Atajo solo si ya es liviana Y viene con un tipo que el backend acepta.
   // Si el tipo es dudoso hay que pasarla por el canvas aunque sea pequeña.
-  if (file.size < 1_500_000 && TIPOS_OK.has(file.type)) return file
-  return reducir(file)
+  if (file.size < atajoBytes && TIPOS_OK.has(file.type)) return file
+  return reducir(file, maxLado)
+}
+
+// Foto del cartel/producto que lee el OCR: necesita resolución alta para que
+// el modelo distinga el chino manuscrito.
+export async function comprimirImagen(file: File): Promise<File> {
+  return comprimir(file, LADO_MAX_OCR, 1_500_000)
+}
+
+// Foto de detalle del bolso (interior/herrajes/riata/exterior): nadie la lee,
+// solo se ve en el PDF/Excel. Se prioriza velocidad de subida sobre nitidez.
+export async function comprimirFotoDetalle(file: File): Promise<File> {
+  return comprimir(file, LADO_MAX_DETALLE, 400_000)
 }
