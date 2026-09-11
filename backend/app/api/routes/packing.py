@@ -380,7 +380,10 @@ async def guardar_recorte(
     except Exception:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
 
-    recorte = recortar_producto(original, recuadro, giro)
+    # afinar=False: este recuadro lo dibujo la vendedora a mano, ya es exacto.
+    # Afinarlo (como se hace con el del modelo) podia "corregir" su selección
+    # con la de otro objeto cercano en la foto — justo lo que no se quiere.
+    recorte = recortar_producto(original, recuadro, giro, afinar=False)
     if recorte is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
 

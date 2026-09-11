@@ -179,14 +179,21 @@ def recuadro_fuera_del_cartel(cartel: list[float]) -> list[float] | None:
 
 
 def recortar_producto(
-    imagen_bytes: bytes, recuadro: list[float] | None, giro: int = 0
+    imagen_bytes: bytes, recuadro: list[float] | None, giro: int = 0, afinar: bool = True
 ) -> bytes | None:
     """Recorta la foto al recuadro del producto. Devuelve JPEG o None si falla.
 
-    `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1, ya validado por el OCR;
-    en None se usa la foto entera y solo se aplica el giro. `giro` son los grados
-    en sentido horario para enderezarla (0, 90, 180 o 270): las fotos del mercado
-    salen de costado porque se toman parandose al lado del producto.
+    `recuadro` es [x0, y0, x1, y1] en fracciones de 0 a 1; en None se usa la foto
+    entera y solo se aplica el giro. `giro` son los grados en sentido horario
+    para enderezarla (0, 90, 180 o 270): las fotos del mercado salen de costado
+    porque se toman parandose al lado del producto.
+
+    `afinar`: si el recuadro viene del MODELO (una adivinanza que puede
+    quedarse corta o pasarse), conviene agrandarlo un poco y ajustarlo contra
+    los pixeles reales (ver `_recortar`). Si el recuadro lo dibujo la vendedora
+    A MANO, ya es exacto: afinarlo puede "corregir" una selección deliberada
+    con la de otro objeto cercano en la foto, que es exactamente lo que NO se
+    quiere cuando alguien ajusta el recorte a propósito.
 
     Nunca lanza: si algo sale mal se devuelve None y se usa la foto completa,
     que es exactamente lo que pasaba antes de que existiera el recorte.
@@ -208,7 +215,7 @@ def recortar_producto(
         if recuadro is None:
             recorte = pil
         else:
-            recorte = _recortar(pil, recuadro)
+            recorte = _recortar(pil, recuadro, afinar=afinar)
             if recorte is None:
                 return None
 
@@ -227,11 +234,26 @@ def recortar_producto(
         return None
 
 
-def _recortar(pil, recuadro: list[float]):
-    """Recorta al producto: el recuadro del modelo, afinado contra la imagen."""
+def _recortar(pil, recuadro: list[float], afinar: bool = True):
+    """Recorta al producto: el recuadro del modelo, afinado contra la imagen.
+
+    Con `afinar=False` se respeta el recuadro tal cual, sin agrandarlo ni
+    ajustarlo por color de fondo: es lo que hace falta cuando el recuadro lo
+    dibujo una persona a mano, no el modelo."""
     try:
         ancho, alto = pil.size
         x0, y0, x1, y1 = recuadro
+
+        if not afinar:
+            caja = (
+                int(x0 * ancho),
+                int(y0 * alto),
+                int(x1 * ancho),
+                int(y1 * alto),
+            )
+            if caja[2] - caja[0] < 40 or caja[3] - caja[1] < 40:
+                return None
+            return pil.crop(caja)
 
         # 1. Se agranda lo que marco el modelo para mirar tambien un poco afuera:
         #    si se quedo corto, el borde real del producto esta ahi.

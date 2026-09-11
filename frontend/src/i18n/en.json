@@ -887,6 +887,7 @@
     "girar": "Rotate the photo:",
     "girarIzquierda": "Rotate left",
     "girarDerecha": "Rotate right",
-    "ayudaGirada": "You rotated the photo. Now drag over the product as it looks here, then save."
+    "ayudaGirada": "You rotated the photo. Now drag over the product as it looks here, then save.",
+    "previaCambio": "This is how it will look with your crop (not saved yet)."
   }
 }

@@ -1,7 +1,61 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Maximize2, RotateCcw, RotateCw, X } from 'lucide-react'
+
+// Lado del cuadro de la vista previa en vivo.
+const LADO_PREVIA = 112
+// Lado al que se reescala la foto para dibujar la vista previa: no hace falta
+// full resolucion para una miniatura de 112px, y así el redibujado en cada
+// arrastre es instantáneo.
+const LADO_TRABAJO_PREVIA = 500
+
+// Dibuja, en vivo, cómo va a quedar la foto con el giro y el recuadro
+// elegidos hasta ahora — girando primero (sobre un lienzo intermedio chico) y
+// recortando después, igual que el backend (ver recortar_producto). Sin esto,
+// la única referencia era una miniatura fija de "cómo sale hoy" que no se
+// movía mientras se editaba, y parecía que el sistema ignoraba los cambios.
+function dibujarPrevia(
+  canvas: HTMLCanvasElement | null,
+  img: HTMLImageElement | null,
+  dimsFoto: { w: number; h: number } | null,
+  giro: Giro,
+  recuadro: Recuadro | null,
+) {
+  if (!canvas || !img || !dimsFoto?.w || !dimsFoto?.h) return
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  ctx.clearRect(0, 0, LADO_PREVIA, LADO_PREVIA)
+
+  const escalaTrabajo = LADO_TRABAJO_PREVIA / Math.max(dimsFoto.w, dimsFoto.h)
+  const tw = Math.max(1, Math.round(dimsFoto.w * escalaTrabajo))
+  const th = Math.max(1, Math.round(dimsFoto.h * escalaTrabajo))
+  const girado = giro === 90 || giro === 270
+  const rw = girado ? th : tw
+  const rh = girado ? tw : th
+
+  const girada = document.createElement('canvas')
+  girada.width = rw
+  girada.height = rh
+  const ctxGirada = girada.getContext('2d')
+  if (!ctxGirada) return
+  ctxGirada.translate(rw / 2, rh / 2)
+  ctxGirada.rotate((giro * Math.PI) / 180)
+  ctxGirada.drawImage(img, -tw / 2, -th / 2, tw, th)
+
+  const x0 = recuadro ? recuadro.x0 : 0
+  const y0 = recuadro ? recuadro.y0 : 0
+  const x1 = recuadro ? recuadro.x1 : 1
+  const y1 = recuadro ? recuadro.y1 : 1
+  const sx = x0 * rw
+  const sy = y0 * rh
+  const sw = Math.max(1, (x1 - x0) * rw)
+  const sh = Math.max(1, (y1 - y0) * rh)
+  const escalaPrevia = Math.min(LADO_PREVIA / sw, LADO_PREVIA / sh)
+  const dw = sw * escalaPrevia
+  const dh = sh * escalaPrevia
+  ctx.drawImage(girada, sx, sy, sw, sh, (LADO_PREVIA - dw) / 2, (LADO_PREVIA - dh) / 2, dw, dh)
+}
 
 // Recuadro en fracciones de 0 a 1, EN EL SISTEMA DE LA VISTA GIRADA (lo que la
 // vendedora ve y arrastra en pantalla, no necesariamente la foto original).
@@ -53,6 +107,8 @@ function RecorteFoto({
 }) {
   const { t } = useTranslation()
   const contenedor = useRef<HTMLDivElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const previaRef = useRef<HTMLCanvasElement>(null)
   const [recuadro, setRecuadro] = useState<Recuadro | null>(null)
   const [arrastrando, setArrastrando] = useState(false)
   const inicio = useRef<{ x: number; y: number } | null>(null)
@@ -65,6 +121,14 @@ function RecorteFoto({
   // sobre la foto SIN girar (se perdía el giro). Ahora el giro es local: se ve
   // al instante en la foto grande, y "Guardar" manda recorte + giro juntos.
   const [giro, setGiro] = useState<Giro>(0)
+  // Hay un cambio sin guardar (giro y/o recuadro): mientras tanto la vista
+  // previa deja de mostrar "cómo sale hoy" y pasa a seguir la edición en vivo.
+  const editando = giro !== 0 || recuadro !== null
+
+  useEffect(() => {
+    if (!editando) return
+    dibujarPrevia(previaRef.current, imgRef.current, dimsFoto, giro, recuadro)
+  }, [editando, giro, recuadro, dimsFoto])
 
   // La foto se muestra girada `giro` grados: si esta rotación es de 90/270, lo
   // que ocupa el ancho y el alto se invierte. Esto calcula el rectángulo real
@@ -220,19 +284,29 @@ function RecorteFoto({
           </button>
         </div>
 
-        {recorteActual && (
+        {(recorteActual || editando) && (
           <div
             className="mb-3 flex items-center gap-3 rounded-lg p-2"
             style={{ backgroundColor: 'var(--yuda-primary-soft)' }}
           >
-            <img
-              src={recorteActual}
-              alt=""
-              style={{ width: 112, height: 112 }}
-              className="flex-shrink-0 rounded-lg object-contain"
-            />
+            {editando ? (
+              <canvas
+                ref={previaRef}
+                width={LADO_PREVIA}
+                height={LADO_PREVIA}
+                style={{ width: 112, height: 112 }}
+                className="flex-shrink-0 rounded-lg bg-white"
+              />
+            ) : (
+              <img
+                src={recorteActual!}
+                alt=""
+                style={{ width: 112, height: 112 }}
+                className="flex-shrink-0 rounded-lg object-contain"
+              />
+            )}
             <span className="text-sm" style={{ color: 'var(--yuda-accent)' }}>
-              {t('recorte.actual')}
+              {editando ? t('recorte.previaCambio') : t('recorte.actual')}
             </span>
           </div>
         )}
@@ -247,6 +321,7 @@ function RecorteFoto({
           style={{ touchAction: 'none', cursor: 'crosshair', backgroundColor: '#111', height: '58vh' }}
         >
           <img
+            ref={imgRef}
             src={fotoUrl}
             alt=""
             draggable={false}

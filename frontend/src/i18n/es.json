@@ -887,6 +887,7 @@
     "girar": "Girar la foto:",
     "girarIzquierda": "Girar a la izquierda",
     "girarDerecha": "Girar a la derecha",
-    "ayudaGirada": "Ya giraste la foto. Ahora arrastra sobre el producto, tal como se ve aquí, y guarda."
+    "ayudaGirada": "Ya giraste la foto. Ahora arrastra sobre el producto, tal como se ve aquí, y guarda.",
+    "previaCambio": "Así va a quedar con tu recorte (sin guardar todavía)."
   }
 }
