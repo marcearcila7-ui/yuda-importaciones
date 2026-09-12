@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -19,7 +20,8 @@ _MAX_POR_IP = 20
 @router.post("/login", response_model=TokenResponse)
 def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
     """Valida credenciales y devuelve un JWT junto con los datos del usuario"""
-    clave_email = f"staff:email:{datos.email.lower()}"
+    email = datos.email.strip().lower()
+    clave_email = f"staff:email:{email}"
     clave_ip = f"staff:ip:{ip_del_request(request)}"
     if esta_bloqueado(clave_email, _MAX_POR_EMAIL, _VENTANA) or esta_bloqueado(
         clave_ip, _MAX_POR_IP, _VENTANA
@@ -29,7 +31,10 @@ def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) 
             detail="Demasiados intentos fallidos. Espera unos minutos e intenta de nuevo.",
         )
 
-    user = db.query(User).filter(User.email == datos.email).first()
+    # Comparación insensible a mayúsculas/minúsculas: así funciona también
+    # para cuentas que ya quedaron guardadas con mayúsculas de antes de este
+    # arreglo, sin tener que corregir datos a mano.
+    user = db.query(User).filter(func.lower(User.email) == email).first()
 
     # Usuario inexistente o contraseña incorrecta
     if user is None or not verify_password(datos.password, user.hashed_password):

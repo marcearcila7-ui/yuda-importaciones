@@ -3,6 +3,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
@@ -53,8 +54,18 @@ def crear_usuario(
     usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> User:
-    """Crea un usuario nuevo (email único)"""
-    existe = db.query(User).filter(User.email == datos.email).first()
+    """Crea un usuario nuevo (email único).
+
+    El email se guarda normalizado (sin espacios, en minúsculas): el login
+    comparaba distinguiendo mayúsculas/minúsculas, así que un usuario creado
+    como "Nombre@Correo.com" no podía entrar escribiendo "nombre@correo.com"
+    y viceversa — el mensaje "credenciales incorrectas" no dejaba ver que la
+    cuenta sí existía, solo que la búsqueda no la encontraba.
+    """
+    email = datos.email.strip().lower()
+    # func.lower(): atrapa también un usuario viejo guardado con mayúsculas
+    # de antes de este arreglo (si no, se podría crear un duplicado).
+    existe = db.query(User).filter(func.lower(User.email) == email).first()
     if existe:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -62,7 +73,7 @@ def crear_usuario(
         )
     nuevo = User(
         nombre=datos.nombre,
-        email=datos.email,
+        email=email,
         hashed_password=hash_password(datos.password),
         rol=RolUsuario(datos.rol),
     )
