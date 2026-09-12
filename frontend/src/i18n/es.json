@@ -414,7 +414,11 @@
     "errorCrear": "No se pudo crear el usuario",
     "errorActualizar": "No se pudo actualizar el usuario",
     "errorContrasena": "No se pudo cambiar la contraseña",
-    "errorConfig": "No se pudo guardar la configuración"
+    "errorConfig": "No se pudo guardar la configuración",
+    "eliminar": "Eliminar",
+    "confirmarEliminarUsuario": "¿Eliminar a {{nombre}} por completo? Esta acción no se puede deshacer.",
+    "usuarioEliminado": "Usuario eliminado",
+    "errorEliminar": "No se pudo eliminar el usuario"
   },
   "metricas": {
     "cotizacionesMes": "Cotizaciones este mes",

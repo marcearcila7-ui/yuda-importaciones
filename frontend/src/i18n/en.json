@@ -414,7 +414,11 @@
     "errorCrear": "Could not create the user",
     "errorActualizar": "Could not update the user",
     "errorContrasena": "Could not change the password",
-    "errorConfig": "Could not save the settings"
+    "errorConfig": "Could not save the settings",
+    "eliminar": "Delete",
+    "confirmarEliminarUsuario": "Delete {{nombre}} completely? This cannot be undone.",
+    "usuarioEliminado": "User deleted",
+    "errorEliminar": "Could not delete the user"
   },
   "metricas": {
     "cotizacionesMes": "Quotations this month",

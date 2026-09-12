@@ -414,7 +414,11 @@
     "errorCrear": "无法创建用户",
     "errorActualizar": "无法更新用户",
     "errorContrasena": "无法修改密码",
-    "errorConfig": "无法保存设置"
+    "errorConfig": "无法保存设置",
+    "eliminar": "删除",
+    "confirmarEliminarUsuario": "确定要彻底删除 {{nombre}} 吗？此操作无法撤销。",
+    "usuarioEliminado": "用户已删除",
+    "errorEliminar": "无法删除用户"
   },
   "metricas": {
     "cotizacionesMes": "本月报价数",

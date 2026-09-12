@@ -3,14 +3,17 @@ import type { CSSProperties } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { Trash2 } from 'lucide-react'
 import {
   actualizarConfiguracion,
   actualizarUsuario,
   crearUsuario,
+  eliminarUsuario,
   getConfiguracion,
   getUsuarios,
   resetPassword,
 } from '../api/admin'
+import { confirmar } from '../store/confirmStore'
 import type { ConfiguracionResponse, UsuarioAdmin } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -109,6 +112,25 @@ function Admin() {
       await cargar()
     } catch (err) {
       toast.error(mensajeError(err, t('admin.errorActualizar')))
+    }
+  }
+
+  // Borra de verdad, no solo desactiva. El backend rechaza (409) si el
+  // usuario ya tiene cotizaciones/clientes/compras, y ese mensaje explica
+  // qué hacer en su lugar (desactivar) — se muestra tal cual.
+  const handleEliminar = async (u: UsuarioAdmin) => {
+    const ok = await confirmar({
+      mensaje: t('admin.confirmarEliminarUsuario', { nombre: u.nombre }),
+      peligro: true,
+      textoConfirmar: t('admin.eliminar'),
+    })
+    if (!ok) return
+    try {
+      await eliminarUsuario(u.id)
+      toast.success(t('admin.usuarioEliminado'))
+      await cargar()
+    } catch (err) {
+      toast.error(mensajeError(err, t('admin.errorEliminar')))
     }
   }
 
@@ -247,6 +269,17 @@ function Admin() {
                           style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)' }}
                         >
                           {u.activo ? t('admin.desactivar') : t('admin.activar')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEliminar(u)}
+                          disabled={cargando}
+                          aria-label={t('admin.eliminar')}
+                          title={t('admin.eliminar')}
+                          className="rounded-lg p-1.5 disabled:opacity-60"
+                          style={{ backgroundColor: '#FEF2F2', color: 'var(--yuda-error)' }}
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>

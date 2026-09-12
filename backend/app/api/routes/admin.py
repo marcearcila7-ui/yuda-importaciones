@@ -13,9 +13,11 @@ from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.configuracion import Configuracion
 from app.models.item import Item
+from app.models.notificacion import Notificacion
 from app.models.pedido import PedidoGenerado
 from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
+from app.models.tienda import PedidoTienda
 from app.models.user import RolUsuario, User
 from app.schemas.admin import (
     ConfiguracionResponse,
@@ -116,6 +118,49 @@ def actualizar_usuario(
     db.commit()
     db.refresh(objetivo)
     return objetivo
+
+
+@router.delete("/usuarios/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_usuario(
+    usuario_id: str,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> None:
+    """Borra un usuario por completo, solo si no tiene actividad asociada.
+
+    Con cotizaciones, clientes o compras de tienda a su nombre, borrarlo de
+    verdad dejaría esos registros históricos sin dueño (o rompería la
+    referencia): en ese caso se rechaza y se sugiere desactivar en su lugar,
+    que sí sigue disponible sin condición.
+    """
+    objetivo = db.query(User).filter(User.id == usuario_id).first()
+    if objetivo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado"
+        )
+    if usuario_id == usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes eliminar tu propio usuario",
+        )
+
+    tiene_sesiones = db.query(Sesion).filter(Sesion.user_id == usuario_id).first() is not None
+    tiene_clientes = db.query(Cliente).filter(Cliente.vendedora_id == usuario_id).first() is not None
+    tiene_compras = db.query(PedidoTienda).filter(PedidoTienda.empleada_id == usuario_id).first() is not None
+    if tiene_sesiones or tiene_clientes or tiene_compras:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Este usuario ya tiene cotizaciones, clientes o compras registradas: "
+                "no se puede eliminar sin perder ese historial. Desactívalo en su lugar."
+            ),
+        )
+
+    # Notificaciones propias: no son "historial" del negocio, solo avisos
+    # internos para este usuario — se borran junto con él.
+    db.query(Notificacion).filter(Notificacion.usuario_id == usuario_id).delete()
+    db.delete(objetivo)
+    db.commit()
 
 
 @router.post("/usuarios/{usuario_id}/reset-password")
