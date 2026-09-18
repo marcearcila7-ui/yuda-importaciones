@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,6 +30,7 @@ from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_csv, subir_excel, subir_pdf
 
 router = APIRouter(prefix="/bodega", tags=["bodega"])
+logger = logging.getLogger("app.bodega")
 
 
 def _numero(sesion: Sesion) -> str:
@@ -267,60 +269,68 @@ def guardar_orden_real(
         linea.cantidad_recibida = dato.cantidad_recibida
         linea.nota = dato.nota
 
+    # Las cantidades/notas se guardan YA, sin importar lo que pase después con
+    # los archivos: si la generación falla, bodega no debe perder lo que
+    # acaba de escribir y tener que volver a contar todo.
+    db.commit()
+
     # Solo se regenera el archivo si bodega ya contó TODOS los ítems de la
     # orden; a medio llenar, el documento saldría incompleto y confundiría a
     # la vendedora más que ayudarla.
     if all(linea.cantidad_recibida is not None for linea in lineas):
-        items_por_id = {
-            i.id: i
-            for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas])).all()
-        }
-        items_reales = [
-            _ItemCantidadReal(items_por_id[linea.item_id], linea.cantidad_recibida, linea.cantidad_recibida)
-            for linea in lineas
-        ]
-        fecha_hoy = date.today()
-        supplier_nombre = items_reales[0].supplier_nombre
-        supplier_numero = items_reales[0].supplier_numero
-
-        urls_fotos = [
-            (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
-        ]
-        fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
-        fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
-
-        excel_bytes = generar_formato_pedido(
-            supplier_nombre, supplier_numero, items_reales, fecha_hoy,
-            fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
-        )
-        html = html_pedido(
-            supplier_nombre, supplier_numero, items_reales, fecha_hoy,
-            fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
-        )
-        pdf_bytes = render_pdf(html)
-        csv_bytes = generar_csv_pedido(
-            supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
-        )
-
-        ruta = f"{sesion_id}/{fecha_hoy:%Y%m%d}_{orden.supplier}_Real"
         try:
+            items_por_id = {
+                i.id: i
+                for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas])).all()
+            }
+            items_reales = [
+                _ItemCantidadReal(items_por_id[linea.item_id], linea.cantidad_recibida, linea.cantidad_recibida)
+                for linea in lineas
+            ]
+            fecha_hoy = date.today()
+            supplier_nombre = items_reales[0].supplier_nombre
+            supplier_numero = items_reales[0].supplier_numero
+
+            urls_fotos = [
+                (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
+            ]
+            fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
+            fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
+
+            excel_bytes = generar_formato_pedido(
+                supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+                fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
+            )
+            html = html_pedido(
+                supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+                fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
+            )
+            pdf_bytes = render_pdf(html)
+            csv_bytes = generar_csv_pedido(
+                supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
+            )
+
+            ruta = f"{sesion_id}/{fecha_hoy:%Y%m%d}_{orden.supplier}_Real"
             orden.archivo_real_xlsx_url = subir_excel(excel_bytes, f"{ruta}.xlsx")
             orden.archivo_real_pdf_url = subir_pdf(pdf_bytes, f"{ruta}.pdf")
             orden.archivo_real_csv_url = subir_csv(csv_bytes, f"{ruta}.csv")
-        except Exception as exc:
+            orden.revisado_en_bodega_at = datetime.now(timezone.utc)
+            avisar_orden_actualizada_bodega(
+                db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, orden.supplier
+            )
+            db.commit()
+        except Exception:
             db.rollback()
+            logger.exception(
+                "No se pudo regenerar/guardar el archivo real de la orden %s (sesión %s)",
+                pedido_generado_id, sesion_id,
+            )
             raise HTTPException(
                 status.HTTP_502_BAD_GATEWAY,
-                "No se pudieron guardar los archivos: el almacenamiento no está disponible. "
-                "Las cantidades no se guardaron; intenta de nuevo en unos minutos.",
-            ) from exc
-        orden.revisado_en_bodega_at = datetime.now(timezone.utc)
-
-        avisar_orden_actualizada_bodega(
-            db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, orden.supplier
-        )
-
-    db.commit()
+                "Las cantidades quedaron guardadas, pero no se pudo generar o subir el archivo "
+                "con lo que realmente llegó. Vuelve a darle a «Guardar» en unos minutos para "
+                "reintentar solo esa parte.",
+            )
 
     lineas_actualizadas = (
         db.query(PedidoGeneradoItem, Item)
