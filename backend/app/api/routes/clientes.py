@@ -34,6 +34,7 @@ from app.models.item import Item
 from app.models.pedido import PedidoGenerado
 from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
 from app.models.user import RolUsuario, User
+from app.data.contable_clientes import CONTABLE_CLIENTES
 from app.schemas.cliente import (
     ActividadInput,
     ActividadResponse,
@@ -43,7 +44,10 @@ from app.schemas.cliente import (
     ClienteCreate,
     ClienteResponse,
     ClienteUpdate,
+    ContableClientePreview,
     CotizacionResumenCliente,
+    ImportarContableInput,
+    ImportarContableResultado,
     ResetPasswordRequest,
     VendedoraAsignadaResponse,
     VendedoraBasica,
@@ -415,6 +419,68 @@ def quitar_vendedora_cliente(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Esa vendedora no está asignada a este cliente")
     db.delete(asignacion)
     db.commit()
+
+
+@router.get("/clientes/importar-contable/preview", response_model=list[ContableClientePreview])
+def preview_importar_contable(
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> list[ContableClientePreview]:
+    """Compara la foto fija de clientes de Yuda Contable contra lo que ya
+    existe acá (por sigla), para que Marcela decida cuáles traer. No trae
+    nada financiero, solo nombre/sigla/país/teléfono."""
+    existentes = {
+        c.sigla: c.id for c in db.query(Cliente).filter(Cliente.sigla.isnot(None)).all()
+    }
+    return [
+        ContableClientePreview(
+            sigla=c["sigla"],
+            nombre=c["nombre"],
+            pais=c["pais"],
+            telefono=c["telefono"],
+            ya_existe=c["sigla"] in existentes,
+            cliente_id_existente=existentes.get(c["sigla"]),
+        )
+        for c in CONTABLE_CLIENTES
+    ]
+
+
+@router.post("/clientes/importar-contable", response_model=ImportarContableResultado)
+def importar_contable(
+    datos: ImportarContableInput,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> ImportarContableResultado:
+    """Crea un Cliente nuevo por cada sigla elegida que todavía no exista.
+    Queda con la propia Marcela como vendedora dueña por defecto: ella decide
+    después a quién asignárselo (con lo de la Fase 1). Se genera un email
+    de referencia (no real) y una contraseña de portal al azar, igual que
+    cuando se crea un cliente a mano."""
+    por_sigla = {c["sigla"]: c for c in CONTABLE_CLIENTES}
+    existentes = {c.sigla for c in db.query(Cliente).filter(Cliente.sigla.isnot(None)).all()}
+
+    creados = 0
+    omitidos = 0
+    for sigla in datos.siglas:
+        datos_contable = por_sigla.get(sigla)
+        if datos_contable is None or sigla in existentes:
+            omitidos += 1
+            continue
+        nombre = datos_contable["nombre"] or f"Cliente {sigla}"
+        email = f"{sigla.lower()}@contable.yudaimportaciones.local"
+        cliente = Cliente(
+            nombre=nombre,
+            email=email,
+            telefono=datos_contable["telefono"],
+            pais=datos_contable["pais"],
+            sigla=sigla,
+            hashed_password=hash_password(_generar_password()),
+            vendedora_id=usuario.id,
+        )
+        db.add(cliente)
+        creados += 1
+    db.commit()
+    return ImportarContableResultado(creados=creados, omitidos=omitidos)
 
 
 @router.post("/clientes/desactivar-excepto")

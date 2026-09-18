@@ -65,3 +65,19 @@ export interface ClienteColaboracion {
   cotizaciones: CotizacionResumenCliente[]
   actividad: ActividadCliente[]
 }
+
+// ──────────────── Importar clientes de Yuda Contable ────────────────
+
+export interface ContableClientePreview {
+  sigla: string
+  nombre: string | null
+  pais: string | null
+  telefono: string | null
+  ya_existe: boolean
+  cliente_id_existente: string | null
+}
+
+export interface ImportarContableResultado {
+  creados: number
+  omitidos: number
+}

@@ -11,6 +11,8 @@ import {
   eliminarCliente,
   getClientes,
   getCotizacionesCliente,
+  importarContable,
+  previewImportarContable,
   resetPasswordCliente,
 } from '../api/clientes'
 import { eliminarSesion } from '../api/packing'
@@ -20,7 +22,7 @@ import { confirmar } from '../store/confirmStore'
 import CredencialesCliente from '../components/CredencialesCliente'
 import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import SeguimientoEditor from '../components/SeguimientoEditor'
-import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
+import type { Cliente, ClienteCreado, ClienteCreate, ContableClientePreview } from '../types/cliente'
 import type { Sesion } from '../types/packing'
 import type { EquipoResponse } from '../types/equipo'
 
@@ -239,6 +241,60 @@ function Clientes() {
       toast.error(detalle || t('clientes.errorSigla'))
     } finally {
       setGuardandoSigla(false)
+    }
+  }
+
+  // Importar clientes de Yuda Contable (Fase 2): trae hacia acá los que ya
+  // existen en la app de contabilidad y todavía no están en el cotizador.
+  const [mostrarImportar, setMostrarImportar] = useState(false)
+  const [previewContable, setPreviewContable] = useState<ContableClientePreview[]>([])
+  const [cargandoPreview, setCargandoPreview] = useState(false)
+  const [siglasSeleccionadas, setSiglasSeleccionadas] = useState<Set<string>>(new Set())
+  const [importando, setImportando] = useState(false)
+
+  const abrirImportar = async () => {
+    setMostrarImportar((v) => !v)
+    if (previewContable.length > 0) return
+    setCargandoPreview(true)
+    try {
+      const datos = await previewImportarContable()
+      setPreviewContable(datos)
+      // Preselecciona solo los que todavía no existen: los que ya están no
+      // hace falta tocarlos.
+      setSiglasSeleccionadas(new Set(datos.filter((d) => !d.ya_existe).map((d) => d.sigla)))
+    } catch {
+      toast.error(t('clientes.errorPreviewContable'))
+    } finally {
+      setCargandoPreview(false)
+    }
+  }
+
+  const toggleSigla = (sigla: string) =>
+    setSiglasSeleccionadas((prev) => {
+      const next = new Set(prev)
+      if (next.has(sigla)) next.delete(sigla)
+      else next.add(sigla)
+      return next
+    })
+
+  const handleImportarContable = async () => {
+    const ok = await confirmar({
+      mensaje: t('clientes.confirmarImportarContable', { n: siglasSeleccionadas.size }),
+      textoConfirmar: t('clientes.importar'),
+    })
+    if (!ok) return
+    setImportando(true)
+    try {
+      const { creados, omitidos } = await importarContable(Array.from(siglasSeleccionadas))
+      toast.success(t('clientes.contableImportado', { creados, omitidos }))
+      const datos = await previewImportarContable()
+      setPreviewContable(datos)
+      setSiglasSeleccionadas(new Set())
+      cargar()
+    } catch {
+      toast.error(t('clientes.errorImportarContable'))
+    } finally {
+      setImportando(false)
     }
   }
 
@@ -699,6 +755,81 @@ ${t('clientes.email')}: ${c.email}`
               {t('clientes.cancelar')}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Importar clientes de Yuda Contable: trae los que ya existen allá y
+          todavía no están acá. Solo admin. */}
+      {esAdmin && (
+        <div className="card">
+          <button
+            type="button"
+            onClick={abrirImportar}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+              <UserPlus size={18} /> {t('clientes.importarContableTitulo')}
+            </span>
+            <ChevronDown
+              size={18}
+              style={{ transform: mostrarImportar ? 'rotate(180deg)' : 'none', color: 'var(--yuda-text-secondary)' }}
+            />
+          </button>
+          {mostrarImportar && (
+            <div className="mt-4 flex flex-col gap-3">
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('clientes.importarContableAyuda')}
+              </p>
+              {cargandoPreview ? (
+                <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('common.cargando')}</p>
+              ) : (
+                <>
+                  <div className="max-h-80 overflow-y-auto rounded-lg border" style={{ borderColor: 'var(--yuda-border)' }}>
+                    {previewContable.map((p) => (
+                      <label
+                        key={p.sigla}
+                        className="flex items-center gap-3 border-b px-3 py-2 text-sm last:border-b-0"
+                        style={{ borderColor: 'var(--yuda-border)', opacity: p.ya_existe ? 0.5 : 1 }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={siglasSeleccionadas.has(p.sigla)}
+                          disabled={p.ya_existe}
+                          onChange={() => toggleSigla(p.sigla)}
+                        />
+                        <span
+                          className="rounded-full px-2 py-0.5 text-xs font-bold"
+                          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                        >
+                          {p.sigla}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--yuda-accent)' }}>
+                          {p.nombre || t('clientes.contableSinNombre')}
+                          {p.pais && <span style={{ color: 'var(--yuda-text-secondary)' }}> · {p.pais}</span>}
+                        </span>
+                        {p.ya_existe && (
+                          <span className="flex-shrink-0 text-xs font-semibold" style={{ color: 'var(--yuda-success)' }}>
+                            {t('clientes.contableYaImportado')}
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleImportarContable}
+                    disabled={siglasSeleccionadas.size === 0 || importando}
+                    className="self-start rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-primary)' }}
+                  >
+                    {importando
+                      ? t('clientes.importando')
+                      : t('clientes.importarSeleccionados', { n: siglasSeleccionadas.size })}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -5,6 +5,8 @@ import type {
   ClienteColaboracion,
   ClienteCreado,
   ClienteCreate,
+  ContableClientePreview,
+  ImportarContableResultado,
   VendedoraAsignada,
 } from '../types/cliente'
 import type { Sesion } from '../types/packing'
@@ -83,6 +85,18 @@ export async function asignarVendedorasCliente(
 
 export async function quitarVendedoraCliente(id: string, vendedoraId: string): Promise<void> {
   await apiClient.delete(`/clientes/${id}/vendedoras/${vendedoraId}`)
+}
+
+export async function previewImportarContable(): Promise<ContableClientePreview[]> {
+  const { data } = await apiClient.get<ContableClientePreview[]>('/clientes/importar-contable/preview')
+  return data
+}
+
+export async function importarContable(siglas: string[]): Promise<ImportarContableResultado> {
+  const { data } = await apiClient.post<ImportarContableResultado>('/clientes/importar-contable', {
+    siglas,
+  })
+  return data
 }
 
 // Limpieza masiva: desactiva todos los clientes cuya vendedora dueña no esté

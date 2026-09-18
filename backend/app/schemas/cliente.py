@@ -132,6 +132,26 @@ class CotizacionResumenCliente(BaseModel):
     estado_envio: str | None = None
 
 
+class ContableClientePreview(BaseModel):
+    """Un cliente de Yuda Contable comparado contra lo que ya hay acá."""
+
+    sigla: str
+    nombre: str | None
+    pais: str | None
+    telefono: str | None
+    ya_existe: bool
+    cliente_id_existente: str | None = None
+
+
+class ImportarContableInput(BaseModel):
+    siglas: list[str]
+
+
+class ImportarContableResultado(BaseModel):
+    creados: int
+    omitidos: int
+
+
 class ClienteColaboracionResponse(BaseModel):
     """Vista consolidada de un cliente: quién lo gestiona, todas sus
     cotizaciones (de cualquier vendedora) y la bitácora de actividad. La usa

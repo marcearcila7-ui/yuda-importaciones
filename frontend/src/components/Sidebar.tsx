@@ -87,7 +87,7 @@ function Sidebar() {
     <div className="flex h-full flex-col border-r border-gray-200" style={{ backgroundColor: 'var(--yuda-white)' }}>
       {/* Logo */}
       <div className="px-5 py-6">
-        <img src="/logo-yuda-importaciones.svg" alt="YUDA Importaciones" className="h-9 w-auto sm:h-12" />
+        <img src="/logo-yuda-importaciones.svg" alt="YUDA Importaciones" style={{ height: 40, width: 'auto' }} />
       </div>
 
       {/* Navegación */}
