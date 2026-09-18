@@ -418,7 +418,18 @@
     "eliminar": "Delete",
     "confirmarEliminarUsuario": "Delete {{nombre}} completely? This cannot be undone.",
     "usuarioEliminado": "User deleted",
-    "errorEliminar": "Could not delete the user"
+    "errorEliminar": "Could not delete the user",
+    "limpiezaTitulo": "Initial cleanup: start from scratch",
+    "limpiezaAyuda": "Check the salespeople you want to KEEP. All other salespeople and their clients disappear from the app (nothing is deleted from the database; you can reactivate them later if needed).",
+    "sinVendedoras": "No salespeople registered.",
+    "desactivarResto": "Deactivate the rest of the salespeople",
+    "ocultarClientesResto": "Hide clients that don't belong to these salespeople",
+    "confirmarDesactivarVendedoras": "ALL salespeople except {{nombres}} will be deactivated. Nothing is deleted, they just stop showing as active. Continue?",
+    "confirmarOcultarClientes": "ALL clients that don't belong to {{nombres}} will be hidden. Nothing is deleted, they just stop showing in the app. Continue?",
+    "vendedorasDesactivadas": "{{n}} salespeople deactivated",
+    "clientesOcultados": "{{n}} clients hidden",
+    "errorLimpieza": "Could not finish the cleanup",
+    "ocultar": "Hide"
   },
   "metricas": {
     "cotizacionesMes": "Quotations this month",

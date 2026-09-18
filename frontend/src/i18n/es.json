@@ -418,7 +418,18 @@
     "eliminar": "Eliminar",
     "confirmarEliminarUsuario": "¿Eliminar a {{nombre}} por completo? Esta acción no se puede deshacer.",
     "usuarioEliminado": "Usuario eliminado",
-    "errorEliminar": "No se pudo eliminar el usuario"
+    "errorEliminar": "No se pudo eliminar el usuario",
+    "limpiezaTitulo": "Limpieza inicial: empezar de cero",
+    "limpiezaAyuda": "Marca las vendedoras que SÍ quieres mantener. El resto de vendedoras y sus clientes desaparecen de la app (nada se borra de la base de datos; puedes reactivarlos después si hace falta).",
+    "sinVendedoras": "No hay vendedoras registradas.",
+    "desactivarResto": "Desactivar el resto de vendedoras",
+    "ocultarClientesResto": "Ocultar los clientes que no son de estas vendedoras",
+    "confirmarDesactivarVendedoras": "Se van a desactivar TODAS las vendedoras excepto: {{nombres}}. No se borra nada, solo dejan de aparecer activas. ¿Continuar?",
+    "confirmarOcultarClientes": "Se van a ocultar TODOS los clientes que no sean de: {{nombres}}. No se borra nada, solo dejan de verse en la app. ¿Continuar?",
+    "vendedorasDesactivadas": "{{n}} vendedoras desactivadas",
+    "clientesOcultados": "{{n}} clientes ocultados",
+    "errorLimpieza": "No se pudo completar la limpieza",
+    "ocultar": "Ocultar"
   },
   "metricas": {
     "cotizacionesMes": "Cotizaciones este mes",

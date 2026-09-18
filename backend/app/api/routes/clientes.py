@@ -403,6 +403,26 @@ def quitar_vendedora_cliente(
     db.commit()
 
 
+@router.post("/clientes/desactivar-excepto")
+def desactivar_clientes_excepto(
+    datos: AsignarVendedorasInput,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Limpieza masiva: desactiva TODOS los clientes cuya vendedora dueña no
+    esté en la lista dada. No borra nada (los clientes con movimientos no se
+    pueden borrar de todas formas); solo los saca de la UI (activo=False)."""
+    afectados = (
+        db.query(Cliente)
+        .filter(Cliente.vendedora_id.notin_(datos.vendedora_ids))
+        .all()
+    )
+    for c in afectados:
+        c.activo = False
+    db.commit()
+    return {"desactivados": len(afectados)}
+
+
 @router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_cliente(
     cliente_id: str,

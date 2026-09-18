@@ -45,6 +45,12 @@ class UsuarioUpdate(BaseModel):
         return v
 
 
+class MantenerVendedorasInput(BaseModel):
+    """Para las limpiezas masivas: a quiénes NO tocar."""
+
+    vendedora_ids: list[str]
+
+
 class UsuarioAdminResponse(BaseModel):
     """Datos de un usuario para el panel de administración"""
 

@@ -96,3 +96,14 @@ export async function getEquipo(): Promise<EquipoResponse> {
   const { data } = await apiClient.get<EquipoResponse>('/admin/equipo')
   return data
 }
+
+// Limpieza masiva: desactiva a todas las vendedoras que no estén en la lista
+// dada (nunca toca admin/contadora/bodega). No borra nada, solo las saca de
+// la UI (activo=false).
+export async function desactivarVendedorasExcepto(vendedora_ids: string[]): Promise<{ desactivadas: number }> {
+  const { data } = await apiClient.post<{ desactivadas: number }>(
+    '/admin/usuarios/desactivar-vendedoras-excepto',
+    { vendedora_ids },
+  )
+  return data
+}

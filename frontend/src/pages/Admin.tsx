@@ -3,16 +3,18 @@ import type { CSSProperties } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { ChevronDown, Trash2 } from 'lucide-react'
 import {
   actualizarConfiguracion,
   actualizarUsuario,
   crearUsuario,
+  desactivarVendedorasExcepto,
   eliminarUsuario,
   getConfiguracion,
   getUsuarios,
   resetPassword,
 } from '../api/admin'
+import { desactivarClientesExcepto } from '../api/clientes'
 import { confirmar } from '../store/confirmStore'
 import type { ConfiguracionResponse, UsuarioAdmin } from '../types/admin'
 
@@ -74,6 +76,11 @@ function Admin() {
   // Configuración
   const [nuevoTC, setNuevoTC] = useState('')
 
+  // Limpieza masiva (empezar de cero): elegir a quiénes NO tocar
+  const [mostrarLimpieza, setMostrarLimpieza] = useState(false)
+  const [mantenerIds, setMantenerIds] = useState<Set<string>>(new Set())
+  const [limpiando, setLimpiando] = useState(false)
+
   const cargar = async () => {
     setCargando(true)
     try {
@@ -131,6 +138,57 @@ function Admin() {
       await cargar()
     } catch (err) {
       toast.error(mensajeError(err, t('admin.errorEliminar')))
+    }
+  }
+
+  const toggleMantener = (id: string) =>
+    setMantenerIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const vendedorasActivas = usuarios.filter((u) => u.rol === 'vendedora')
+  const nombresAMantener = vendedorasActivas
+    .filter((v) => mantenerIds.has(v.id))
+    .map((v) => v.nombre)
+    .join(', ')
+
+  const handleDesactivarVendedoras = async () => {
+    const ok = await confirmar({
+      mensaje: t('admin.confirmarDesactivarVendedoras', { nombres: nombresAMantener || '—' }),
+      peligro: true,
+      textoConfirmar: t('admin.desactivar'),
+    })
+    if (!ok) return
+    setLimpiando(true)
+    try {
+      const { desactivadas } = await desactivarVendedorasExcepto(Array.from(mantenerIds))
+      toast.success(t('admin.vendedorasDesactivadas', { n: desactivadas }))
+      await cargar()
+    } catch (err) {
+      toast.error(mensajeError(err, t('admin.errorLimpieza')))
+    } finally {
+      setLimpiando(false)
+    }
+  }
+
+  const handleOcultarClientes = async () => {
+    const ok = await confirmar({
+      mensaje: t('admin.confirmarOcultarClientes', { nombres: nombresAMantener || '—' }),
+      peligro: true,
+      textoConfirmar: t('admin.ocultar'),
+    })
+    if (!ok) return
+    setLimpiando(true)
+    try {
+      const { desactivados } = await desactivarClientesExcepto(Array.from(mantenerIds))
+      toast.success(t('admin.clientesOcultados', { n: desactivados }))
+    } catch (err) {
+      toast.error(mensajeError(err, t('admin.errorLimpieza')))
+    } finally {
+      setLimpiando(false)
     }
   }
 
@@ -219,6 +277,75 @@ function Admin() {
             >
               + {t('admin.nuevoUsuario')}
             </button>
+          </div>
+
+          {/* Limpieza inicial: ocultar de la UI (sin borrar nada) a quienes no
+              se van a seguir usando, para empezar de cero. */}
+          <div className="card">
+            <button
+              type="button"
+              onClick={() => setMostrarLimpieza((v) => !v)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+                {t('admin.limpiezaTitulo')}
+              </span>
+              <ChevronDown
+                size={18}
+                style={{ transform: mostrarLimpieza ? 'rotate(180deg)' : 'none', color: 'var(--yuda-text-secondary)' }}
+              />
+            </button>
+            {mostrarLimpieza && (
+              <div className="mt-4 flex flex-col gap-4">
+                <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('admin.limpiezaAyuda')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {vendedorasActivas.map((v) => (
+                    <label
+                      key={v.id}
+                      className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                      style={{
+                        borderColor: mantenerIds.has(v.id) ? 'var(--yuda-primary)' : 'var(--yuda-border)',
+                        backgroundColor: mantenerIds.has(v.id) ? 'var(--yuda-primary-soft)' : 'transparent',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={mantenerIds.has(v.id)}
+                        onChange={() => toggleMantener(v.id)}
+                      />
+                      {v.nombre}
+                    </label>
+                  ))}
+                  {vendedorasActivas.length === 0 && (
+                    <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {t('admin.sinVendedoras')}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDesactivarVendedoras}
+                    disabled={mantenerIds.size === 0 || limpiando}
+                    className="rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-error)' }}
+                  >
+                    {t('admin.desactivarResto')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOcultarClientes}
+                    disabled={mantenerIds.size === 0 || limpiando}
+                    className="rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-error)' }}
+                  >
+                    {t('admin.ocultarClientesResto')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card overflow-x-auto p-0">

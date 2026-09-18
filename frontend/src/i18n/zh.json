@@ -418,7 +418,18 @@
     "eliminar": "删除",
     "confirmarEliminarUsuario": "确定要彻底删除 {{nombre}} 吗？此操作无法撤销。",
     "usuarioEliminado": "用户已删除",
-    "errorEliminar": "无法删除用户"
+    "errorEliminar": "无法删除用户",
+    "limpiezaTitulo": "初始清理：从头开始",
+    "limpiezaAyuda": "勾选你要保留的销售员。其余销售员及其客户会从应用中消失（数据库中不会删除任何数据，以后需要的话可以重新启用）。",
+    "sinVendedoras": "还没有注册的销售员。",
+    "desactivarResto": "停用其余的销售员",
+    "ocultarClientesResto": "隐藏不属于这些销售员的客户",
+    "confirmarDesactivarVendedoras": "将停用除 {{nombres}} 以外的所有销售员。不会删除任何数据，只是不再显示为启用状态。继续吗？",
+    "confirmarOcultarClientes": "将隐藏所有不属于 {{nombres}} 的客户。不会删除任何数据，只是不再显示在应用中。继续吗？",
+    "vendedorasDesactivadas": "已停用 {{n}} 位销售员",
+    "clientesOcultados": "已隐藏 {{n}} 个客户",
+    "errorLimpieza": "无法完成清理",
+    "ocultar": "隐藏"
   },
   "metricas": {
     "cotizacionesMes": "本月报价数",

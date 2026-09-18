@@ -83,6 +83,15 @@ export async function quitarVendedoraCliente(id: string, vendedoraId: string): P
   await apiClient.delete(`/clientes/${id}/vendedoras/${vendedoraId}`)
 }
 
+// Limpieza masiva: desactiva todos los clientes cuya vendedora dueña no esté
+// en la lista dada. No borra nada, solo los saca de la UI (activo=false).
+export async function desactivarClientesExcepto(vendedora_ids: string[]): Promise<{ desactivados: number }> {
+  const { data } = await apiClient.post<{ desactivados: number }>('/clientes/desactivar-excepto', {
+    vendedora_ids,
+  })
+  return data
+}
+
 export async function vincularCliente(
   sesion_id: string,
   cliente_id: string | null,

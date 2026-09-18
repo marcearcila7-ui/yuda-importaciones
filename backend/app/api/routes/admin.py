@@ -22,6 +22,7 @@ from app.models.user import RolUsuario, User
 from app.schemas.admin import (
     ConfiguracionResponse,
     ConfiguracionUpdate,
+    MantenerVendedorasInput,
     UsuarioAdminResponse,
     UsuarioCreate,
     UsuarioUpdate,
@@ -161,6 +162,26 @@ def eliminar_usuario(
     db.query(Notificacion).filter(Notificacion.usuario_id == usuario_id).delete()
     db.delete(objetivo)
     db.commit()
+
+
+@router.post("/usuarios/desactivar-vendedoras-excepto")
+def desactivar_vendedoras_excepto(
+    datos: MantenerVendedorasInput,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Limpieza masiva: desactiva a TODAS las vendedoras que no estén en la
+    lista dada (nunca toca admin/contadora/bodega). No borra nada, solo saca
+    de la UI (activo=False); el historial de cada una queda intacto."""
+    afectadas = (
+        db.query(User)
+        .filter(User.rol == RolUsuario.vendedora, User.id.notin_(datos.vendedora_ids))
+        .all()
+    )
+    for v in afectadas:
+        v.activo = False
+    db.commit()
+    return {"desactivadas": len(afectadas)}
 
 
 @router.post("/usuarios/{usuario_id}/reset-password")
