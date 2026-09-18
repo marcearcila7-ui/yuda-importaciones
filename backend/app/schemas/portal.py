@@ -56,6 +56,10 @@ class PortalCotizacionDetalle(BaseModel):
     # Circuito de confirmación: recibido / por_confirmar / confirmado (null = sin pedido)
     pedido_estado: str | None = None
     pedido_confirmado: bool = False
+    # Orden de compra de la tienda, adjuntada por el cliente. Bodega la compara
+    # contra este pedido antes de despachar.
+    orden_compra_url: str | None = None
+    orden_compra_nombre: str | None = None
 
 
 class PortalPedidoLinea(BaseModel):

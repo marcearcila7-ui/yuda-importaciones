@@ -85,6 +85,21 @@ def subir_pdf(archivo_bytes: bytes, nombre_archivo: str) -> str:
         raise
 
 
+def subir_csv(archivo_bytes: bytes, nombre_archivo: str) -> str:
+    """Sube un CSV al bucket 'pedidos' y devuelve su URL pública"""
+    try:
+        storage = _storage()
+        storage.from_("pedidos").upload(
+            nombre_archivo,
+            archivo_bytes,
+            {"content-type": "text/csv; charset=utf-8", "upsert": "true"},
+        )
+        return f"{settings.SUPABASE_URL}/storage/v1/object/public/pedidos/{nombre_archivo}"
+    except Exception:
+        logger.exception("Error subiendo el CSV a Supabase Storage")
+        raise
+
+
 def subir_documento(archivo_bytes: bytes, nombre_archivo: str, content_type: str) -> str:
     """Sube un documento (PDF, CSV, Excel) al bucket 'pedidos' y devuelve su URL pública"""
     try:

@@ -337,11 +337,16 @@ def estado_lote(
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> LoteEstado:
-    """Devuelve el estado y los resultados del lote (para consultar el avance)"""
+    """Devuelve el estado y los resultados del lote (para consultar el avance).
+
+    Excluye los resultados que ya se agregaron como ítem real (item_id no
+    nulo): si no, al retomar un lote interrumpido volvían a aparecer para
+    revisar y "Agregar buenos" los duplicaba en la cotización.
+    """
     lote = _obtener_lote(db, lote_id, usuario)
     items = (
         db.query(LoteItem)
-        .filter(LoteItem.lote_id == lote_id)
+        .filter(LoteItem.lote_id == lote_id, LoteItem.item_id.is_(None))
         .order_by(LoteItem.created_at.asc())
         .all()
     )

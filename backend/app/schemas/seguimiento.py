@@ -34,6 +34,9 @@ class SeguimientoUpdate(BaseModel):
     bl_pdf_url: str | None = None
     monto_venta: float | None = None
     hitos: dict[str, HitoInput] | None = None
+    # Bodega lo manda al marcar "en_bodega": horas que tiene el cliente para
+    # aprobar el despacho antes de que se envíe de todas formas.
+    horas_para_aprobar: int | None = None
 
     @field_validator("estado")
     @classmethod
@@ -67,6 +70,8 @@ class SeguimientoResponse(BaseModel):
     monto_venta: float | None = None
     despachado_at: datetime | None = None
     hitos: dict | None = None
+    cliente_aprobo_despacho_at: datetime | None = None
+    aprobacion_limite_at: datetime | None = None
     updated_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

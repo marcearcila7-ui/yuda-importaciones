@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 
 # Roles válidos del sistema
-ROLES_VALIDOS = {"admin", "vendedora", "contadora"}
+ROLES_VALIDOS = {"admin", "vendedora", "contadora", "bodega"}
 
 
 class UsuarioCreate(BaseModel):
@@ -26,7 +26,7 @@ class UsuarioCreate(BaseModel):
     @classmethod
     def validar_rol(cls, v: str) -> str:
         if v not in ROLES_VALIDOS:
-            raise ValueError("Rol inválido. Debe ser admin, vendedora o contadora")
+            raise ValueError("Rol inválido. Debe ser admin, vendedora, contadora o bodega")
         return v
 
 
@@ -41,7 +41,7 @@ class UsuarioUpdate(BaseModel):
     @classmethod
     def validar_rol(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and v not in ROLES_VALIDOS:
-            raise ValueError("Rol inválido. Debe ser admin, vendedora o contadora")
+            raise ValueError("Rol inválido. Debe ser admin, vendedora, contadora o bodega")
         return v
 
 

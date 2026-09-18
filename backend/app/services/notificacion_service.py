@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 
 from app.models.notificacion import (
+    TIPO_DESPACHO_APROBADO,
     TIPO_ENVIO_VENDEDORA,
     TIPO_LISTO_PARA_ENVIO,
+    TIPO_ORDEN_ACTUALIZADA_BODEGA,
     TIPO_PEDIDO_CLIENTE,
     TIPO_PEDIDO_CONFIRMADO,
     Notificacion,
@@ -181,6 +183,86 @@ def avisar_pedido_confirmado(
                 mensaje=(
                     f"{cliente} confirmó las cantidades de la cotización {numero}. "
                     "Ya puedes generar el pedido al proveedor."
+                ),
+            )
+        )
+
+
+def avisar_despacho_aprobado(
+    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None
+) -> None:
+    """Avisa a la vendedora dueña y a Marcela que el cliente aprobó, desde su
+    portal, el despacho que bodega dejó listo: ya se puede mandar el
+    contenedor por barco. Evita duplicar si ya hay un aviso sin leer de esta
+    cotización para ese destinatario."""
+    destinatarios = {vendedor_id} if vendedor_id else set()
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        destinatarios.add(admin.id)
+
+    for usuario_id in destinatarios:
+        ya_existe = (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.usuario_id == usuario_id,
+                Notificacion.sesion_id == sesion_id,
+                Notificacion.tipo == TIPO_DESPACHO_APROBADO,
+                Notificacion.leida.is_(False),
+            )
+            .first()
+        )
+        if ya_existe:
+            continue
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                tipo=TIPO_DESPACHO_APROBADO,
+                titulo="Cliente aprobó el despacho",
+                mensaje=(
+                    f"{cliente} aprobó el despacho de la cotización {numero}. "
+                    "Ya se puede mandar por barco."
+                ),
+            )
+        )
+
+
+def avisar_orden_actualizada_bodega(
+    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None, supplier: str
+) -> None:
+    """Avisa a la vendedora dueña y a Marcela que bodega corrigió la orden a un
+    proveedor con las cantidades que realmente llegaron. No evita duplicar por
+    tipo+sesión (a diferencia de los demás avisos), porque bodega puede corregir
+    más de un proveedor de la misma cotización y cada corrección merece su
+    propio aviso; si ya hay uno igual sin leer para el mismo proveedor, no se
+    repite."""
+    destinatarios = {vendedor_id} if vendedor_id else set()
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        destinatarios.add(admin.id)
+
+    for usuario_id in destinatarios:
+        ya_existe = (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.usuario_id == usuario_id,
+                Notificacion.sesion_id == sesion_id,
+                Notificacion.tipo == TIPO_ORDEN_ACTUALIZADA_BODEGA,
+                Notificacion.ref_id == supplier,
+                Notificacion.leida.is_(False),
+            )
+            .first()
+        )
+        if ya_existe:
+            continue
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                ref_id=supplier,
+                tipo=TIPO_ORDEN_ACTUALIZADA_BODEGA,
+                titulo="Bodega actualizó una orden con lo que llegó",
+                mensaje=(
+                    f"Bodega revisó la orden de «{supplier}» de la cotización {numero} "
+                    f"({cliente}) y la corrigió con las cantidades reales. Revisa y avísale al cliente."
                 ),
             )
         )

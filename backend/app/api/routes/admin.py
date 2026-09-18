@@ -284,6 +284,22 @@ def metricas(
         .count()
     )
 
+    # Panorama de bodega/despacho (no depende del mes: es la cola de HOY).
+    pedidos_esperando_bodega = (
+        db.query(SeguimientoPedido)
+        .join(Sesion, Sesion.id == SeguimientoPedido.sesion_id)
+        .filter(SeguimientoPedido.estado == "proveedor_recibio", Sesion.pedido_confirmado_at.isnot(None))
+        .count()
+    )
+    pedidos_esperando_aprobacion_cliente = (
+        db.query(SeguimientoPedido)
+        .filter(
+            SeguimientoPedido.estado == "en_bodega",
+            SeguimientoPedido.cliente_aprobo_despacho_at.is_(None),
+        )
+        .count()
+    )
+
     return {
         "total_sesiones_mes": len(sesiones_mes),
         "total_rmb_mes": total_rmb_mes,
@@ -291,6 +307,8 @@ def metricas(
         "total_items_mes": len(items),
         "total_pedidos_mes": total_pedidos_mes,
         "proveedores_unicos_mes": len(proveedores),
+        "pedidos_esperando_bodega": pedidos_esperando_bodega,
+        "pedidos_esperando_aprobacion_cliente": pedidos_esperando_aprobacion_cliente,
     }
 
 
