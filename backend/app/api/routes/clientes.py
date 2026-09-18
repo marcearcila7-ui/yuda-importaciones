@@ -207,6 +207,20 @@ def actualizar_cliente(
         nueva = db.query(User).filter(User.id == cambios["vendedora_id"], User.rol == RolUsuario.vendedora).first()
         if nueva is None:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Esa vendedora no existe")
+    if "sigla" in cambios and usuario.rol.value != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Solo Marcela puede editar la sigla de Yuda Contable")
+    if cambios.get("sigla"):
+        sigla = cambios["sigla"].strip().upper()
+        cambios["sigla"] = sigla
+        repetida = (
+            db.query(Cliente)
+            .filter(Cliente.sigla == sigla, Cliente.id != cliente_id)
+            .first()
+        )
+        if repetida is not None:
+            raise HTTPException(
+                status.HTTP_409_CONFLICT, f"La sigla {sigla} ya está asignada a {repetida.nombre}"
+            )
     for campo, valor in cambios.items():
         setattr(cliente, campo, valor)
     db.commit()

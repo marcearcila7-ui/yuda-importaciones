@@ -27,6 +27,8 @@ class ClienteUpdate(BaseModel):
     activo: bool | None = None
     # Reasignar la vendedora dueña: exclusivo de admin (se valida en la ruta).
     vendedora_id: str | None = None
+    # Código de Yuda Contable: exclusivo de admin (se valida en la ruta).
+    sigla: str | None = None
 
 
 class ClienteResponse(BaseModel):
@@ -40,6 +42,7 @@ class ClienteResponse(BaseModel):
     telefono: str | None
     pais: str | None
     vendedora_id: str
+    sigla: str | None = None
     activo: bool
     created_at: datetime
 

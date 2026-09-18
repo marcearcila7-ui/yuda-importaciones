@@ -7,6 +7,9 @@ export interface Cliente {
   telefono: string | null
   pais: string | null
   vendedora_id: string
+  // Código con el que este cliente aparece en Yuda Contable (app aparte).
+  // Solo una etiqueta de referencia; nunca trae saldos ni movimientos.
+  sigla: string | null
   activo: boolean
   created_at: string
 }

@@ -21,6 +21,10 @@ class Cliente(Base):
     nit: Mapped[str | None] = mapped_column(String, nullable=True)
     telefono: Mapped[str | None] = mapped_column(String, nullable=True)
     pais: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Código corto ("sigla") con el que este cliente aparece en Yuda Contable
+    # (app aparte). Es solo una etiqueta de referencia cruzada, la escribe
+    # Marcela a mano; nunca se trae saldo ni movimientos de esa app.
+    sigla: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     # Vendedora dueña del cliente
     vendedora_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)

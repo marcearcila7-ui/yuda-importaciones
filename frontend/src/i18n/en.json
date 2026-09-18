@@ -1,4 +1,10 @@
 {
+  "common": {
+    "cargando": "Loading…",
+    "volver": "Back",
+    "guardar": "Save",
+    "cancelar": "Cancel"
+  },
   "nav": {
     "cotizacion": "Quotation",
     "clientes": "Clients",
@@ -595,6 +601,11 @@
     "activar": "Activate",
     "desactivar": "Deactivate",
     "verColaboracion": "Salespeople and activity",
+    "siglaLabel": "Code in Yuda Contable:",
+    "siglaPlaceholder": "E.g.: ABM",
+    "siglaSinAsignar": "Not linked",
+    "siglaGuardada": "Code saved",
+    "errorSigla": "Could not save the code",
     "resetPassword": "Change password",
     "promptPassword": "New password for {{nombre}}:",
     "passwordCorta": "The password must be at least 6 characters",

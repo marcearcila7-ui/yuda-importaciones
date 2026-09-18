@@ -37,6 +37,8 @@ export async function actualizarCliente(
     activo: boolean
     // Reasignar la vendedora dueña: exclusivo de admin (lo valida el backend).
     vendedora_id: string
+    // Código de Yuda Contable: exclusivo de admin (lo valida el backend).
+    sigla: string
   }>,
 ): Promise<Cliente> {
   const { data } = await apiClient.patch<Cliente>(`/clientes/${id}`, datos)

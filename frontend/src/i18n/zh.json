@@ -1,4 +1,10 @@
 {
+  "common": {
+    "cargando": "加载中…",
+    "volver": "返回",
+    "guardar": "保存",
+    "cancelar": "取消"
+  },
   "nav": {
     "cotizacion": "报价",
     "clientes": "客户",
@@ -595,6 +601,11 @@
     "activar": "启用",
     "desactivar": "停用",
     "verColaboracion": "销售员与动态",
+    "siglaLabel": "Yuda Contable 编码：",
+    "siglaPlaceholder": "例如：ABM",
+    "siglaSinAsignar": "未关联",
+    "siglaGuardada": "编码已保存",
+    "errorSigla": "无法保存编码",
     "resetPassword": "修改密码",
     "promptPassword": "{{nombre}} 的新密码：",
     "passwordCorta": "密码至少需要6个字符",
