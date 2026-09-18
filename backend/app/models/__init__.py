@@ -7,6 +7,8 @@ from app.models.notificacion import Notificacion
 from app.models.contenedor import Contenedor
 from app.models.cuenta import MovimientoCuenta
 from app.models.tienda import PedidoTienda
+from app.models.cliente import Cliente
+from app.models.cliente_vendedora import ClienteVendedora, ClienteActividad
 
 __all__ = [
     "User",
@@ -17,4 +19,7 @@ __all__ = [
     "Contenedor",
     "MovimientoCuenta",
     "PedidoTienda",
+    "Cliente",
+    "ClienteVendedora",
+    "ClienteActividad",
 ]

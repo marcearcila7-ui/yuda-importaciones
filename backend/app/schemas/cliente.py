@@ -25,6 +25,8 @@ class ClienteUpdate(BaseModel):
     telefono: str | None = None
     pais: str | None = None
     activo: bool | None = None
+    # Reasignar la vendedora dueña: exclusivo de admin (se valida en la ruta).
+    vendedora_id: str | None = None
 
 
 class ClienteResponse(BaseModel):
@@ -79,3 +81,61 @@ class ClienteTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     cliente: ClientePublic
+
+
+# ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
+
+
+class VendedoraBasica(BaseModel):
+    id: str
+    nombre: str
+    email: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VendedoraAsignadaResponse(BaseModel):
+    """Una vendedora adicional (no la dueña) con acceso al cliente."""
+
+    vendedora: VendedoraBasica
+    asignado_por: str | None = None
+    created_at: datetime
+
+
+class AsignarVendedorasInput(BaseModel):
+    vendedora_ids: list[str]
+
+
+class ActividadInput(BaseModel):
+    nota: str
+
+
+class ActividadResponse(BaseModel):
+    id: str
+    usuario_id: str
+    usuario_nombre: str
+    nota: str
+    created_at: datetime
+
+
+class CotizacionResumenCliente(BaseModel):
+    """Una cotización del cliente, con quién la hizo, para la vista de Marcela."""
+
+    sesion_id: str
+    numero: str
+    fecha: datetime
+    vendedora_nombre: str
+    pedido_estado: str | None = None
+    estado_envio: str | None = None
+
+
+class ClienteColaboracionResponse(BaseModel):
+    """Vista consolidada de un cliente: quién lo gestiona, todas sus
+    cotizaciones (de cualquier vendedora) y la bitácora de actividad. La usa
+    Marcela para armar la factura final y las vendedoras que comparten un
+    cliente para ver el trabajo de las demás."""
+
+    duena: VendedoraBasica
+    asignadas: list[VendedoraAsignadaResponse]
+    cotizaciones: list[CotizacionResumenCliente]
+    actividad: list[ActividadResponse]

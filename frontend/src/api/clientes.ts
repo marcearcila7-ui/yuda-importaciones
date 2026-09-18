@@ -1,5 +1,12 @@
 import apiClient from './client'
-import type { Cliente, ClienteCreado, ClienteCreate } from '../types/cliente'
+import type {
+  ActividadCliente,
+  Cliente,
+  ClienteColaboracion,
+  ClienteCreado,
+  ClienteCreate,
+  VendedoraAsignada,
+} from '../types/cliente'
 import type { Sesion } from '../types/packing'
 import type { Adjunto, Seguimiento, SeguimientoUpdate } from '../types/seguimiento'
 
@@ -22,7 +29,15 @@ export async function crearCliente(datos: ClienteCreate): Promise<ClienteCreado>
 
 export async function actualizarCliente(
   id: string,
-  datos: Partial<{ nombre: string; empresa: string; telefono: string; pais: string; activo: boolean }>,
+  datos: Partial<{
+    nombre: string
+    empresa: string
+    telefono: string
+    pais: string
+    activo: boolean
+    // Reasignar la vendedora dueña: exclusivo de admin (lo valida el backend).
+    vendedora_id: string
+  }>,
 ): Promise<Cliente> {
   const { data } = await apiClient.patch<Cliente>(`/clientes/${id}`, datos)
   return data
@@ -39,6 +54,33 @@ export async function eliminarCliente(id: string): Promise<void> {
 export async function getCotizacionesCliente(id: string): Promise<Sesion[]> {
   const { data } = await apiClient.get<Sesion[]>(`/clientes/${id}/cotizaciones`)
   return data
+}
+
+// Vista consolidada: dueña + vendedoras compartidas, todas las cotizaciones del
+// cliente (de cualquier vendedora) y la bitácora de actividad.
+export async function getColaboracionCliente(id: string): Promise<ClienteColaboracion> {
+  const { data } = await apiClient.get<ClienteColaboracion>(`/clientes/${id}/colaboracion`)
+  return data
+}
+
+export async function agregarActividadCliente(id: string, nota: string): Promise<ActividadCliente> {
+  const { data } = await apiClient.post<ActividadCliente>(`/clientes/${id}/actividad`, { nota })
+  return data
+}
+
+// Marcela comparte el cliente con vendedoras adicionales (además de la dueña).
+export async function asignarVendedorasCliente(
+  id: string,
+  vendedora_ids: string[],
+): Promise<VendedoraAsignada[]> {
+  const { data } = await apiClient.post<VendedoraAsignada[]>(`/clientes/${id}/vendedoras`, {
+    vendedora_ids,
+  })
+  return data
+}
+
+export async function quitarVendedoraCliente(id: string, vendedoraId: string): Promise<void> {
+  await apiClient.delete(`/clientes/${id}/vendedoras/${vendedoraId}`)
 }
 
 export async function vincularCliente(

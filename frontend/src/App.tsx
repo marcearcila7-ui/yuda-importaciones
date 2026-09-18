@@ -14,6 +14,7 @@ import { usePortalStore } from './store/portalStore'
 // Páginas de admin y del portal: se cargan bajo demanda (code-splitting) para
 // aligerar el bundle inicial de las vendedoras.
 const Admin = lazy(() => import('./pages/Admin'))
+const ClienteColaboracion = lazy(() => import('./pages/ClienteColaboracion'))
 const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
 const Historial = lazy(() => import('./pages/Historial'))
 const Ventas = lazy(() => import('./pages/Ventas'))
@@ -88,6 +89,13 @@ function App() {
             vendedora no debe ver saldos ni movimientos de dinero. */}
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/clientes/:clienteId/cuenta" element={<Layout><CuentaCliente /></Layout>} />
+        </Route>
+
+        {/* Colaboración de un cliente (vendedoras asignadas, cotizaciones de
+            todas, bitácora): admin y la(s) vendedora(s) con acceso a ese
+            cliente. El backend limita los datos a quien realmente lo gestiona. */}
+        <Route element={<ProtectedRoute roles={['admin', 'vendedora']} />}>
+          <Route path="/clientes/:clienteId/colaboracion" element={<Layout><ClienteColaboracion /></Layout>} />
         </Route>
 
         {/* Detalle de cotización (solo lectura): admin, contadora y la vendedora

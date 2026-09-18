@@ -386,6 +386,14 @@ ${t('clientes.email')}: ${c.email}`
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/clientes/${c.id}/colaboracion`)}
+              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+              style={{ color: 'var(--yuda-primary)' }}
+            >
+              <Users size={16} /> {t('clientes.verColaboracion')}
+            </button>
             {puedeVerCuenta && (
               <button
                 type="button"

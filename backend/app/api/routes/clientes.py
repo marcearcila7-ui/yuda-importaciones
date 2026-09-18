@@ -16,6 +16,7 @@ from app.services.borrado_service import (
     tiene_movimientos_cliente,
 )
 from app.models.cliente import Cliente
+from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.cuenta import MovimientoCuenta, calcular_comision, convertir_abono
 from app.services.estado_cuenta_service import (
     generar_estado_cuenta_excel,
@@ -32,13 +33,20 @@ from app.models.seguimiento import (
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
 from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
-from app.models.user import User
+from app.models.user import RolUsuario, User
 from app.schemas.cliente import (
+    ActividadInput,
+    ActividadResponse,
+    AsignarVendedorasInput,
+    ClienteColaboracionResponse,
     ClienteCreado,
     ClienteCreate,
     ClienteResponse,
     ClienteUpdate,
+    CotizacionResumenCliente,
     ResetPasswordRequest,
+    VendedoraAsignadaResponse,
+    VendedoraBasica,
 )
 from app.schemas.cuenta import (
     EstadoCuentaResponse,
@@ -71,12 +79,26 @@ def _generar_password(n: int = 10) -> str:
     return "".join(secrets.choice(alfabeto) for _ in range(n))
 
 
+def _vendedora_tiene_acceso(db: Session, cliente_id: str, vendedora_id: str) -> bool:
+    """La vendedora es la dueña del cliente, o Marcela se lo asignó como colaboradora."""
+    return (
+        db.query(ClienteVendedora.id)
+        .filter(ClienteVendedora.cliente_id == cliente_id, ClienteVendedora.vendedora_id == vendedora_id)
+        .first()
+        is not None
+    )
+
+
 def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
     """Devuelve el cliente si el usuario puede gestionarlo; si no, 404/403"""
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if cliente is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
-    if usuario.rol.value == "vendedora" and cliente.vendedora_id != usuario.id:
+    if (
+        usuario.rol.value == "vendedora"
+        and cliente.vendedora_id != usuario.id
+        and not _vendedora_tiene_acceso(db, cliente_id, usuario.id)
+    ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre este cliente")
     return cliente
 
@@ -131,10 +153,16 @@ def listar_clientes(
     usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
 ) -> list[Cliente]:
-    """Lista clientes: la vendedora ve los suyos, admin y contadora ven todos."""
+    """Lista clientes: la vendedora ve los suyos y los que Marcela le comparta;
+    admin y contadora ven todos."""
     query = db.query(Cliente)
     if usuario.rol.value == "vendedora":
-        query = query.filter(Cliente.vendedora_id == usuario.id)
+        compartidos = db.query(ClienteVendedora.cliente_id).filter(
+            ClienteVendedora.vendedora_id == usuario.id
+        )
+        query = query.filter(
+            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
+        )
     return query.order_by(Cliente.created_at.desc()).all()
 
 
@@ -173,11 +201,206 @@ def actualizar_cliente(
 ) -> Cliente:
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     cambios = datos.model_dump(exclude_unset=True)
+    if "vendedora_id" in cambios and usuario.rol.value != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Solo Marcela puede reasignar la vendedora dueña")
+    if cambios.get("vendedora_id"):
+        nueva = db.query(User).filter(User.id == cambios["vendedora_id"], User.rol == RolUsuario.vendedora).first()
+        if nueva is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Esa vendedora no existe")
     for campo, valor in cambios.items():
         setattr(cliente, campo, valor)
     db.commit()
     db.refresh(cliente)
     return cliente
+
+
+# ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
+
+
+@router.get("/clientes/{cliente_id}/colaboracion", response_model=ClienteColaboracionResponse)
+def obtener_colaboracion_cliente(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> ClienteColaboracionResponse:
+    """Vista consolidada del cliente: quién lo gestiona (dueña + asignadas),
+    todas sus cotizaciones (de cualquier vendedora que le haya cotizado) y la
+    bitácora de actividad. Es lo que usa Marcela para ver el trabajo de cada
+    vendedora sobre un cliente compartido y armar la factura final."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+
+    duena = db.query(User).filter(User.id == cliente.vendedora_id).first()
+
+    asignaciones = (
+        db.query(ClienteVendedora, User)
+        .join(User, User.id == ClienteVendedora.vendedora_id)
+        .filter(ClienteVendedora.cliente_id == cliente_id)
+        .order_by(ClienteVendedora.created_at.asc())
+        .all()
+    )
+    ids_asignadores = {a.asignado_por_id for a, _ in asignaciones if a.asignado_por_id}
+    asignadores = {
+        u.id: u.nombre for u in db.query(User).filter(User.id.in_(ids_asignadores)).all()
+    } if ids_asignadores else {}
+    asignadas = [
+        VendedoraAsignadaResponse(
+            vendedora=VendedoraBasica.model_validate(u),
+            asignado_por=asignadores.get(asignacion.asignado_por_id) if asignacion.asignado_por_id else None,
+            created_at=asignacion.created_at,
+        )
+        for asignacion, u in asignaciones
+    ]
+
+    sesiones = (
+        db.query(Sesion, User)
+        .join(User, User.id == Sesion.user_id)
+        .filter(Sesion.cliente_id == cliente_id)
+        .order_by(Sesion.created_at.desc())
+        .all()
+    )
+    seguimientos = {
+        s.sesion_id: s.estado
+        for s in db.query(SeguimientoPedido).filter(
+            SeguimientoPedido.sesion_id.in_([s.id for s, _ in sesiones])
+        )
+    }
+    cotizaciones = [
+        CotizacionResumenCliente(
+            sesion_id=sesion.id,
+            numero=f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}",
+            fecha=sesion.created_at,
+            vendedora_nombre=vend.nombre,
+            pedido_estado=sesion.pedido_estado,
+            estado_envio=seguimientos.get(sesion.id),
+        )
+        for sesion, vend in sesiones
+    ]
+
+    actividad_filas = (
+        db.query(ClienteActividad, User)
+        .join(User, User.id == ClienteActividad.usuario_id)
+        .filter(ClienteActividad.cliente_id == cliente_id)
+        .order_by(ClienteActividad.created_at.desc())
+        .all()
+    )
+    actividad = [
+        ActividadResponse(
+            id=a.id,
+            usuario_id=a.usuario_id,
+            usuario_nombre=autor.nombre,
+            nota=a.nota,
+            created_at=a.created_at,
+        )
+        for a, autor in actividad_filas
+    ]
+
+    return ClienteColaboracionResponse(
+        duena=VendedoraBasica.model_validate(duena),
+        asignadas=asignadas,
+        cotizaciones=cotizaciones,
+        actividad=actividad,
+    )
+
+
+@router.post(
+    "/clientes/{cliente_id}/actividad",
+    response_model=ActividadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def agregar_actividad_cliente(
+    cliente_id: str,
+    datos: ActividadInput,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> ActividadResponse:
+    """Deja una nota libre sobre el cliente (llamada, acuerdo, novedad). Queda
+    firmada con el autor para que, si el cliente es compartido, se vea quién
+    hizo qué."""
+    _cliente_autorizado(db, cliente_id, usuario)
+    nota = datos.nota.strip()
+    if not nota:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe algo en la nota")
+    actividad = ClienteActividad(cliente_id=cliente_id, usuario_id=usuario.id, nota=nota)
+    db.add(actividad)
+    db.commit()
+    db.refresh(actividad)
+    return ActividadResponse(
+        id=actividad.id,
+        usuario_id=usuario.id,
+        usuario_nombre=usuario.nombre,
+        nota=actividad.nota,
+        created_at=actividad.created_at,
+    )
+
+
+@router.post(
+    "/clientes/{cliente_id}/vendedoras",
+    response_model=list[VendedoraAsignadaResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def asignar_vendedoras_cliente(
+    cliente_id: str,
+    datos: AsignarVendedorasInput,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> list[VendedoraAsignadaResponse]:
+    """Marcela comparte este cliente con una o más vendedoras adicionales
+    (además de la dueña). No duplica si ya estaba asignada."""
+    cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
+    if cliente is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
+
+    ya_asignadas = {
+        vid
+        for (vid,) in db.query(ClienteVendedora.vendedora_id).filter(
+            ClienteVendedora.cliente_id == cliente_id
+        )
+    }
+    for vendedora_id in datos.vendedora_ids:
+        if vendedora_id == cliente.vendedora_id or vendedora_id in ya_asignadas:
+            continue
+        vendedora = db.query(User).filter(User.id == vendedora_id, User.rol == RolUsuario.vendedora).first()
+        if vendedora is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, f"La vendedora {vendedora_id} no existe")
+        db.add(ClienteVendedora(cliente_id=cliente_id, vendedora_id=vendedora_id, asignado_por_id=usuario.id))
+    db.commit()
+
+    asignaciones = (
+        db.query(ClienteVendedora, User)
+        .join(User, User.id == ClienteVendedora.vendedora_id)
+        .filter(ClienteVendedora.cliente_id == cliente_id)
+        .order_by(ClienteVendedora.created_at.asc())
+        .all()
+    )
+    return [
+        VendedoraAsignadaResponse(
+            vendedora=VendedoraBasica.model_validate(u),
+            asignado_por=usuario.nombre if a.asignado_por_id == usuario.id else None,
+            created_at=a.created_at,
+        )
+        for a, u in asignaciones
+    ]
+
+
+@router.delete("/clientes/{cliente_id}/vendedoras/{vendedora_id}", status_code=status.HTTP_204_NO_CONTENT)
+def quitar_vendedora_cliente(
+    cliente_id: str,
+    vendedora_id: str,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> None:
+    """Marcela le quita a una vendedora el acceso compartido a este cliente
+    (la dueña original no se puede quitar por acá: eso es reasignar, con
+    PATCH /clientes/{id} y el campo vendedora_id)."""
+    asignacion = (
+        db.query(ClienteVendedora)
+        .filter(ClienteVendedora.cliente_id == cliente_id, ClienteVendedora.vendedora_id == vendedora_id)
+        .first()
+    )
+    if asignacion is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Esa vendedora no está asignada a este cliente")
+    db.delete(asignacion)
+    db.commit()
 
 
 @router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
