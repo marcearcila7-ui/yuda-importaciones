@@ -60,15 +60,17 @@ def listar_pedidos_bodega(
     if estado not in ESTADOS_ENVIO:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Estado inválido")
 
+    # OJO: no filtrar por Sesion.pedido_confirmado_at. Ese campo se borra si el
+    # cliente vuelve a su portal y reenvía cantidades (aunque sea después de
+    # que la vendedora ya mandó el pedido a bodega), y eso NO deshace el envío
+    # a bodega — solo dejaba el pedido invisible acá sin ningún aviso. Lo único
+    # que de verdad indica que bodega debe verlo es la etapa del seguimiento.
     filas = (
         db.query(Sesion, SeguimientoPedido, User)
         .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
         .outerjoin(User, User.id == Sesion.user_id)
-        .filter(
-            SeguimientoPedido.estado == estado,
-            Sesion.pedido_confirmado_at.isnot(None),
-        )
-        .order_by(Sesion.pedido_confirmado_at.asc())
+        .filter(SeguimientoPedido.estado == estado)
+        .order_by(SeguimientoPedido.updated_at.asc())
         .all()
     )
 
