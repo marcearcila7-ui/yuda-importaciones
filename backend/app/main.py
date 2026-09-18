@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import (
     admin,
     auth,
+    bodega,
     clientes,
     contenedores,
     lotes,
@@ -128,6 +129,7 @@ app.include_router(contenedores.router, prefix="/api/v1")
 app.include_router(tiendas.router, prefix="/api/v1")
 app.include_router(portal.router, prefix="/api/v1")
 app.include_router(notificaciones.router, prefix="/api/v1")
+app.include_router(bodega.router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -20,6 +20,7 @@ from app.models.sesion import (
 from app.schemas.cliente import ClienteLogin, ClientePublic, ClienteTokenResponse
 from app.schemas.cotizacion import CotizacionRequest
 from app.services.notificacion_service import (
+    avisar_despacho_aprobado,
     avisar_pedido_cliente,
     avisar_pedido_confirmado,
 )
@@ -204,7 +205,40 @@ def detalle_cotizacion(
         pedido_recibido=sesion.pedido_recibido_at is not None,
         pedido_estado=sesion.pedido_estado,
         pedido_confirmado=sesion.pedido_confirmado_at is not None,
+        orden_compra_url=sesion.orden_compra_url,
+        orden_compra_nombre=sesion.orden_compra_nombre,
     )
+
+
+@router.post("/cotizaciones/{sesion_id}/aprobar-despacho")
+def aprobar_despacho(
+    sesion_id: str,
+    cliente: Cliente = Depends(get_current_cliente),
+    db: Session = Depends(get_db),
+) -> dict:
+    """El cliente aprueba, desde su portal, que Marcela despache su pedido, una
+    vez bodega lo recibió e inspeccionó ("en_bodega"). Solo se puede aprobar
+    dentro del plazo que bodega dejó al marcarlo; pasado ese plazo el despacho
+    sigue igual, pero el cliente ya no puede aprobar ni objetar nada."""
+    sesion = _sesion_del_cliente(db, sesion_id, cliente)
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is None or seg.estado != "en_bodega":
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Tu pedido todavía no está listo para aprobar el despacho",
+        )
+    if seg.cliente_aprobo_despacho_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ya habías aprobado este despacho")
+    if seg.aprobacion_limite_at is not None and datetime.now(timezone.utc) > seg.aprobacion_limite_at:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "El plazo para aprobar este despacho ya venció",
+        )
+
+    seg.cliente_aprobo_despacho_at = datetime.now(timezone.utc)
+    avisar_despacho_aprobado(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id)
+    db.commit()
+    return {"detail": "Despacho aprobado"}
 
 
 @router.put("/cotizaciones/{sesion_id}/pedido")

@@ -35,4 +35,11 @@ class LoteItem(Base):
     # pendiente -> ok | error
     estado: Mapped[str] = mapped_column(String, default="pendiente", nullable=False)
     datos: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Se llena cuando la vendedora agrega este resultado como ítem real del
+    # packing list. Sin esto, retomar un lote interrumpido (recarga, caída del
+    # servidor) volvía a mostrar los productos ya agregados y "Agregar buenos"
+    # los duplicaba en la cotización.
+    item_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("items.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

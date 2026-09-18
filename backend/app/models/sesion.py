@@ -63,4 +63,8 @@ class Sesion(Base):
     pedido_confirmado_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Orden de compra de la tienda, adjuntada por el cliente al confirmar su
+    # pedido. Bodega la compara contra el pedido confirmado antes de despachar.
+    orden_compra_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    orden_compra_nombre: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

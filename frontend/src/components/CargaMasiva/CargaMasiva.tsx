@@ -298,6 +298,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     for (const r of legibles) {
       const d = r.datos
       const item: ItemCreate = {
+        lote_item_id: r.id,
         supplier_nombre: d.supplier_nombre ?? undefined,
         supplier_numero: d.supplier_numero ?? undefined,
         foto_url: r.foto_url,

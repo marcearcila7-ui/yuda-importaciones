@@ -28,6 +28,11 @@ class PedidoGeneradoResponse(BaseModel):
     supplier: str
     archivo_xlsx_url: str
     archivo_pdf_url: str | None = None
+    archivo_csv_url: str | None = None
+    archivo_real_xlsx_url: str | None = None
+    archivo_real_pdf_url: str | None = None
+    archivo_real_csv_url: str | None = None
+    revisado_en_bodega_at: datetime | None = None
     fecha_generacion: datetime
 
     model_config = ConfigDict(from_attributes=True)

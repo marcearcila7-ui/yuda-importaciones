@@ -16,6 +16,7 @@ class RolUsuario(str, Enum):
     admin = "admin"
     vendedora = "vendedora"
     contadora = "contadora"
+    bodega = "bodega"
 
 
 class User(Base):

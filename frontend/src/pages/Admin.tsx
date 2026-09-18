@@ -20,7 +20,7 @@ const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
-type Rol = 'admin' | 'vendedora' | 'contadora'
+type Rol = 'admin' | 'vendedora' | 'contadora' | 'bodega'
 
 function mensajeError(err: unknown, generico: string): string {
   if (axios.isAxiosError(err) && err.response?.data?.detail) {
@@ -341,6 +341,7 @@ function Admin() {
                 <option value="admin">{t('roles.admin')}</option>
                 <option value="vendedora">{t('roles.vendedora')}</option>
                 <option value="contadora">{t('roles.contadora')}</option>
+                <option value="bodega">{t('roles.bodega')}</option>
               </select>
               {errorCrear && <p className="text-sm" style={{ color: 'var(--yuda-error)' }}>{errorCrear}</p>}
             </div>
@@ -365,6 +366,7 @@ function Admin() {
                 <option value="admin">{t('roles.admin')}</option>
                 <option value="vendedora">{t('roles.vendedora')}</option>
                 <option value="contadora">{t('roles.contadora')}</option>
+                <option value="bodega">{t('roles.bodega')}</option>
               </select>
               {errorEditar && <p className="text-sm" style={{ color: 'var(--yuda-error)' }}>{errorEditar}</p>}
             </div>

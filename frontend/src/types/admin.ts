@@ -2,7 +2,7 @@ export interface UsuarioAdmin {
   id: string
   nombre: string
   email: string
-  rol: 'admin' | 'vendedora' | 'contadora'
+  rol: 'admin' | 'vendedora' | 'contadora' | 'bodega'
   activo: boolean
   created_at: string
 }
@@ -11,7 +11,7 @@ export interface UsuarioCreate {
   nombre: string
   email: string
   password: string
-  rol: 'admin' | 'vendedora' | 'contadora'
+  rol: 'admin' | 'vendedora' | 'contadora' | 'bodega'
 }
 
 export interface ConfiguracionResponse {
@@ -38,6 +38,8 @@ export interface MetricasDashboard {
   total_items_mes: number
   total_pedidos_mes: number
   proveedores_unicos_mes: number
+  pedidos_esperando_bodega: number
+  pedidos_esperando_aprobacion_cliente: number
 }
 
 export interface MetricaVendedora {

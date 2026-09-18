@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import exigir_roles, get_current_user
 from app.database import get_db
 from app.models.item import Item
-from app.models.pedido import PedidoGenerado
+from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.pedidos import (
@@ -23,10 +23,14 @@ from app.schemas.pedidos import (
     PedidoGeneradoInfo,
     PedidoGeneradoResponse,
 )
-from app.services.excel_service import agrupar_items_por_supplier, generar_formato_pedido
+from app.services.excel_service import (
+    agrupar_items_por_supplier,
+    generar_csv_pedido,
+    generar_formato_pedido,
+)
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
 from app.services.pdf_service import html_pedido, render_pdf
-from app.services.storage_service import subir_excel, subir_pdf
+from app.services.storage_service import subir_csv, subir_excel, subir_pdf
 from app.services.traduccion_service import descripcion_zh_util, traducir_descripciones_zh
 
 router = APIRouter(prefix="/pedidos", tags=["pedidos"])
@@ -224,13 +228,21 @@ def generar_pedidos(
         pdfs = {clave: render_pdf(html) for clave, html in zip(claves, htmls)}
     t_pdfs = time.perf_counter() - t0
 
-    # Subir Excel y PDF a Supabase Storage (carpeta por sesión). Las subidas son
-    # espera de red, así que van todas a la vez en hilos.
-    def _subir(clave: str) -> tuple[str, str]:
+    # CSV: liviano, se genera al vuelo (no como Excel/PDF que sí valen la pena
+    # paralelizar). Es fundamental que todo pedido tenga esta versión también.
+    csvs: dict[str, bytes] = {
+        clave: generar_csv_pedido(grupos[clave][0].supplier_nombre, grupos[clave][0].supplier_numero, grupos[clave], fecha_hoy)
+        for clave in claves
+    }
+
+    # Subir Excel, PDF y CSV a Supabase Storage (carpeta por sesión). Las
+    # subidas son espera de red, así que van todas a la vez en hilos.
+    def _subir(clave: str) -> tuple[str, str, str]:
         ruta = f"{sesion_id}/{fecha_str}_{_sanitizar(clave)}_Pedido"
         return (
             subir_excel(excels[clave], f"{ruta}.xlsx"),
             subir_pdf(pdfs[clave], f"{ruta}.pdf"),
+            subir_csv(csvs[clave], f"{ruta}.csv"),
         )
 
     t1 = time.perf_counter()
@@ -244,9 +256,12 @@ def generar_pedidos(
     for clave in claves:
         grupo = grupos[clave]
         nombre_archivo = f"{fecha_str}_{_sanitizar(clave)}_Pedido.xlsx"
-        url_descarga, url_pdf = urls[clave]
+        url_descarga, url_pdf, url_csv = urls[clave]
 
-        # Upsert del registro en pedidos_generados
+        # Upsert del registro en pedidos_generados. Si ya existía (la vendedora
+        # regeneró porque el cliente cambió algo), se toma como el nuevo pedido
+        # base: se limpia cualquier revisión de bodega anterior, porque ya no
+        # correspondería a lo que se está pidiendo ahora.
         registro = (
             db.query(PedidoGenerado)
             .filter(
@@ -258,15 +273,34 @@ def generar_pedidos(
         if registro:
             registro.archivo_xlsx_url = url_descarga
             registro.archivo_pdf_url = url_pdf
+            registro.archivo_csv_url = url_csv
+            registro.archivo_real_xlsx_url = None
+            registro.archivo_real_pdf_url = None
+            registro.archivo_real_csv_url = None
+            registro.revisado_en_bodega_at = None
             registro.fecha_generacion = datetime.now()
+            db.query(PedidoGeneradoItem).filter(
+                PedidoGeneradoItem.pedido_generado_id == registro.id
+            ).delete()
         else:
             registro = PedidoGenerado(
                 sesion_id=sesion_id,
                 supplier=clave,
                 archivo_xlsx_url=url_descarga,
                 archivo_pdf_url=url_pdf,
+                archivo_csv_url=url_csv,
             )
             db.add(registro)
+            db.flush()  # asigna registro.id para las líneas de abajo
+
+        for item in grupo:
+            db.add(
+                PedidoGeneradoItem(
+                    pedido_generado_id=registro.id,
+                    item_id=item.id,
+                    cantidad_pedida=item.ctns,
+                )
+            )
 
         resultados.append(
             PedidoGeneradoInfo(

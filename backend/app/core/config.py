@@ -15,6 +15,38 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
 
+    # Avisos al cliente (portal): correo transaccional por Brevo y notificación
+    # por el bot propio de Yuda. Ambos son opcionales; si faltan, el aviso
+    # correspondiente simplemente se omite (no rompe el flujo de bodega/Marcela).
+    BREVO_API_KEY: str = ""
+    BREVO_SENDER_EMAIL: str = ""
+    BREVO_SENDER_NAME: str = "YUDA Importaciones"
+    # WhatsApp por Lucid Bot (construido sobre ChatRace: api.chatrace.com).
+    # Se autentica con el header X-ACCESS-TOKEN.
+    LUCIDBOT_API_KEY: str = ""
+    LUCIDBOT_API_URL: str = "https://api.chatrace.com"
+    # Fuera de la ventana de 24h de conversación, WhatsApp exige una plantilla
+    # aprobada en vez de texto libre. Si se deja vacío, se manda texto libre
+    # (solo funciona dentro de esa ventana). Si se define, se dispara ese flow
+    # de Lucid Bot (la plantilla vive ahí) pasándole las variables por custom
+    # fields del contacto antes de dispararlo.
+    LUCIDBOT_FLOW_APROBAR_DESPACHO: str = ""
+    # Mismo mecanismo que el de arriba, para los otros dos avisos automáticos
+    # al cliente (fuera de la ventana de 24h necesitan su propia plantilla).
+    LUCIDBOT_FLOW_PEDIDO_ENVIADO: str = ""
+    LUCIDBOT_FLOW_FECHA_TENTATIVA: str = ""
+    # Nombres (no IDs) de los custom fields de Lucid Bot donde se dejan las
+    # variables antes de disparar el flow de arriba. Deben existir ya creados
+    # en Lucid Bot con exactamente estos nombres (o cambiar acá para que
+    # coincidan con los tuyos).
+    LUCIDBOT_CF_NUMERO_PEDIDO: str = "yuda_numero_pedido"
+    LUCIDBOT_CF_PLAZO: str = "yuda_plazo_aprobacion"
+    LUCIDBOT_CF_LINK: str = "yuda_link_portal"
+    LUCIDBOT_CF_NOTA: str = "yuda_nota_bodega"
+    LUCIDBOT_CF_FECHA_TENTATIVA: str = "yuda_fecha_tentativa"
+    # Base pública del portal del cliente, para armar el link en los avisos.
+    PORTAL_URL: str = "http://localhost:3000"
+
     # Tope GLOBAL de llamadas de OCR (Anthropic) en simultáneo en todo el sistema.
     # Protege contra rate limits y agotamiento de conexiones bajo picos de carga.
     OCR_CONCURRENCIA_GLOBAL: int = 6
@@ -55,6 +87,10 @@ class Settings(BaseSettings):
         "SUPABASE_URL",
         "SUPABASE_SERVICE_KEY",
         "SENTRY_DSN",
+        "BREVO_API_KEY",
+        "LUCIDBOT_API_KEY",
+        "LUCIDBOT_API_URL",
+        "PORTAL_URL",
         mode="before",
     )
     @classmethod

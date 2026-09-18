@@ -45,6 +45,10 @@ class ItemCreate(BaseModel):
     minimo_piezas_caja_tienda: Optional[int] = None
     # Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
     fotos_extra: Optional[dict] = None
+    # Si este ítem viene de un resultado de carga masiva (OCR), su lote_item_id:
+    # marca ese resultado como ya agregado para que no vuelva a aparecer si se
+    # retoma el lote (recarga del navegador, caída del servidor a mitad de revisión).
+    lote_item_id: Optional[str] = None
 
 
 class RecorteRequest(BaseModel):
@@ -150,6 +154,9 @@ class SesionResponse(BaseModel):
     pedido_recibido_at: datetime | None = None  # cuándo el cliente envió su pedido
     pedido_estado: str | None = None  # recibido / por_confirmar / confirmado
     pedido_confirmado_at: datetime | None = None
+    # Orden de compra de la tienda, adjuntada por el cliente al confirmar su pedido
+    orden_compra_url: str | None = None
+    orden_compra_nombre: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

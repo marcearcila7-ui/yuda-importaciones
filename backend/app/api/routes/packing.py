@@ -283,8 +283,24 @@ def crear_item(
 
     payload = datos.model_dump()
     payload["orden"] = nuevo_orden
+    lote_item_id = payload.pop("lote_item_id", None)
     item = Item(sesion_id=sesion_id, **payload)
     db.add(item)
+    db.flush()  # asigna item.id antes de enlazarlo al lote_item
+
+    # Marca el resultado de OCR como ya agregado: si se retoma este lote más
+    # tarde (recarga, caída del servidor), no debe volver a ofrecerse ni
+    # duplicarse en la cotización.
+    if lote_item_id:
+        lote_item = (
+            db.query(LoteItem)
+            .join(LoteOCR, LoteOCR.id == LoteItem.lote_id)
+            .filter(LoteItem.id == lote_item_id, LoteOCR.sesion_id == sesion_id)
+            .first()
+        )
+        if lote_item is not None:
+            lote_item.item_id = item.id
+
     db.commit()
     db.refresh(item)
     return _construir_item_response(item, sesion.tipo_cambio_usd)

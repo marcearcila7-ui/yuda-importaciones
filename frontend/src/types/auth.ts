@@ -2,7 +2,7 @@ export interface Usuario {
   id: string
   nombre: string
   email: string
-  rol: 'admin' | 'vendedora' | 'contadora'
+  rol: 'admin' | 'vendedora' | 'contadora' | 'bodega'
 }
 
 export interface TokenResponse {

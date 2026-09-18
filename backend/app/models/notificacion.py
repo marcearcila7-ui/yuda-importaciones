@@ -15,6 +15,10 @@ TIPO_PEDIDO_CLIENTE = "pedido_cliente"
 TIPO_ENVIO_VENDEDORA = "envio_vendedora"
 # El cliente confirmó las cantidades finales: aviso para la vendedora dueña + Marcela.
 TIPO_PEDIDO_CONFIRMADO = "pedido_confirmado"
+# El cliente aprobó el despacho desde su portal: aviso para la vendedora dueña + Marcela.
+TIPO_DESPACHO_APROBADO = "despacho_aprobado"
+# Bodega corrigió una orden a proveedor con las cantidades reales que llegaron.
+TIPO_ORDEN_ACTUALIZADA_BODEGA = "orden_actualizada_bodega"
 # Se acerca la fecha de pago del 70% a una tienda: aviso para la contadora.
 TIPO_ALERTA_PAGO_TIENDA = "alerta_pago_tienda"
 

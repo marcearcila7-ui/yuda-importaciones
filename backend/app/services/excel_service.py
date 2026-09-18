@@ -1,7 +1,8 @@
+import csv
 import os
 from copy import copy
 from datetime import date
-from io import BytesIO
+from io import BytesIO, StringIO
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.drawing.image import Image as XLImage
@@ -370,3 +371,43 @@ def generar_formato_pedido(
     buffer = BytesIO()
     wb.save(buffer)
     return buffer.getvalue()
+
+
+def generar_csv_pedido(
+    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    con_cantidad_recibida: bool = False,
+) -> bytes:
+    """Versión en CSV del mismo pedido que arma `generar_formato_pedido`, para
+    quien prefiera abrirlo en una hoja de cálculo simple o importarlo a otro
+    sistema. `items` puede traer `.cantidad_recibida` (bodega la agrega al
+    revisar); si `con_cantidad_recibida` es True, se agrega esa columna aunque
+    algún ítem no la tenga todavía (queda vacía).
+
+    UTF-8 con BOM: así Excel en Windows abre bien las tildes y el 中文 sin que
+    la vendedora tenga que configurar nada al abrir el archivo.
+    """
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow([f"Proveedor: {supplier_nombre} ({supplier_numero})", "", f"Fecha: {fecha.isoformat()}"])
+    writer.writerow([])
+
+    encabezados = ["Item No", "Descripción", "中文", "Cajas pedidas", "Unid. por caja", "Precio RMB"]
+    if con_cantidad_recibida:
+        encabezados.append("Cajas recibidas")
+    writer.writerow(encabezados)
+
+    for item in items:
+        fila = [
+            getattr(item, "item_no", None) or "",
+            getattr(item, "descripcion_es", None) or getattr(item, "descripcion_en", None) or "",
+            getattr(item, "descripcion_zh", None) or "",
+            getattr(item, "ctns", None) or 0,
+            getattr(item, "qty_por_ctn", None) or 0,
+            getattr(item, "price_rmb", None) or 0,
+        ]
+        if con_cantidad_recibida:
+            valor_recibida = getattr(item, "cantidad_recibida", None)
+            fila.append(valor_recibida if valor_recibida is not None else "")
+        writer.writerow(fila)
+
+    return ("﻿" + buffer.getvalue()).encode("utf-8")

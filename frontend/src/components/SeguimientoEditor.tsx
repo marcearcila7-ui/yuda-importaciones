@@ -58,6 +58,8 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const [blPdfUrl, setBlPdfUrl] = useState('')
   const [monto, setMonto] = useState('')
   const [hitos, setHitos] = useState<Record<string, Hito>>({})
+  const [clienteAprobo, setClienteAprobo] = useState<string | null>(null)
+  const [plazoAprobacion, setPlazoAprobacion] = useState<string | null>(null)
   const [trabajando, setTrabajando] = useState(false)
   const [subiendoBl, setSubiendoBl] = useState(false)
   const [subiendoAdj, setSubiendoAdj] = useState(false)
@@ -76,6 +78,8 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     setBlPdfUrl(s.bl_pdf_url ?? '')
     setMonto(s.monto_venta != null ? String(s.monto_venta) : '')
     setHitos(s.hitos ?? {})
+    setClienteAprobo(s.cliente_aprobo_despacho_at ?? null)
+    setPlazoAprobacion(s.aprobacion_limite_at ?? null)
   }
 
   useEffect(() => {
@@ -154,11 +158,18 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     (ESTADOS_ENVIO as readonly string[]).indexOf(estado) >= ESTADOS_ENVIO.indexOf('en_transito')
   const montoNum = Number(monto)
   const montoValido = !!monto && !Number.isNaN(montoNum) && montoNum > 0
+  const plazoVencido = !!plazoAprobacion && new Date(plazoAprobacion).getTime() < Date.now()
+  const clienteAproboOVencio = !!clienteAprobo || plazoVencido
 
   const guardar = async () => {
     // El monto de la venta es obligatorio para despachar (marcar en tránsito).
     if (esAdmin && esTransito && !montoValido) {
       toast.error(t('envio.montoRequerido'))
+      return
+    }
+    // El cliente debe haber aprobado el despacho, o vencerse el plazo que le dio bodega.
+    if (esAdmin && esTransito && !clienteAproboOVencio) {
+      toast.error(t('envio.aprobacionRequerida'))
       return
     }
     setTrabajando(true)
@@ -241,6 +252,31 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
         <p className="mb-1 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
           {t('envio.enQueEtapa')}
         </p>
+        {estado === 'en_bodega' && (
+          <p
+            className="mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium"
+            style={{
+              backgroundColor: clienteAprobo
+                ? 'var(--yuda-success-soft)'
+                : plazoVencido
+                  ? 'var(--yuda-warning-soft)'
+                  : 'var(--yuda-primary-soft)',
+              color: clienteAprobo
+                ? 'var(--yuda-success-dark)'
+                : plazoVencido
+                  ? 'var(--yuda-warning-dark)'
+                  : 'var(--yuda-primary)',
+            }}
+          >
+            {clienteAprobo
+              ? t('envio.clienteAprobo', { fecha: fmtFechaHora(clienteAprobo) })
+              : plazoVencido
+                ? t('envio.plazoVencidoInfo')
+                : t('envio.esperandoAprobacionCliente', {
+                    fecha: plazoAprobacion ? fmtFechaHora(plazoAprobacion) : '—',
+                  })}
+          </p>
+        )}
         {bloqueadaVendedora ? (
           <>
             <div
@@ -269,7 +305,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
             </select>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('envio.fechaDeEtapa')}
+                {estado === 'proveedor_recibio' ? t('envio.fechaTentativaLabel') : t('envio.fechaDeEtapa')}
                 <input
                   type="date"
                   value={hitos[estado]?.fecha ?? ''}
@@ -277,6 +313,11 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                   style={inputStyle}
                   className={inputClase}
                 />
+                {estado === 'proveedor_recibio' && (
+                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('envio.fechaTentativaAyuda')}
+                  </span>
+                )}
               </label>
               <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('seguimiento.notaOpcional')}

@@ -66,6 +66,18 @@ class SeguimientoPedido(Base):
     )
     # { estado_key: { "fecha": "YYYY-MM-DD", "nota": "..." } }
     hitos: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # El cliente aprueba, desde su portal, el despacho una vez bodega recibió e
+    # inspeccionó la mercancía ("en_bodega"). Sin esta aprobación (o sin que
+    # venza el plazo de abajo) Marcela no puede pasar el pedido a "en_transito".
+    cliente_aprobo_despacho_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Plazo que bodega le da al cliente para aprobar (lo fija al marcar
+    # "en_bodega"). Si se vence sin aprobación, el despacho sigue de todas
+    # formas: el cliente ya no puede aprobar ni objetar pasado este momento.
+    aprobacion_limite_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

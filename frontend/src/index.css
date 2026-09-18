@@ -2,20 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mismos tokens de marca que yuda-sitio-web (Desktop/Yuda Sitio web), para que
+   el cotizador, el portal, Yuda Logistic y el sitio se vean como un solo
+   sistema. Si cambian allá, se replican acá y en Yuda Logistic. */
 :root {
   /* Marca */
-  --yuda-primary: #4b52e8;
-  --yuda-primary-dark: #3840c7;
-  --yuda-primary-soft: #eef0fd; /* fondo suave / hover */
-  --yuda-accent: #0d0d0d; /* negro de marca */
-  --yuda-bg: #f5f5f0;
-  --yuda-sidebar: #0d0d0d;
+  --yuda-primary: #4f4fe0;
+  --yuda-primary-dark: #3a3ac0;
+  --yuda-primary-soft: #e3e3fb; /* fondo suave / hover */
+  --yuda-accent: #1c1e33; /* "ink": negro de marca (no puro, tiene un toque azulado) */
+  --yuda-bg: #f7f7fc;
+  --yuda-sidebar: #14142c;
   --yuda-card: #ffffff;
   --yuda-white: #ffffff;
   /* Texto y bordes */
-  --yuda-text: #374151; /* texto principal gris oscuro */
-  --yuda-text-secondary: #6b7280;
-  --yuda-border: #e5e7eb;
+  --yuda-text: #1a1a2e; /* texto principal */
+  --yuda-text-secondary: #6b6a7c;
+  --yuda-border: #e7e6f2;
   /* Semántico: éxito */
   --yuda-success: #10b981;
   --yuda-success-soft: #d1fae5;
@@ -28,12 +31,26 @@
   --yuda-error: #ef4444;
   --yuda-error-soft: #fee2e2;
   --yuda-error-dark: #b91c1c;
+  /* Formas y sombra, iguales al sitio */
+  --yuda-radius-lg: 26px;
+  --yuda-radius-md: 16px;
+  --yuda-radius-sm: 10px;
+  --yuda-shadow-soft: 0 24px 60px -28px rgba(28, 30, 51, 0.4);
+  --yuda-shadow-glow: 0 20px 50px -18px rgba(79, 79, 224, 0.45);
 }
 
 body {
-  font-family: 'Urbanist', sans-serif;
+  font-family: 'DM Sans', sans-serif;
   background-color: var(--yuda-bg);
+  color: var(--yuda-text);
+}
+
+/* Los títulos usan la tipografía de marca (más geométrica), igual que en
+   yuda-sitio-web: así un título se reconoce como YUDA aunque cambie de app. */
+h1, h2, h3, h4 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
   color: var(--yuda-accent);
+  letter-spacing: -0.01em;
 }
 
 /* Scrollbar fino con el color primario */
@@ -56,7 +73,7 @@ body {
 @layer components {
   .card {
     background-color: var(--yuda-card);
-    border-radius: 16px;
+    border-radius: var(--yuda-radius-md);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     padding: 24px;
   }

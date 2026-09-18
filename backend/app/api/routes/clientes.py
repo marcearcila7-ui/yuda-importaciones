@@ -2,7 +2,7 @@ import asyncio
 import secrets
 import string
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
@@ -30,6 +30,7 @@ from app.models.seguimiento import (
     SeguimientoPedido,
 )
 from app.models.item import Item
+from app.models.pedido import PedidoGenerado
 from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
 from app.models.user import User
 from app.schemas.cliente import (
@@ -50,6 +51,12 @@ from app.services.cuenta_service import construir_estado_cuenta
 from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
     avisar_listo_para_envio,
+)
+from app.services.aviso_cliente_service import (
+    avisar_cliente_aprobar_despacho,
+    avisar_cliente_fecha_tentativa,
+    avisar_cliente_pedido_en_proveedor,
+    formatear_fecha_legible,
 )
 from app.services.storage_service import subir_documento, subir_foto, subir_pdf
 from app.core.security import hash_password
@@ -319,7 +326,7 @@ def enviar_a_confirmar(
 @router.get("/sesiones/{sesion_id}/seguimiento", response_model=SeguimientoResponse)
 def obtener_seguimiento(
     sesion_id: str,
-    usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
+    usuario: User = Depends(require_roles("admin", "vendedora", "contadora", "bodega")),
     db: Session = Depends(get_db),
 ) -> SeguimientoPedido:
     """Seguimiento de una cotización (staff)"""
@@ -334,17 +341,20 @@ def obtener_seguimiento(
 def actualizar_seguimiento(
     sesion_id: str,
     datos: SeguimientoUpdate,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
     db: Session = Depends(get_db),
 ) -> SeguimientoPedido:
     """Crea o actualiza el seguimiento del envío de una cotización.
 
-    La vendedora gestiona las etapas hasta "en bodega" y las notas/fechas de
-    cada hito. Cuando el contenedor está en camino (naviera, tracking, BL, ETA
-    y las etapas de tránsito en adelante) la información es exclusiva de Marcela.
+    La vendedora gestiona las etapas hasta que el proveedor recibe el pedido.
+    Bodega recibe el pedido confirmado y la orden de compra, los compara y solo
+    puede marcar "en bodega" (mercancía recibida y lista para el envío). Cuando
+    el contenedor está en camino (naviera, tracking, BL, ETA y las etapas de
+    tránsito en adelante) la información es exclusiva de Marcela.
     """
     sesion = _sesion_autorizada(db, sesion_id, usuario)
     es_vendedora = usuario.rol.value == "vendedora"
+    es_bodega = usuario.rol.value == "bodega"
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
@@ -365,6 +375,32 @@ def actualizar_seguimiento(
                 status.HTTP_403_FORBIDDEN,
                 "La etapa de envío (en tránsito en adelante) la gestiona Marcela",
             )
+
+    # Bodega solo puede dar el paso "el proveedor recibió" -> "en bodega", tras
+    # revisar TODAS las órdenes a proveedor con las cantidades reales.
+    if es_bodega:
+        if estado_anterior != "proveedor_recibio":
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Esta cotización no está lista para que bodega la reciba",
+            )
+        if datos.estado != "en_bodega":
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "Bodega solo puede marcar la mercancía como recibida y enviada",
+            )
+        ordenes = db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).all()
+        if not ordenes or any(o.revisado_en_bodega_at is None for o in ordenes):
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                "Revisa las cantidades reales de todas las órdenes a proveedor antes de "
+                "marcar la mercancía como recibida",
+            )
+
+    # Fecha tentativa que dio el proveedor (se guarda como la fecha del hito
+    # "proveedor_recibio"): se compara antes/después para avisarle al cliente
+    # solo cuando la vendedora la carga o la corrige, no en cada guardado.
+    fecha_tentativa_anterior = (seg.hitos or {}).get("proveedor_recibio", {}).get("fecha")
 
     # Campos que cualquiera del equipo autorizado puede actualizar
     seg.estado = datos.estado
@@ -391,8 +427,16 @@ def actualizar_seguimiento(
             }
         seg.hitos = nuevos
 
-    # Información de envío: solo Marcela (admin). La vendedora conserva lo cargado.
-    if not es_vendedora:
+    # Bodega, al marcar "en bodega", le abre al cliente un plazo para aprobar el
+    # despacho (por defecto 48h si no especifica otro). Se reinicia la
+    # aprobación por si esta cotización ya había pasado por acá antes.
+    if es_bodega and datos.estado == "en_bodega":
+        horas = datos.horas_para_aprobar if datos.horas_para_aprobar and datos.horas_para_aprobar > 0 else 48
+        seg.aprobacion_limite_at = datetime.now(timezone.utc) + timedelta(hours=horas)
+        seg.cliente_aprobo_despacho_at = None
+
+    # Información de envío: solo Marcela (admin). Vendedora y bodega conservan lo cargado.
+    if not es_vendedora and not es_bodega:
         # De "en tránsito" en adelante el contenedor ya está despachado.
         en_transito_o_mas = ESTADOS_ENVIO.index(datos.estado) >= ESTADOS_ENVIO.index("en_transito")
 
@@ -404,6 +448,20 @@ def actualizar_seguimiento(
                 status.HTTP_400_BAD_REQUEST,
                 "Ingresa el monto de la venta (USD) para marcar el pedido en tránsito",
             )
+
+        # El cliente debe haber aprobado el despacho, o haberse vencido el plazo
+        # que bodega le dio, antes de mandar el contenedor por barco.
+        if en_transito_o_mas:
+            aprobado = seg.cliente_aprobo_despacho_at is not None
+            plazo_vencido = (
+                seg.aprobacion_limite_at is not None
+                and datetime.now(timezone.utc) > seg.aprobacion_limite_at
+            )
+            if not aprobado and not plazo_vencido:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST,
+                    "El cliente todavía no aprueba el despacho y el plazo que le dio bodega no ha vencido",
+                )
 
         seg.numero_tracking = datos.numero_tracking
         seg.naviera = datos.naviera
@@ -421,7 +479,8 @@ def actualizar_seguimiento(
     numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
 
     # Aviso a Marcela cuando la cotización llega a "en bodega" (lista para envío)
-    if datos.estado == ESTADO_DISPARA_AVISO and estado_anterior != ESTADO_DISPARA_AVISO:
+    nuevo_en_bodega = datos.estado == ESTADO_DISPARA_AVISO and estado_anterior != ESTADO_DISPARA_AVISO
+    if nuevo_en_bodega:
         avisar_listo_para_envio(db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id)
 
     # Aviso a la vendedora dueña cuando Marcela despacha o entrega su cotización
@@ -430,8 +489,45 @@ def actualizar_seguimiento(
             db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id, datos.estado
         )
 
+    # El pedido se acaba de mandar a comprar a los proveedores: primer aviso
+    # externo al cliente, mucho antes de que bodega reciba nada.
+    nuevo_proveedor_recibio = datos.estado == "proveedor_recibio" and estado_anterior != "proveedor_recibio"
+
+    # La vendedora cargó o corrigió la fecha que dio el proveedor.
+    fecha_tentativa_nueva = (seg.hitos or {}).get("proveedor_recibio", {}).get("fecha")
+    cambio_fecha_tentativa = bool(fecha_tentativa_nueva) and fecha_tentativa_nueva != fecha_tentativa_anterior
+
+    # Guarda estos datos ANTES del commit para los avisos externos de abajo (que
+    # se mandan después, para no tener llamadas de red lentas con la transacción abierta).
+    cliente_a_avisar = None
+    if nuevo_en_bodega and sesion.cliente_id and seg.aprobacion_limite_at is not None:
+        cliente_a_avisar = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+    plazo_a_avisar = seg.aprobacion_limite_at
+    novedades_a_avisar = seg.novedades
+
+    cliente_proveedor = None
+    if (nuevo_proveedor_recibio or cambio_fecha_tentativa) and sesion.cliente_id:
+        cliente_proveedor = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+
     db.commit()
     db.refresh(seg)
+
+    # Correo (Brevo) + WhatsApp al cliente: fuera de la transacción, para que
+    # una llamada de red lenta no deje la conexión a la base ocupada. Incluye
+    # la nota que bodega haya escrito (la misma que ve el cliente en el portal).
+    if cliente_a_avisar is not None:
+        avisar_cliente_aprobar_despacho(
+            cliente_a_avisar, sesion_id, numero, plazo_a_avisar, novedades_a_avisar
+        )
+
+    if cliente_proveedor is not None:
+        if nuevo_proveedor_recibio:
+            avisar_cliente_pedido_en_proveedor(cliente_proveedor, sesion_id, numero)
+        if cambio_fecha_tentativa:
+            avisar_cliente_fecha_tentativa(
+                cliente_proveedor, sesion_id, numero, formatear_fecha_legible(fecha_tentativa_nueva)
+            )
+
     return seg
 
 
@@ -501,14 +597,15 @@ _ADJ_NO_SOPORTADO = (
 async def subir_adjunto_seguimiento(
     sesion_id: str,
     archivo: UploadFile,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
     db: Session = Depends(get_db),
 ) -> dict:
     """Sube un PDF, imagen, CSV o Excel para adjuntarlo a una etapa del seguimiento.
 
-    Lo puede subir la vendedora (en sus etapas) o Marcela; el cliente lo verá en
-    su portal dentro del tracking. Devuelve {url, nombre, tipo} para guardarlo en
-    el hito correspondiente.
+    Lo puede subir la vendedora (en sus etapas), bodega (al recibir la mercancía)
+    o Marcela; el cliente lo verá en su portal dentro del tracking, y la vendedora
+    en el historial de la cotización. Devuelve {url, nombre, tipo} para guardarlo
+    en el hito correspondiente.
     """
     _sesion_autorizada(db, sesion_id, usuario)
 
