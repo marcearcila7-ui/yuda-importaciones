@@ -288,8 +288,8 @@
     "generar": "生成订单",
     "generando": "正在生成订单...",
     "confirmar": "确定为 {{cliente}} 生成订单吗？将为每个供应商创建一个 Excel 文件。",
-    "generarCliente": "按客户数量生成",
-    "confirmarCliente": "确定按 {{cliente}} 所请求的箱数生成订单吗？将使用客户从门户提交的数量。",
+    "generarCliente": "生成向店铺下单的订单",
+    "confirmarCliente": "生成向各店铺下单的订单吗？系统会按 {{cliente}} 要求的数量为每家店铺创建一个订单。",
     "confirmarSinPedido": "客户尚未确认数量。仍要用你录入的箱数生成供应商订单吗？",
     "advertencias": "提示：",
     "generados": "已生成的订单：",
@@ -301,7 +301,7 @@
     "errorGenerar": "无法生成订单",
     "errorZip": "无法下载 ZIP",
     "ayudaGenerar": "按你在产品表中填写的箱数（CTNS 列）向供应商下单。",
-    "ayudaGenerarCliente": "完全按客户在门户中填写的箱数下单。"
+    "ayudaGenerarCliente": "系统会自动识别每个产品属于哪家店铺，并为每家店铺生成一个订单，不需要手动整理。订单按客户要求的数量生成；如果最后有变动，可以在上面先编辑数量再生成。"
   },
   "historial": {
     "titulo": "报价历史记录",

@@ -288,8 +288,8 @@
     "generar": "Generate Orders",
     "generando": "Generating orders...",
     "confirmar": "Generate orders for {{cliente}}? An Excel file will be created for each supplier.",
-    "generarCliente": "Generate with the client's quantities",
-    "confirmarCliente": "Generate the orders with the boxes {{cliente}} requested? The quantities the client submitted from their portal will be used.",
+    "generarCliente": "Generate the store orders",
+    "confirmarCliente": "Generate the store orders? The system will create one order per store with the quantities {{cliente}} requested.",
     "confirmarSinPedido": "The client hasn't confirmed their quantities yet. Generate the supplier order anyway with the boxes you loaded?",
     "advertencias": "Warnings:",
     "generados": "Generated orders:",
@@ -301,7 +301,7 @@
     "errorGenerar": "Could not generate the orders",
     "errorZip": "Could not download the ZIP",
     "ayudaGenerar": "Orders the boxes you entered yourself in the products table (CTNS column).",
-    "ayudaGenerarCliente": "Orders exactly the boxes the client entered in their portal."
+    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store — no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute."
   },
   "historial": {
     "titulo": "Quotation history",

@@ -70,7 +70,11 @@ function Campo({
 function Clientes() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const esAdmin = useAuthStore((s) => s.usuario?.rol) === 'admin'
+  const rolUsuario = useAuthStore((s) => s.usuario?.rol)
+  const esAdmin = rolUsuario === 'admin'
+  // Lo contable (estado de cuenta) es exclusivo de Marcela y contabilidad; la
+  // vendedora no debe ver saldos ni movimientos de dinero de sus clientes.
+  const puedeVerCuenta = rolUsuario === 'admin' || rolUsuario === 'contadora'
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
@@ -382,14 +386,16 @@ ${t('clientes.email')}: ${c.email}`
           </div>
 
           <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/clientes/${c.id}/cuenta`)}
-              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
-              style={{ color: 'var(--yuda-primary)' }}
-            >
-              <Wallet size={16} /> {t('cuentas.verCuenta')}
-            </button>
+            {puedeVerCuenta && (
+              <button
+                type="button"
+                onClick={() => navigate(`/clientes/${c.id}/cuenta`)}
+                className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
+                style={{ color: 'var(--yuda-primary)' }}
+              >
+                <Wallet size={16} /> {t('cuentas.verCuenta')}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => toggleActivo(c)}

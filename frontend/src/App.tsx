@@ -84,9 +84,9 @@ function App() {
           <Route path="/tiendas" element={<Layout><Tiendas /></Layout>} />
         </Route>
 
-        {/* Estado de cuenta de un cliente: admin, contadora y la vendedora dueña.
-            El backend limita el acceso a los clientes propios de la vendedora. */}
-        <Route element={<ProtectedRoute roles={['admin', 'contadora', 'vendedora']} />}>
+        {/* Estado de cuenta de un cliente: exclusivo de admin y contadora. La
+            vendedora no debe ver saldos ni movimientos de dinero. */}
+        <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/clientes/:clienteId/cuenta" element={<Layout><CuentaCliente /></Layout>} />
         </Route>
 

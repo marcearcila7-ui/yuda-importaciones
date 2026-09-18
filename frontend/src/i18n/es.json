@@ -288,8 +288,8 @@
     "generar": "Generar Pedidos",
     "generando": "Generando pedidos...",
     "confirmar": "¿Generar pedidos para {{cliente}}? Se creará un archivo Excel por cada proveedor.",
-    "generarCliente": "Generar con las cantidades del cliente",
-    "confirmarCliente": "¿Generar los pedidos con las cajas que pidió {{cliente}}? Se usarán las cantidades que el cliente envió desde su portal.",
+    "generarCliente": "Generar pedido a las tiendas",
+    "confirmarCliente": "¿Generar las órdenes de pedido a las tiendas? El sistema va a crear una orden por cada tienda con las cantidades que {{cliente}} pidió.",
     "confirmarSinPedido": "El cliente todavía no confirmó sus cantidades. ¿Generar igual el pedido a proveedor con las cajas que cargaste?",
     "advertencias": "Advertencias:",
     "generados": "Pedidos generados:",
@@ -301,7 +301,7 @@
     "errorGenerar": "No se pudieron generar los pedidos",
     "errorZip": "No se pudo descargar el ZIP",
     "ayudaGenerar": "Pide al proveedor las cajas que cargaste tú en la tabla de productos (columna CTNS).",
-    "ayudaGenerarCliente": "Pide exactamente las cajas que el cliente escribió en su portal."
+    "ayudaGenerarCliente": "El sistema detecta a qué tienda pertenece cada producto y crea una orden por tienda; no hay que armarlas a mano. Se generan con las cantidades que el cliente pidió, y puedes editarlas arriba antes de generar si hay algún cambio de último momento."
   },
   "historial": {
     "titulo": "Historial de cotizaciones",

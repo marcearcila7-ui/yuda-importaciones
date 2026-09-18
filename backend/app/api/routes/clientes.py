@@ -649,8 +649,8 @@ async def subir_adjunto_seguimiento(
 
 
 # ---------------------------------------------------------------------------
-# Cuentas de clientes (estado de cuenta / ledger). Gestión: admin y contadora.
-# Lectura: además la vendedora dueña del cliente.
+# Cuentas de clientes (estado de cuenta / ledger). Exclusivo de admin y
+# contadora: la vendedora no debe ver saldos ni movimientos de dinero.
 # ---------------------------------------------------------------------------
 
 
@@ -701,7 +701,7 @@ def _validar_moneda_pedido(
 @router.get("/clientes/{cliente_id}/cuenta", response_model=EstadoCuentaResponse)
 def obtener_estado_cuenta(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "contadora")),
     db: Session = Depends(get_db),
 ) -> dict:
     """Estado de cuenta del cliente (compras, comisión, abonos, saldo + ledger)"""
@@ -712,7 +712,7 @@ def obtener_estado_cuenta(
 @router.post("/clientes/{cliente_id}/cuenta/excel")
 def exportar_estado_cuenta_excel(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "contadora")),
     db: Session = Depends(get_db),
 ) -> Response:
     """Estado de cuenta del cliente en Excel, con el formato del libro contable."""
@@ -731,7 +731,7 @@ def exportar_estado_cuenta_excel(
 @router.post("/clientes/{cliente_id}/cuenta/pdf")
 def exportar_estado_cuenta_pdf(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "contadora", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "contadora")),
     db: Session = Depends(get_db),
 ) -> Response:
     """Estado de cuenta del cliente en PDF, para enviarselo tal cual."""

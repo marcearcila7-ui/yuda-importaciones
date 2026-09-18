@@ -143,28 +143,14 @@ function GenerarPedidos({
       {/* SECCIÓN 0 — Fotos con las que se le pedirá al proveedor. Se decide aquí,
           justo antes de generar, porque es LA referencia de lo que se pidió. */}
 
-      {/* SECCIÓN A — Botón principal (CTNS internas del packing). Debajo de cada
-          botón va en una línea de dónde saca las cajas, que es lo único que los
-          diferencia: sin eso las vendedoras no sabían cuál usar. */}
-      <div className="flex flex-col gap-1">
-        <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
-          {generando === 'normal' ? (
-            t('pedidos.generando')
-          ) : (
-            <>
-              <FileText size={18} /> {t('pedidos.generar')}
-            </>
-          )}
-        </Button>
-        <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {t('pedidos.ayudaGenerar')}
-        </p>
-      </div>
-
-      {/* Botón para generar con las cajas que pidió el cliente (Fase 3) */}
-      {permitirCantidadesCliente && (
+      {/* Un solo botón, no dos: cuando el cliente ya envió sus cantidades, esa es
+          siempre la fuente de la verdad, así que no tiene sentido ofrecer también
+          las CTNS internas (confundía a las vendedoras sobre cuál usar). El botón
+          de CTNS internas queda solo para cuando el cliente TODAVÍA no ha
+          contestado desde su portal. */}
+      {permitirCantidadesCliente ? (
         <div className="flex flex-col gap-1">
-          <Button variant="success" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
+          <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
             {generando === 'cliente' ? (
               t('pedidos.generando')
             ) : (
@@ -175,6 +161,21 @@ function GenerarPedidos({
           </Button>
           <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
             {t('pedidos.ayudaGenerarCliente')}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
+            {generando === 'normal' ? (
+              t('pedidos.generando')
+            ) : (
+              <>
+                <FileText size={18} /> {t('pedidos.generar')}
+              </>
+            )}
+          </Button>
+          <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('pedidos.ayudaGenerar')}
           </p>
         </div>
       )}
