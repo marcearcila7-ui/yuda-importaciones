@@ -4,7 +4,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
-import { ArrowLeft, ArrowRight, Check, Images, ShoppingBag, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Images, Package, ShoppingBag, Trash2, X } from 'lucide-react'
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
@@ -294,6 +294,28 @@ function Dashboard() {
             <DatoDelMes etiqueta={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} />
             <DatoDelMes etiqueta={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} />
             <DatoDelMes etiqueta={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} />
+          </div>
+        </section>
+      )}
+
+      {/* Panorama de bodega/despacho: no depende del mes, es la cola de hoy.
+          Le da a Marcela visibilidad de lo que pasa fuera del cotizador, en
+          Yuda Logistic y en el portal del cliente, sin tener que entrar a
+          revisar cliente por cliente. */}
+      {esAdmin && metricas && (metricas.pedidos_esperando_bodega > 0 || metricas.pedidos_esperando_aprobacion_cliente > 0) && (
+        <section className="card">
+          <h2 className="mb-4 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            <Package size={18} /> {t('metricas.panoramaBodega')}
+          </h2>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+            <DatoDelMes
+              etiqueta={t('metricas.esperandoBodega')}
+              valor={metricas.pedidos_esperando_bodega}
+            />
+            <DatoDelMes
+              etiqueta={t('metricas.esperandoAprobacionCliente')}
+              valor={metricas.pedidos_esperando_aprobacion_cliente}
+            />
           </div>
         </section>
       )}

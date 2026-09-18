@@ -55,6 +55,8 @@ export interface CotizacionDetalle {
   pedido_recibido: boolean
   pedido_estado: string | null
   pedido_confirmado: boolean
+  orden_compra_url: string | null
+  orden_compra_nombre: string | null
 }
 
 export interface PortalPedidoInput {

@@ -80,6 +80,10 @@ export interface Seguimiento {
   monto_venta?: number | null
   despachado_at?: string | null
   hitos?: Record<string, Hito> | null
+  // Aprobación del cliente para despachar (paso "en_bodega") y el plazo que
+  // bodega le dio para hacerlo; pasado ese plazo, el despacho sigue igual.
+  cliente_aprobo_despacho_at?: string | null
+  aprobacion_limite_at?: string | null
   updated_at?: string | null
 }
 
@@ -94,4 +98,5 @@ export interface SeguimientoUpdate {
   bl_pdf_url?: string | null
   monto_venta?: number | null
   hitos?: Record<string, Hito> | null
+  horas_para_aprobar?: number | null
 }

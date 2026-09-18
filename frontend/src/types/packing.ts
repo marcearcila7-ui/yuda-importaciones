@@ -38,6 +38,9 @@ export interface ItemCreate {
   minimo_piezas_caja_tienda?: number | null
   // Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
   fotos_extra?: Record<string, string> | null
+  // Si viene de un resultado de carga masiva: marca ese resultado como ya
+  // agregado para que no se ofrezca ni se duplique si se retoma el lote.
+  lote_item_id?: string
 }
 
 export interface ItemResponse extends ItemCreate {
@@ -76,5 +79,7 @@ export interface Sesion {
   pedido_recibido_at?: string | null
   pedido_estado?: string | null
   pedido_confirmado_at?: string | null
+  orden_compra_url?: string | null
+  orden_compra_nombre?: string | null
   created_at: string
 }

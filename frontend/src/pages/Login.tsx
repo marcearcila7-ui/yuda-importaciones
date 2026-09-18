@@ -89,9 +89,9 @@ function Login() {
       <div className="w-full" style={{ maxWidth: 380 }}>
           {/* Logo + distintivo del equipo, centrado */}
           <img
-            src="/logoyuda.png"
+            src="/logo-yuda-importaciones.svg"
             alt="YUDA Importaciones"
-            style={{ height: 44, width: 'auto', margin: '0 auto 20px' }}
+            style={{ width: 200, height: 'auto', margin: '0 auto 20px', display: 'block' }}
           />
           {sesionVencida && (
             <p

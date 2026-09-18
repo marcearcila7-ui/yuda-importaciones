@@ -128,6 +128,10 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
             const esUltimo = i === ESTADOS_ENVIO.length - 1
             // Fecha+hora automática del hito; si es dato viejo sin sello, la fecha.
             const cuando = fmtFechaHora(hito?.ts) ?? fmtFecha(hito?.fecha)
+            // "proveedor_recibio" es la excepción: su fecha no es un sello de cuándo
+            // se alcanzó la etapa, es la fecha ESTIMADA que dio el proveedor, y hay
+            // que mostrarla aparte aunque el hito ya tenga su sello automático (ts).
+            const fechaTentativa = k === 'proveedor_recibio' ? fmtFecha(hito?.fecha) : null
             return (
               <div key={k} className="flex gap-3">
                 {/* Punto + línea */}
@@ -163,6 +167,11 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                   {cuando && (
                     <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                       {cuando}
+                    </p>
+                  )}
+                  {fechaTentativa && (
+                    <p className="text-xs font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                      {t('seguimiento.fechaTentativa', { fecha: fechaTentativa })}
                     </p>
                   )}
                   {hito?.nota && (

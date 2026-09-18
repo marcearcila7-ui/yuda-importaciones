@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { CheckCircle2, Clock, Package, Send } from 'lucide-react'
+import { CheckCircle2, Clock, FileSpreadsheet, Package, Send, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
-import { enviarAConfirmar } from '../api/clientes'
+import { enviarAConfirmar, getSeguimiento, guardarSeguimiento } from '../api/clientes'
+import { getPedidos } from '../api/pedidos'
 import GenerarPedidos from './GenerarPedidos/GenerarPedidos'
 import type { ItemResponse, Sesion } from '../types/packing'
+import type { PedidoGenerado } from '../types/pedidos'
+import type { Seguimiento } from '../types/seguimiento'
 
 // Gestión del pedido del cliente en el perfil del cliente (vendedora/Marcela):
 // muestra las cantidades que pidió el cliente, permite ajustarlas y devolvérselas
@@ -16,6 +19,9 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [cantidades, setCantidades] = useState<Record<string, string>>({})
   const [estado, setEstado] = useState<string | null>(sesion.pedido_estado ?? null)
   const [enviando, setEnviando] = useState(false)
+  const [seguimiento, setSeguimiento] = useState<Seguimiento | null>(null)
+  const [enviandoABodega, setEnviandoABodega] = useState(false)
+  const [pedidosGenerados, setPedidosGenerados] = useState<PedidoGenerado[]>([])
 
   useEffect(() => {
     if (!sesion.pedido_recibido_at) return
@@ -29,6 +35,8 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
         setCantidades(init)
       })
       .catch(() => setItems([]))
+    getSeguimiento(sesion.id).then(setSeguimiento)
+    getPedidos(sesion.id).then(setPedidosGenerados).catch(() => setPedidosGenerados([]))
   }, [sesion.id, sesion.pedido_recibido_at])
 
   if (!sesion.pedido_recibido_at) return null
@@ -59,6 +67,33 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       toast.error(t('gestionPedido.error'))
     } finally {
       setEnviando(false)
+    }
+  }
+
+  // Le avisa a bodega que ya puede revisar este pedido: mueve el seguimiento a
+  // "proveedor_recibio" (donde Yuda Logistic lo recoge), sin tocar el resto de
+  // los campos ya guardados (novedades, tracking, etc.).
+  const enviarABodega = async () => {
+    setEnviandoABodega(true)
+    try {
+      const actualizado = await guardarSeguimiento(sesion.id, {
+        estado: 'proveedor_recibio',
+        novedades: seguimiento?.novedades ?? null,
+        numero_tracking: seguimiento?.numero_tracking ?? null,
+        naviera: seguimiento?.naviera ?? null,
+        url_tracking: seguimiento?.url_tracking ?? null,
+        fecha_eta: seguimiento?.fecha_eta ?? null,
+        bl_numero: seguimiento?.bl_numero ?? null,
+        bl_pdf_url: seguimiento?.bl_pdf_url ?? null,
+        monto_venta: seguimiento?.monto_venta ?? null,
+        hitos: seguimiento?.hitos ?? undefined,
+      })
+      setSeguimiento(actualizado)
+      toast.success(t('gestionPedido.enviadoABodega'))
+    } catch {
+      toast.error(t('gestionPedido.errorEnviarABodega'))
+    } finally {
+      setEnviandoABodega(false)
     }
   }
 
@@ -110,6 +145,50 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
         </div>
       )}
 
+      {pedidosGenerados.length > 0 && (
+        <div className="flex flex-col gap-2 border-t px-4 py-2.5" style={{ borderColor: '#E0E2FA' }}>
+          <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+            {t('gestionPedido.ordenesTitulo')}
+          </p>
+          {pedidosGenerados.map((pg) => (
+            <div key={pg.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span className="flex items-center gap-1.5" style={{ color: 'var(--yuda-text)' }}>
+                <FileSpreadsheet size={14} /> {pg.supplier.replace('_', ' · ')}
+              </span>
+              <span
+                className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                style={
+                  pg.revisado_en_bodega_at
+                    ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }
+                    : { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
+                }
+              >
+                {pg.revisado_en_bodega_at ? (
+                  <>
+                    <CheckCircle2 size={12} /> {t('gestionPedido.ordenRevisadaBodega')}
+                  </>
+                ) : (
+                  <>
+                    <Clock size={12} /> {t('gestionPedido.ordenEsperandoBodega')}
+                  </>
+                )}
+              </span>
+              {pg.revisado_en_bodega_at && pg.archivo_real_xlsx_url && (
+                <a
+                  href={pg.archivo_real_xlsx_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium"
+                  style={{ color: 'var(--yuda-primary)' }}
+                >
+                  {t('gestionPedido.verLoQueLlego')}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Acciones: como el cliente ya envió sus cantidades, se puede generar directo
           el pedido al proveedor. "Enviar a confirmar" queda como paso opcional. */}
       <div className="border-t px-4 py-3" style={{ borderColor: '#E0E2FA' }}>
@@ -131,6 +210,31 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             permitirCantidadesCliente
             shippingMark={sesion.shipping_mark}
           />
+
+          {/* Una vez el cliente confirmó, avisarle a bodega es un paso aparte
+              (el proveedor todavía tiene que recibir/despachar el pedido antes).
+              Solo se puede una vez, y solo hacia adelante: bodega recibe esto en
+              Yuda Logistic apenas se marca. */}
+          {confirmado && seguimiento && (
+            <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: '#E0E2FA' }}>
+              {seguimiento.estado === 'cotizacion_enviada' || seguimiento.estado === 'pedido_confirmado' ? (
+                <button
+                  type="button"
+                  onClick={enviarABodega}
+                  disabled={enviandoABodega}
+                  className="flex items-center gap-2 self-start text-sm font-semibold disabled:opacity-60"
+                  style={{ color: 'var(--yuda-primary)' }}
+                >
+                  <Warehouse size={16} />{' '}
+                  {enviandoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.enviarABodega')}
+                </button>
+              ) : (
+                <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
+                  <Warehouse size={16} /> {t('gestionPedido.yaEnviadoABodega')}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Opcional: pedirle al cliente que confirme (útil si ajustaste cantidades) */}
           {!confirmado && (

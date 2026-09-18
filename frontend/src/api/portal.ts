@@ -38,6 +38,11 @@ export async function confirmarPedidoPortal(sesion_id: string): Promise<void> {
   await portalClient.post(`/portal/cotizaciones/${sesion_id}/confirmar`)
 }
 
+// El cliente aprueba el despacho una vez bodega recibió e inspeccionó su pedido.
+export async function aprobarDespachoPortal(sesion_id: string): Promise<void> {
+  await portalClient.post(`/portal/cotizaciones/${sesion_id}/aprobar-despacho`)
+}
+
 export async function descargarCotizacion(
   sesion_id: string,
   idioma: string,

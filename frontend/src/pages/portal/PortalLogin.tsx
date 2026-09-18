@@ -70,9 +70,9 @@ function PortalLogin() {
       <div className="flex flex-1 items-center justify-center px-6">
         <div className="w-full" style={{ maxWidth: 380 }}>
           <img
-            src="/logoyuda.png"
+            src="/logo-yuda-importaciones.svg"
             alt="YUDA Importaciones"
-            style={{ height: 48, width: 'auto', margin: '0 auto 20px' }}
+            style={{ width: 200, height: 'auto', margin: '0 auto 20px', display: 'block' }}
           />
           <div className="text-center">
             <span

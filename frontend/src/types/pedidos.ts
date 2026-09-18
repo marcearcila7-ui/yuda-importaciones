@@ -17,5 +17,10 @@ export interface PedidoGenerado {
   supplier: string
   archivo_xlsx_url: string
   archivo_pdf_url?: string | null
+  archivo_csv_url?: string | null
+  archivo_real_xlsx_url?: string | null
+  archivo_real_pdf_url?: string | null
+  archivo_real_csv_url?: string | null
+  revisado_en_bodega_at?: string | null
   fecha_generacion: string
 }
