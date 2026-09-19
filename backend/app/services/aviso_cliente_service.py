@@ -298,11 +298,14 @@ una fecha estimada de cuándo va a estar listo te avisamos.</p>
         logger.exception("No se pudo enviar el WhatsApp de 'pedido enviado a proveedor' a %s", cliente.email)
 
 
-def avisar_cliente_fecha_tentativa(cliente: Cliente, sesion_id: str, numero: str, fecha_legible: str) -> None:
-    """Avisa al cliente la fecha aproximada que dio el proveedor para tener
-    listo el pedido. Se dispara cuando la vendedora carga o corrige esa fecha
-    en el seguimiento (etapa 'proveedor_recibio'). Correo y WhatsApp, cada uno
-    best-effort."""
+def avisar_cliente_fecha_tentativa(
+    cliente: Cliente, sesion_id: str, numero: str, fecha_legible: str, supplier: str
+) -> None:
+    """Avisa al cliente la fecha aproximada que dio UN proveedor puntual para
+    tener listo su pedido. Es por proveedor (no por cotización): si el
+    pedido se reparte entre varios, cada uno manda su propio aviso, así que
+    el nombre del proveedor va siempre en el mensaje para no confundir uno
+    con otro. Correo y WhatsApp, cada uno best-effort."""
     link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
 
     try:
@@ -310,7 +313,7 @@ def avisar_cliente_fecha_tentativa(cliente: Cliente, sesion_id: str, numero: str
             cliente,
             f"Fecha estimada para tu pedido {numero}",
             f"""<p>Hola {cliente.nombre},</p>
-<p>El proveedor de tu pedido <strong>{numero}</strong> dijo que lo va a tener listo
+<p>El proveedor «{supplier}» de tu pedido <strong>{numero}</strong> dijo que lo va a tener listo
 aproximadamente el <strong>{fecha_legible}</strong>. Es una fecha estimada, puede variar.</p>
 <p><a href="{link}">Ver el estado de mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
@@ -320,7 +323,7 @@ aproximadamente el <strong>{fecha_legible}</strong>. Es una fecha estimada, pued
 
     try:
         texto_libre = (
-            f"Hola {cliente.nombre}, el proveedor de tu pedido {numero} dijo que lo va a "
+            f"Hola {cliente.nombre}, el proveedor «{supplier}» de tu pedido {numero} dijo que lo va a "
             f"tener listo aproximadamente el {fecha_legible} (fecha estimada, puede variar)."
             f"\n\nVer el estado: {link}"
         )

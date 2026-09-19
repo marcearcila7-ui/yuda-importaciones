@@ -778,6 +778,7 @@
     "bl": "BL"
   },
   "portal": {
+    "fechasEstimadasTitulo": "Estimated date by supplier",
     "titulo": "Client portal",
     "salir": "Log out",
     "bienvenida": "Welcome",
@@ -859,6 +860,10 @@
     "ordenRevisadaBodega": "The warehouse already reviewed what arrived",
     "ordenEsperandoBodega": "Waiting for the warehouse to receive it",
     "verLoQueLlego": "View what arrived",
+    "fechaTentativaValor": "Estimated date: {{fecha}}",
+    "fechaTentativaSinAsignar": "+ Add this supplier's estimated date",
+    "fechaTentativaGuardada": "Date saved and the client was notified",
+    "errorFechaTentativa": "Could not save the date",
     "enviarAConfirmar": "Send to client for confirmation",
     "reenviar": "Resend to client",
     "enviando": "Sending…",

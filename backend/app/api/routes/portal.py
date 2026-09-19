@@ -10,6 +10,7 @@ from app.core.security import create_access_token, verify_password
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
+from app.models.pedido import PedidoGenerado
 from app.models.seguimiento import ESTADO_INICIAL, SeguimientoPedido
 from app.models.sesion import (
     PEDIDO_CONFIRMADO,
@@ -28,6 +29,7 @@ from app.schemas.portal import (
     PortalCotizacionDetalle,
     PortalCotizacionResumen,
     PortalItem,
+    PortalPedidoGeneradoResumen,
     PortalPedidoInput,
 )
 from app.models.cuenta import MovimientoCuenta
@@ -192,6 +194,16 @@ def detalle_cotizacion(
         else SeguimientoResponse(estado=ESTADO_INICIAL)
     )
 
+    pedidos_generados = [
+        PortalPedidoGeneradoResumen(
+            supplier=pg.supplier,
+            fecha_tentativa_entrega=pg.fecha_tentativa_entrega,
+            revisado_en_bodega_at=pg.revisado_en_bodega_at,
+            archivo_real_xlsx_url=pg.archivo_real_xlsx_url,
+        )
+        for pg in db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).all()
+    ]
+
     return PortalCotizacionDetalle(
         sesion_id=sesion.id,
         numero=_numero(sesion),
@@ -207,6 +219,7 @@ def detalle_cotizacion(
         pedido_confirmado=sesion.pedido_confirmado_at is not None,
         orden_compra_url=sesion.orden_compra_url,
         orden_compra_nombre=sesion.orden_compra_nombre,
+        pedidos_generados=pedidos_generados,
     )
 
 

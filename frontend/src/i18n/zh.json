@@ -778,6 +778,7 @@
     "bl": "提单"
   },
   "portal": {
+    "fechasEstimadasTitulo": "各供应商预计日期",
     "titulo": "客户门户",
     "salir": "退出",
     "bienvenida": "欢迎",
@@ -859,6 +860,10 @@
     "ordenRevisadaBodega": "仓库已核对到货情况",
     "ordenEsperandoBodega": "等待仓库接收",
     "verLoQueLlego": "查看到货情况",
+    "fechaTentativaValor": "预计日期：{{fecha}}",
+    "fechaTentativaSinAsignar": "+ 添加该供应商的预计日期",
+    "fechaTentativaGuardada": "日期已保存并通知客户",
+    "errorFechaTentativa": "无法保存日期",
     "enviarAConfirmar": "发送给客户确认",
     "reenviar": "重新发送给客户",
     "enviando": "发送中…",

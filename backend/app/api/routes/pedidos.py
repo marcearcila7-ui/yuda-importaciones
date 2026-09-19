@@ -14,16 +14,19 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user
 from app.database import get_db
+from app.models.cliente import Cliente
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.pedidos import (
+    FechaTentativaInput,
     GenerarPedidosResponse,
     PedidoGeneradoInfo,
     PedidoGeneradoResponse,
 )
+from app.services.aviso_cliente_service import avisar_cliente_fecha_tentativa, formatear_fecha_legible
 from app.services.excel_service import (
     agrupar_items_por_supplier,
     generar_csv_pedido,
@@ -357,6 +360,42 @@ def listar_pedidos(
         .order_by(PedidoGenerado.fecha_generacion.desc())
         .all()
     )
+
+
+@router.patch("/{pedido_generado_id}/fecha-tentativa", response_model=PedidoGeneradoResponse)
+def actualizar_fecha_tentativa(
+    pedido_generado_id: str,
+    datos: FechaTentativaInput,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PedidoGenerado:
+    """La vendedora carga o corrige la fecha aproximada que dio ESTE
+    proveedor (no toda la cotización: cada proveedor tiene la suya). Si
+    cambió de verdad, se le avisa al cliente por correo y WhatsApp,
+    mencionando a qué proveedor corresponde."""
+    exigir_roles(usuario, "admin", "vendedora")
+    pedido = db.query(PedidoGenerado).filter(PedidoGenerado.id == pedido_generado_id).first()
+    if pedido is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
+    sesion = db.query(Sesion).filter(Sesion.id == pedido.sesion_id).first()
+    if sesion is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
+    exigir_acceso_sesion(db, sesion, usuario)
+
+    cambio = pedido.fecha_tentativa_entrega != datos.fecha
+    pedido.fecha_tentativa_entrega = datos.fecha
+    db.commit()
+    db.refresh(pedido)
+
+    if cambio and sesion.cliente_id:
+        cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+        if cliente is not None:
+            numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+            avisar_cliente_fecha_tentativa(
+                cliente, sesion.id, numero, formatear_fecha_legible(datos.fecha.isoformat()), pedido.supplier
+            )
+
+    return pedido
 
 
 @router.get("/{sesion_id}/descargar-zip")

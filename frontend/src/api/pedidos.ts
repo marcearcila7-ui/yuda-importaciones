@@ -33,6 +33,19 @@ export async function getPedidos(sesion_id: string): Promise<PedidoGenerado[]> {
   return data
 }
 
+// Fecha aproximada que dio ESTE proveedor (no toda la cotización). Si cambió
+// de verdad, el backend le avisa al cliente por correo y WhatsApp.
+export async function actualizarFechaTentativa(
+  pedidoGeneradoId: string,
+  fecha: string,
+): Promise<PedidoGenerado> {
+  const { data } = await apiClient.patch<PedidoGenerado>(
+    `/pedidos/${pedidoGeneradoId}/fecha-tentativa`,
+    { fecha },
+  )
+  return data
+}
+
 export async function descargarZip(sesion_id: string): Promise<Blob> {
   const { data } = await apiClient.get(`/pedidos/${sesion_id}/descargar-zip`, {
     responseType: 'blob',

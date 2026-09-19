@@ -42,6 +42,13 @@ export interface PortalItem {
   cantidad_solicitada: number | null
 }
 
+export interface PortalPedidoGeneradoResumen {
+  supplier: string
+  fecha_tentativa_entrega: string | null
+  revisado_en_bodega_at: string | null
+  archivo_real_xlsx_url: string | null
+}
+
 export interface CotizacionDetalle {
   sesion_id: string
   numero: string
@@ -57,6 +64,7 @@ export interface CotizacionDetalle {
   pedido_confirmado: boolean
   orden_compra_url: string | null
   orden_compra_nombre: string | null
+  pedidos_generados: PortalPedidoGeneradoResumen[]
 }
 
 export interface PortalPedidoInput {

@@ -778,6 +778,7 @@
     "bl": "BL"
   },
   "portal": {
+    "fechasEstimadasTitulo": "Fecha estimada por proveedor",
     "titulo": "Portal de clientes",
     "salir": "Salir",
     "bienvenida": "Bienvenido",
@@ -859,6 +860,10 @@
     "ordenRevisadaBodega": "Bodega ya revisó lo que llegó",
     "ordenEsperandoBodega": "Esperando que bodega la reciba",
     "verLoQueLlego": "Ver lo que llegó",
+    "fechaTentativaValor": "Fecha estimada: {{fecha}}",
+    "fechaTentativaSinAsignar": "+ Agregar fecha estimada de este proveedor",
+    "fechaTentativaGuardada": "Fecha guardada y avisada al cliente",
+    "errorFechaTentativa": "No se pudo guardar la fecha",
     "enviarAConfirmar": "Enviar al cliente para confirmar",
     "reenviar": "Reenviar al cliente",
     "enviando": "Enviando…",

@@ -23,4 +23,6 @@ export interface PedidoGenerado {
   archivo_real_csv_url?: string | null
   revisado_en_bodega_at?: string | null
   fecha_generacion: string
+  // Fecha aproximada que dio ESTE proveedor (no toda la cotización).
+  fecha_tentativa_entrega?: string | null
 }

@@ -39,6 +39,16 @@ class PortalItem(BaseModel):
     cantidad_solicitada: int | None = None
 
 
+class PortalPedidoGeneradoResumen(BaseModel):
+    """Lo que el cliente puede ver de un pedido a un proveedor: nada de
+    precios ni contactos, solo el estado que le importa a él."""
+
+    supplier: str
+    fecha_tentativa_entrega: date | None = None
+    revisado_en_bodega_at: datetime | None = None
+    archivo_real_xlsx_url: str | None = None
+
+
 class PortalCotizacionDetalle(BaseModel):
     """Detalle de una cotización para el cliente"""
 
@@ -60,6 +70,9 @@ class PortalCotizacionDetalle(BaseModel):
     # contra este pedido antes de despachar.
     orden_compra_url: str | None = None
     orden_compra_nombre: str | None = None
+    # Una fila por proveedor al que se le pidió: fecha estimada que dio (si ya
+    # la cargó la vendedora) y si bodega ya revisó lo que llegó.
+    pedidos_generados: list["PortalPedidoGeneradoResumen"] = []
 
 
 class PortalPedidoLinea(BaseModel):

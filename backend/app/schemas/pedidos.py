@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,5 +34,10 @@ class PedidoGeneradoResponse(BaseModel):
     archivo_real_csv_url: str | None = None
     revisado_en_bodega_at: datetime | None = None
     fecha_generacion: datetime
+    fecha_tentativa_entrega: date | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FechaTentativaInput(BaseModel):
+    fecha: date

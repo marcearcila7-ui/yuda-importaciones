@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -30,6 +30,12 @@ class PedidoGenerado(Base):
     archivo_real_csv_url: Mapped[str | None] = mapped_column(String, nullable=True)
     revisado_en_bodega_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     fecha_generacion: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Fecha aproximada que dio ESTE proveedor para tener el pedido listo. Es
+    # por proveedor (no por cotización): un pedido puede repartirse entre
+    # varios proveedores con tiempos distintos, y antes esto vivía en un solo
+    # campo por cotización, así que el segundo proveedor pisaba la fecha del
+    # primero sin avisar.
+    fecha_tentativa_entrega: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class PedidoGeneradoItem(Base):

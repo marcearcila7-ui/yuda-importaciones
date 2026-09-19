@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { CheckCircle2, Clock, FileSpreadsheet, Package, Send, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento, guardarSeguimiento } from '../api/clientes'
-import { getPedidos } from '../api/pedidos'
+import { actualizarFechaTentativa, getPedidos } from '../api/pedidos'
 import GenerarPedidos from './GenerarPedidos/GenerarPedidos'
 import type { ItemResponse, Sesion } from '../types/packing'
 import type { PedidoGenerado } from '../types/pedidos'
@@ -22,6 +22,9 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [seguimiento, setSeguimiento] = useState<Seguimiento | null>(null)
   const [enviandoABodega, setEnviandoABodega] = useState(false)
   const [pedidosGenerados, setPedidosGenerados] = useState<PedidoGenerado[]>([])
+  const [editandoFecha, setEditandoFecha] = useState<Record<string, boolean>>({})
+  const [fechaInput, setFechaInput] = useState<Record<string, string>>({})
+  const [guardandoFecha, setGuardandoFecha] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!sesion.pedido_recibido_at) return
@@ -97,6 +100,24 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     }
   }
 
+  // Fecha aproximada que dio ESTE proveedor (por eso va por pg.id, no una
+  // sola para toda la cotización: cada proveedor puede tener la suya).
+  const guardarFechaTentativa = async (pg: PedidoGenerado) => {
+    const fecha = fechaInput[pg.id]
+    if (!fecha) return
+    setGuardandoFecha((s) => ({ ...s, [pg.id]: true }))
+    try {
+      const actualizado = await actualizarFechaTentativa(pg.id, fecha)
+      setPedidosGenerados((lista) => lista.map((p) => (p.id === pg.id ? actualizado : p)))
+      setEditandoFecha((s) => ({ ...s, [pg.id]: false }))
+      toast.success(t('gestionPedido.fechaTentativaGuardada'))
+    } catch {
+      toast.error(t('gestionPedido.errorFechaTentativa'))
+    } finally {
+      setGuardandoFecha((s) => ({ ...s, [pg.id]: false }))
+    }
+  }
+
   return (
     <div className="rounded-xl border" style={{ borderColor: '#C7CBF7', backgroundColor: '#F5F6FE' }}>
       {/* Encabezado + estado */}
@@ -151,38 +172,88 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             {t('gestionPedido.ordenesTitulo')}
           </p>
           {pedidosGenerados.map((pg) => (
-            <div key={pg.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span className="flex items-center gap-1.5" style={{ color: 'var(--yuda-text)' }}>
-                <FileSpreadsheet size={14} /> {pg.supplier.replace('_', ' · ')}
-              </span>
-              <span
-                className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                style={
-                  pg.revisado_en_bodega_at
-                    ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }
-                    : { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
-                }
-              >
-                {pg.revisado_en_bodega_at ? (
-                  <>
-                    <CheckCircle2 size={12} /> {t('gestionPedido.ordenRevisadaBodega')}
-                  </>
-                ) : (
-                  <>
-                    <Clock size={12} /> {t('gestionPedido.ordenEsperandoBodega')}
-                  </>
-                )}
-              </span>
-              {pg.revisado_en_bodega_at && pg.archivo_real_xlsx_url && (
-                <a
-                  href={pg.archivo_real_xlsx_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-medium"
-                  style={{ color: 'var(--yuda-primary)' }}
+            <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: '#E0E2FA' }}>
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="flex items-center gap-1.5" style={{ color: 'var(--yuda-text)' }}>
+                  <FileSpreadsheet size={14} /> {pg.supplier.replace('_', ' · ')}
+                </span>
+                <span
+                  className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={
+                    pg.revisado_en_bodega_at
+                      ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }
+                      : { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
+                  }
                 >
-                  {t('gestionPedido.verLoQueLlego')}
-                </a>
+                  {pg.revisado_en_bodega_at ? (
+                    <>
+                      <CheckCircle2 size={12} /> {t('gestionPedido.ordenRevisadaBodega')}
+                    </>
+                  ) : (
+                    <>
+                      <Clock size={12} /> {t('gestionPedido.ordenEsperandoBodega')}
+                    </>
+                  )}
+                </span>
+                {pg.revisado_en_bodega_at && pg.archivo_real_xlsx_url && (
+                  <a
+                    href={pg.archivo_real_xlsx_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium"
+                    style={{ color: 'var(--yuda-primary)' }}
+                  >
+                    {t('gestionPedido.verLoQueLlego')}
+                  </a>
+                )}
+              </div>
+
+              {/* Fecha estimada que dio ESTE proveedor. Editable hasta que
+                  bodega ya recibió la mercancía (después ya no aplica). */}
+              {!pg.revisado_en_bodega_at && (
+                <div className="flex flex-wrap items-center gap-2 pl-5 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {editandoFecha[pg.id] ? (
+                    <>
+                      <input
+                        type="date"
+                        value={fechaInput[pg.id] ?? ''}
+                        onChange={(e) => setFechaInput((s) => ({ ...s, [pg.id]: e.target.value }))}
+                        autoFocus
+                        className="min-h-[32px] rounded-lg border border-gray-200 px-2"
+                        style={{ fontSize: 14 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => guardarFechaTentativa(pg)}
+                        disabled={!fechaInput[pg.id] || guardandoFecha[pg.id]}
+                        className="rounded-lg px-2.5 py-1 font-semibold text-white disabled:opacity-60"
+                        style={{ backgroundColor: 'var(--yuda-primary)' }}
+                      >
+                        {t('common.guardar')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditandoFecha((s) => ({ ...s, [pg.id]: false }))}
+                      >
+                        {t('common.cancelar')}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFechaInput((s) => ({ ...s, [pg.id]: pg.fecha_tentativa_entrega ?? '' }))
+                        setEditandoFecha((s) => ({ ...s, [pg.id]: true }))
+                      }}
+                      className="font-medium"
+                      style={{ color: 'var(--yuda-primary)' }}
+                    >
+                      {pg.fecha_tentativa_entrega
+                        ? t('gestionPedido.fechaTentativaValor', { fecha: pg.fecha_tentativa_entrega })
+                        : t('gestionPedido.fechaTentativaSinAsignar')}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}

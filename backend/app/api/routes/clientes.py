@@ -70,9 +70,7 @@ from app.services.notificacion_service import (
 )
 from app.services.aviso_cliente_service import (
     avisar_cliente_aprobar_despacho,
-    avisar_cliente_fecha_tentativa,
     avisar_cliente_pedido_en_proveedor,
-    formatear_fecha_legible,
 )
 from app.services.storage_service import subir_documento, subir_foto, subir_pdf
 from app.core.security import hash_password
@@ -730,11 +728,6 @@ def actualizar_seguimiento(
                 "marcar la mercancía como recibida",
             )
 
-    # Fecha tentativa que dio el proveedor (se guarda como la fecha del hito
-    # "proveedor_recibio"): se compara antes/después para avisarle al cliente
-    # solo cuando la vendedora la carga o la corrige, no en cada guardado.
-    fecha_tentativa_anterior = (seg.hitos or {}).get("proveedor_recibio", {}).get("fecha")
-
     # Campos que cualquiera del equipo autorizado puede actualizar
     seg.estado = datos.estado
     seg.novedades = datos.novedades
@@ -829,10 +822,6 @@ def actualizar_seguimiento(
     # externo al cliente, mucho antes de que bodega reciba nada.
     nuevo_proveedor_recibio = datos.estado == "proveedor_recibio" and estado_anterior != "proveedor_recibio"
 
-    # La vendedora cargó o corrigió la fecha que dio el proveedor.
-    fecha_tentativa_nueva = (seg.hitos or {}).get("proveedor_recibio", {}).get("fecha")
-    cambio_fecha_tentativa = bool(fecha_tentativa_nueva) and fecha_tentativa_nueva != fecha_tentativa_anterior
-
     # Guarda estos datos ANTES del commit para los avisos externos de abajo (que
     # se mandan después, para no tener llamadas de red lentas con la transacción abierta).
     cliente_a_avisar = None
@@ -842,7 +831,7 @@ def actualizar_seguimiento(
     novedades_a_avisar = seg.novedades
 
     cliente_proveedor = None
-    if (nuevo_proveedor_recibio or cambio_fecha_tentativa) and sesion.cliente_id:
+    if nuevo_proveedor_recibio and sesion.cliente_id:
         cliente_proveedor = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
 
     db.commit()
@@ -857,12 +846,7 @@ def actualizar_seguimiento(
         )
 
     if cliente_proveedor is not None:
-        if nuevo_proveedor_recibio:
-            avisar_cliente_pedido_en_proveedor(cliente_proveedor, sesion_id, numero)
-        if cambio_fecha_tentativa:
-            avisar_cliente_fecha_tentativa(
-                cliente_proveedor, sesion_id, numero, formatear_fecha_legible(fecha_tentativa_nueva)
-            )
+        avisar_cliente_pedido_en_proveedor(cliente_proveedor, sesion_id, numero)
 
     return seg
 

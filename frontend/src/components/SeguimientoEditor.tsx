@@ -305,7 +305,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
             </select>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {estado === 'proveedor_recibio' ? t('envio.fechaTentativaLabel') : t('envio.fechaDeEtapa')}
+                {t('envio.fechaDeEtapa')}
                 <input
                   type="date"
                   value={hitos[estado]?.fecha ?? ''}
@@ -313,11 +313,6 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                   style={inputStyle}
                   className={inputClase}
                 />
-                {estado === 'proveedor_recibio' && (
-                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                    {t('envio.fechaTentativaAyuda')}
-                  </span>
-                )}
               </label>
               <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('seguimiento.notaOpcional')}

@@ -553,6 +553,30 @@ function PortalDetalle() {
               )
             })()}
 
+            {/* Fecha estimada que dio cada proveedor. Es por proveedor, no
+                una sola para todo el pedido: si se reparte entre varios,
+                cada uno puede tener la suya. */}
+            {detalle.pedidos_generados.some((pg) => pg.fecha_tentativa_entrega) && (
+              <div className="mb-5 rounded-xl p-4" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+                <p className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                  <Truck size={16} /> {t('portal.fechasEstimadasTitulo')}
+                </p>
+                <div className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text)' }}>
+                  {detalle.pedidos_generados
+                    .filter((pg) => pg.fecha_tentativa_entrega)
+                    .map((pg) => (
+                      <p key={pg.supplier}>
+                        <strong>{pg.supplier.replace('_', ' · ')}:</strong>{' '}
+                        {new Date(`${pg.fecha_tentativa_entrega}T00:00:00`).toLocaleDateString(
+                          LOCALES[i18n.language] || 'es-ES',
+                          { day: 'numeric', month: 'long', year: 'numeric' },
+                        )}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            )}
+
             <SeguimientoTimeline seguimiento={detalle.seguimiento} />
           </div>
         </div>
