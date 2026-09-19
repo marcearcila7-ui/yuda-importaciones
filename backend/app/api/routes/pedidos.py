@@ -16,6 +16,7 @@ from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current
 from app.database import get_db
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
+from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.pedidos import (
@@ -29,6 +30,7 @@ from app.services.excel_service import (
     generar_formato_pedido,
 )
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
+from app.services.notificacion_service import avisar_pedido_regenerado_tras_revision
 from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_csv, subir_excel, subir_pdf
 from app.services.traduccion_service import descripcion_zh_util, traducir_descripciones_zh
@@ -93,6 +95,20 @@ def generar_pedidos(
 
     # a. La sesión debe existir
     sesion = _obtener_sesion(db, sesion_id, usuario)
+
+    # a.1. Una vez el contenedor ya está en bodega o más adelante, regenerar un
+    # pedido borraría en silencio la revisión que bodega ya hizo (o peor, la
+    # de un pedido que ya viajó). De "proveedor_recibio" para atrás sigue
+    # siendo seguro: es el ajuste de último momento antes de que bodega lo vea.
+    seguimiento = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seguimiento is not None and ESTADOS_ENVIO.index(seguimiento.estado) >= ESTADOS_ENVIO.index("en_bodega"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Esta cotización ya está en bodega o más adelante: no se puede regenerar el "
+                "pedido a proveedor desde acá. Si algo cambió, coordina con bodega o Marcela."
+            ),
+        )
 
     # a.2. Sin marca de embarque (iniciales del cliente) el proveedor no tiene
     # cómo separar estas cajas de las de otro pedido en su bodega. Se exige acá
@@ -188,6 +204,7 @@ def generar_pedidos(
     fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
 
     resultados: list[PedidoGeneradoInfo] = []
+    regenerados_tras_revision: list[str] = []
 
     # g. Un archivo por proveedor. El Excel y el HTML se arman al momento (son
     # instantáneos); los PDFs, que son lo lento, se renderizan en paralelo.
@@ -267,6 +284,10 @@ def generar_pedidos(
             .first()
         )
         if registro:
+            if registro.revisado_en_bodega_at is not None:
+                # Bodega ya había contado este proveedor y esa revisión se va
+                # a perder: que alguien se entere, no que se descubra después.
+                regenerados_tras_revision.append(clave)
             registro.archivo_xlsx_url = url_descarga
             registro.archivo_pdf_url = url_pdf
             registro.archivo_csv_url = url_csv
@@ -309,6 +330,14 @@ def generar_pedidos(
         )
 
     db.commit()
+
+    if regenerados_tras_revision:
+        numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+        for clave in regenerados_tras_revision:
+            avisar_pedido_regenerado_tras_revision(
+                db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id, clave
+            )
+        db.commit()
 
     # h. Respuesta
     return GenerarPedidosResponse(pedidos=resultados, warnings=warnings)

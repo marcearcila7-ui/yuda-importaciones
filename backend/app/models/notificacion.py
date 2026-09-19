@@ -19,6 +19,9 @@ TIPO_PEDIDO_CONFIRMADO = "pedido_confirmado"
 TIPO_DESPACHO_APROBADO = "despacho_aprobado"
 # Bodega corrigió una orden a proveedor con las cantidades reales que llegaron.
 TIPO_ORDEN_ACTUALIZADA_BODEGA = "orden_actualizada_bodega"
+# Una vendedora regeneró el pedido a un proveedor que bodega YA había
+# revisado: esa revisión se invalidó y hay que volver a contarla.
+TIPO_PEDIDO_REGENERADO_TRAS_REVISION = "pedido_regenerado_tras_revision"
 # Se acerca la fecha de pago del 70% a una tienda: aviso para la contadora.
 TIPO_ALERTA_PAGO_TIENDA = "alerta_pago_tienda"
 

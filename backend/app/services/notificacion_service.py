@@ -7,6 +7,7 @@ from app.models.notificacion import (
     TIPO_ORDEN_ACTUALIZADA_BODEGA,
     TIPO_PEDIDO_CLIENTE,
     TIPO_PEDIDO_CONFIRMADO,
+    TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
     Notificacion,
 )
 from app.models.user import RolUsuario, User
@@ -263,6 +264,49 @@ def avisar_orden_actualizada_bodega(
                 mensaje=(
                     f"Bodega revisó la orden de «{supplier}» de la cotización {numero} "
                     f"({cliente}) y la corrigió con las cantidades reales. Revisa y avísale al cliente."
+                ),
+            )
+        )
+
+
+def avisar_pedido_regenerado_tras_revision(
+    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None, supplier: str
+) -> None:
+    """Avisa a la vendedora dueña y a Marcela que se regeneró el pedido a un
+    proveedor que bodega YA había revisado: esa revisión de cantidades reales
+    quedó invalidada (bodega tiene que volver a contarla). No evita duplicar
+    por tipo+sesión (igual que orden_actualizada_bodega): puede pasar más de
+    una vez y cada una merece su propio aviso; si ya hay uno igual sin leer
+    para el mismo proveedor, no se repite."""
+    destinatarios = {vendedor_id} if vendedor_id else set()
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        destinatarios.add(admin.id)
+
+    for usuario_id in destinatarios:
+        ya_existe = (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.usuario_id == usuario_id,
+                Notificacion.sesion_id == sesion_id,
+                Notificacion.tipo == TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
+                Notificacion.ref_id == supplier,
+                Notificacion.leida.is_(False),
+            )
+            .first()
+        )
+        if ya_existe:
+            continue
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                ref_id=supplier,
+                tipo=TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
+                titulo="Se regeneró un pedido ya revisado por bodega",
+                mensaje=(
+                    f"Se volvió a generar el pedido de «{supplier}» de la cotización {numero} "
+                    f"({cliente}), que bodega ya había revisado. Esa revisión se perdió: "
+                    "bodega tiene que volver a contar las cantidades reales de este proveedor."
                 ),
             )
         )
