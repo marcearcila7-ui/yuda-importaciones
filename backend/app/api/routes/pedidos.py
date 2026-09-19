@@ -12,7 +12,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import exigir_roles, get_current_user
+from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user
 from app.database import get_db
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
@@ -46,19 +46,15 @@ _MAX_PROCESOS_PDF = 8
 
 
 def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
-    """Devuelve la sesión o lanza 404. Una vendedora solo puede acceder a las
-    suyas (403 en caso contrario); admin y contadora ven todas."""
+    """Devuelve la sesión o lanza 404/403 (ver `exigir_acceso_sesion`: dueña,
+    o vendedora colaboradora del cliente vinculado; admin y contadora ven todas)."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Sesión no encontrada",
         )
-    if usuario.rol.value == "vendedora" and sesion.user_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sin permisos sobre esta cotización",
-        )
+    exigir_acceso_sesion(db, sesion, usuario)
     return sesion
 
 

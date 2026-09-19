@@ -8,7 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import require_roles
+from app.api.dependencies import (
+    exigir_acceso_sesion,
+    require_roles,
+    vendedora_tiene_acceso_cliente,
+)
 from app.database import get_db
 from app.services.borrado_service import (
     borrar_sesiones,
@@ -83,16 +87,6 @@ def _generar_password(n: int = 10) -> str:
     return "".join(secrets.choice(alfabeto) for _ in range(n))
 
 
-def _vendedora_tiene_acceso(db: Session, cliente_id: str, vendedora_id: str) -> bool:
-    """La vendedora es la dueña del cliente, o Marcela se lo asignó como colaboradora."""
-    return (
-        db.query(ClienteVendedora.id)
-        .filter(ClienteVendedora.cliente_id == cliente_id, ClienteVendedora.vendedora_id == vendedora_id)
-        .first()
-        is not None
-    )
-
-
 def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
     """Devuelve el cliente si el usuario puede gestionarlo; si no, 404/403"""
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
@@ -101,19 +95,18 @@ def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
     if (
         usuario.rol.value == "vendedora"
         and cliente.vendedora_id != usuario.id
-        and not _vendedora_tiene_acceso(db, cliente_id, usuario.id)
+        and not vendedora_tiene_acceso_cliente(db, cliente_id, usuario.id)
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre este cliente")
     return cliente
 
 
 def _sesion_autorizada(db: Session, sesion_id: str, usuario: User) -> Sesion:
-    """Devuelve la sesión si el usuario puede gestionarla; si no, 404/403"""
+    """Devuelve la sesión si el usuario puede gestionarla; si no, 404/403."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
-    if usuario.rol.value == "vendedora" and sesion.user_id != usuario.id:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre esta cotización")
+    exigir_acceso_sesion(db, sesion, usuario)
     return sesion
 
 

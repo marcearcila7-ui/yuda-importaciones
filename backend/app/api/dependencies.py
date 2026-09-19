@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.core.security import verify_token
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cliente_vendedora import ClienteVendedora
+from app.models.sesion import Sesion
 from app.models.user import User
 
 # Esquema OAuth2 que extrae el token del header Authorization: Bearer.
@@ -93,6 +95,39 @@ def exigir_roles(usuario: User, *roles: str) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sin permisos para esta acción",
         )
+
+
+def vendedora_tiene_acceso_cliente(db: Session, cliente_id: str, vendedora_id: str) -> bool:
+    """¿Marcela le compartió este cliente a esta vendedora (además de su
+    posible dueña, que se revisa aparte)? Fase 1: clientes compartidos."""
+    return (
+        db.query(ClienteVendedora.id)
+        .filter(ClienteVendedora.cliente_id == cliente_id, ClienteVendedora.vendedora_id == vendedora_id)
+        .first()
+        is not None
+    )
+
+
+def exigir_acceso_sesion(db: Session, sesion: Sesion, usuario: User) -> None:
+    """Lanza 403 si una vendedora no puede gestionar esta cotización: ni la
+    creó, ni es dueña o colaboradora del cliente al que está vinculada.
+
+    Punto único para este chequeo: antes vivía duplicado (con la misma
+    lógica, pero sin enterarse de clientes compartidos) en clientes.py,
+    pedidos.py, packing.py y lotes.py — una vendedora agregada como
+    colaboradora de un cliente podía ver sus cotizaciones, pero cualquier
+    acción puntual (seguimiento, packing, OCR, generar pedidos) le daba 403.
+    """
+    if usuario.rol.value != "vendedora" or sesion.user_id == usuario.id:
+        return
+    if sesion.cliente_id:
+        cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+        if cliente is not None and (
+            cliente.vendedora_id == usuario.id
+            or vendedora_tiene_acceso_cliente(db, sesion.cliente_id, usuario.id)
+        ):
+            return
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre esta cotización")
 
 
 def require_roles(*roles: str):

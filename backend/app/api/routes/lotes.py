@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user, require_roles
+from app.api.dependencies import exigir_acceso_sesion, get_current_user, require_roles
 from app.core.config import settings
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
@@ -35,16 +35,18 @@ TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior"}
 
 
 def _verificar_dueno(db: Session, sesion_id: str, usuario: User) -> None:
-    """Una vendedora solo puede operar sobre cotizaciones propias (403 si no);
+    """Una vendedora solo puede operar sobre cotizaciones propias o de un
+    cliente que Marcela le haya compartido (ver `exigir_acceso_sesion`);
     admin y contadora, sobre cualquiera."""
     if usuario.rol.value != "vendedora":
         return
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
-    if sesion is None or sesion.user_id != usuario.id:
+    if sesion is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Sin permisos sobre esta cotización",
         )
+    exigir_acceso_sesion(db, sesion, usuario)
 
 
 def _obtener_lote(db: Session, lote_id: str, usuario: User) -> LoteOCR:
