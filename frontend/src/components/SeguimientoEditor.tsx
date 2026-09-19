@@ -303,6 +303,11 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                 </option>
               ))}
             </select>
+            {esAdmin && esTransito && (
+              <p className="mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('envio.avisaAlClienteAutomatico')}
+              </p>
+            )}
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('envio.fechaDeEtapa')}

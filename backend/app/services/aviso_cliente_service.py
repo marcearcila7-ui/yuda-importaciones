@@ -15,7 +15,7 @@ WhatsApp tiene dos modos:
 """
 import logging
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 import httpx
 
@@ -339,3 +339,139 @@ aproximadamente el <strong>{fecha_legible}</strong>. Es una fecha estimada, pued
         )
     except Exception:
         logger.exception("No se pudo enviar el WhatsApp de fecha tentativa a %s", cliente.email)
+
+
+def avisar_cliente_despachado(
+    cliente: Cliente,
+    sesion_id: str,
+    numero: str,
+    naviera: str | None,
+    numero_tracking: str | None,
+    url_tracking: str | None,
+    fecha_eta: date | None,
+) -> None:
+    """Avisa al cliente que su contenedor ya salió (etapa 'en_transito'), con
+    la naviera y el tracking si Marcela ya los cargó. Correo y WhatsApp, cada
+    uno best-effort."""
+    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    eta_legible = formatear_fecha_legible(fecha_eta.isoformat()) if fecha_eta else None
+
+    try:
+        detalles = "".join(
+            f"<p><strong>{etiqueta}:</strong> {valor}</p>"
+            for etiqueta, valor in [
+                ("Naviera", naviera),
+                ("Tracking", numero_tracking),
+                ("Llegada estimada", eta_legible),
+            ]
+            if valor
+        )
+        link_tracking = (
+            f'<p><a href="{url_tracking}">Consultar el tracking</a></p>' if url_tracking else ""
+        )
+        _enviar_correo_brevo(
+            cliente,
+            f"Tu pedido {numero} ya está en camino",
+            f"""<p>Hola {cliente.nombre},</p>
+<p>Tu pedido <strong>{numero}</strong> ya salió: el contenedor está en tránsito.</p>
+{detalles}
+{link_tracking}
+<p><a href="{link}">Ver el estado de mi pedido</a></p>
+<p>YUDA Importaciones</p>""",
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el correo de despacho a %s", cliente.email)
+
+    try:
+        partes = [f"Hola {cliente.nombre}, tu pedido {numero} ya salió: el contenedor está en tránsito."]
+        if naviera:
+            partes.append(f"Naviera: {naviera}.")
+        if numero_tracking:
+            partes.append(f"Tracking: {numero_tracking}.")
+        if eta_legible:
+            partes.append(f"Llegada estimada: {eta_legible}.")
+        partes.append(f"\n\nVer el estado: {link}")
+        _enviar_whatsapp_lucidbot(
+            cliente,
+            flow_id=settings.LUCIDBOT_FLOW_DESPACHADO,
+            campos_flow={
+                settings.LUCIDBOT_CF_NUMERO_PEDIDO: numero,
+                settings.LUCIDBOT_CF_LINK: link,
+                settings.LUCIDBOT_CF_NAVIERA: naviera or "",
+                settings.LUCIDBOT_CF_TRACKING: numero_tracking or "",
+                settings.LUCIDBOT_CF_ETA: eta_legible or "",
+            },
+            texto_libre=" ".join(partes),
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el WhatsApp de despacho a %s", cliente.email)
+
+
+def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> None:
+    """Avisa al cliente que su contenedor llegó al país de destino, antes de
+    la entrega final. Correo y WhatsApp, cada uno best-effort."""
+    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+
+    try:
+        _enviar_correo_brevo(
+            cliente,
+            f"Tu pedido {numero} llegó a destino",
+            f"""<p>Hola {cliente.nombre},</p>
+<p>Tu pedido <strong>{numero}</strong> ya llegó al país de destino. En breve coordinamos la entrega.</p>
+<p><a href="{link}">Ver el estado de mi pedido</a></p>
+<p>YUDA Importaciones</p>""",
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el correo de llegada a destino a %s", cliente.email)
+
+    try:
+        texto_libre = (
+            f"Hola {cliente.nombre}, tu pedido {numero} ya llegó al país de destino. "
+            f"En breve coordinamos la entrega.\n\nVer el estado: {link}"
+        )
+        _enviar_whatsapp_lucidbot(
+            cliente,
+            flow_id=settings.LUCIDBOT_FLOW_EN_DESTINO,
+            campos_flow={
+                settings.LUCIDBOT_CF_NUMERO_PEDIDO: numero,
+                settings.LUCIDBOT_CF_LINK: link,
+            },
+            texto_libre=texto_libre,
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el WhatsApp de llegada a destino a %s", cliente.email)
+
+
+def avisar_cliente_entregado(cliente: Cliente, sesion_id: str, numero: str) -> None:
+    """Avisa al cliente que su pedido fue entregado. Correo y WhatsApp, cada
+    uno best-effort."""
+    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+
+    try:
+        _enviar_correo_brevo(
+            cliente,
+            f"Tu pedido {numero} fue entregado",
+            f"""<p>Hola {cliente.nombre},</p>
+<p>Tu pedido <strong>{numero}</strong> fue entregado. ¡Gracias por tu compra!</p>
+<p><a href="{link}">Ver mi pedido</a></p>
+<p>YUDA Importaciones</p>""",
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el correo de entrega a %s", cliente.email)
+
+    try:
+        texto_libre = (
+            f"Hola {cliente.nombre}, tu pedido {numero} fue entregado. ¡Gracias por tu compra!"
+            f"\n\nVer mi pedido: {link}"
+        )
+        _enviar_whatsapp_lucidbot(
+            cliente,
+            flow_id=settings.LUCIDBOT_FLOW_ENTREGADO,
+            campos_flow={
+                settings.LUCIDBOT_CF_NUMERO_PEDIDO: numero,
+                settings.LUCIDBOT_CF_LINK: link,
+            },
+            texto_libre=texto_libre,
+        )
+    except Exception:
+        logger.exception("No se pudo enviar el WhatsApp de entrega a %s", cliente.email)

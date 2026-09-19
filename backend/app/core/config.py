@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # al cliente (fuera de la ventana de 24h necesitan su propia plantilla).
     LUCIDBOT_FLOW_PEDIDO_ENVIADO: str = ""
     LUCIDBOT_FLOW_FECHA_TENTATIVA: str = ""
+    LUCIDBOT_FLOW_DESPACHADO: str = ""
+    LUCIDBOT_FLOW_EN_DESTINO: str = ""
+    LUCIDBOT_FLOW_ENTREGADO: str = ""
     # Nombres (no IDs) de los custom fields de Lucid Bot donde se dejan las
     # variables antes de disparar el flow de arriba. Deben existir ya creados
     # en Lucid Bot con exactamente estos nombres (o cambiar acá para que
@@ -44,6 +47,9 @@ class Settings(BaseSettings):
     LUCIDBOT_CF_LINK: str = "yuda_link_portal"
     LUCIDBOT_CF_NOTA: str = "yuda_nota_bodega"
     LUCIDBOT_CF_FECHA_TENTATIVA: str = "yuda_fecha_tentativa"
+    LUCIDBOT_CF_NAVIERA: str = "yuda_naviera"
+    LUCIDBOT_CF_TRACKING: str = "yuda_tracking"
+    LUCIDBOT_CF_ETA: str = "yuda_eta"
     # Base pública del portal del cliente, para armar el link en los avisos.
     PORTAL_URL: str = "http://localhost:3000"
 

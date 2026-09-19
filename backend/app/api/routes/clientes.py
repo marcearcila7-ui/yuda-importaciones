@@ -70,6 +70,9 @@ from app.services.notificacion_service import (
 )
 from app.services.aviso_cliente_service import (
     avisar_cliente_aprobar_despacho,
+    avisar_cliente_despachado,
+    avisar_cliente_en_destino,
+    avisar_cliente_entregado,
     avisar_cliente_pedido_en_proveedor,
 )
 from app.services.storage_service import subir_documento, subir_foto, subir_pdf
@@ -822,6 +825,15 @@ def actualizar_seguimiento(
     # externo al cliente, mucho antes de que bodega reciba nada.
     nuevo_proveedor_recibio = datos.estado == "proveedor_recibio" and estado_anterior != "proveedor_recibio"
 
+    # El cliente ya aprobó (o se venció el plazo) y Marcela despacha el
+    # contenedor: de acá en adelante el cliente no recibía NADA propio, solo
+    # se le avisaba a la vendedora por dentro. Son las etapas que más
+    # ansiedad le dan a un cliente (¿ya salió? ¿ya llegó?) y antes se
+    # enteraba solo si le preguntaba a la vendedora.
+    nuevo_en_transito = datos.estado == "en_transito" and estado_anterior != "en_transito"
+    nuevo_en_destino = datos.estado == "en_destino" and estado_anterior != "en_destino"
+    nuevo_entregado = datos.estado == "entregado" and estado_anterior != "entregado"
+
     # Guarda estos datos ANTES del commit para los avisos externos de abajo (que
     # se mandan después, para no tener llamadas de red lentas con la transacción abierta).
     cliente_a_avisar = None
@@ -833,6 +845,14 @@ def actualizar_seguimiento(
     cliente_proveedor = None
     if nuevo_proveedor_recibio and sesion.cliente_id:
         cliente_proveedor = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+
+    cliente_envio = None
+    if (nuevo_en_transito or nuevo_en_destino or nuevo_entregado) and sesion.cliente_id:
+        cliente_envio = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+    naviera_a_avisar = seg.naviera
+    tracking_a_avisar = seg.numero_tracking
+    url_tracking_a_avisar = seg.url_tracking
+    fecha_eta_a_avisar = seg.fecha_eta
 
     db.commit()
     db.refresh(seg)
@@ -847,6 +867,17 @@ def actualizar_seguimiento(
 
     if cliente_proveedor is not None:
         avisar_cliente_pedido_en_proveedor(cliente_proveedor, sesion_id, numero)
+
+    if cliente_envio is not None:
+        if nuevo_en_transito:
+            avisar_cliente_despachado(
+                cliente_envio, sesion_id, numero, naviera_a_avisar, tracking_a_avisar,
+                url_tracking_a_avisar, fecha_eta_a_avisar,
+            )
+        if nuevo_en_destino:
+            avisar_cliente_en_destino(cliente_envio, sesion_id, numero)
+        if nuevo_entregado:
+            avisar_cliente_entregado(cliente_envio, sesion_id, numero)
 
     return seg
 
