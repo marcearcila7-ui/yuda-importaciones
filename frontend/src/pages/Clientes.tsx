@@ -225,6 +225,30 @@ function Clientes() {
     }
   }
 
+  // Reasignar la vendedora dueña (diagnóstico #2): el backend ya lo permitía
+  // (PATCH /clientes/{id} con vendedora_id, admin-only), pero no había ningún
+  // botón en la UI para hacerlo — solo el de "compartir" (agregar
+  // colaboradora), que es una cosa distinta.
+  const [editandoDuena, setEditandoDuena] = useState(false)
+  const [duenaInput, setDuenaInput] = useState('')
+  const [guardandoDuena, setGuardandoDuena] = useState(false)
+
+  const guardarDuena = async (c: Cliente) => {
+    if (!duenaInput) return
+    setGuardandoDuena(true)
+    try {
+      await actualizarCliente(c.id, { vendedora_id: duenaInput })
+      toast.success(t('clientes.duenaGuardada'))
+      setEditandoDuena(false)
+      cargar()
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? (err.response?.data?.detail as string | undefined) : undefined
+      toast.error(detalle || t('clientes.errorDuena'))
+    } finally {
+      setGuardandoDuena(false)
+    }
+  }
+
   const [editandoSigla, setEditandoSigla] = useState(false)
   const [siglaInput, setSiglaInput] = useState('')
   const [guardandoSigla, setGuardandoSigla] = useState(false)
@@ -459,6 +483,61 @@ ${t('clientes.email')}: ${c.email}`
               {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
             </span>
           </div>
+
+          {esAdmin && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+              <span className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('clientes.duenaLabel')}
+              </span>
+              {editandoDuena ? (
+                <>
+                  <select
+                    value={duenaInput}
+                    onChange={(e) => setDuenaInput(e.target.value)}
+                    autoFocus
+                    className="min-h-[38px] rounded-lg border border-gray-200 px-2 text-sm"
+                    style={{ fontSize: 15 }}
+                  >
+                    <option value="">{t('clientes.duenaElegir')}</option>
+                    {vendedoras.map((v) => (
+                      <option key={v.user_id} value={v.user_id}>
+                        {v.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => guardarDuena(c)}
+                    disabled={!duenaInput || guardandoDuena}
+                    className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-primary)' }}
+                  >
+                    {t('common.guardar')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditandoDuena(false)}
+                    className="text-sm"
+                    style={{ color: 'var(--yuda-text-secondary)' }}
+                  >
+                    {t('common.cancelar')}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDuenaInput(c.vendedora_id)
+                    setEditandoDuena(true)
+                  }}
+                  className="rounded-full px-3 py-1 text-sm font-semibold"
+                  style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                >
+                  {nombreVendedora[c.vendedora_id] || t('clientes.duenaSinResolver')}
+                </button>
+              )}
+            </div>
+          )}
 
           {esAdmin && (
             <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
