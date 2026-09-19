@@ -34,6 +34,14 @@ function Cargando() {
   )
 }
 
+// Mismo build sirve el cotizador y el portal de clientes en dominios distintos
+// (cotizador.yudaimportaciones.com y usuarios.yudaimportaciones.com). Por eso la
+// ruta raíz y el catch-all deciden a dónde mandar según el hostname.
+function DestinoPorDefecto() {
+  const esDominioPortal = window.location.hostname.startsWith('usuarios.')
+  return <Navigate to={esDominioPortal ? '/portal/login' : '/dashboard'} replace />
+}
+
 function App() {
   const initFromStorage = useAuthStore((state) => state.initFromStorage)
   const initPortal = usePortalStore((state) => state.initFromStorage)
@@ -49,6 +57,8 @@ function App() {
       <ConfirmDialog />
       <Suspense fallback={<Cargando />}>
       <Routes>
+        <Route path="/" element={<DestinoPorDefecto />} />
+
         {/* ── Portal de clientes ── */}
         <Route path="/portal/login" element={<PortalLogin />} />
         <Route element={<PortalProtectedRoute />}>
@@ -104,8 +114,9 @@ function App() {
           <Route path="/cotizacion/:id" element={<Layout><CotizacionDetalle /></Layout>} />
         </Route>
 
-        {/* Cualquier otra ruta redirige al dashboard */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        {/* Cualquier otra ruta redirige al dashboard (o al login del portal
+            si el dominio es el del portal de clientes) */}
+        <Route path="*" element={<DestinoPorDefecto />} />
       </Routes>
       </Suspense>
     </BrowserRouter>
