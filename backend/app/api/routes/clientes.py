@@ -692,8 +692,7 @@ def actualizar_seguimiento(
                 "La etapa de envío (en tránsito en adelante) la gestiona Marcela",
             )
 
-    # Bodega solo puede dar el paso "el proveedor recibió" -> "en bodega", tras
-    # revisar TODAS las órdenes a proveedor con las cantidades reales.
+    # Bodega solo puede dar el paso "el proveedor recibió" -> "en bodega".
     if es_bodega:
         if estado_anterior != "proveedor_recibio":
             raise HTTPException(
@@ -705,6 +704,12 @@ def actualizar_seguimiento(
                 status.HTTP_403_FORBIDDEN,
                 "Bodega solo puede marcar la mercancía como recibida y enviada",
             )
+
+    # Pasar a "en bodega" exige que TODAS las órdenes a proveedor ya estén
+    # revisadas con las cantidades reales — sin importar quién dé el paso.
+    # Si esto solo se exigiera cuando el actor es bodega, Marcela podría
+    # saltarse la revisión por completo poniendo el estado directamente.
+    if datos.estado == "en_bodega":
         ordenes = db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).all()
         if not ordenes or any(o.revisado_en_bodega_at is None for o in ordenes):
             raise HTTPException(
@@ -743,10 +748,13 @@ def actualizar_seguimiento(
             }
         seg.hitos = nuevos
 
-    # Bodega, al marcar "en bodega", le abre al cliente un plazo para aprobar el
-    # despacho (por defecto 48h si no especifica otro). Se reinicia la
-    # aprobación por si esta cotización ya había pasado por acá antes.
-    if es_bodega and datos.estado == "en_bodega":
+    # Al marcar "en bodega" (sea bodega o, si hace falta, Marcela) se le abre
+    # al cliente un plazo para aprobar el despacho (por defecto 48h). Se
+    # reinicia la aprobación por si esta cotización ya había pasado por acá
+    # antes. Sin este plazo, la cotización nunca podría llegar a "en tránsito"
+    # (el gate de abajo exige aprobación o plazo vencido, y ninguno de los dos
+    # se puede cumplir si esto nunca se fijó).
+    if datos.estado == "en_bodega":
         horas = datos.horas_para_aprobar if datos.horas_para_aprobar and datos.horas_para_aprobar > 0 else 48
         seg.aprobacion_limite_at = datetime.now(timezone.utc) + timedelta(hours=horas)
         seg.cliente_aprobo_despacho_at = None

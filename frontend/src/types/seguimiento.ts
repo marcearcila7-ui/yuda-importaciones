@@ -36,13 +36,14 @@ export const NAVIERAS = [
   'Sinokor Merchant Marine',
 ] as const
 
-// Etapas que la vendedora puede gestionar. De "en_transito" en adelante la
-// información del envío (naviera, tracking, BL) es exclusiva de Marcela.
+// Etapas que la vendedora puede gestionar. "en_bodega" en adelante es
+// exclusivo de bodega (recepción física) y Marcela: antes estaba acá por
+// error, dejando a la vendedora marcar "en bodega" ella misma sin que nunca
+// se le abriera al cliente el plazo para aprobar el despacho.
 export const ESTADOS_VENDEDORA = [
   'cotizacion_enviada',
   'pedido_confirmado',
   'proveedor_recibio',
-  'en_bodega',
 ] as const
 
 export interface Adjunto {

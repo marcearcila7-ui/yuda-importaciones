@@ -21,13 +21,16 @@ ESTADOS_ENVIO = [
 
 ESTADO_INICIAL = "cotizacion_enviada"
 
-# Etapas que la vendedora puede gestionar. De "en_transito" en adelante (cuando
-# el contenedor ya está en camino) la información es exclusiva de Marcela (admin).
+# Etapas que la vendedora puede gestionar. "en_bodega" en adelante es
+# exclusivo de bodega (recepción física) y Marcela (admin): antes estaba acá
+# por error y una vendedora podía marcar "en bodega" ella misma desde su
+# propio desplegable, saltándose por completo la revisión de bodega y sin que
+# nunca se le abriera al cliente el plazo para aprobar el despacho (quedaba
+# atascado para siempre, sin forma de llegar a "en tránsito").
 ESTADOS_VENDEDORA = [
     "cotizacion_enviada",
     "pedido_confirmado",
     "proveedor_recibio",
-    "en_bodega",
 ]
 
 # Campos de envío que solo Marcela (admin) puede editar.

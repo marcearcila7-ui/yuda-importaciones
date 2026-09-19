@@ -711,7 +711,7 @@
     "fechaDeEtapa": "What day did it reach this stage?",
     "fechaTentativaLabel": "What date did the supplier give for the order to be ready?",
     "fechaTentativaAyuda": "This is an estimated date. Saving it automatically notifies the client by email and WhatsApp.",
-    "enTransitoMarcela": "The container is on its way. This part is managed by Marcela.",
+    "enTransitoMarcela": "This quotation is already at the warehouse or on its way. This part is managed by Marcela.",
     "infoEnvioMarcela": "Shipping details (managed by Marcela)",
     "infoEnvioBloqueada": "Shipping details (carrier and BL) are managed by Marcela.",
     "blNumero": "BL number",
