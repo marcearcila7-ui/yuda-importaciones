@@ -87,6 +87,16 @@ def _generar_password(n: int = 10) -> str:
     return "".join(secrets.choice(alfabeto) for _ in range(n))
 
 
+def _cliente_response(cliente: Cliente, usuario: User) -> ClienteResponse:
+    """Convierte el cliente a su forma pública, ocultando la sigla de Yuda
+    Contable si quien pregunta no es admin/contadora: es un dato interno de
+    Marcela para conciliar cuentas, no algo que una vendedora necesite ver."""
+    resp = ClienteResponse.model_validate(cliente)
+    if usuario.rol.value not in ("admin", "contadora"):
+        resp.sigla = None
+    return resp
+
+
 def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
     """Devuelve el cliente si el usuario puede gestionarlo; si no, 404/403"""
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
@@ -149,7 +159,7 @@ def crear_cliente(
 def listar_clientes(
     usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
-) -> list[Cliente]:
+) -> list[ClienteResponse]:
     """Lista clientes: la vendedora ve los suyos y los que Marcela le comparta;
     admin y contadora ven todos."""
     query = db.query(Cliente)
@@ -160,7 +170,8 @@ def listar_clientes(
         query = query.filter(
             (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
         )
-    return query.order_by(Cliente.created_at.desc()).all()
+    clientes = query.order_by(Cliente.created_at.desc()).all()
+    return [_cliente_response(c, usuario) for c in clientes]
 
 
 @router.get("/clientes/{cliente_id}", response_model=ClienteResponse)
@@ -169,8 +180,9 @@ def obtener_cliente(
     # La contadora ve la ficha del cliente en solo lectura (para conciliar).
     usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
-) -> Cliente:
-    return _cliente_autorizado(db, cliente_id, usuario)
+) -> ClienteResponse:
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    return _cliente_response(cliente, usuario)
 
 
 @router.get("/clientes/{cliente_id}/cotizaciones", response_model=list[SesionResponse])
@@ -195,7 +207,7 @@ def actualizar_cliente(
     datos: ClienteUpdate,
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
-) -> Cliente:
+) -> ClienteResponse:
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     cambios = datos.model_dump(exclude_unset=True)
     if "vendedora_id" in cambios and usuario.rol.value != "admin":
@@ -222,7 +234,7 @@ def actualizar_cliente(
         setattr(cliente, campo, valor)
     db.commit()
     db.refresh(cliente)
-    return cliente
+    return _cliente_response(cliente, usuario)
 
 
 # ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
