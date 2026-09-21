@@ -672,7 +672,8 @@
       "cotizaciones": "Cotizaciones"
     },
     "siglaAyuda": "Es el código con el que este cliente aparece en la app de contabilidad. No trae saldos ni movimientos de dinero acá.",
-    "gestionarPedido": "Ver detalle"
+    "gestionarPedido": "Gestionar pedido",
+    "contableTodoImportado": "Ya importaste todos los clientes que hay en Yuda Contable. Cuando Marcela cree uno nuevo allá, va a aparecer acá."
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",

@@ -347,7 +347,10 @@ def metricas_vendedoras(
         fin_mes = datetime(ahora.year, ahora.month + 1, 1)
 
     vendedoras = (
-        db.query(User).filter(User.rol == RolUsuario.vendedora).order_by(User.nombre.asc()).all()
+        db.query(User)
+        .filter(User.rol == RolUsuario.vendedora, User.activo)
+        .order_by(User.nombre.asc())
+        .all()
     )
 
     resultado = []
@@ -553,7 +556,10 @@ def panorama_equipo(
 ) -> dict:
     """Panorama para Marcela: cada vendedora con sus clientes y el envío de cada cotización"""
     vendedoras = (
-        db.query(User).filter(User.rol == RolUsuario.vendedora).order_by(User.nombre.asc()).all()
+        db.query(User)
+        .filter(User.rol == RolUsuario.vendedora, User.activo)
+        .order_by(User.nombre.asc())
+        .all()
     )
 
     resultado = []

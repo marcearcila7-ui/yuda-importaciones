@@ -16,11 +16,15 @@ function MetricasVendedoras() {
 
   if (filas === null) return null
 
+  // Ceros para todas: es ruido, no información. Solo importa a quién
+  // atender esta pantalla si tuvo actividad este mes.
+  const conActividad = filas.filter((f) => f.total_sesiones > 0 || f.total_items > 0)
+
   const fmt = (n: number) => n.toLocaleString('es-ES')
-  const totalCotizaciones = filas.reduce((a, f) => a + f.total_sesiones, 0)
-  const totalItems = filas.reduce((a, f) => a + f.total_items, 0)
-  const totalRmb = filas.reduce((a, f) => a + f.total_rmb, 0)
-  const totalUsd = filas.reduce((a, f) => a + f.total_usd, 0)
+  const totalCotizaciones = conActividad.reduce((a, f) => a + f.total_sesiones, 0)
+  const totalItems = conActividad.reduce((a, f) => a + f.total_items, 0)
+  const totalRmb = conActividad.reduce((a, f) => a + f.total_rmb, 0)
+  const totalUsd = conActividad.reduce((a, f) => a + f.total_usd, 0)
 
   return (
     <section className="card">
@@ -28,7 +32,7 @@ function MetricasVendedoras() {
         {t('metricas.porVendedora')}
       </h2>
 
-      {filas.length === 0 ? (
+      {conActividad.length === 0 ? (
         <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
           {t('metricas.sinVendedoras')}
         </p>
@@ -45,7 +49,7 @@ function MetricasVendedoras() {
               </tr>
             </thead>
             <tbody>
-              {filas.map((f) => (
+              {conActividad.map((f) => (
                 <tr key={f.user_id} style={{ borderTop: '1px solid var(--yuda-primary-soft)' }}>
                   <td className="px-3 py-2 font-medium" style={{ color: 'var(--yuda-accent)' }}>{f.nombre}</td>
                   <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>{f.total_sesiones}</td>

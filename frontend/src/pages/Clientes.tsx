@@ -433,6 +433,10 @@ ${t('clientes.email')}: ${c.email}`
 
   const inactivos = clientes.filter((c) => !c.activo).length
 
+  // Solo los que faltan por traer: mostrar los 44 con la mayoría marcados
+  // "ya está" era puro ruido para Marcela, que solo necesita ver los nuevos.
+  const pendientesImportar = previewContable.filter((p) => !p.ya_existe)
+
   const clienteAbierto = clientes.find((c) => c.id === clienteAbiertoId) ?? null
 
   const clientesFiltrados = (() => {
@@ -902,19 +906,25 @@ ${t('clientes.email')}: ${c.email}`
               </p>
               {cargandoPreview ? (
                 <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('common.cargando')}</p>
+              ) : pendientesImportar.length === 0 ? (
+                // Si ya se trajeron todos los que hay en Yuda Contable, no tiene
+                // sentido mostrar una lista larga de "ya está" repetido 44 veces:
+                // eso es justo el tipo de ruido que satura la pantalla.
+                <p className="text-sm" style={{ color: 'var(--yuda-success)' }}>
+                  {t('clientes.contableTodoImportado')}
+                </p>
               ) : (
                 <>
                   <div className="max-h-80 overflow-y-auto rounded-lg border" style={{ borderColor: 'var(--yuda-border)' }}>
-                    {previewContable.map((p) => (
+                    {pendientesImportar.map((p) => (
                       <label
                         key={p.sigla}
                         className="flex items-center gap-3 border-b px-3 py-2 text-sm last:border-b-0"
-                        style={{ borderColor: 'var(--yuda-border)', opacity: p.ya_existe ? 0.5 : 1 }}
+                        style={{ borderColor: 'var(--yuda-border)' }}
                       >
                         <input
                           type="checkbox"
                           checked={siglasSeleccionadas.has(p.sigla)}
-                          disabled={p.ya_existe}
                           onChange={() => toggleSigla(p.sigla)}
                         />
                         <span
@@ -927,11 +937,6 @@ ${t('clientes.email')}: ${c.email}`
                           {p.nombre || t('clientes.contableSinNombre')}
                           {p.pais && <span style={{ color: 'var(--yuda-text-secondary)' }}> · {p.pais}</span>}
                         </span>
-                        {p.ya_existe && (
-                          <span className="flex-shrink-0 text-xs font-semibold" style={{ color: 'var(--yuda-success)' }}>
-                            {t('clientes.contableYaImportado')}
-                          </span>
-                        )}
                       </label>
                     ))}
                   </div>

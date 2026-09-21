@@ -672,7 +672,8 @@
       "cotizaciones": "Quotations"
     },
     "siglaAyuda": "The code this client uses in the accounting app. It never brings balances or money movements over here.",
-    "gestionarPedido": "View detail"
+    "gestionarPedido": "Manage order",
+    "contableTodoImportado": "You've already imported every client from Yuda Contable. When a new one is created there, it'll show up here."
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",

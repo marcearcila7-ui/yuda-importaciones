@@ -19,7 +19,6 @@ import { eliminarSesion } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
-import PanelVentas from '../components/ventas/PanelVentas'
 import { usePackingStore } from '../store/packingStore'
 import type { MetricasDashboard } from '../types/admin'
 
@@ -277,9 +276,6 @@ function Dashboard() {
           ) : undefined
         }
       />
-
-      {/* Lo primero para Marcela: como va el negocio en el periodo que elija */}
-      {esAdmin && <PanelVentas />}
 
       {/* Las cifras del mes, en una sola tira de texto en vez de seis tarjetas */}
       {esAdmin && metricas && (

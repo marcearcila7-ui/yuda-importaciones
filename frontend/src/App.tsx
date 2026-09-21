@@ -17,11 +17,8 @@ const Admin = lazy(() => import('./pages/Admin'))
 const ClienteColaboracion = lazy(() => import('./pages/ClienteColaboracion'))
 const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
 const Historial = lazy(() => import('./pages/Historial'))
-const Ventas = lazy(() => import('./pages/Ventas'))
 const BodegaSeguimiento = lazy(() => import('./pages/BodegaSeguimiento'))
-const Cuentas = lazy(() => import('./pages/Cuentas'))
 const CuentaCliente = lazy(() => import('./pages/CuentaCliente'))
-const Tiendas = lazy(() => import('./pages/Tiendas'))
 const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'))
 const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
@@ -87,14 +84,12 @@ function App() {
           <Route path="/admin" element={<Layout><Admin /></Layout>} />
           {/* "Equipo" se unifico con Clientes: mismos clientes, con filtro por vendedora */}
           <Route path="/equipo" element={<Navigate to="/clientes" replace />} />
-          <Route path="/ventas" element={<Layout><Ventas /></Layout>} />
         </Route>
 
-        {/* Historial y lista de cuentas: solo admin y contadora */}
+        {/* Historial: solo admin y contadora. El estado de cuenta de un cliente
+            se ve desde su ficha ("/clientes/:id/cuenta"), no como lista aparte. */}
         <Route element={<ProtectedRoute roles={['admin', 'contadora']} />}>
           <Route path="/historial" element={<Layout><Historial /></Layout>} />
-          <Route path="/cuentas" element={<Layout><Cuentas /></Layout>} />
-          <Route path="/tiendas" element={<Layout><Tiendas /></Layout>} />
         </Route>
 
         {/* Estado de cuenta de un cliente: exclusivo de admin y contadora. La
