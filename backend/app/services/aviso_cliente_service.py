@@ -232,7 +232,8 @@ def avisar_cliente_aprobar_despacho(
             cliente,
             f"Tu pedido {numero} está listo para tu aprobación",
             f"""<p>Hola {cliente.nombre},</p>
-<p>Bodega recibió e inspeccionó tu pedido <strong>{numero}</strong> y está listo para despacharse.</p>
+<p>Bodega recibió e inspeccionó tu pedido <strong>{numero}</strong> y está listo para despacharse.
+Ya puedes ver en tu portal las fotos que tomamos al revisarlo.</p>
 {nota_html}
 <p>Tienes hasta <strong>{plazo_legible}</strong> para revisarlo y aprobar el despacho desde tu portal.
 Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
@@ -246,7 +247,8 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
         nota_wsp = f"\n\nNota de bodega: {nota}" if nota else ""
         texto_libre = (
             f"Hola {cliente.nombre}, bodega recibió e inspeccionó tu pedido {numero} y "
-            f"está listo para despacharse.{nota_wsp}\n\nTienes hasta {plazo_legible} para "
+            f"está listo para despacharse. Ya puedes ver en tu portal las fotos que tomamos "
+            f"al revisarlo.{nota_wsp}\n\nTienes hasta {plazo_legible} para "
             f"aprobar el despacho: {link}\nSi no respondes antes de ese plazo, el despacho "
             "continúa de todas formas."
         )
