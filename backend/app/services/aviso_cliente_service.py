@@ -30,6 +30,11 @@ _MESES = [
 ]
 
 
+def _link_portal(sesion_id: str) -> str:
+    """URL de la cotización en el portal de clientes (dominio propio, ruta singular)."""
+    return f"{settings.PORTAL_URL}/portal/cotizacion/{sesion_id}"
+
+
 def _formatear_plazo(momento: datetime) -> str:
     """'2026-09-19T09:31:01+00:00' -> '19 de septiembre a las 9:31 am'"""
     hora12 = momento.hour % 12 or 12
@@ -217,7 +222,7 @@ def avisar_cliente_aprobar_despacho(
     en ambos avisos para que el cliente vea de una vez algo puntual (una caja
     faltante, etc.) sin tener que entrar al portal primero.
     """
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
     plazo_legible = _formatear_plazo(plazo)
     nota = (novedades or "").strip()
 
@@ -265,7 +270,7 @@ def avisar_cliente_pedido_en_proveedor(cliente: Cliente, sesion_id: str, numero:
     primer aviso externo que recibe el cliente después de confirmar sus
     cantidades, mucho antes de que bodega reciba nada. Correo y WhatsApp, cada
     uno best-effort."""
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
 
     try:
         _enviar_correo_brevo(
@@ -306,7 +311,7 @@ def avisar_cliente_fecha_tentativa(
     pedido se reparte entre varios, cada uno manda su propio aviso, así que
     el nombre del proveedor va siempre en el mensaje para no confundir uno
     con otro. Correo y WhatsApp, cada uno best-effort."""
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
 
     try:
         _enviar_correo_brevo(
@@ -353,7 +358,7 @@ def avisar_cliente_despachado(
     """Avisa al cliente que su contenedor ya salió (etapa 'en_transito'), con
     la naviera y el tracking si Marcela ya los cargó. Correo y WhatsApp, cada
     uno best-effort."""
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
     eta_legible = formatear_fecha_legible(fecha_eta.isoformat()) if fecha_eta else None
 
     try:
@@ -410,7 +415,7 @@ def avisar_cliente_despachado(
 def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Avisa al cliente que su contenedor llegó al país de destino, antes de
     la entrega final. Correo y WhatsApp, cada uno best-effort."""
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
 
     try:
         _enviar_correo_brevo(
@@ -445,7 +450,7 @@ def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> 
 def avisar_cliente_entregado(cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Avisa al cliente que su pedido fue entregado. Correo y WhatsApp, cada
     uno best-effort."""
-    link = f"{settings.PORTAL_URL}/portal/cotizaciones/{sesion_id}"
+    link = _link_portal(sesion_id)
 
     try:
         _enviar_correo_brevo(
