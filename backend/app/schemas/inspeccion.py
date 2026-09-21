@@ -12,6 +12,19 @@ class CampoInspeccion(BaseModel):
     corregido: str | float | int | None = None
 
 
+class CajaExtra(BaseModel):
+    """Una caja fuera de lo uniforme (ej. la mayoría trae 100 uds/caja pero
+    llegó una con 50, o con medidas/peso distintos). Se suma a `cajas` del
+    ítem, no lo reemplaza: `cajas`/`uds_caja`/medidas siguen siendo la caja
+    "normal", esto son las que hay que anotar aparte."""
+    ctns: int
+    qty_por_ctn: int
+    largo_cm: float | None = None
+    ancho_cm: float | None = None
+    alto_cm: float | None = None
+    gw: float | None = None
+
+
 class InspeccionItemResponse(BaseModel):
     item_id: str
     foto_url: str | None = None
@@ -43,6 +56,7 @@ class InspeccionItemResponse(BaseModel):
     minimo_piezas_caja_tienda: CampoInspeccion
 
     referencia_coincide: bool | None = None
+    cajas_extra: list[CajaExtra] = []
     fotos: list[str] = []
     video_url: str | None = None
     actualizado_en: datetime | None = None
@@ -88,6 +102,7 @@ class InspeccionItemInput(BaseModel):
     minimo_cajas_tienda: int | None = None
     minimo_piezas_caja_tienda: int | None = None
     referencia_coincide: bool | None = None
+    cajas_extra: list[CajaExtra] | None = None
 
 
 class GuardarInspeccionInput(BaseModel):

@@ -59,6 +59,7 @@ def _item_response(item: Item, insp: ItemInspeccionBodega | None, actualizado_po
         foto_final_url=item.foto_final_url,
         **campos,
         referencia_coincide=insp.referencia_coincide if insp else None,
+        cajas_extra=(insp.cajas_extra if insp and insp.cajas_extra else []),
         fotos=(insp.fotos if insp and insp.fotos else []),
         video_url=insp.video_url if insp else None,
         actualizado_en=insp.actualizado_en if insp else None,
@@ -131,6 +132,9 @@ def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInpu
         for clave, _campo_item, campo_insp in _MAPEO_CAMPOS:
             setattr(insp, campo_insp, getattr(entrada, clave))
         insp.referencia_coincide = entrada.referencia_coincide
+        insp.cajas_extra = (
+            [c.model_dump() for c in entrada.cajas_extra] if entrada.cajas_extra else None
+        )
         insp.actualizado_en = ahora
         insp.actualizado_por_id = usuario.id
 

@@ -893,7 +893,7 @@
     "ordenCompra": "purchase order",
     "ordenesTitulo": "Store orders",
     "ordenRevisadaBodega": "The warehouse already reviewed what arrived",
-    "ordenEsperandoBodega": "Waiting for the warehouse to receive it",
+    "ordenEsperandoBodega": "Store still needs to be counted by the warehouse",
     "verLoQueLlego": "View what arrived",
     "fechaTentativaValor": "Estimated date: {{fecha}}",
     "fechaTentativaSinAsignar": "+ Add this store's estimated date",

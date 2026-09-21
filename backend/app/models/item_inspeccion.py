@@ -65,6 +65,11 @@ class ItemInspeccionBodega(Base):
     fotos: Mapped[list | None] = mapped_column(JSON, nullable=True)
     video_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Cajas fuera de lo uniforme (ej. llegaron 3 cajas de 100 uds y 1 de 50, o
+    # con medidas/peso distintos): se suman a ctns/qty_por_ctn de arriba, no
+    # los reemplazan. Lista de {ctns, qty_por_ctn, largo_cm, ancho_cm, alto_cm, gw}.
+    cajas_extra: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
     actualizado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     actualizado_por_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("users.id"), nullable=True

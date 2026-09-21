@@ -893,7 +893,7 @@
     "ordenCompra": "orden de compra",
     "ordenesTitulo": "Órdenes a tienda",
     "ordenRevisadaBodega": "Bodega ya revisó lo que llegó",
-    "ordenEsperandoBodega": "Esperando que bodega la reciba",
+    "ordenEsperandoBodega": "Falta que bodega cuente esta orden",
     "verLoQueLlego": "Ver lo que llegó",
     "fechaTentativaValor": "Fecha estimada: {{fecha}}",
     "fechaTentativaSinAsignar": "+ Agregar fecha estimada de esta tienda",

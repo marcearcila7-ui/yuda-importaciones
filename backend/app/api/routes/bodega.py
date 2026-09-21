@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, require_roles
@@ -32,11 +32,11 @@ from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cotizacion_service import _calcular
-from app.services.excel_service import generar_csv_pedido, generar_formato_pedido
+from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
-from app.services.inspeccion_service import construir_inspeccion_sesion, guardar_inspeccion
+from app.services.inspeccion_service import _MAPEO_CAMPOS, construir_inspeccion_sesion, guardar_inspeccion
 from app.services.notificacion_service import avisar_inspeccion_actualizada, avisar_orden_actualizada_bodega
-from app.services.pdf_service import html_pedido, render_pdf
+from app.services.pdf_service import generar_packing_list_pdf, html_pedido, render_pdf
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_csv, subir_excel, subir_foto, subir_pdf, subir_video
 
 router = APIRouter(prefix="/bodega", tags=["bodega"])
@@ -614,6 +614,110 @@ def guardar_cotizacion_inspeccion(
     db.commit()
 
     return construir_inspeccion_sesion(db, sesion)
+
+
+_CAMPO_ITEM_A_INSPECCION = {campo_item: campo_insp for _, campo_item, campo_insp in _MAPEO_CAMPOS}
+
+
+class _ItemInspeccionado:
+    """Envuelve un Item aplicando las correcciones de bodega (si las hay), para
+    generar un documento CON esas correcciones ya fusionadas -sin escribir
+    sobre el Item real, así que el cliente sigue sin ver nada de esto. Es solo
+    para que bodega le devuelva a la vendedora el mismo formato, actualizado."""
+
+    def __init__(self, item: Item, insp: ItemInspeccionBodega | None) -> None:
+        self._item = item
+        self._insp = insp
+
+    def __getattr__(self, nombre: str):
+        campo_insp = _CAMPO_ITEM_A_INSPECCION.get(nombre)
+        if campo_insp and self._insp is not None:
+            valor = getattr(self._insp, campo_insp, None)
+            if valor is not None:
+                return valor
+        return getattr(self._item, nombre)
+
+
+_CAMPOS_CAJA_EXTRA = ("ctns", "qty_por_ctn", "largo_cm", "ancho_cm", "alto_cm", "gw")
+
+
+class _ItemCajaExtra:
+    """Una fila adicional en el documento por cada "caja extra" no uniforme
+    (ver ItemInspeccionBodega.cajas_extra): mismo producto (foto, descripción,
+    precio) pero con sus propias cajas/medidas/peso, para que el CBM y el peso
+    totales del documento salgan correctos en vez de promediarse."""
+
+    def __init__(self, base: "_ItemInspeccionado", caja: dict) -> None:
+        self._base = base
+        self._caja = caja
+
+    def __getattr__(self, nombre: str):
+        if nombre in _CAMPOS_CAJA_EXTRA and self._caja.get(nombre) is not None:
+            return self._caja[nombre]
+        return getattr(self._base, nombre)
+
+
+def _items_inspeccionados(db: Session, sesion_id: str) -> list:
+    items = db.query(Item).filter(Item.sesion_id == sesion_id).order_by(Item.orden.asc()).all()
+    item_ids = [i.id for i in items]
+    inspecciones = (
+        {
+            i.item_id: i
+            for i in db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)).all()
+        }
+        if item_ids
+        else {}
+    )
+    filas: list = []
+    for item in items:
+        insp = inspecciones.get(item.id)
+        base = _ItemInspeccionado(item, insp)
+        filas.append(base)
+        if insp and insp.cajas_extra:
+            filas.extend(_ItemCajaExtra(base, caja) for caja in insp.cajas_extra)
+    return filas
+
+
+@router.get("/pedidos/{sesion_id}/cotizacion/exportar-excel")
+def exportar_cotizacion_inspeccion_excel(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Packing List (Excel) con las correcciones de bodega ya fusionadas, para
+    que bodega se lo devuelva a la vendedora actualizado. No modifica el Item:
+    es un documento aparte, la vendedora decide si aplica los cambios."""
+    sesion = _sesion_o_404(db, sesion_id)
+    contenido = generar_packing_list_excel(
+        _items_inspeccionados(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
+    )
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_PackingList_Bodega.xlsx"
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.get("/pedidos/{sesion_id}/cotizacion/exportar-pdf")
+def exportar_cotizacion_inspeccion_pdf(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Igual que el Excel de arriba, pero en PDF (con fotos)."""
+    sesion = _sesion_o_404(db, sesion_id)
+    contenido = generar_packing_list_pdf(
+        _items_inspeccionados(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
+    )
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_PackingList_Bodega.pdf"
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
 
 
 @router.post("/pedidos/{sesion_id}/cotizacion/items/{item_id}/fotos")

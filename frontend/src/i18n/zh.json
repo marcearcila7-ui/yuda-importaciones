@@ -893,7 +893,7 @@
     "ordenCompra": "采购订单",
     "ordenesTitulo": "店铺订单",
     "ordenRevisadaBodega": "仓库已核对到货情况",
-    "ordenEsperandoBodega": "等待仓库接收",
+    "ordenEsperandoBodega": "仓库尚未清点这个订单",
     "verLoQueLlego": "查看到货情况",
     "fechaTentativaValor": "预计日期：{{fecha}}",
     "fechaTentativaSinAsignar": "+ 添加该店铺的预计日期",
