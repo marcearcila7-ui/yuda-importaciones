@@ -665,7 +665,14 @@
     "sinResultados": "没有与「{{texto}}」匹配的客户。",
     "todasLasVendedoras": "所有销售员",
     "verInactivos": "显示已停用 ({{n}})",
-    "ocultarInactivos": "隐藏已停用"
+    "ocultarInactivos": "隐藏已停用",
+    "tab": {
+      "info": "信息",
+      "acceso": "门户访问",
+      "cotizaciones": "报价单"
+    },
+    "siglaAyuda": "该客户在财务应用中使用的代码。不会带来余额或资金变动信息。",
+    "gestionarPedido": "查看详情"
   },
   "colaboracion": {
     "errorCargar": "无法加载客户信息",

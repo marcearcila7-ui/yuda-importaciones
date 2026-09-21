@@ -103,12 +103,18 @@ function Clientes() {
   const [verInactivos, setVerInactivos] = useState(false)
   const [cotizaciones, setCotizaciones] = useState<Record<string, Sesion[]>>({})
   const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
+  // La ficha del cliente mezclaba identidad, acceso al portal y todas sus
+  // cotizaciones en una sola pantalla larga: para una usuaria no técnica era
+  // "un muro de información" sin saber qué mirar primero. Ahora son 3
+  // pestañas, cada una respondiendo una sola pregunta a la vez.
+  const [tabCliente, setTabCliente] = useState<'info' | 'acceso' | 'cotizaciones'>('info')
 
   const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
   const abrirCliente = (c: Cliente) => {
     setClienteAbiertoId(c.id)
     setCotAbierta(new Set())
+    setTabCliente('info')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (cotizaciones[c.id] === undefined) {
       getCotizacionesCliente(c.id)
@@ -422,6 +428,7 @@ ${t('clientes.email')}: ${c.email}`
     if (!cli) return
     abrirCliente(cli)
     setCotAbierta(new Set([sesionId]))
+    setTabCliente('cotizaciones')
   }
 
   const inactivos = clientes.filter((c) => !c.activo).length
@@ -453,39 +460,60 @@ ${t('clientes.email')}: ${c.email}`
           <ArrowLeft size={16} /> {t('clientes.volverALista')}
         </button>
 
-        {/* Quien es y que se puede hacer con el */}
-        <div className="card flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <span
-                className="flex flex-shrink-0 items-center justify-center font-bold"
-                style={{ width: 44, height: 44, borderRadius: 999, fontSize: 18, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
-              >
-                {(c.nombre || '?').trim().charAt(0).toUpperCase()}
-              </span>
-              <div className="min-w-0">
-                <h1 className="truncate" style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>
-                  {c.nombre}
-                </h1>
-                <p className="truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                  {[c.empresa, c.email, c.pais].filter(Boolean).join('  ')}
-                </p>
-              </div>
-            </div>
-            <span
-              className="rounded-full px-3 py-1 text-xs font-semibold"
-              style={
-                c.activo
-                  ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                  : { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }
-              }
-            >
-              {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
-            </span>
+        {/* Encabezado corto, siempre visible: quién es, para orientarse en
+            cualquier pestaña sin tener que volver a leer todo de nuevo. */}
+        <div className="flex items-center gap-3">
+          <span
+            className="flex flex-shrink-0 items-center justify-center font-bold"
+            style={{ width: 44, height: 44, borderRadius: 999, fontSize: 18, backgroundColor: 'var(--yuda-primary)', color: 'var(--yuda-white)' }}
+          >
+            {(c.nombre || '?').trim().charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate" style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>
+              {c.nombre}
+            </h1>
+            <p className="truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {[c.empresa, c.email, c.pais].filter(Boolean).join('  ')}
+            </p>
           </div>
+          <span
+            className="flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
+            style={
+              c.activo
+                ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                : { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }
+            }
+          >
+            {c.activo ? t('clientes.activo') : t('clientes.inactivo')}
+          </span>
+        </div>
 
+        {/* 3 pestañas: cada una responde una sola pregunta (quién es y qué
+            hacer con él / cómo entra a su portal / qué cotizaciones tiene),
+            en vez de mostrar las tres a la vez en una pantalla larga. */}
+        <div className="flex gap-2 border-b" style={{ borderColor: 'var(--yuda-border)' }}>
+          {(['info', 'acceso', 'cotizaciones'] as const).map((tabId) => (
+            <button
+              key={tabId}
+              type="button"
+              onClick={() => setTabCliente(tabId)}
+              className="px-3 py-2 text-sm font-semibold"
+              style={{
+                color: tabCliente === tabId ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
+                borderBottom: tabCliente === tabId ? '2px solid var(--yuda-primary)' : '2px solid transparent',
+              }}
+            >
+              {t(`clientes.tab.${tabId}`)}
+            </button>
+          ))}
+        </div>
+
+        {/* Pestaña "Info": quién es y qué se puede hacer con él */}
+        {tabCliente === 'info' && (
+        <div className="card flex flex-col gap-4">
           {esAdmin && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('clientes.duenaLabel')}
               </span>
@@ -591,6 +619,11 @@ ${t('clientes.email')}: ${c.email}`
               )}
             </div>
           )}
+          {esAdmin && (
+            <p className="-mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('clientes.siglaAyuda')}
+            </p>
+          )}
 
           <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
             <button
@@ -629,8 +662,10 @@ ${t('clientes.email')}: ${c.email}`
             </button>
           </div>
         </div>
+        )}
 
-        {/* Como entra este cliente a su portal */}
+        {/* Pestaña "Acceso": cómo entra este cliente a su portal */}
+        {tabCliente === 'acceso' && (
         <div className="card flex flex-col gap-3">
           <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
             {t('clientes.accesoTitulo')}
@@ -672,8 +707,10 @@ ${t('clientes.email')}: ${c.email}`
             </button>
           </div>
         </div>
+        )}
 
-        {/* Sus cotizaciones */}
+        {/* Pestaña "Cotizaciones" */}
+        {tabCliente === 'cotizaciones' && (
         <div className="card flex flex-col gap-3">
           <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
             {t('clientes.cotizacionesTitulo')}
@@ -718,7 +755,7 @@ ${t('clientes.email')}: ${c.email}`
                       </button>
                       <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center gap-1 rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
                         {cotAbierta.has(s.id) ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                        {t('clientes.seguimiento')}
+                        {t('clientes.gestionarPedido')}
                       </button>
                       <button
                         type="button"
@@ -732,13 +769,16 @@ ${t('clientes.email')}: ${c.email}`
                     </div>
                   </div>
 
-                  {s.pedido_recibido_at && (
-                    <div className="mt-3">
-                      <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
-                    </div>
-                  )}
+                  {/* Antes GestionPedidoCliente se mostraba siempre expandido
+                      apenas había pedido recibido, sin forma de ocultarlo: con
+                      varias cotizaciones era un panel completo repetido una y
+                      otra vez. Ahora vive detrás del mismo botón que el
+                      seguimiento -un solo "ver detalle" por cotización. */}
                   {cotAbierta.has(s.id) && (
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-col gap-3">
+                      {s.pedido_recibido_at && (
+                        <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
+                      )}
                       <SeguimientoEditor sesionId={s.id} />
                     </div>
                   )}
@@ -747,6 +787,7 @@ ${t('clientes.email')}: ${c.email}`
             </div>
           )}
         </div>
+        )}
       </div>
     )
   }

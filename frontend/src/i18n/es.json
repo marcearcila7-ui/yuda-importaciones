@@ -665,7 +665,14 @@
     "sinResultados": "Ningún cliente coincide con «{{texto}}».",
     "todasLasVendedoras": "Todas las vendedoras",
     "verInactivos": "Ver desactivados ({{n}})",
-    "ocultarInactivos": "Ocultar desactivados"
+    "ocultarInactivos": "Ocultar desactivados",
+    "tab": {
+      "info": "Info",
+      "acceso": "Acceso al portal",
+      "cotizaciones": "Cotizaciones"
+    },
+    "siglaAyuda": "Es el código con el que este cliente aparece en la app de contabilidad. No trae saldos ni movimientos de dinero acá.",
+    "gestionarPedido": "Ver detalle"
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",

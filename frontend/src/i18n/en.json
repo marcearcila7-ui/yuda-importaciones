@@ -665,7 +665,14 @@
     "sinResultados": "No client matches «{{texto}}».",
     "todasLasVendedoras": "All salespeople",
     "verInactivos": "Show deactivated ({{n}})",
-    "ocultarInactivos": "Hide deactivated"
+    "ocultarInactivos": "Hide deactivated",
+    "tab": {
+      "info": "Info",
+      "acceso": "Portal access",
+      "cotizaciones": "Quotations"
+    },
+    "siglaAyuda": "The code this client uses in the accounting app. It never brings balances or money movements over here.",
+    "gestionarPedido": "View detail"
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",
