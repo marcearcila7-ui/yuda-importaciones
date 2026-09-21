@@ -158,6 +158,9 @@ class SesionResponse(BaseModel):
     orden_compra_url: str | None = None
     orden_compra_nombre: str | None = None
     created_at: datetime
+    # Etapa real del envío (ESTADOS_ENVIO), para que la vendedora pueda
+    # clasificar sus cotizaciones sin adivinar por otros campos sueltos.
+    estado_envio: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

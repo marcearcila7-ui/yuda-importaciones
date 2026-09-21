@@ -204,15 +204,29 @@ def cotizaciones_del_cliente(
     cliente_id: str,
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
-) -> list[Sesion]:
-    """Cotizaciones vinculadas a un cliente"""
+) -> list[SesionResponse]:
+    """Cotizaciones vinculadas a un cliente, con la etapa real de envío de
+    cada una (para que la vendedora las pueda clasificar sin adivinar)."""
     _cliente_autorizado(db, cliente_id, usuario)
-    return (
+    sesiones = (
         db.query(Sesion)
         .filter(Sesion.cliente_id == cliente_id)
         .order_by(Sesion.created_at.desc())
         .all()
     )
+    sesion_ids = [s.id for s in sesiones]
+    estados = (
+        {
+            seg.sesion_id: seg.estado
+            for seg in db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id.in_(sesion_ids)).all()
+        }
+        if sesion_ids
+        else {}
+    )
+    return [
+        SesionResponse.model_validate(s).model_copy(update={"estado_envio": estados.get(s.id)})
+        for s in sesiones
+    ]
 
 
 @router.patch("/clientes/{cliente_id}", response_model=ClienteResponse)

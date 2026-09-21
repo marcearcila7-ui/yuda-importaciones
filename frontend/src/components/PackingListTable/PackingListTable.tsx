@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import {
   flexRender,
@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { Crop } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Crop } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { guardarRecorte, guardarRecorteFotoExtra, reemplazarFotoExtra, reemplazarFotoItem } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
@@ -423,6 +423,12 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   // ajustando: además del ítem, hace falta saber CUÁL de las 4.
   const [extraRecorte, setExtraRecorte] = useState<{ item: ItemResponse; tipo: string } | null>(null)
   const [guardandoRecorteExtra, setGuardandoRecorteExtra] = useState(false)
+  // La tabla tiene muchas columnas y el scroll nativo del navegador no siempre
+  // se ve (en Mac/Safari la barra queda invisible hasta que se está
+  // arrastrando). Con estas flechas queda claro, sin depender de eso, que hay
+  // más columnas a la derecha.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const desplazar = (dx: number) => scrollRef.current?.scrollBy({ left: dx, behavior: 'smooth' })
 
   const aplicarRecorte = async (recuadro: number[] | null, giro = 0) => {
     if (!itemRecorte || !sesionActual) return
@@ -570,7 +576,32 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       </div>
 
       {/* Vista escritorio: tabla completa */}
-      <div className="hidden w-full overflow-x-auto rounded border border-gray-200 sm:block">
+      <div className="hidden items-center gap-2 sm:flex">
+        <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+          {t('packing.deslizaParaVerMas')}
+        </p>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => desplazar(-300)}
+            aria-label={t('packing.verColumnasAnteriores')}
+            className="flex items-center justify-center rounded-lg border border-gray-200"
+            style={{ width: 32, height: 32, color: 'var(--yuda-primary)' }}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => desplazar(300)}
+            aria-label={t('packing.verColumnasSiguientes')}
+            className="flex items-center justify-center rounded-lg border border-gray-200"
+            style={{ width: 32, height: 32, color: 'var(--yuda-primary)' }}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+      <div ref={scrollRef} className="hidden w-full overflow-x-auto rounded border border-gray-200 sm:block">
       <table className="border-collapse text-sm">
         <thead>
           {table.getHeaderGroups().map((hg) => (

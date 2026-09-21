@@ -29,6 +29,22 @@ import type { EquipoResponse } from '../types/equipo'
 const numeroCot = (s: Sesion) =>
   `YUDA-${(s.fecha || '').replace(/-/g, '')}-${s.id.slice(0, 6).toUpperCase()}`
 
+// Clasifica una cotización en una sola etapa, para que la vendedora sepa de
+// un vistazo qué le falta a cada una en vez de leer 3 campos sueltos
+// (enviada_cliente, pedido_estado, estado_envio) y adivinar qué significan
+// juntos.
+type EtapaCot = 'borrador' | 'con_cliente' | 'listas_bodega' | 'en_camino' | 'entregadas'
+
+const ETAPAS_EN_CAMINO = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_destino']
+
+function etapaDeCotizacion(s: Sesion): EtapaCot {
+  if (!s.enviada_cliente) return 'borrador'
+  if (s.estado_envio === 'entregado') return 'entregadas'
+  if (s.estado_envio && ETAPAS_EN_CAMINO.includes(s.estado_envio)) return 'en_camino'
+  if (s.pedido_estado === 'confirmado') return 'listas_bodega'
+  return 'con_cliente'
+}
+
 // Genera una contraseña temporal legible (sin caracteres ambiguos) para reenviar
 function generarPassword(): string {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
@@ -108,6 +124,9 @@ function Clientes() {
   // "un muro de información" sin saber qué mirar primero. Ahora son 3
   // pestañas, cada una respondiendo una sola pregunta a la vez.
   const [tabCliente, setTabCliente] = useState<'info' | 'acceso' | 'cotizaciones'>('info')
+  // Dentro de "Cotizaciones": por etapa, para no mezclar borradores con lo
+  // que ya está en camino. "todas" no filtra, solo agrupa visualmente.
+  const [subTabCot, setSubTabCot] = useState<'todas' | EtapaCot>('todas')
 
   const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
@@ -115,6 +134,7 @@ function Clientes() {
     setClienteAbiertoId(c.id)
     setCotAbierta(new Set())
     setTabCliente('info')
+    setSubTabCot('todas')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (cotizaciones[c.id] === undefined) {
       getCotizacionesCliente(c.id)
@@ -725,8 +745,43 @@ ${t('clientes.email')}: ${c.email}`
           ) : cots.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.sinCotizaciones')}</p>
           ) : (
-            <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
-              {cots.map((s) => (
+            <>
+              {/* Por etapa: de un vistazo, sin abrir cada una para saber qué
+                  le falta. El número en cada chip es cuántas hay ahí. */}
+              <div className="flex flex-wrap gap-2">
+                {(['todas', 'borrador', 'con_cliente', 'listas_bodega', 'en_camino', 'entregadas'] as const).map((et) => {
+                  const cuantas = et === 'todas' ? cots.length : cots.filter((s) => etapaDeCotizacion(s) === et).length
+                  if (et !== 'todas' && cuantas === 0) return null
+                  const activo = subTabCot === et
+                  return (
+                    <button
+                      key={et}
+                      type="button"
+                      onClick={() => setSubTabCot(et)}
+                      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold"
+                      style={{
+                        border: `1.5px solid ${activo ? 'var(--yuda-primary)' : 'var(--yuda-border)'}`,
+                        backgroundColor: activo ? 'var(--yuda-primary-soft)' : 'var(--yuda-white)',
+                        color: activo ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
+                      }}
+                    >
+                      {t(`clientes.etapa.${et}`)}
+                      <span style={{ opacity: 0.7 }}>{cuantas}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
+                {cots
+                  .filter((s) => subTabCot === 'todas' || etapaDeCotizacion(s) === subTabCot)
+                  .map((s) => {
+                    const etapa = etapaDeCotizacion(s)
+                    // Lista para bodega: se muestra ya abierta, con el botón de
+                    // enviar a la vista, sin que la vendedora tenga que
+                    // adivinar que hay que hacer clic en algo más para verlo.
+                    const abierta = cotAbierta.has(s.id) || etapa === 'listas_bodega'
+                    return (
                 <div key={s.id} className="py-3 first:pt-0">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -735,21 +790,15 @@ ${t('clientes.email')}: ${c.email}`
                         <span
                           className="rounded-full px-2 py-0.5 text-xs font-semibold"
                           style={
-                            s.enviada_cliente
-                              ? { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                              : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
+                            etapa === 'listas_bodega'
+                              ? { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
+                              : etapa === 'borrador'
+                                ? { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
+                                : { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
                           }
                         >
-                          {s.enviada_cliente ? t('clientes.enviada') : t('clientes.borrador')}
+                          {t(`clientes.etapa.${etapa}`)}
                         </span>
-                        {s.pedido_recibido_at && (
-                          <span
-                            className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                            style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
-                          >
-                            {t('clientes.pedidoRecibido')}
-                          </span>
-                        )}
                       </p>
                       <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</p>
                     </div>
@@ -758,7 +807,7 @@ ${t('clientes.email')}: ${c.email}`
                         {t('clientes.verDetalle')}
                       </button>
                       <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center gap-1 rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                        {cotAbierta.has(s.id) ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                        {abierta ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                         {t('clientes.gestionarPedido')}
                       </button>
                       <button
@@ -777,8 +826,9 @@ ${t('clientes.email')}: ${c.email}`
                       apenas había pedido recibido, sin forma de ocultarlo: con
                       varias cotizaciones era un panel completo repetido una y
                       otra vez. Ahora vive detrás del mismo botón que el
-                      seguimiento -un solo "ver detalle" por cotización. */}
-                  {cotAbierta.has(s.id) && (
+                      seguimiento -salvo "listas para bodega", que se abre
+                      sola porque ahí SÍ hay algo pendiente de hacer. */}
+                  {abierta && (
                     <div className="mt-3 flex flex-col gap-3">
                       {s.pedido_recibido_at && (
                         <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
@@ -787,8 +837,10 @@ ${t('clientes.email')}: ${c.email}`
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
+                    )
+                  })}
+              </div>
+            </>
           )}
         </div>
         )}

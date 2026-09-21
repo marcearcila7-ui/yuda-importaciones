@@ -464,6 +464,17 @@ function Dashboard() {
                 permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
                 shippingMark={sesionActual.shipping_mark}
               />
+              {/* La vendedora terminaba acá sin saber qué seguía: "enviar a
+                  bodega" no aparece todavía porque falta que el cliente
+                  confirme cantidades desde su portal. Se explica el camino
+                  completo para que no sienta que el sistema "se quedó
+                  callado" al terminar. */}
+              <p
+                className="mt-4 rounded-lg px-3 py-2.5 text-sm"
+                style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-text)' }}
+              >
+                {t('dashboard.queSigueDespues')}
+              </p>
             </SectionCard>
           )}
 

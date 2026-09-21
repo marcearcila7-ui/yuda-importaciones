@@ -82,4 +82,7 @@ export interface Sesion {
   orden_compra_url?: string | null
   orden_compra_nombre?: string | null
   created_at: string
+  // Etapa real del envío (ESTADOS_ENVIO backend), null si aún no tiene
+  // seguimiento (todavía no llegó a "cotización enviada").
+  estado_envio?: string | null
 }

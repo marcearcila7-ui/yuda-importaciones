@@ -153,7 +153,8 @@
     "pasoTerminar": "完成",
     "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。",
     "pasoFotos": "照片",
-    "ocultarCotizador": "隐藏"
+    "ocultarCotizador": "隐藏",
+    "queSigueDespues": "客户在其门户确认数量后，您就可以从客户资料（\"报价单\"标签 → \"可发往仓库\"）中将订单发送至仓库。"
   },
   "ocr": {
     "titulo": "上传标签照片",
@@ -289,7 +290,10 @@
     "shippingMarkAyuda": "用于在货柜中识别该客户的货物，会显示在所有产品上。",
     "shippingMarkGuardada": "唛头已保存",
     "shippingMarkError": "无法保存唛头",
-    "errorGuardarCampo": "无法保存修改，请重试。"
+    "errorGuardarCampo": "无法保存修改，请重试。",
+    "deslizaParaVerMas": "滑动或使用箭头查看更多列 →",
+    "verColumnasAnteriores": "查看前面的列",
+    "verColumnasSiguientes": "查看后面的列"
   },
   "pedidos": {
     "faltaMarca": "生成订单前请填写唛头（客户缩写）：这是供应商区分不同订单箱子的方式。",
@@ -673,7 +677,15 @@
     },
     "siglaAyuda": "该客户在财务应用中使用的代码。不会带来余额或资金变动信息。",
     "gestionarPedido": "管理订单",
-    "contableTodoImportado": "您已导入了财务应用中的所有客户。当那边创建新客户时，会显示在这里。"
+    "contableTodoImportado": "您已导入了财务应用中的所有客户。当那边创建新客户时，会显示在这里。",
+    "etapa": {
+      "todas": "全部",
+      "borrador": "草稿",
+      "con_cliente": "客户处理中",
+      "listas_bodega": "可发往仓库",
+      "en_camino": "运输中",
+      "entregadas": "已交付"
+    }
   },
   "colaboracion": {
     "errorCargar": "无法加载客户信息",

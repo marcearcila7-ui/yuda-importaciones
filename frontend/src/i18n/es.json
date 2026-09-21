@@ -153,7 +153,8 @@
     "pasoTerminar": "Terminar",
     "avisoSinProductosAvanzar": "Agrega al menos un producto para continuar.",
     "pasoFotos": "Fotos",
-    "ocultarCotizador": "Ocultar"
+    "ocultarCotizador": "Ocultar",
+    "queSigueDespues": "Cuando el cliente confirme las cantidades desde su portal, vas a poder enviar el pedido a bodega desde la ficha del cliente (pestaña «Cotizaciones» → «Listas para bodega»)."
   },
   "ocr": {
     "titulo": "Subir foto de etiqueta",
@@ -289,7 +290,10 @@
     "shippingMarkAyuda": "Identifica la carga de este cliente en el contenedor. Va en todos los productos.",
     "shippingMarkGuardada": "Marca de embarque guardada",
     "shippingMarkError": "No se pudo guardar la marca de embarque",
-    "errorGuardarCampo": "No se pudo guardar el cambio. Vuelve a intentarlo."
+    "errorGuardarCampo": "No se pudo guardar el cambio. Vuelve a intentarlo.",
+    "deslizaParaVerMas": "Desliza o usa las flechas para ver más columnas →",
+    "verColumnasAnteriores": "Ver columnas anteriores",
+    "verColumnasSiguientes": "Ver columnas siguientes"
   },
   "pedidos": {
     "faltaMarca": "Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido: es con lo que el proveedor separa estas cajas de las de otro pedido.",
@@ -673,7 +677,15 @@
     },
     "siglaAyuda": "Es el código con el que este cliente aparece en la app de contabilidad. No trae saldos ni movimientos de dinero acá.",
     "gestionarPedido": "Gestionar pedido",
-    "contableTodoImportado": "Ya importaste todos los clientes que hay en Yuda Contable. Cuando Marcela cree uno nuevo allá, va a aparecer acá."
+    "contableTodoImportado": "Ya importaste todos los clientes que hay en Yuda Contable. Cuando Marcela cree uno nuevo allá, va a aparecer acá.",
+    "etapa": {
+      "todas": "Todas",
+      "borrador": "Borrador",
+      "con_cliente": "Con el cliente",
+      "listas_bodega": "Listas para bodega",
+      "en_camino": "En camino",
+      "entregadas": "Entregadas"
+    }
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",

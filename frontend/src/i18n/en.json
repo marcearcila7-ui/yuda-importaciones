@@ -153,7 +153,8 @@
     "pasoTerminar": "Finish",
     "avisoSinProductosAvanzar": "Add at least one product to continue.",
     "pasoFotos": "Photos",
-    "ocultarCotizador": "Hide"
+    "ocultarCotizador": "Hide",
+    "queSigueDespues": "Once the client confirms the quantities from their portal, you'll be able to send the order to the warehouse from the client's page (\"Quotations\" tab → \"Ready for warehouse\")."
   },
   "ocr": {
     "titulo": "Upload label photo",
@@ -289,7 +290,10 @@
     "shippingMarkAyuda": "Identifies this client's cargo in the container. It goes on every product.",
     "shippingMarkGuardada": "Shipping mark saved",
     "shippingMarkError": "The shipping mark could not be saved",
-    "errorGuardarCampo": "Could not save the change. Please try again."
+    "errorGuardarCampo": "Could not save the change. Please try again.",
+    "deslizaParaVerMas": "Swipe or use the arrows to see more columns →",
+    "verColumnasAnteriores": "See previous columns",
+    "verColumnasSiguientes": "See next columns"
   },
   "pedidos": {
     "faltaMarca": "Enter the shipping mark (client's initials) before generating the order: it's how the supplier tells these boxes apart from another order's.",
@@ -673,7 +677,15 @@
     },
     "siglaAyuda": "The code this client uses in the accounting app. It never brings balances or money movements over here.",
     "gestionarPedido": "Manage order",
-    "contableTodoImportado": "You've already imported every client from Yuda Contable. When a new one is created there, it'll show up here."
+    "contableTodoImportado": "You've already imported every client from Yuda Contable. When a new one is created there, it'll show up here.",
+    "etapa": {
+      "todas": "All",
+      "borrador": "Draft",
+      "con_cliente": "With client",
+      "listas_bodega": "Ready for warehouse",
+      "en_camino": "On the way",
+      "entregadas": "Delivered"
+    }
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",
