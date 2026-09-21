@@ -5,7 +5,7 @@ from datetime import date, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import require_roles
+from app.api.dependencies import exigir_acceso_sesion, require_roles
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
@@ -201,13 +201,16 @@ def listar_pedidos_bodega(
 def asignar_pedido_bodega(
     sesion_id: str,
     datos: AsignarPedidoInput,
-    usuario: User = Depends(require_roles("admin", "bodega")),
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
     db: Session = Depends(get_db),
 ) -> BodegaPedidoResumen:
     """Toma un pedido para sí (auto-asignación) o se lo pasa a otra persona de
     bodega. `asignado_a_id=None` lo vuelve a dejar sin asignar, disponible
-    para cualquiera."""
+    para cualquiera. Una vendedora solo puede hacer esto en sus propios
+    pedidos (o los que le compartieron); bodega y admin en cualquiera."""
     sesion = _sesion_o_404(db, sesion_id)
+    if usuario.rol.value == "vendedora":
+        exigir_acceso_sesion(db, sesion, usuario)
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Este pedido todavía no tiene seguimiento")

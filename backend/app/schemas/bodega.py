@@ -47,6 +47,22 @@ class ActividadBodegaResponse(BaseModel):
     created_at: datetime
 
 
+class PedidoBodegaSeguimientoResumen(BaseModel):
+    """Para el panel de la vendedora: control de todo lo que se envió a
+    bodega, sin importar quién de sus clientes sea."""
+
+    sesion_id: str
+    numero: str
+    cliente_nombre: str
+    fecha: date
+    estado_envio: str
+    total_ordenes: int
+    ordenes_revisadas: int
+    bodega_asignado_a_id: str | None = None
+    bodega_asignado_a_nombre: str | None = None
+    actividad_reciente: list[ActividadBodegaResponse] = []
+
+
 class BodegaPedidoDetalle(BaseModel):
     """Detalle que bodega usa para comparar el pedido contra la orden de compra"""
 
