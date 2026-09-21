@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Receipt, Ship, Store } from 'lucide-react'
+import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import MetricCard from '../components/MetricCard'
 import PedidoCliente from '../components/PedidoCliente'
+import SeguimientoEditor from '../components/SeguimientoEditor'
 import SeguimientoTimeline from '../components/portal/SeguimientoTimeline'
 import { exportarCotizacionExcel, exportarCotizacionPDF, exportarFacturaExcel, exportarFacturaPDF, getItems, getSesiones } from '../api/packing'
 import { getContenedores } from '../api/contenedores'
@@ -47,6 +49,16 @@ function CotizacionDetalle() {
   // De (FROM) y Para (TO) editables de la factura. Para se precarga con el cliente.
   const [facturaDe, setFacturaDe] = useState<string>('')
   const [facturaPara, setFacturaPara] = useState<string>('')
+  // 3 pestañas: cada una responde una sola pregunta (qué se le cotizó al
+  // cliente / qué hay que hacer con el pedido y bodega / en qué va el envío),
+  // en vez de una sola pantalla larga con todo mezclado.
+  // Gestión primero para quien puede actuar (admin/vendedora); la contadora no
+  // gestiona pedidos, así que arranca directo en la cotización.
+  const [tab, setTab] = useState<'gestion' | 'cotizacion' | 'seguimiento'>(
+    rol === 'admin' || rol === 'vendedora' ? 'gestion' : 'cotizacion',
+  )
+  const [recargarTick, setRecargarTick] = useState(0)
+  const recargar = () => setRecargarTick((n) => n + 1)
 
   useEffect(() => {
     let activo = true
@@ -79,7 +91,7 @@ function CotizacionDetalle() {
     return () => {
       activo = false
     }
-  }, [id])
+  }, [id, recargarTick])
 
   const totales = useMemo(() => {
     const totalRmb = items.reduce((acc, i) => acc + (i.total_rmb || 0), 0)
@@ -187,7 +199,7 @@ function CotizacionDetalle() {
         </p>
       ) : (
         <>
-          {/* Totales */}
+          {/* Totales: siempre visible, para orientarse sin importar la pestaña */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <MetricCard titulo={t('historial.items')} valor={items.length} icono={<Package size={20} />} color="var(--yuda-primary)" />
             <MetricCard titulo={t('historial.totalRmb')} valor={`¥ ${fmt(totales.totalRmb)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
@@ -195,6 +207,68 @@ function CotizacionDetalle() {
             <MetricCard titulo={t('historial.proveedores')} valor={totales.proveedores} icono={<Store size={20} />} color="var(--yuda-accent)" />
           </div>
 
+          {/* 3 pestañas: qué hacer con el pedido (proveedores/bodega) / la
+              cotización que ve el cliente / el seguimiento del envío. Antes
+              "Ver detalle" (esta pantalla) y "Gestionar pedido" (un panel
+              aparte que se abría en la lista) eran dos cosas separadas y
+              confusas -ahora es un solo lugar. */}
+          <div className="flex gap-2 border-b" style={{ borderColor: 'var(--yuda-border)' }}>
+            {(['gestion', 'cotizacion', 'seguimiento'] as const)
+              .filter((tabId) => tabId !== 'gestion' || rol === 'admin' || rol === 'vendedora')
+              .map((tabId) => (
+                <button
+                  key={tabId}
+                  type="button"
+                  onClick={() => setTab(tabId)}
+                  className="px-3 py-2 text-sm font-semibold"
+                  style={{
+                    color: tab === tabId ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)',
+                    borderBottom: tab === tabId ? '2px solid var(--yuda-primary)' : '2px solid transparent',
+                  }}
+                >
+                  {t(`detalle.tab.${tabId}`)}
+                </button>
+              ))}
+          </div>
+
+          {/* Pestaña "Gestión": qué hacer con el pedido, proveedores y bodega */}
+          {tab === 'gestion' && (rol === 'admin' || rol === 'vendedora') && (
+            <>
+              {sesion.pedido_recibido_at ? (
+                <GestionPedidoCliente sesion={sesion} onActualizar={recargar} />
+              ) : (
+                <div className="card">
+                  <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('detalle.sinPedidoCliente')}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Pestaña "Seguimiento": tracking del envío */}
+          {tab === 'seguimiento' && (
+            rol === 'admin' || rol === 'vendedora' ? (
+              <SeguimientoEditor sesionId={id} />
+            ) : (
+              <section className="card">
+                <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
+                  {t('detalle.envio')}
+                </h2>
+                {seguimiento ? (
+                  <SeguimientoTimeline seguimiento={seguimiento} />
+                ) : (
+                  <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('detalle.sinEnvio')}
+                  </p>
+                )}
+              </section>
+            )
+          )}
+
+          {/* Pestaña "Cotización": lo que se le cotizó al cliente (solo lectura) */}
+          {tab === 'cotizacion' && (
+          <>
           {/* Descargar la cotización (PDF / Excel) — para Marcela y la contadora */}
           {items.length > 0 && (
             <section className="card flex flex-col gap-3">
@@ -240,8 +314,9 @@ function CotizacionDetalle() {
             </section>
           )}
 
-          {/* Generar la factura del cliente en USD (para Marcela y la contadora) */}
-          {items.length > 0 && (
+          {/* Generar la factura del cliente en USD: solo Marcela la usa, las
+              vendedoras nunca hacen facturas. */}
+          {items.length > 0 && esAdmin && (
             <section className="card flex flex-col gap-3">
               <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }} className="flex items-center gap-2">
                 <Receipt size={18} /> {t('detalle.facturaTitulo')}
@@ -381,20 +456,8 @@ function CotizacionDetalle() {
               </table>
             )}
           </section>
-
-          {/* Estado del envío / tracking (solo lectura, con la evidencia por etapa) */}
-          <section className="card">
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
-              {t('detalle.envio')}
-            </h2>
-            {seguimiento ? (
-              <SeguimientoTimeline seguimiento={seguimiento} />
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('detalle.sinEnvio')}
-              </p>
-            )}
-          </section>
+          </>
+          )}
         </>
       )}
     </div>

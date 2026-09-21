@@ -76,6 +76,7 @@ function App() {
         {/* Clientes: admin y vendedora */}
         <Route element={<ProtectedRoute roles={['admin', 'vendedora']} />}>
           <Route path="/clientes" element={<Layout><Clientes /></Layout>} />
+          <Route path="/clientes/:clienteId" element={<Layout><Clientes /></Layout>} />
           <Route path="/bodega-seguimiento" element={<Layout><BodegaSeguimiento /></Layout>} />
         </Route>
 

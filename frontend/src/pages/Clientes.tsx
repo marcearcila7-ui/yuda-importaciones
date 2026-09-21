@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
@@ -20,8 +20,6 @@ import { getEquipo } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
 import { confirmar } from '../store/confirmStore'
 import CredencialesCliente from '../components/CredencialesCliente'
-import GestionPedidoCliente from '../components/GestionPedidoCliente'
-import SeguimientoEditor from '../components/SeguimientoEditor'
 import type { Cliente, ClienteCreado, ClienteCreate, ContableClientePreview } from '../types/cliente'
 import type { Sesion } from '../types/packing'
 import type { EquipoResponse } from '../types/equipo'
@@ -104,12 +102,11 @@ function Clientes() {
   const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
   const portalUrl = `${window.location.origin}/portal/login`
 
-  // Un solo cliente abierto a la vez, en su propia pantalla. Antes era un acordeon
-  // dentro de la lista y quedaban tres niveles de cajas anidadas: cliente, acceso
-  // al portal, cotizacion y seguimiento, todo apilado en la misma pagina.
-  // Se guarda el id y no el objeto: si el cliente se borra o cambia de estado, la
-  // pantalla se entera sola y vuelve a la lista.
-  const [clienteAbiertoId, setClienteAbiertoId] = useState<string | null>(null)
+  // Un solo cliente abierto a la vez, en su propia pantalla -y ahora con su
+  // propia URL ("/clientes/:clienteId"), no solo un estado en memoria. Sin
+  // esto, refrescar la página (o el botón atrás del navegador) devolvía
+  // siempre a la lista, sin importar qué se estuviera viendo.
+  const { clienteId: clienteAbiertoId } = useParams<{ clienteId: string }>()
   const [busqueda, setBusqueda] = useState('')
   // Solo para Marcela: a que vendedora pertenece cada cliente, y el filtro.
   // Antes esto vivia en una pagina aparte, "Equipo", que mostraba los mismos
@@ -118,7 +115,6 @@ function Clientes() {
   const [filtroVendedora, setFiltroVendedora] = useState('')
   const [verInactivos, setVerInactivos] = useState(false)
   const [cotizaciones, setCotizaciones] = useState<Record<string, Sesion[]>>({})
-  const [cotAbierta, setCotAbierta] = useState<Set<string>>(new Set())
   // La ficha del cliente mezclaba identidad, acceso al portal y todas sus
   // cotizaciones en una sola pantalla larga: para una usuaria no técnica era
   // "un muro de información" sin saber qué mirar primero. Ahora son 3
@@ -132,22 +128,29 @@ function Clientes() {
 
   const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
-  const abrirCliente = (c: Cliente) => {
-    setClienteAbiertoId(c.id)
-    setCotAbierta(new Set())
+  // Al entrar a un cliente (por click, por atrás/adelante del navegador, o
+  // por refrescar con esa URL abierta) siempre arranca en la misma pestaña y
+  // trae sus cotizaciones: nada queda "recordado" de una visita anterior que
+  // pueda mostrarse sin que la vendedora lo haya pedido.
+  useEffect(() => {
+    if (!clienteAbiertoId) return
     setTabCliente('cotizaciones')
     setSubTabCot('todas')
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    if (cotizaciones[c.id] === undefined) {
-      getCotizacionesCliente(c.id)
-        .then((cots) => setCotizaciones((m) => ({ ...m, [c.id]: cots })))
-        .catch(() => setCotizaciones((m) => ({ ...m, [c.id]: [] })))
+    if (cotizaciones[clienteAbiertoId] === undefined) {
+      getCotizacionesCliente(clienteAbiertoId)
+        .then((cots) => setCotizaciones((m) => ({ ...m, [clienteAbiertoId]: cots })))
+        .catch(() => setCotizaciones((m) => ({ ...m, [clienteAbiertoId]: [] })))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteAbiertoId])
+
+  const abrirCliente = (c: Cliente) => {
+    navigate(`/clientes/${c.id}`)
   }
 
   const volverALista = () => {
-    setClienteAbiertoId(null)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    navigate('/clientes')
   }
 
   const recargarCotizaciones = (clienteId: string) => {
@@ -175,11 +178,6 @@ function Clientes() {
     }
   }
 
-  const toggleCot = (id: string) => {
-    const s = new Set(cotAbierta)
-    s.has(id) ? s.delete(id) : s.add(id)
-    setCotAbierta(s)
-  }
 
   const cargar = () => {
     setCargandoClientes(true)
@@ -445,12 +443,10 @@ ${t('clientes.email')}: ${c.email}`
   }
 
   // Abre la ficha del cliente y despliega el seguimiento de esa cotizacion
-  const abrirPendiente = (clienteId: string, sesionId: string) => {
-    const cli = clientes.find((c) => c.id === clienteId)
-    if (!cli) return
-    abrirCliente(cli)
-    setCotAbierta(new Set([sesionId]))
-    setTabCliente('cotizaciones')
+  // Va directo a la pantalla de esa cotización puntual (ya no hace falta
+  // pasar por el cliente y expandir algo ahí).
+  const abrirPendiente = (_clienteId: string, sesionId: string) => {
+    navigate(`/cotizacion/${sesionId}`)
   }
 
   const inactivos = clientes.filter((c) => !c.activo).length
@@ -460,6 +456,15 @@ ${t('clientes.email')}: ${c.email}`
   const pendientesImportar = previewContable.filter((p) => !p.ya_existe)
 
   const clienteAbierto = clientes.find((c) => c.id === clienteAbiertoId) ?? null
+
+  // Si la URL ya trae un cliente (recién refrescada, o llegando por atrás/
+  // adelante del navegador) pero la lista todavía no cargó, no hay que
+  // mostrar la lista de golpe: solo espera.
+  if (clienteAbiertoId && !clienteAbierto && cargandoClientes) {
+    return (
+      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.cargando')}</p>
+    )
+  }
 
   const clientesFiltrados = (() => {
     const texto = busqueda.trim().toLowerCase()
@@ -774,86 +779,57 @@ ${t('clientes.email')}: ${c.email}`
                 })}
               </div>
 
+              {/* Cada cotización abre en su propia pantalla ("/cotizacion/:id"):
+                  nada se expande acá. Antes "Ver detalle" y "Gestionar
+                  pedido" eran dos botones confusos que llevaban a cosas
+                  distintas (uno navegaba, el otro expandía en el mismo
+                  lugar) -ahora es un solo lugar para todo lo de esa
+                  cotización, con sus propias pestañas adentro. */}
               <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
                 {cots
                   .filter((s) => subTabCot === 'todas' || etapaDeCotizacion(s) === subTabCot)
                   .map((s) => {
                     const etapa = etapaDeCotizacion(s)
-                    // Lista para bodega: se muestra ya abierta, con el botón de
-                    // enviar a la vista, sin que la vendedora tenga que
-                    // adivinar que hay que hacer clic en algo más para verlo.
-                    const abierta = cotAbierta.has(s.id) || etapa === 'listas_bodega'
                     return (
-                <div key={s.id} className="py-3 first:pt-0">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-2">
-                        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
-                        <span
-                          className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                          style={
-                            etapa === 'listas_bodega'
-                              ? { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
-                              : etapa === 'borrador'
-                                ? { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
-                                : { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                          }
+                      <div key={s.id} className="flex w-full items-center gap-1 py-2 first:pt-0">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/cotizacion/${s.id}`)}
+                          className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--yuda-primary-soft)]"
                         >
-                          {t(`clientes.etapa.${etapa}`)}
-                        </span>
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</p>
-                    </div>
-                    <div className="flex flex-shrink-0 flex-wrap items-center gap-1">
-                      <button type="button" onClick={() => navigate(`/cotizacion/${s.id}`)} className="min-h-[40px] rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                        {t('clientes.verDetalle')}
-                      </button>
-                      <button type="button" onClick={() => toggleCot(s.id)} className="flex min-h-[40px] items-center gap-1 rounded-lg px-3 text-sm font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                        {abierta ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                        {t('clientes.gestionarPedido')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => eliminarCotizacion(s, c.id)}
-                        title={t('clientes.eliminarCotizacion')}
-                        className="flex min-h-[40px] items-center rounded-lg px-3"
-                        style={{ color: 'var(--yuda-error)' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Antes GestionPedidoCliente se mostraba siempre expandido
-                      apenas había pedido recibido, sin forma de ocultarlo: con
-                      varias cotizaciones era un panel completo repetido una y
-                      otra vez. Ahora vive detrás del mismo botón que el
-                      seguimiento -salvo "listas para bodega", que se abre
-                      sola porque ahí SÍ hay algo pendiente de hacer. */}
-                  {abierta && (
-                    <div className="mt-3 flex flex-col gap-3">
-                      {s.pedido_recibido_at && (
-                        <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
-                      )}
-                      {/* El editor manual de etapa (naviera, BL, tracking) es
-                          para cuando algo hay que corregir a mano o para las
-                          etapas de tránsito que gestiona Marcela -no algo que
-                          la vendedora necesite ver de entrada en cada
-                          cotización. Colapsado, no eliminado. */}
-                      <details>
-                        <summary
-                          className="cursor-pointer text-sm font-semibold"
-                          style={{ color: 'var(--yuda-text-secondary)' }}
+                          <div className="min-w-0">
+                            <p className="flex flex-wrap items-center gap-2">
+                              <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
+                              <span
+                                className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                style={
+                                  etapa === 'listas_bodega'
+                                    ? { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
+                                    : etapa === 'borrador'
+                                      ? { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
+                                      : { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
+                                }
+                              >
+                                {t(`clientes.etapa.${etapa}`)}
+                              </span>
+                            </p>
+                            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</p>
+                          </div>
+                          <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            eliminarCotizacion(s, c.id)
+                          }}
+                          title={t('clientes.eliminarCotizacion')}
+                          className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                          style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
                         >
-                          {t('clientes.verHistorialEnvio')}
-                        </summary>
-                        <div className="mt-3">
-                          <SeguimientoEditor sesionId={s.id} />
-                        </div>
-                      </details>
-                    </div>
-                  )}
-                </div>
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     )
                   })}
               </div>

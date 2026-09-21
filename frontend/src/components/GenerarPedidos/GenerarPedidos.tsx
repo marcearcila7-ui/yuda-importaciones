@@ -20,6 +20,12 @@ interface GenerarPedidosProps {
   // distinguir estas cajas de las de otro pedido: se exige antes de generar,
   // acá y también en el backend (por si se llama a la API sin pasar por acá).
   shippingMark?: string | null
+  // Este componente maneja su propia lista de "pedidos generados", pero quien
+  // lo usa (ej. GestionPedidoCliente) puede tener SU PROPIA copia de esa
+  // misma lista para otra cosa (acá, para saber si ya se puede avisar a
+  // bodega). Sin este aviso, quedaba desactualizada: mostraba "genera el
+  // pedido primero" aunque ya se hubiera generado en esta misma pantalla.
+  onGenerado?: () => void
 }
 
 function GenerarPedidos({
@@ -27,6 +33,7 @@ function GenerarPedidos({
   nombre_cliente,
   permitirCantidadesCliente = false,
   shippingMark,
+  onGenerado,
 }: GenerarPedidosProps) {
   const { t } = useTranslation()
   const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
@@ -86,6 +93,7 @@ function GenerarPedidos({
     try {
       const data = await generarPedidos(sesion_id, usarCantidadesCliente)
       setResultado(data)
+      onGenerado?.()
     } catch (err) {
       let mensaje = t('pedidos.errorGenerar')
       if (axios.isAxiosError(err) && err.response?.data?.detail) {

@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { CheckCircle2, Clock, FileSpreadsheet, Package, Send, Upload, Warehouse } from 'lucide-react'
+import { CheckCircle2, Clock, FileSpreadsheet, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
 import {
@@ -66,6 +66,10 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [usuariosBodega, setUsuariosBodega] = useState<UsuarioBodega[]>([])
   const [asignadoAId, setAsignadoAId] = useState('')
   const [reemplazandoArchivo, setReemplazandoArchivo] = useState<Record<string, boolean>>({})
+  // Aunque ya esté confirmado, puede haber que corregir algo antes de generar
+  // el pedido a la tienda (el cliente se equivocó, o hay que ajustar algo de
+  // último momento). Sin esto, una vez confirmado quedaba de solo lectura.
+  const [editandoCantidades, setEditandoCantidades] = useState(false)
 
   useEffect(() => {
     if (!sesion.pedido_recibido_at) return
@@ -106,6 +110,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       const payload = items.map((it) => ({ item_id: it.id, cantidad: Number(cantidades[it.id] || 0) }))
       const s = await enviarAConfirmar(sesion.id, payload)
       setEstado(s.pedido_estado ?? 'por_confirmar')
+      setEditandoCantidades(false)
       toast.success(t('gestionPedido.enviadoAConfirmar'))
       onActualizar?.()
     } catch {
@@ -196,7 +201,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             {items.map((it) => (
               <div key={it.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1" style={{ color: 'var(--yuda-accent)' }}>{descripcion(it)}</span>
-                {confirmado ? (
+                {confirmado && !editandoCantidades ? (
                   <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: 'var(--yuda-success)' }}>
                     {cantidades[it.id] || 0} {t('gestionPedido.cajas')}
                   </span>
@@ -222,22 +227,49 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
               <span className="font-semibold">📝 {t('gestionPedido.notas')}:</span> {sesion.notas_cliente}
             </p>
           )}
-          {/* Opcional: pedirle al cliente que confirme (útil si ajustaste cantidades) */}
-          {!confirmado && (
+          {/* Por si el cliente mandó mal una cantidad, o algo cambió de último
+              momento: se puede corregir aunque ya esté confirmado, antes de
+              generar el pedido a la tienda. */}
+          {confirmado && !editandoCantidades && (
             <button
               type="button"
-              onClick={enviar}
-              disabled={enviando}
-              className="mt-2 flex items-center gap-2 self-start text-sm font-medium disabled:opacity-60"
+              onClick={() => setEditandoCantidades(true)}
+              className="mt-2 flex items-center gap-2 self-start text-sm font-medium"
               style={{ color: 'var(--yuda-primary)' }}
             >
-              <Send size={15} />{' '}
-              {enviando
-                ? t('gestionPedido.enviando')
-                : porConfirmar
-                  ? t('gestionPedido.reenviar')
-                  : t('gestionPedido.enviarAConfirmarOpcional')}
+              <Pencil size={14} /> {t('gestionPedido.editarCantidades')}
             </button>
+          )}
+          {/* Guarda la corrección (o pide confirmación por primera vez) */}
+          {(!confirmado || editandoCantidades) && (
+            <div className="mt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={enviar}
+                disabled={enviando}
+                className="flex items-center gap-2 self-start text-sm font-medium disabled:opacity-60"
+                style={{ color: 'var(--yuda-primary)' }}
+              >
+                <Send size={15} />{' '}
+                {enviando
+                  ? t('gestionPedido.enviando')
+                  : editandoCantidades
+                    ? t('gestionPedido.guardarCorreccion')
+                    : porConfirmar
+                      ? t('gestionPedido.reenviar')
+                      : t('gestionPedido.enviarAConfirmarOpcional')}
+              </button>
+              {editandoCantidades && (
+                <button
+                  type="button"
+                  onClick={() => setEditandoCantidades(false)}
+                  className="text-sm"
+                  style={{ color: 'var(--yuda-text-secondary)' }}
+                >
+                  {t('common.cancelar')}
+                </button>
+              )}
+            </div>
           )}
           {porConfirmar && (
             <p className="mt-2 flex items-center gap-2 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
@@ -258,6 +290,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             nombre_cliente={sesion.nombre_cliente}
             permitirCantidadesCliente
             shippingMark={sesion.shipping_mark}
+            onGenerado={() => getPedidos(sesion.id).then(setPedidosGenerados).catch(() => undefined)}
           />
 
           {pedidosGenerados.length > 0 && (
