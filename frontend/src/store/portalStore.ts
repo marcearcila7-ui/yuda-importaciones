@@ -10,6 +10,7 @@ interface PortalState {
   isLoading: boolean
   error: string | null
   login: (email: string, password: string) => Promise<boolean>
+  loginConToken: (token: string, cliente: ClientePortal) => void
   logout: () => void
   initFromStorage: () => void
   clearError: () => void
@@ -40,6 +41,14 @@ export const usePortalStore = create<PortalState>((set) => ({
       set({ cliente: null, token: null, error: mensaje, isLoading: false })
       return false
     }
+  },
+
+  // Ya se canjeó un enlace mágico (o cualquier otro token válido) por fuera
+  // del formulario de login: solo queda guardarlo, igual que un login normal.
+  loginConToken: (token, cliente) => {
+    localStorage.setItem('yuda_portal_token', token)
+    localStorage.setItem('yuda_portal_cliente', JSON.stringify(cliente))
+    set({ cliente, token, isLoading: false, error: null })
   },
 
   logout: () => {

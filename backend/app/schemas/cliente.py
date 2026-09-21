@@ -86,6 +86,19 @@ class ClienteTokenResponse(BaseModel):
     cliente: ClientePublic
 
 
+class MagicLoginInput(BaseModel):
+    """Enlace de un aviso automático (ej. "tu pedido está listo para
+    aprobar"): entra directo sin pedir contraseña."""
+
+    token: str
+
+
+class MagicLoginResponse(ClienteTokenResponse):
+    """Igual que un login normal, más a qué cotización llevar al cliente."""
+
+    sesion_id: str
+
+
 # ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
 
 

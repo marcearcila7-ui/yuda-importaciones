@@ -3,6 +3,7 @@ import type { EstadoCuenta } from '../types/cuenta'
 import type {
   CotizacionDetalle,
   CotizacionResumen,
+  MagicLoginResponse,
   PortalPedidoInput,
   PortalTokenResponse,
 } from '../types/portal'
@@ -15,6 +16,13 @@ export async function loginPortal(
     email,
     password,
   })
+  return data
+}
+
+// Enlace de un aviso automático (ej. "tu pedido está listo para aprobar"):
+// entra directo sin pedir contraseña.
+export async function magicLoginPortal(token: string): Promise<MagicLoginResponse> {
+  const { data } = await portalClient.post<MagicLoginResponse>('/portal/magic-login', { token })
   return data
 }
 

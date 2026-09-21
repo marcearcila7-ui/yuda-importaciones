@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.rate_limit import esta_bloqueado, ip_del_request, limpiar, registrar_fallo
 
 from app.api.dependencies import get_current_cliente
-from app.core.security import create_access_token, verify_password
+from app.core.security import create_access_token, verify_password, verify_token
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
@@ -18,7 +18,13 @@ from app.models.sesion import (
     PEDIDO_RECIBIDO,
     Sesion,
 )
-from app.schemas.cliente import ClienteLogin, ClientePublic, ClienteTokenResponse
+from app.schemas.cliente import (
+    ClienteLogin,
+    ClientePublic,
+    ClienteTokenResponse,
+    MagicLoginInput,
+    MagicLoginResponse,
+)
 from app.schemas.cotizacion import CotizacionRequest
 from app.services.notificacion_service import (
     avisar_despacho_aprobado,
@@ -94,6 +100,33 @@ def login_cliente(
     return ClienteTokenResponse(
         access_token=token,
         cliente=ClientePublic.model_validate(cliente),
+    )
+
+
+@router.post("/magic-login", response_model=MagicLoginResponse)
+def magic_login(datos: MagicLoginInput, db: Session = Depends(get_db)) -> MagicLoginResponse:
+    """Entra al portal con el enlace de un aviso automático (ej. "tu pedido
+    está listo para aprobar"), sin pedir contraseña. El token viene de
+    `_link_portal_magico` (aviso_cliente_service.py): vale solo hasta la
+    fecha que se le dio ahí, y solo sirve para esto, no para un login normal.
+    """
+    no_autenticado = HTTPException(status.HTTP_401_UNAUTHORIZED, "Enlace inválido o vencido")
+    payload = verify_token(datos.token)
+    if payload is None or payload.get("tipo") != "cliente_magic":
+        raise no_autenticado
+
+    cliente = db.query(Cliente).filter(Cliente.id == payload.get("sub")).first()
+    sesion_id = payload.get("sesion_id")
+    if cliente is None or not cliente.activo or not sesion_id:
+        raise no_autenticado
+
+    token = create_access_token(
+        {"sub": cliente.id, "tipo": "cliente", "tv": cliente.token_version}
+    )
+    return MagicLoginResponse(
+        access_token=token,
+        cliente=ClientePublic.model_validate(cliente),
+        sesion_id=sesion_id,
     )
 
 

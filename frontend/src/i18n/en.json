@@ -875,7 +875,10 @@
     "verCuenta": "View my account statement",
     "cuentaSubtitulo": "Here you can see your purchases, payments and outstanding balance.",
     "sinMovimientos": "There are no entries in your account yet.",
-    "volverCotizaciones": "Back to my quotations"
+    "volverCotizaciones": "Back to my quotations",
+    "enlaceInvalido": "This link is no longer valid or has expired. Log in with your email and password.",
+    "irALogin": "Go to login",
+    "entrando": "Opening your order…"
   },
   "notif": {
     "titulo": "Notifications",

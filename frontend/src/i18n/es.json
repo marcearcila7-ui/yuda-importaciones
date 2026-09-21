@@ -875,7 +875,10 @@
     "verCuenta": "Ver mi estado de cuenta",
     "cuentaSubtitulo": "Aquí ves tus compras, abonos y saldo pendiente.",
     "sinMovimientos": "Todavía no hay movimientos en tu cuenta.",
-    "volverCotizaciones": "Volver a mis cotizaciones"
+    "volverCotizaciones": "Volver a mis cotizaciones",
+    "enlaceInvalido": "Este enlace ya no es válido o venció. Inicia sesión con tu correo y contraseña.",
+    "irALogin": "Ir a iniciar sesión",
+    "entrando": "Entrando a tu pedido…"
   },
   "notif": {
     "titulo": "Avisos",

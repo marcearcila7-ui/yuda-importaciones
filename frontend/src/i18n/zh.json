@@ -875,7 +875,10 @@
     "verCuenta": "查看我的对账单",
     "cuentaSubtitulo": "在此查看您的采购、付款和未结余额。",
     "sinMovimientos": "您的账户暂无记录。",
-    "volverCotizaciones": "返回我的报价单"
+    "volverCotizaciones": "返回我的报价单",
+    "enlaceInvalido": "此链接已失效或已过期。请使用邮箱和密码登录。",
+    "irALogin": "前往登录",
+    "entrando": "正在打开您的订单…"
   },
   "notif": {
     "titulo": "通知",

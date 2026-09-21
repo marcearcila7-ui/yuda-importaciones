@@ -14,6 +14,13 @@ export interface PortalTokenResponse {
   cliente: ClientePortal
 }
 
+// Login con el enlace mágico de un aviso automático (ej. "tu pedido está
+// listo para aprobar"): igual que un login normal, más a qué cotización
+// llevar al cliente.
+export interface MagicLoginResponse extends PortalTokenResponse {
+  sesion_id: string
+}
+
 export interface CotizacionResumen {
   sesion_id: string
   numero: string

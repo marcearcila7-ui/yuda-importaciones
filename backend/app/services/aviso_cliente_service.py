@@ -15,11 +15,12 @@ WhatsApp tiene dos modos:
 """
 import logging
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import httpx
 
 from app.core.config import settings
+from app.core.security import create_access_token
 from app.models.cliente import Cliente
 
 logger = logging.getLogger("app.aviso_cliente")
@@ -33,6 +34,21 @@ _MESES = [
 def _link_portal(sesion_id: str) -> str:
     """URL de la cotización en el portal de clientes (dominio propio, ruta singular)."""
     return f"{settings.PORTAL_URL}/portal/cotizacion/{sesion_id}"
+
+
+def _link_portal_magico(cliente_id: str, sesion_id: str, expira: datetime) -> str:
+    """Enlace de un solo destino que entra directo a la cotización sin pedir
+    contraseña (útil en avisos automáticos: el cliente no siempre la recuerda,
+    y no queremos exponer ni resetear su contraseña real para mandarla por
+    WhatsApp/correo). Vale hasta `expira` -mismo plazo que tiene para aprobar
+    el despacho, así el enlace no queda vivo para siempre."""
+    ahora = datetime.now(timezone.utc)
+    vigencia = expira - ahora
+    token = create_access_token(
+        {"sub": cliente_id, "tipo": "cliente_magic", "sesion_id": sesion_id},
+        expires_delta=vigencia if vigencia.total_seconds() > 0 else None,
+    )
+    return f"{settings.PORTAL_URL}/portal/entrar?token={token}"
 
 
 def _formatear_plazo(momento: datetime) -> str:
@@ -222,7 +238,10 @@ def avisar_cliente_aprobar_despacho(
     en ambos avisos para que el cliente vea de una vez algo puntual (una caja
     faltante, etc.) sin tener que entrar al portal primero.
     """
-    link = _link_portal(sesion_id)
+    # Enlace mágico (no el link plano): a esta altura el cliente puede no
+    # tener sesión abierta en el portal ni recordar su contraseña, y este es
+    # un aviso automático -no hay quien la escriba a mano en el mensaje.
+    link = _link_portal_magico(cliente.id, sesion_id, plazo)
     plazo_legible = _formatear_plazo(plazo)
     nota = (novedades or "").strip()
 

@@ -23,6 +23,7 @@ const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'
 const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
 const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
+const PortalEntrar = lazy(() => import('./pages/portal/PortalEntrar'))
 
 function Cargando() {
   return (
@@ -59,6 +60,7 @@ function App() {
 
         {/* ── Portal de clientes ── */}
         <Route path="/portal/login" element={<PortalLogin />} />
+        <Route path="/portal/entrar" element={<PortalEntrar />} />
         <Route element={<PortalProtectedRoute />}>
           <Route path="/portal" element={<PortalCotizaciones />} />
           <Route path="/portal/cuenta" element={<PortalCuenta />} />

@@ -22,10 +22,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(data: dict) -> str:
-    """Crea un JWT con los datos recibidos más el campo de expiración (exp)"""
+def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    """Crea un JWT con los datos recibidos más el campo de expiración (exp).
+
+    Por defecto expira a las `ACCESS_TOKEN_EXPIRE_HOURS` de siempre; se puede
+    dar una duración propia (ej. un enlace mágico que dura lo mismo que el
+    plazo de aprobación del cliente, no la sesión normal del equipo)."""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_HOURS))
     to_encode["exp"] = expire
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
