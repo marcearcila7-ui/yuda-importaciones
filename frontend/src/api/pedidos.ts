@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { GenerarPedidosResponse, PedidoGenerado } from '../types/pedidos'
+import type { GenerarPedidosResponse, PedidoBodegaSeguimiento, PedidoGenerado } from '../types/pedidos'
 
 // Adjunta el token de localStorage en cada request
 apiClient.interceptors.request.use((config) => {
@@ -88,6 +88,25 @@ export async function enviarABodegaGuiado(
   asignadoAId: string | null,
 ): Promise<{ estado: string; bodega_asignado_a_id: string | null }> {
   const { data } = await apiClient.post(`/pedidos/${sesion_id}/enviar-a-bodega`, {
+    asignado_a_id: asignadoAId,
+  })
+  return data
+}
+
+// Panel de control: todo lo que se ha enviado a bodega, sin importar el
+// cliente. Admin ve todas; la vendedora solo las suyas.
+export async function getBodegaResumen(): Promise<PedidoBodegaSeguimiento[]> {
+  const { data } = await apiClient.get<PedidoBodegaSeguimiento[]>('/pedidos/bodega-resumen')
+  return data
+}
+
+// Reasignar un pedido directo desde el panel de la vendedora (mismo endpoint
+// que usa Yuda Logistic; el backend limita a sus propios pedidos).
+export async function asignarPedidoBodega(
+  sesionId: string,
+  asignadoAId: string | null,
+): Promise<{ bodega_asignado_a_id: string | null; bodega_asignado_a_nombre: string | null }> {
+  const { data } = await apiClient.patch(`/bodega/pedidos/${sesionId}/asignar`, {
     asignado_a_id: asignadoAId,
   })
   return data

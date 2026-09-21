@@ -26,3 +26,23 @@ export interface PedidoGenerado {
   // Fecha aproximada que dio ESTE proveedor (no toda la cotización).
   fecha_tentativa_entrega?: string | null
 }
+
+export interface ActividadBodega {
+  usuario_nombre: string | null
+  tipo: string
+  detalle: string | null
+  created_at: string
+}
+
+export interface PedidoBodegaSeguimiento {
+  sesion_id: string
+  numero: string
+  cliente_nombre: string
+  fecha: string
+  estado_envio: string
+  total_ordenes: number
+  ordenes_revisadas: number
+  bodega_asignado_a_id: string | null
+  bodega_asignado_a_nombre: string | null
+  actividad_reciente: ActividadBodega[]
+}

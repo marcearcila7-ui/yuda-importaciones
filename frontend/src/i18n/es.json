@@ -15,7 +15,8 @@
     "admin": "Admin",
     "cerrarSesion": "Cerrar sesión",
     "cuentas": "Cuentas",
-    "tiendas": "Tiendas"
+    "tiendas": "Tiendas",
+    "bodegaSeguimiento": "Bodega"
   },
   "ventas": {
     "titulo": "Ventas",
@@ -1043,5 +1044,33 @@
     "reemplazando": "Subiendo la foto nueva...",
     "reemplazada": "Foto reemplazada",
     "errorReemplazar": "No se pudo subir la foto nueva"
+  },
+  "bodegaSeguimiento": {
+    "titulo": "Seguimiento de bodega",
+    "ayuda": "Todo lo que se ha enviado a bodega: qué te ha devuelto, quién lo tiene asignado y quién actualizó qué.",
+    "errorCargar": "No se pudo cargar el seguimiento de bodega",
+    "sinPedidos": "Todavía no has enviado ningún pedido a bodega.",
+    "ordenesRevisadas": "{{n}} de {{total}} órdenes revisadas",
+    "asignadoA": "Asignado a {{nombre}}",
+    "sinAsignar": "Sin asignar",
+    "reasignarA": "Reasignar a…",
+    "reasignado": "Reasignado",
+    "errorReasignar": "No se pudo reasignar",
+    "verActividad": "Ver actividad ({{n}})",
+    "estado": {
+      "proveedor_recibio": "Con el proveedor",
+      "en_bodega": "En bodega",
+      "en_transito": "En tránsito",
+      "en_destino": "En destino",
+      "entregado": "Entregado"
+    },
+    "tipoActividad": {
+      "asignado": "Asignación cambiada",
+      "orden_actualizada": "Orden actualizada",
+      "inspeccion_actualizada": "Inspección corregida",
+      "enviado": "Pedido enviado a bodega",
+      "confirmado_envio": "Envío confirmado",
+      "archivo_reemplazado": "Archivo reemplazado"
+    }
   }
 }

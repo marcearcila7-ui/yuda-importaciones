@@ -15,7 +15,8 @@
     "admin": "管理",
     "cerrarSesion": "退出登录",
     "cuentas": "账户",
-    "tiendas": "店铺"
+    "tiendas": "店铺",
+    "bodegaSeguimiento": "仓库"
   },
   "ventas": {
     "titulo": "销售",
@@ -1043,5 +1044,33 @@
     "reemplazando": "正在上传新照片...",
     "reemplazada": "照片已更换",
     "errorReemplazar": "无法上传新照片"
+  },
+  "bodegaSeguimiento": {
+    "titulo": "仓库跟踪",
+    "ayuda": "所有发往仓库的订单：仓库返回了什么，谁被分配处理，谁更新了什么。",
+    "errorCargar": "无法加载仓库跟踪信息",
+    "sinPedidos": "你还没有发送任何订单到仓库。",
+    "ordenesRevisadas": "已检查 {{n}} / {{total}} 个订单",
+    "asignadoA": "已分配给 {{nombre}}",
+    "sinAsignar": "未分配",
+    "reasignarA": "重新分配给…",
+    "reasignado": "已重新分配",
+    "errorReasignar": "无法重新分配",
+    "verActividad": "查看活动 ({{n}})",
+    "estado": {
+      "proveedor_recibio": "在供应商处",
+      "en_bodega": "在仓库",
+      "en_transito": "运输中",
+      "en_destino": "已到达目的地",
+      "entregado": "已交付"
+    },
+    "tipoActividad": {
+      "asignado": "分配已更改",
+      "orden_actualizada": "订单已更新",
+      "inspeccion_actualizada": "检验已更正",
+      "enviado": "订单已发送至仓库",
+      "confirmado_envio": "发货已确认",
+      "archivo_reemplazado": "文件已替换"
+    }
   }
 }

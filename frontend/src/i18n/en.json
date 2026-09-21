@@ -15,7 +15,8 @@
     "admin": "Admin",
     "cerrarSesion": "Log out",
     "cuentas": "Accounts",
-    "tiendas": "Stores"
+    "tiendas": "Stores",
+    "bodegaSeguimiento": "Warehouse"
   },
   "ventas": {
     "titulo": "Sales",
@@ -1043,5 +1044,33 @@
     "reemplazando": "Uploading the new photo...",
     "reemplazada": "Photo replaced",
     "errorReemplazar": "Couldn't upload the new photo"
+  },
+  "bodegaSeguimiento": {
+    "titulo": "Warehouse tracking",
+    "ayuda": "Everything sent to the warehouse: what came back, who has it assigned, and who updated what.",
+    "errorCargar": "Could not load warehouse tracking",
+    "sinPedidos": "You haven't sent any order to the warehouse yet.",
+    "ordenesRevisadas": "{{n}} of {{total}} orders reviewed",
+    "asignadoA": "Assigned to {{nombre}}",
+    "sinAsignar": "Unassigned",
+    "reasignarA": "Reassign to…",
+    "reasignado": "Reassigned",
+    "errorReasignar": "Could not reassign",
+    "verActividad": "View activity ({{n}})",
+    "estado": {
+      "proveedor_recibio": "With supplier",
+      "en_bodega": "In warehouse",
+      "en_transito": "In transit",
+      "en_destino": "At destination",
+      "entregado": "Delivered"
+    },
+    "tipoActividad": {
+      "asignado": "Assignment changed",
+      "orden_actualizada": "Order updated",
+      "inspeccion_actualizada": "Inspection corrected",
+      "enviado": "Order sent to warehouse",
+      "confirmado_envio": "Shipment confirmed",
+      "archivo_reemplazado": "File replaced"
+    }
   }
 }

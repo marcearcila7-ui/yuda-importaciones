@@ -18,6 +18,7 @@ const ClienteColaboracion = lazy(() => import('./pages/ClienteColaboracion'))
 const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
 const Historial = lazy(() => import('./pages/Historial'))
 const Ventas = lazy(() => import('./pages/Ventas'))
+const BodegaSeguimiento = lazy(() => import('./pages/BodegaSeguimiento'))
 const Cuentas = lazy(() => import('./pages/Cuentas'))
 const CuentaCliente = lazy(() => import('./pages/CuentaCliente'))
 const Tiendas = lazy(() => import('./pages/Tiendas'))
@@ -78,6 +79,7 @@ function App() {
         {/* Clientes: admin y vendedora */}
         <Route element={<ProtectedRoute roles={['admin', 'vendedora']} />}>
           <Route path="/clientes" element={<Layout><Clientes /></Layout>} />
+          <Route path="/bodega-seguimiento" element={<Layout><BodegaSeguimiento /></Layout>} />
         </Route>
 
         {/* Solo administración */}
