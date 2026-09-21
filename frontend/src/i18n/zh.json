@@ -685,7 +685,8 @@
       "listas_bodega": "可发往仓库",
       "en_camino": "运输中",
       "entregadas": "已交付"
-    }
+    },
+    "verHistorialEnvio": "查看发货历史和手动编辑"
   },
   "colaboracion": {
     "errorCargar": "无法加载客户信息",
@@ -906,7 +907,9 @@
     "archivoReemplazado": "文件已替换",
     "errorReemplazarArchivo": "无法替换文件",
     "asignarABodega": "直接分配给仓库人员（可选）",
-    "sinAsignarBodega": "未分配（所有人可见）"
+    "sinAsignarBodega": "未分配（所有人可见）",
+    "paso1Titulo": "客户订购的产品",
+    "paso3Titulo": "通知仓库"
   },
   "comun": {
     "confirmar": "确认",

@@ -685,7 +685,8 @@
       "listas_bodega": "Ready for warehouse",
       "en_camino": "On the way",
       "entregadas": "Delivered"
-    }
+    },
+    "verHistorialEnvio": "View shipping history and manual editing"
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",
@@ -906,7 +907,9 @@
     "archivoReemplazado": "File replaced",
     "errorReemplazarArchivo": "Could not replace the file",
     "asignarABodega": "Assign directly to someone in the warehouse (optional)",
-    "sinAsignarBodega": "Unassigned (everyone sees it)"
+    "sinAsignarBodega": "Unassigned (everyone sees it)",
+    "paso1Titulo": "What the client ordered",
+    "paso3Titulo": "Notify the warehouse"
   },
   "comun": {
     "confirmar": "Confirm",

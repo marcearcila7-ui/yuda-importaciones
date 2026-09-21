@@ -833,7 +833,22 @@ ${t('clientes.email')}: ${c.email}`
                       {s.pedido_recibido_at && (
                         <GestionPedidoCliente sesion={s} onActualizar={() => recargarCotizaciones(c.id)} />
                       )}
-                      <SeguimientoEditor sesionId={s.id} />
+                      {/* El editor manual de etapa (naviera, BL, tracking) es
+                          para cuando algo hay que corregir a mano o para las
+                          etapas de tránsito que gestiona Marcela -no algo que
+                          la vendedora necesite ver de entrada en cada
+                          cotización. Colapsado, no eliminado. */}
+                      <details>
+                        <summary
+                          className="cursor-pointer text-sm font-semibold"
+                          style={{ color: 'var(--yuda-text-secondary)' }}
+                        >
+                          {t('clientes.verHistorialEnvio')}
+                        </summary>
+                        <div className="mt-3">
+                          <SeguimientoEditor sesionId={s.id} />
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>

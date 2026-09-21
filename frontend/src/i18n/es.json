@@ -685,7 +685,8 @@
       "listas_bodega": "Listas para bodega",
       "en_camino": "En camino",
       "entregadas": "Entregadas"
-    }
+    },
+    "verHistorialEnvio": "Ver historial y edición manual del envío"
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",
@@ -906,7 +907,9 @@
     "archivoReemplazado": "Archivo reemplazado",
     "errorReemplazarArchivo": "No se pudo reemplazar el archivo",
     "asignarABodega": "Asignar directo a alguien de bodega (opcional)",
-    "sinAsignarBodega": "Sin asignar (lo ven todos)"
+    "sinAsignarBodega": "Sin asignar (lo ven todos)",
+    "paso1Titulo": "Lo que pidió el cliente",
+    "paso3Titulo": "Avisar a bodega"
   },
   "comun": {
     "confirmar": "Confirmar",
