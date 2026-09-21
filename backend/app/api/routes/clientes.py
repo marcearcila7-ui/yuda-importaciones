@@ -112,6 +112,18 @@ def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
     return cliente
 
 
+def _exigir_dueno_o_admin(cliente: Cliente, usuario: User) -> None:
+    """Para acciones destructivas o sensibles (borrar cliente, resetear su
+    contraseña del portal): el acceso compartido de la Fase 1 (ClienteVendedora)
+    solo da colaboración/visibilidad, no estas acciones. Debe ser admin o la
+    vendedora dueña real."""
+    if usuario.rol.value == "vendedora" and cliente.vendedora_id != usuario.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Solo la vendedora dueña de este cliente puede hacer esto",
+        )
+
+
 def _sesion_autorizada(db: Session, sesion_id: str, usuario: User) -> Sesion:
     """Devuelve la sesión si el usuario puede gestionarla; si no, 404/403."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
@@ -522,6 +534,7 @@ def eliminar_cliente(
     contabilidad y no se borra sola. En ese caso conviene desactivarlo.
     """
     cliente = _cliente_autorizado(db, cliente_id, usuario)
+    _exigir_dueno_o_admin(cliente, usuario)
 
     if tiene_movimientos_cliente(db, cliente_id):
         raise HTTPException(
@@ -535,6 +548,10 @@ def eliminar_cliente(
         sid for (sid,) in db.query(Sesion.id).filter(Sesion.cliente_id == cliente_id)
     ]
     archivos = borrar_sesiones(db, sesion_ids)
+    # Limpieza de la Fase 1 (colaboración): sin esto, un cliente compartido con
+    # otra vendedora o con actividad registrada no se puede borrar (viola la FK).
+    db.query(ClienteVendedora).filter(ClienteVendedora.cliente_id == cliente_id).delete()
+    db.query(ClienteActividad).filter(ClienteActividad.cliente_id == cliente_id).delete()
     db.delete(cliente)
     db.commit()
     limpiar_storage(archivos)
@@ -548,6 +565,7 @@ def reset_password_cliente(
     db: Session = Depends(get_db),
 ) -> dict:
     cliente = _cliente_autorizado(db, cliente_id, usuario)
+    _exigir_dueno_o_admin(cliente, usuario)
     nueva = datos.nueva_password.strip()
     if len(nueva) < 6:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La contraseña debe tener al menos 6 caracteres")
