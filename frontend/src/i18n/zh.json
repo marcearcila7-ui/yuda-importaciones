@@ -3,7 +3,8 @@
     "cargando": "加载中…",
     "volver": "返回",
     "guardar": "保存",
-    "cancelar": "取消"
+    "cancelar": "取消",
+    "subiendo": "上传中…"
   },
   "nav": {
     "cotizacion": "报价",
@@ -879,7 +880,12 @@
     "enviandoABodega": "正在通知仓库……",
     "enviadoABodega": "仓库现在可以查看此订单",
     "errorEnviarABodega": "无法通知仓库",
-    "yaEnviadoABodega": "您已经通知仓库此订单"
+    "yaEnviadoABodega": "您已经通知仓库此订单",
+    "reemplazarArchivo": "替换文件",
+    "archivoReemplazado": "文件已替换",
+    "errorReemplazarArchivo": "无法替换文件",
+    "asignarABodega": "直接分配给仓库人员（可选）",
+    "sinAsignarBodega": "未分配（所有人可见）"
   },
   "comun": {
     "confirmar": "确认",

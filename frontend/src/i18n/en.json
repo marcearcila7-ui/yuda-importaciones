@@ -3,7 +3,8 @@
     "cargando": "Loading…",
     "volver": "Back",
     "guardar": "Save",
-    "cancelar": "Cancel"
+    "cancelar": "Cancel",
+    "subiendo": "Uploading…"
   },
   "nav": {
     "cotizacion": "Quotation",
@@ -879,7 +880,12 @@
     "enviandoABodega": "Notifying the warehouse…",
     "enviadoABodega": "The warehouse can now review this order",
     "errorEnviarABodega": "Couldn't notify the warehouse",
-    "yaEnviadoABodega": "You already notified the warehouse about this order"
+    "yaEnviadoABodega": "You already notified the warehouse about this order",
+    "reemplazarArchivo": "Replace file",
+    "archivoReemplazado": "File replaced",
+    "errorReemplazarArchivo": "Could not replace the file",
+    "asignarABodega": "Assign directly to someone in the warehouse (optional)",
+    "sinAsignarBodega": "Unassigned (everyone sees it)"
   },
   "comun": {
     "confirmar": "Confirm",

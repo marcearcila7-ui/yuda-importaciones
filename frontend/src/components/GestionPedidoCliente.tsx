@@ -1,10 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { CheckCircle2, Clock, FileSpreadsheet, Package, Send, Warehouse } from 'lucide-react'
+import axios from 'axios'
+import { CheckCircle2, Clock, FileSpreadsheet, Package, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
-import { enviarAConfirmar, getSeguimiento, guardarSeguimiento } from '../api/clientes'
-import { actualizarFechaTentativa, getPedidos } from '../api/pedidos'
+import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
+import {
+  actualizarFechaTentativa,
+  enviarABodegaGuiado,
+  getPedidos,
+  listarUsuariosBodega,
+  reemplazarArchivoPedidoGenerado,
+  type UsuarioBodega,
+} from '../api/pedidos'
 import GenerarPedidos from './GenerarPedidos/GenerarPedidos'
 import type { ItemResponse, Sesion } from '../types/packing'
 import type { PedidoGenerado } from '../types/pedidos'
@@ -25,6 +33,9 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [editandoFecha, setEditandoFecha] = useState<Record<string, boolean>>({})
   const [fechaInput, setFechaInput] = useState<Record<string, string>>({})
   const [guardandoFecha, setGuardandoFecha] = useState<Record<string, boolean>>({})
+  const [usuariosBodega, setUsuariosBodega] = useState<UsuarioBodega[]>([])
+  const [asignadoAId, setAsignadoAId] = useState('')
+  const [reemplazandoArchivo, setReemplazandoArchivo] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!sesion.pedido_recibido_at) return
@@ -40,6 +51,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       .catch(() => setItems([]))
     getSeguimiento(sesion.id).then(setSeguimiento)
     getPedidos(sesion.id).then(setPedidosGenerados).catch(() => setPedidosGenerados([]))
+    listarUsuariosBodega().then(setUsuariosBodega).catch(() => setUsuariosBodega([]))
   }, [sesion.id, sesion.pedido_recibido_at])
 
   if (!sesion.pedido_recibido_at) return null
@@ -74,29 +86,39 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   }
 
   // Le avisa a bodega que ya puede revisar este pedido: mueve el seguimiento a
-  // "proveedor_recibio" (donde Yuda Logistic lo recoge), sin tocar el resto de
-  // los campos ya guardados (novedades, tracking, etc.).
+  // "proveedor_recibio" (donde Yuda Logistic lo recoge), y de una vez lo
+  // asigna a alguien de bodega si se eligió a quién.
   const enviarABodega = async () => {
     setEnviandoABodega(true)
     try {
-      const actualizado = await guardarSeguimiento(sesion.id, {
-        estado: 'proveedor_recibio',
-        novedades: seguimiento?.novedades ?? null,
-        numero_tracking: seguimiento?.numero_tracking ?? null,
-        naviera: seguimiento?.naviera ?? null,
-        url_tracking: seguimiento?.url_tracking ?? null,
-        fecha_eta: seguimiento?.fecha_eta ?? null,
-        bl_numero: seguimiento?.bl_numero ?? null,
-        bl_pdf_url: seguimiento?.bl_pdf_url ?? null,
-        monto_venta: seguimiento?.monto_venta ?? null,
-        hitos: seguimiento?.hitos ?? undefined,
-      })
+      await enviarABodegaGuiado(sesion.id, asignadoAId || null)
+      const actualizado = await getSeguimiento(sesion.id)
       setSeguimiento(actualizado)
       toast.success(t('gestionPedido.enviadoABodega'))
-    } catch {
-      toast.error(t('gestionPedido.errorEnviarABodega'))
+    } catch (err) {
+      const mensaje = (axios.isAxiosError(err) && err.response?.data?.detail) || t('gestionPedido.errorEnviarABodega')
+      toast.error(mensaje)
     } finally {
       setEnviandoABodega(false)
+    }
+  }
+
+  // Si el Excel/PDF/CSV que generó el sistema para un proveedor necesita un
+  // ajuste a mano, se sube acá la versión corregida en vez de la automática.
+  const reemplazarArchivo = async (pg: PedidoGenerado, e: ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivo) return
+    setReemplazandoArchivo((s) => ({ ...s, [pg.id]: true }))
+    try {
+      const actualizado = await reemplazarArchivoPedidoGenerado(pg.id, archivo)
+      setPedidosGenerados((lista) => lista.map((p) => (p.id === pg.id ? actualizado : p)))
+      toast.success(t('gestionPedido.archivoReemplazado'))
+    } catch (err) {
+      const mensaje = (axios.isAxiosError(err) && err.response?.data?.detail) || t('gestionPedido.errorReemplazarArchivo')
+      toast.error(mensaje)
+    } finally {
+      setReemplazandoArchivo((s) => ({ ...s, [pg.id]: false }))
     }
   }
 
@@ -208,6 +230,26 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 )}
               </div>
 
+              {/* Si el archivo que generó el sistema necesita un ajuste a
+                  mano, se puede reemplazar por una versión corregida antes
+                  de enviarlo a bodega. */}
+              {(seguimiento?.estado === 'cotizacion_enviada' || seguimiento?.estado === 'pedido_confirmado') && (
+                <label
+                  className="flex w-fit cursor-pointer items-center gap-1.5 pl-5 text-xs font-medium"
+                  style={{ color: 'var(--yuda-primary)' }}
+                >
+                  <Upload size={13} />{' '}
+                  {reemplazandoArchivo[pg.id] ? t('common.subiendo') : t('gestionPedido.reemplazarArchivo')}
+                  <input
+                    type="file"
+                    accept=".xlsx,.pdf,.csv"
+                    className="hidden"
+                    disabled={reemplazandoArchivo[pg.id]}
+                    onChange={(e) => reemplazarArchivo(pg, e)}
+                  />
+                </label>
+              )}
+
               {/* Fecha estimada que dio ESTE proveedor. Editable hasta que
                   bodega ya recibió la mercancía (después ya no aplica). */}
               {!pg.revisado_en_bodega_at && (
@@ -289,16 +331,36 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
           {confirmado && seguimiento && (
             <div className="rounded-lg border px-3 py-2.5" style={{ borderColor: '#E0E2FA' }}>
               {seguimiento.estado === 'cotizacion_enviada' || seguimiento.estado === 'pedido_confirmado' ? (
-                <button
-                  type="button"
-                  onClick={enviarABodega}
-                  disabled={enviandoABodega}
-                  className="flex items-center gap-2 self-start text-sm font-semibold disabled:opacity-60"
-                  style={{ color: 'var(--yuda-primary)' }}
-                >
-                  <Warehouse size={16} />{' '}
-                  {enviandoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.enviarABodega')}
-                </button>
+                <div className="flex flex-col gap-2">
+                  {usuariosBodega.length > 0 && (
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {t('gestionPedido.asignarABodega')}
+                      </span>
+                      <select
+                        value={asignadoAId}
+                        onChange={(e) => setAsignadoAId(e.target.value)}
+                        className="min-h-[40px] rounded-lg border border-gray-200 px-2 focus:border-[var(--yuda-primary)] focus:outline-none"
+                        style={{ fontSize: 15 }}
+                      >
+                        <option value="">{t('gestionPedido.sinAsignarBodega')}</option>
+                        {usuariosBodega.map((u) => (
+                          <option key={u.id} value={u.id}>{u.nombre}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    onClick={enviarABodega}
+                    disabled={enviandoABodega}
+                    className="flex items-center gap-2 self-start text-sm font-semibold disabled:opacity-60"
+                    style={{ color: 'var(--yuda-primary)' }}
+                  >
+                    <Warehouse size={16} />{' '}
+                    {enviandoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.enviarABodega')}
+                  </button>
+                </div>
               ) : (
                 <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
                   <Warehouse size={16} /> {t('gestionPedido.yaEnviadoABodega')}

@@ -52,3 +52,43 @@ export async function descargarZip(sesion_id: string): Promise<Blob> {
   })
   return data as Blob
 }
+
+// Reemplaza el Excel/PDF/CSV generado de una orden a proveedor por una
+// versión corregida a mano, por si la vendedora necesita ajustar algo antes
+// de que bodega lo vea.
+export async function reemplazarArchivoPedidoGenerado(
+  pedidoGeneradoId: string,
+  archivo: File,
+): Promise<PedidoGenerado> {
+  const formData = new FormData()
+  formData.append('archivo', archivo)
+  const { data } = await apiClient.post<PedidoGenerado>(
+    `/pedidos/generados/${pedidoGeneradoId}/reemplazar-archivo`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+export interface UsuarioBodega {
+  id: string
+  nombre: string
+}
+
+// Admin + bodega activos, para elegir a quién asignar al enviar el pedido.
+export async function listarUsuariosBodega(): Promise<UsuarioBodega[]> {
+  const { data } = await apiClient.get<UsuarioBodega[]>('/bodega/usuarios')
+  return data
+}
+
+// Botón guiado: envía el pedido a bodega y, si se eligió, lo asigna directo a
+// alguien de bodega en el mismo paso.
+export async function enviarABodegaGuiado(
+  sesion_id: string,
+  asignadoAId: string | null,
+): Promise<{ estado: string; bodega_asignado_a_id: string | null }> {
+  const { data } = await apiClient.post(`/pedidos/${sesion_id}/enviar-a-bodega`, {
+    asignado_a_id: asignadoAId,
+  })
+  return data
+}

@@ -3,7 +3,8 @@
     "cargando": "Cargando…",
     "volver": "Volver",
     "guardar": "Guardar",
-    "cancelar": "Cancelar"
+    "cancelar": "Cancelar",
+    "subiendo": "Subiendo…"
   },
   "nav": {
     "cotizacion": "Cotización",
@@ -879,7 +880,12 @@
     "enviandoABodega": "Avisando a bodega…",
     "enviadoABodega": "Bodega ya puede revisar este pedido",
     "errorEnviarABodega": "No se pudo avisar a bodega",
-    "yaEnviadoABodega": "Ya le avisaste a bodega de este pedido"
+    "yaEnviadoABodega": "Ya le avisaste a bodega de este pedido",
+    "reemplazarArchivo": "Reemplazar archivo",
+    "archivoReemplazado": "Archivo reemplazado",
+    "errorReemplazarArchivo": "No se pudo reemplazar el archivo",
+    "asignarABodega": "Asignar directo a alguien de bodega (opcional)",
+    "sinAsignarBodega": "Sin asignar (lo ven todos)"
   },
   "comun": {
     "confirmar": "Confirmar",
