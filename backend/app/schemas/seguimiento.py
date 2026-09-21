@@ -73,5 +73,7 @@ class SeguimientoResponse(BaseModel):
     cliente_aprobo_despacho_at: datetime | None = None
     aprobacion_limite_at: datetime | None = None
     updated_at: datetime | None = None
+    bodega_asignado_a_id: str | None = None
+    bodega_asignado_en: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

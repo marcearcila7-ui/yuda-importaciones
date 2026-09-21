@@ -14,18 +14,23 @@ from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
-from app.models.user import User
+from app.models.pedido_bodega_actividad import PedidoBodegaActividad
+from app.models.user import RolUsuario, User
 from app.schemas.bodega import (
+    ActividadBodegaResponse,
     ActualizarTelefonoInput,
+    AsignarPedidoInput,
     BodegaPedidoDetalle,
     BodegaPedidoResumen,
     GuardarOrdenRealInput,
     OrdenGenerada,
     OrdenGeneradaItem,
+    UsuarioBodegaBasico,
 )
 from app.schemas.inspeccion import GuardarInspeccionInput, InspeccionSesionResponse
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
+from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cotizacion_service import _calcular
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
@@ -115,16 +120,35 @@ class _ItemCantidadReal:
         return getattr(self._item, nombre)
 
 
+@router.get("/usuarios", response_model=list[UsuarioBodegaBasico])
+def listar_usuarios_bodega(
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
+    db: Session = Depends(get_db),
+) -> list[UsuarioBodegaBasico]:
+    """Admin y bodega activos, para el selector de a quién asignar un pedido
+    (lo usan tanto Yuda Logistic como la vendedora al enviar a bodega)."""
+    usuarios = (
+        db.query(User)
+        .filter(User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+        .order_by(User.nombre.asc())
+        .all()
+    )
+    return [UsuarioBodegaBasico(id=u.id, nombre=u.nombre) for u in usuarios]
+
+
 @router.get("/pedidos", response_model=list[BodegaPedidoResumen])
 def listar_pedidos_bodega(
-    estado: str = "proveedor_recibio",
+    vista: str = "sin_asignar",
     usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
 ) -> list[BodegaPedidoResumen]:
-    """Pedidos confirmados en la etapa dada del tracking (por defecto, los que
-    ya están con el proveedor y bodega debe revisar y recibir)."""
-    if estado not in ESTADOS_ENVIO:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Estado inválido")
+    """Cola de bodega, en 3 vistas para que varias personas se repartan el
+    trabajo sin pisarse: "sin_asignar" (nadie lo tomó todavía, lo ven todos),
+    "asignados" (ya alguien lo tomó, se ve a quién) y "revisado" (ya se marcó
+    como recibido y listo para envío)."""
+    if vista not in ("sin_asignar", "asignados", "revisado"):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Vista inválida")
+    estado = "en_bodega" if vista == "revisado" else "proveedor_recibio"
 
     # OJO: no filtrar por Sesion.pedido_confirmado_at. Ese campo se borra si el
     # cliente vuelve a su portal y reenvía cantidades (aunque sea después de
@@ -139,11 +163,21 @@ def listar_pedidos_bodega(
         .order_by(SeguimientoPedido.updated_at.asc())
         .all()
     )
+    if vista == "sin_asignar":
+        filas = [f for f in filas if f[1].bodega_asignado_a_id is None]
+    elif vista == "asignados":
+        filas = [f for f in filas if f[1].bodega_asignado_a_id is not None]
+
+    asignado_ids = {seg.bodega_asignado_a_id for _, seg, _ in filas if seg.bodega_asignado_a_id}
+    asignados_por_id = (
+        {u.id: u for u in db.query(User).filter(User.id.in_(asignado_ids)).all()} if asignado_ids else {}
+    )
 
     resultado: list[BodegaPedidoResumen] = []
     for sesion, seg, vendedora in filas:
         total_items = db.query(Item).filter(Item.sesion_id == sesion.id).count()
         ordenes = db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion.id).all()
+        asignado = asignados_por_id.get(seg.bodega_asignado_a_id) if seg.bodega_asignado_a_id else None
         resultado.append(
             BodegaPedidoResumen(
                 sesion_id=sesion.id,
@@ -156,9 +190,63 @@ def listar_pedidos_bodega(
                 pedido_confirmado_at=sesion.pedido_confirmado_at,
                 estado_envio=seg.estado,
                 vendedora_nombre=vendedora.nombre if vendedora else None,
+                bodega_asignado_a_id=seg.bodega_asignado_a_id,
+                bodega_asignado_a_nombre=asignado.nombre if asignado else None,
             )
         )
     return resultado
+
+
+@router.patch("/pedidos/{sesion_id}/asignar", response_model=BodegaPedidoResumen)
+def asignar_pedido_bodega(
+    sesion_id: str,
+    datos: AsignarPedidoInput,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> BodegaPedidoResumen:
+    """Toma un pedido para sí (auto-asignación) o se lo pasa a otra persona de
+    bodega. `asignado_a_id=None` lo vuelve a dejar sin asignar, disponible
+    para cualquiera."""
+    sesion = _sesion_o_404(db, sesion_id)
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este pedido todavía no tiene seguimiento")
+
+    asignado = None
+    if datos.asignado_a_id:
+        asignado = (
+            db.query(User)
+            .filter(User.id == datos.asignado_a_id, User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+            .first()
+        )
+        if asignado is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ese usuario no es válido para asignarle un pedido")
+
+    seg.bodega_asignado_a_id = asignado.id if asignado else None
+    seg.bodega_asignado_en = datetime.now(timezone.utc) if asignado else None
+    seg.bodega_asignado_por_id = usuario.id if asignado else None
+
+    detalle = f"Asignado a {asignado.nombre}" if asignado else "Se quitó la asignación"
+    registrar_actividad_bodega(db, sesion_id, usuario.id, "asignado", detalle)
+    db.commit()
+
+    total_items = db.query(Item).filter(Item.sesion_id == sesion_id).count()
+    ordenes = db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).all()
+    vendedora = db.query(User).filter(User.id == sesion.user_id).first()
+    return BodegaPedidoResumen(
+        sesion_id=sesion.id,
+        numero=_numero(sesion),
+        nombre_cliente=sesion.nombre_cliente,
+        fecha=sesion.fecha,
+        total_items=total_items,
+        total_ordenes=len(ordenes),
+        ordenes_revisadas=sum(1 for o in ordenes if o.revisado_en_bodega_at is not None),
+        pedido_confirmado_at=sesion.pedido_confirmado_at,
+        estado_envio=seg.estado,
+        vendedora_nombre=vendedora.nombre if vendedora else None,
+        bodega_asignado_a_id=seg.bodega_asignado_a_id,
+        bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+    )
 
 
 @router.get("/pedidos/{sesion_id}", response_model=BodegaPedidoDetalle)
@@ -215,6 +303,25 @@ def detalle_pedido_bodega(
         else None
     )
     vendedora = db.query(User).filter(User.id == sesion.user_id).first()
+    asignado = (
+        db.query(User).filter(User.id == seg.bodega_asignado_a_id).first()
+        if seg and seg.bodega_asignado_a_id
+        else None
+    )
+
+    actividad_filas = (
+        db.query(PedidoBodegaActividad, User)
+        .outerjoin(User, User.id == PedidoBodegaActividad.usuario_id)
+        .filter(PedidoBodegaActividad.sesion_id == sesion_id)
+        .order_by(PedidoBodegaActividad.created_at.desc())
+        .all()
+    )
+    actividad = [
+        ActividadBodegaResponse(
+            usuario_nombre=u.nombre if u else None, tipo=a.tipo, detalle=a.detalle, created_at=a.created_at
+        )
+        for a, u in actividad_filas
+    ]
 
     return BodegaPedidoDetalle(
         sesion_id=sesion.id,
@@ -229,6 +336,9 @@ def detalle_pedido_bodega(
         cliente_telefono=cliente.telefono if cliente else None,
         vendedora_nombre=vendedora.nombre if vendedora else None,
         vendedora_email=vendedora.email if vendedora else None,
+        bodega_asignado_a_id=asignado.id if asignado else None,
+        bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+        actividad=actividad,
     )
 
 
@@ -332,6 +442,11 @@ def guardar_orden_real(
         linea = lineas_por_item[dato.item_id]
         linea.cantidad_recibida = dato.cantidad_recibida
         linea.nota = dato.nota
+
+    registrar_actividad_bodega(
+        db, sesion_id, usuario.id, "orden_actualizada",
+        f"Guardó cantidades reales de la orden a «{orden.supplier}»",
+    )
 
     # Las cantidades/notas se guardan YA, sin importar lo que pase después con
     # los archivos: si la generación falla, bodega no debe perder lo que
@@ -485,6 +600,7 @@ def guardar_cotizacion_inspeccion(
     el Item original: el cliente no ve nada de esto, solo la vendedora."""
     sesion = _sesion_o_404(db, sesion_id)
     guardar_inspeccion(db, sesion, datos, usuario)
+    registrar_actividad_bodega(db, sesion_id, usuario.id, "inspeccion_actualizada", "Corrigió la cotización del cliente")
 
     cliente = (
         db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first() if sesion.cliente_id else None

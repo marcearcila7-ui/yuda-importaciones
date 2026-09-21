@@ -24,6 +24,27 @@ class BodegaPedidoResumen(BaseModel):
     # Vendedora dueña de la cotización en el cotizador (a quién preguntarle si
     # algo no cuadra).
     vendedora_nombre: str | None = None
+    # Quién de bodega lo tiene asignado (None = sin asignar, lo ven todos).
+    bodega_asignado_a_id: str | None = None
+    bodega_asignado_a_nombre: str | None = None
+
+
+class UsuarioBodegaBasico(BaseModel):
+    """Para el selector de a quién asignar: cualquier admin o bodega activo."""
+
+    id: str
+    nombre: str
+
+
+class AsignarPedidoInput(BaseModel):
+    asignado_a_id: str | None = None
+
+
+class ActividadBodegaResponse(BaseModel):
+    usuario_nombre: str | None = None
+    tipo: str
+    detalle: str | None = None
+    created_at: datetime
 
 
 class BodegaPedidoDetalle(BaseModel):
@@ -44,6 +65,9 @@ class BodegaPedidoDetalle(BaseModel):
     # Vendedora dueña de la cotización en el cotizador.
     vendedora_nombre: str | None = None
     vendedora_email: str | None = None
+    bodega_asignado_a_id: str | None = None
+    bodega_asignado_a_nombre: str | None = None
+    actividad: list[ActividadBodegaResponse] = []
 
 
 class ActualizarTelefonoInput(BaseModel):

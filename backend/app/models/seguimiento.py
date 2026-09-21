@@ -84,3 +84,14 @@ class SeguimientoPedido(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    # Con varias personas en bodega, este pedido puede estar sin repartir (None)
+    # o en manos de alguien puntual. None no significa "nadie lo puede ver": lo
+    # ven todos, solo que nadie lo tomó todavía.
+    bodega_asignado_a_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True
+    )
+    bodega_asignado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    bodega_asignado_por_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True
+    )

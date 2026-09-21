@@ -41,3 +41,7 @@ class PedidoGeneradoResponse(BaseModel):
 
 class FechaTentativaInput(BaseModel):
     fecha: date
+
+
+class EnviarABodegaInput(BaseModel):
+    asignado_a_id: str | None = None

@@ -4,12 +4,13 @@ import multiprocessing
 import os
 import re
 import time
+import uuid
 import zipfile
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user
@@ -17,10 +18,11 @@ from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
-from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
+from app.models.seguimiento import ESTADOS_ENVIO, ESTADOS_VENDEDORA, SeguimientoPedido
 from app.models.sesion import Sesion
-from app.models.user import User
+from app.models.user import RolUsuario, User
 from app.schemas.pedidos import (
+    EnviarABodegaInput,
     FechaTentativaInput,
     GenerarPedidosResponse,
     PedidoGeneradoInfo,
@@ -33,6 +35,7 @@ from app.services.excel_service import (
     generar_csv_pedido,
     generar_formato_pedido,
 )
+from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
 from app.services.inspeccion_service import construir_inspeccion_sesion
 from app.services.notificacion_service import avisar_pedido_regenerado_tras_revision
@@ -453,3 +456,109 @@ def obtener_cotizacion_inspeccion(
     medidas, fotos/video de evidencia). Nunca es lo que ve el cliente."""
     sesion = _obtener_sesion(db, sesion_id, usuario)
     return construir_inspeccion_sesion(db, sesion)
+
+
+_TIPOS_ARCHIVO_PEDIDO = {
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ("archivo_xlsx_url", subir_excel),
+    "application/pdf": ("archivo_pdf_url", subir_pdf),
+    "text/csv": ("archivo_csv_url", subir_csv),
+}
+
+
+@router.post("/generados/{pedido_generado_id}/reemplazar-archivo", response_model=PedidoGeneradoResponse)
+async def reemplazar_archivo_pedido_generado(
+    pedido_generado_id: str,
+    archivo: UploadFile,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PedidoGenerado:
+    """Si el Excel/PDF/CSV que generó el sistema para un proveedor necesita un
+    ajuste a mano, la vendedora sube acá la versión corregida y reemplaza la
+    que bodega va a ver. No cambia nada de los datos internos del pedido, solo
+    el archivo."""
+    pedido = db.query(PedidoGenerado).filter(PedidoGenerado.id == pedido_generado_id).first()
+    if pedido is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
+    _obtener_sesion(db, pedido.sesion_id, usuario)
+
+    info = _TIPOS_ARCHIVO_PEDIDO.get(archivo.content_type or "")
+    if info is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos Excel (.xlsx), PDF o CSV"
+        )
+    campo_url, subir = info
+
+    contenido = await archivo.read()
+    if len(contenido) > 25 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
+
+    nombre_archivo = f"pedidos/{pedido.id}/manual_{uuid.uuid4().hex}_{archivo.filename or 'archivo'}"
+    url = subir(contenido, nombre_archivo)
+    setattr(pedido, campo_url, url)
+
+    registrar_actividad_bodega(
+        db, pedido.sesion_id, usuario.id, "archivo_reemplazado",
+        f"Reemplazó el archivo de la orden a «{pedido.supplier}»",
+    )
+    db.commit()
+    db.refresh(pedido)
+    return pedido
+
+
+@router.post("/{sesion_id}/enviar-a-bodega")
+def enviar_a_bodega(
+    sesion_id: str,
+    datos: EnviarABodegaInput,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Botón guiado: envía el pedido a bodega (junto con la cotización del
+    cliente y las órdenes a proveedor ya generadas) y, si se eligió, lo asigna
+    directo a alguien de bodega en el mismo paso."""
+    exigir_roles(usuario, "admin", "vendedora")
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+
+    if db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).count() == 0:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Genera los pedidos a proveedor antes de enviar a bodega"
+        )
+
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is not None and seg.estado not in ESTADOS_VENDEDORA:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "Esta cotización ya está en bodega o más adelante"
+        )
+
+    asignado = None
+    if datos.asignado_a_id:
+        asignado = (
+            db.query(User)
+            .filter(User.id == datos.asignado_a_id, User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+            .first()
+        )
+        if asignado is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Ese usuario no es válido para asignarle un pedido")
+
+    # Reusa la lógica ya existente de cambio de estado (notificaciones al
+    # cliente, avisos internos, bitácora) en vez de duplicarla acá.
+    from app.api.routes.clientes import actualizar_seguimiento as _actualizar_seguimiento
+    from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
+
+    resultado = _actualizar_seguimiento(
+        sesion_id,
+        SeguimientoUpdate(estado="proveedor_recibio", novedades=seg.novedades if seg else None),
+        usuario,
+        db,
+    )
+
+    if asignado is not None:
+        resultado.bodega_asignado_a_id = asignado.id
+        resultado.bodega_asignado_en = datetime.now(timezone.utc)
+        resultado.bodega_asignado_por_id = usuario.id
+        registrar_actividad_bodega(
+            db, sesion_id, usuario.id, "asignado", f"Asignado a {asignado.nombre} al enviar a bodega"
+        )
+        db.commit()
+        db.refresh(resultado)
+
+    return SeguimientoResponse.model_validate(resultado).model_dump()

@@ -63,6 +63,7 @@ from app.schemas.cuenta import (
 )
 from app.schemas.packing import EnviarAConfirmarInput, SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
+from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cuenta_service import construir_estado_cuenta
 from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
@@ -863,6 +864,16 @@ def actualizar_seguimiento(
     cliente_proveedor = None
     if nuevo_proveedor_recibio and sesion.cliente_id:
         cliente_proveedor = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+
+    # Bitácora de bodega: con varias personas trabajando el mismo pedido, esto
+    # es lo que deja ver quién hizo qué y cuándo.
+    if nuevo_proveedor_recibio:
+        registrar_actividad_bodega(db, sesion_id, usuario.id, "enviado", "Pedido enviado a bodega")
+    if es_bodega and datos.estado == "en_bodega":
+        registrar_actividad_bodega(
+            db, sesion_id, usuario.id, "confirmado_envio",
+            "Bodega confirmó la mercancía recibida y lista para envío",
+        )
 
     cliente_envio = None
     if (nuevo_en_transito or nuevo_en_destino or nuevo_entregado) and sesion.cliente_id:
