@@ -672,7 +672,7 @@
     "ocultarInactivos": "Ocultar desactivados",
     "tab": {
       "info": "Info",
-      "acceso": "Acceso al portal",
+      "acceso": "Portal",
       "cotizaciones": "Cotizaciones"
     },
     "siglaAyuda": "Es el código con el que este cliente aparece en la app de contabilidad. No trae saldos ni movimientos de dinero acá.",
@@ -909,7 +909,8 @@
     "asignarABodega": "Asignar directo a alguien de bodega (opcional)",
     "sinAsignarBodega": "Sin asignar (lo ven todos)",
     "paso1Titulo": "Lo que pidió el cliente",
-    "paso3Titulo": "Avisar a bodega"
+    "paso3Titulo": "Avisar a bodega",
+    "faltaGenerarPrimero": "Primero genera el pedido a las tiendas (paso 2). Cuando lo hagas, este paso se activa solo."
   },
   "comun": {
     "confirmar": "Confirmar",

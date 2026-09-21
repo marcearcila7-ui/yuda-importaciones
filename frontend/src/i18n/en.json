@@ -672,7 +672,7 @@
     "ocultarInactivos": "Hide deactivated",
     "tab": {
       "info": "Info",
-      "acceso": "Portal access",
+      "acceso": "Portal",
       "cotizaciones": "Quotations"
     },
     "siglaAyuda": "The code this client uses in the accounting app. It never brings balances or money movements over here.",
@@ -909,7 +909,8 @@
     "asignarABodega": "Assign directly to someone in the warehouse (optional)",
     "sinAsignarBodega": "Unassigned (everyone sees it)",
     "paso1Titulo": "What the client ordered",
-    "paso3Titulo": "Notify the warehouse"
+    "paso3Titulo": "Notify the warehouse",
+    "faltaGenerarPrimero": "First generate the order to the stores (step 2). This step unlocks automatically once you do."
   },
   "comun": {
     "confirmar": "Confirm",

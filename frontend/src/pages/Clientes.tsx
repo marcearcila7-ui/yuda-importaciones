@@ -123,7 +123,9 @@ function Clientes() {
   // cotizaciones en una sola pantalla larga: para una usuaria no técnica era
   // "un muro de información" sin saber qué mirar primero. Ahora son 3
   // pestañas, cada una respondiendo una sola pregunta a la vez.
-  const [tabCliente, setTabCliente] = useState<'info' | 'acceso' | 'cotizaciones'>('info')
+  // Cotizaciones primero: es lo que la vendedora revisa a diario. Info y
+  // Portal son de referencia/configuración, se consultan mucho menos seguido.
+  const [tabCliente, setTabCliente] = useState<'cotizaciones' | 'info' | 'acceso'>('cotizaciones')
   // Dentro de "Cotizaciones": por etapa, para no mezclar borradores con lo
   // que ya está en camino. "todas" no filtra, solo agrupa visualmente.
   const [subTabCot, setSubTabCot] = useState<'todas' | EtapaCot>('todas')
@@ -133,7 +135,7 @@ function Clientes() {
   const abrirCliente = (c: Cliente) => {
     setClienteAbiertoId(c.id)
     setCotAbierta(new Set())
-    setTabCliente('info')
+    setTabCliente('cotizaciones')
     setSubTabCot('todas')
     window.scrollTo({ top: 0, behavior: 'smooth' })
     if (cotizaciones[c.id] === undefined) {
@@ -517,7 +519,7 @@ ${t('clientes.email')}: ${c.email}`
             hacer con él / cómo entra a su portal / qué cotizaciones tiene),
             en vez de mostrar las tres a la vez en una pantalla larga. */}
         <div className="flex gap-2 border-b" style={{ borderColor: 'var(--yuda-border)' }}>
-          {(['info', 'acceso', 'cotizaciones'] as const).map((tabId) => (
+          {(['cotizaciones', 'info', 'acceso'] as const).map((tabId) => (
             <button
               key={tabId}
               type="button"

@@ -672,7 +672,7 @@
     "ocultarInactivos": "隐藏已停用",
     "tab": {
       "info": "信息",
-      "acceso": "门户访问",
+      "acceso": "客户门户",
       "cotizaciones": "报价单"
     },
     "siglaAyuda": "该客户在财务应用中使用的代码。不会带来余额或资金变动信息。",
@@ -909,7 +909,8 @@
     "asignarABodega": "直接分配给仓库人员（可选）",
     "sinAsignarBodega": "未分配（所有人可见）",
     "paso1Titulo": "客户订购的产品",
-    "paso3Titulo": "通知仓库"
+    "paso3Titulo": "通知仓库",
+    "faltaGenerarPrimero": "请先生成向店铺的订单（第2步）。完成后此步骤会自动解锁。"
   },
   "comun": {
     "confirmar": "确认",

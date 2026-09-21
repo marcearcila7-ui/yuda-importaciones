@@ -22,23 +22,26 @@ import type { Seguimiento } from '../types/seguimiento'
 // seguía. Con un número al lado de cada bloque, alguien poco técnico puede
 // leer de arriba a abajo y saber en cuál va, sin tener que entender de una
 // todo el flujo de golpe.
-function PasoNumero({ n }: { n: number }) {
+function PasoNumero({ n, bloqueado }: { n: number; bloqueado?: boolean }) {
   return (
     <span
       className="flex flex-shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-      style={{ width: 26, height: 26, backgroundColor: 'var(--yuda-primary)' }}
+      style={{ width: 26, height: 26, backgroundColor: bloqueado ? '#B7B9C7' : 'var(--yuda-primary)' }}
     >
       {n}
     </span>
   )
 }
 
-function Paso({ n, titulo, children }: { n: number; titulo: string; children: ReactNode }) {
+// bloqueado: además de avisar CON TEXTO que falta un paso anterior, el
+// número se ve gris -para que de un vistazo, sin leer, quede claro que
+// todavía no toca hacer esto.
+function Paso({ n, titulo, bloqueado, children }: { n: number; titulo: string; bloqueado?: boolean; children: ReactNode }) {
   return (
     <div className="flex gap-3">
-      <PasoNumero n={n} />
+      <PasoNumero n={n} bloqueado={bloqueado} />
       <div className="min-w-0 flex-1">
-        <p className="mb-2 font-bold" style={{ color: 'var(--yuda-accent)' }}>{titulo}</p>
+        <p className="mb-2 font-bold" style={{ color: bloqueado ? 'var(--yuda-text-secondary)' : 'var(--yuda-accent)' }}>{titulo}</p>
         {children}
       </div>
     </div>
@@ -377,38 +380,50 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             Solo se puede una vez, y solo hacia adelante: bodega recibe esto en
             Yuda Logistic apenas se marca. */}
         {confirmado && seguimiento && (
-          <Paso n={3} titulo={t('gestionPedido.paso3Titulo')}>
+          <Paso n={3} titulo={t('gestionPedido.paso3Titulo')} bloqueado={pedidosGenerados.length === 0}>
             {seguimiento.estado === 'cotizacion_enviada' || seguimiento.estado === 'pedido_confirmado' ? (
-              <div className="flex flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
-                {usuariosBodega.length > 0 && (
-                  <label className="flex flex-col gap-1">
-                    <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {t('gestionPedido.asignarABodega')}
-                    </span>
-                    <select
-                      value={asignadoAId}
-                      onChange={(e) => setAsignadoAId(e.target.value)}
-                      className="min-h-[40px] rounded-lg border border-gray-200 px-2 focus:border-[var(--yuda-primary)] focus:outline-none"
-                      style={{ fontSize: 15 }}
-                    >
-                      <option value="">{t('gestionPedido.sinAsignarBodega')}</option>
-                      {usuariosBodega.map((u) => (
-                        <option key={u.id} value={u.id}>{u.nombre}</option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-                <button
-                  type="button"
-                  onClick={enviarABodega}
-                  disabled={enviandoABodega}
-                  className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
-                  style={{ backgroundColor: 'var(--yuda-primary)' }}
+              pedidosGenerados.length === 0 ? (
+                // El backend ya rechaza avisar a bodega sin pedidos generados;
+                // esto lo deja claro en la UI ANTES de que lo intente, en vez
+                // de dejarla hacer clic y recibir un error después.
+                <p
+                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium"
+                  style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }}
                 >
-                  <Warehouse size={16} />{' '}
-                  {enviandoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.enviarABodega')}
-                </button>
-              </div>
+                  <Warehouse size={16} /> {t('gestionPedido.faltaGenerarPrimero')}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
+                  {usuariosBodega.length > 0 && (
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {t('gestionPedido.asignarABodega')}
+                      </span>
+                      <select
+                        value={asignadoAId}
+                        onChange={(e) => setAsignadoAId(e.target.value)}
+                        className="min-h-[40px] rounded-lg border border-gray-200 px-2 focus:border-[var(--yuda-primary)] focus:outline-none"
+                        style={{ fontSize: 15 }}
+                      >
+                        <option value="">{t('gestionPedido.sinAsignarBodega')}</option>
+                        {usuariosBodega.map((u) => (
+                          <option key={u.id} value={u.id}>{u.nombre}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    onClick={enviarABodega}
+                    disabled={enviandoABodega}
+                    className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
+                    style={{ backgroundColor: 'var(--yuda-primary)' }}
+                  >
+                    <Warehouse size={16} />{' '}
+                    {enviandoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.enviarABodega')}
+                  </button>
+                </div>
+              )
             ) : (
               <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
                 <Warehouse size={16} /> {t('gestionPedido.yaEnviadoABodega')}
