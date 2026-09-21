@@ -34,8 +34,6 @@ function CotizacionDetalle() {
   const { t, i18n } = useTranslation()
   const rol = useAuthStore((s) => s.usuario?.rol)
   const esAdmin = rol === 'admin'
-  // La vendedora llega desde Clientes; admin/contadora desde el Historial.
-  const volverA = rol === 'vendedora' ? '/clientes' : '/historial'
   const [sesion, setSesion] = useState<Sesion | null>(null)
   const [items, setItems] = useState<ItemResponse[]>([])
   const [cliente, setCliente] = useState<Cliente | null>(null)
@@ -155,6 +153,17 @@ function CotizacionDetalle() {
     }
   }
 
+  // Admin y vendedora llegan desde la ficha de ESE cliente (Clientes.tsx): hay
+  // que volver ahí, no a la lista completa de clientes (antes "Volver" mandaba
+  // siempre a /clientes, así que tocaba volver a buscar y entrar al cliente).
+  // Contadora llega desde el Historial, que no tiene ficha de cliente.
+  const puedeVolverAlCliente = (rol === 'vendedora' || rol === 'admin') && !!sesion?.cliente_id
+  const volverA = puedeVolverAlCliente
+    ? `/clientes/${sesion!.cliente_id}`
+    : rol === 'vendedora' || rol === 'admin'
+      ? '/clientes'
+      : '/historial'
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -164,7 +173,12 @@ function CotizacionDetalle() {
           className="flex items-center gap-2 text-sm font-medium"
           style={{ color: 'var(--yuda-primary)' }}
         >
-          <ArrowLeft size={16} /> {rol === 'vendedora' ? t('detalle.volverClientes') : t('detalle.volver')}
+          <ArrowLeft size={16} />{' '}
+          {puedeVolverAlCliente
+            ? t('detalle.volverCliente', { nombre: sesion?.nombre_cliente })
+            : rol === 'vendedora' || rol === 'admin'
+              ? t('detalle.volverClientes')
+              : t('detalle.volver')}
         </button>
         {(esAdmin || rol === 'vendedora') && sesion && (
           <button

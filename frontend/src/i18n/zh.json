@@ -396,7 +396,8 @@
       "gestion": "订单管理",
       "cotizacion": "报价单",
       "seguimiento": "跟踪"
-    }
+    },
+    "volverCliente": "返回{{nombre}}"
   },
   "admin": {
     "titulo": "管理",

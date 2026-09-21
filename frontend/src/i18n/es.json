@@ -396,7 +396,8 @@
       "gestion": "Gestión del pedido",
       "cotizacion": "Cotización",
       "seguimiento": "Seguimiento"
-    }
+    },
+    "volverCliente": "Volver a {{nombre}}"
   },
   "admin": {
     "titulo": "Administración",

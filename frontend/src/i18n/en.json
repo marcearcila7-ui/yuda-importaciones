@@ -396,7 +396,8 @@
       "gestion": "Order management",
       "cotizacion": "Quotation",
       "seguimiento": "Tracking"
-    }
+    },
+    "volverCliente": "Back to {{nombre}}"
   },
   "admin": {
     "titulo": "Administration",

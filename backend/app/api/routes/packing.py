@@ -5,12 +5,14 @@ from datetime import datetime
 import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user
+from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user, vendedora_tiene_acceso_cliente
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cliente_vendedora import ClienteVendedora
 from app.models.contenedor import Contenedor
 from app.models.item import Item
 from app.models.lote import LoteItem, LoteOCR
@@ -160,10 +162,29 @@ def listar_sesiones(
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Sesion]:
-    """Lista sesiones: admin/contadora ven todas, vendedora solo las propias"""
+    """Lista sesiones: admin/contadora ven todas; vendedora, las que creó ella
+    más las de cualquier cliente que sea suyo o que Marcela le haya compartido
+    (antes solo veía las que había creado ella misma: una cotización de un
+    cliente compartido, creada por otra vendedora o por Marcela, le daba
+    "No se encontró la cotización" al abrirla)."""
     query = db.query(Sesion)
     if usuario.rol.value == "vendedora":
-        query = query.filter(Sesion.user_id == usuario.id)
+        clientes_propios_o_compartidos = db.query(Cliente.id).filter(
+            or_(
+                Cliente.vendedora_id == usuario.id,
+                Cliente.id.in_(
+                    db.query(ClienteVendedora.cliente_id).filter(
+                        ClienteVendedora.vendedora_id == usuario.id
+                    )
+                ),
+            )
+        )
+        query = query.filter(
+            or_(
+                Sesion.user_id == usuario.id,
+                Sesion.cliente_id.in_(clientes_propios_o_compartidos),
+            )
+        )
     query = query.order_by(Sesion.created_at.desc())
     if limit is not None:
         query = query.limit(limit).offset(offset)
