@@ -13,9 +13,11 @@ from sqlalchemy.orm import Session
 
 from app.models.cuenta import MovimientoCuenta
 from app.models.item import Item
+from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.lote import LoteItem, LoteOCR
 from app.models.notificacion import Notificacion
 from app.models.pedido import PedidoGenerado
+from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.services.storage_service import borrar_archivos, ruta_desde_url
@@ -72,8 +74,19 @@ def borrar_sesiones(db: Session, sesion_ids: list[str]) -> list[tuple[str, list[
     ).filter(PedidoGenerado.sesion_id.in_(sesion_ids)):
         pedidos_urls.extend([xlsx, pdf])
 
+    item_ids = [iid for (iid,) in db.query(Item.id).filter(Item.sesion_id.in_(sesion_ids)).all()]
+    if item_ids:
+        for fotos, video_url in db.query(
+            ItemInspeccionBodega.fotos, ItemInspeccionBodega.video_url
+        ).filter(ItemInspeccionBodega.item_id.in_(item_ids)):
+            fotos_urls.extend(fotos or [])
+            pedidos_urls.append(video_url)
+
     # Primero lo que depende de la cotización (FK), después la cotización.
     borrar = lambda consulta: consulta.delete(synchronize_session=False)  # noqa: E731
+    borrar(db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids)))
+    if item_ids:
+        borrar(db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)))
     borrar(db.query(Item).filter(Item.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id.in_(sesion_ids)))
     borrar(db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id.in_(sesion_ids)))
