@@ -318,7 +318,7 @@
     "errorZip": "No se pudo descargar el ZIP",
     "ayudaGenerar": "Pide a la tienda las cajas que cargaste tú en la tabla de productos (columna CTNS).",
     "ayudaGenerarCliente": "El sistema detecta a qué tienda pertenece cada producto y crea una orden por tienda; no hay que armarlas a mano. Se generan con las cantidades que el cliente pidió, y puedes editarlas arriba antes de generar si hay algún cambio de último momento.",
-    "regenerar": "¿Necesitas corregir algo? Volver a generar el pedido"
+    "regenerar": "Si ya corrigiste las cantidades arriba (en «Editar cantidades»), genera el pedido de nuevo aquí"
   },
   "historial": {
     "titulo": "Historial de cotizaciones",

@@ -180,16 +180,6 @@ function CotizacionDetalle() {
               ? t('detalle.volverClientes')
               : t('detalle.volver')}
         </button>
-        {(esAdmin || rol === 'vendedora') && sesion && (
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard', { state: { sesion_id: id } })}
-            className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium"
-            style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
-          >
-            <Pencil size={15} /> {t('detalle.editarPanel')}
-          </button>
-        )}
       </div>
 
       <div>
@@ -283,6 +273,19 @@ function CotizacionDetalle() {
           {/* Pestaña "Cotización": lo que se le cotizó al cliente (solo lectura) */}
           {tab === 'cotizacion' && (
           <>
+          {/* Editar vuelve al panel donde se arma/corrige la cotización (OCR,
+              productos, cantidades): solo tiene sentido desde esta pestaña,
+              no desde Gestión o Seguimiento. */}
+          {(esAdmin || rol === 'vendedora') && (
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard', { state: { sesion_id: id } })}
+              className="flex items-center gap-2 self-start rounded-lg border px-3 py-1.5 text-sm font-medium"
+              style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
+            >
+              <Pencil size={15} /> {t('detalle.editarPanel')}
+            </button>
+          )}
           {/* Descargar la cotización (PDF / Excel) — para Marcela y la contadora */}
           {items.length > 0 && (
             <section className="card flex flex-col gap-3">

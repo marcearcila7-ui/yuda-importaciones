@@ -318,7 +318,7 @@
     "errorZip": "Could not download the ZIP",
     "ayudaGenerar": "Ask the store for the boxes you loaded in the products table (CTNS column).",
     "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store — no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute.",
-    "regenerar": "Need to fix something? Generate the order again"
+    "regenerar": "If you already corrected the quantities above (in «Edit quantities»), generate the order again here"
   },
   "historial": {
     "titulo": "Quotation history",
