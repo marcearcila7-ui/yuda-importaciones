@@ -1,13 +1,16 @@
 import logging
+import uuid
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import require_roles
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
+from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
@@ -20,14 +23,16 @@ from app.schemas.bodega import (
     OrdenGenerada,
     OrdenGeneradaItem,
 )
+from app.schemas.inspeccion import GuardarInspeccionInput, InspeccionSesionResponse
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.cotizacion_service import _calcular
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido
-from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
-from app.services.notificacion_service import avisar_orden_actualizada_bodega
+from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
+from app.services.inspeccion_service import construir_inspeccion_sesion, guardar_inspeccion
+from app.services.notificacion_service import avisar_inspeccion_actualizada, avisar_orden_actualizada_bodega
 from app.services.pdf_service import html_pedido, render_pdf
-from app.services.storage_service import subir_csv, subir_excel, subir_pdf
+from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_csv, subir_excel, subir_foto, subir_pdf, subir_video
 
 router = APIRouter(prefix="/bodega", tags=["bodega"])
 logger = logging.getLogger("app.bodega")
@@ -35,6 +40,65 @@ logger = logging.getLogger("app.bodega")
 
 def _numero(sesion: Sesion) -> str:
     return f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+
+
+# Evidencia de inspección: fotos (mismos formatos que el resto de la app) y
+# video, ambos con límite generoso porque son fotos/videos de celular tal cual.
+TIPOS_PERMITIDOS_FOTO_INSPECCION = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+}
+DECLARADOS_HEIC_INSPECCION = {"image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"}
+MAX_BYTES_FOTO_INSPECCION = 25 * 1024 * 1024
+MAX_FOTOS_INSPECCION = 4
+
+TIPOS_PERMITIDOS_VIDEO = {"video/mp4": ".mp4", "video/quicktime": ".mov", "video/webm": ".webm"}
+MAX_BYTES_VIDEO = 100 * 1024 * 1024
+
+
+async def _leer_y_validar_foto_inspeccion(foto: UploadFile) -> tuple[bytes, str]:
+    if foto.content_type not in TIPOS_PERMITIDOS_FOTO_INSPECCION and foto.content_type not in DECLARADOS_HEIC_INSPECCION:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Solo se permiten imágenes JPG, PNG o WEBP")
+    imagen_bytes = await foto.read()
+    if len(imagen_bytes) > MAX_BYTES_FOTO_INSPECCION:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "La imagen no debe superar 25MB")
+    tipo_real = detectar_tipo_imagen(imagen_bytes)
+    if tipo_real not in TIPOS_PERMITIDOS_FOTO_INSPECCION:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no es una imagen JPG, PNG o WEBP válida")
+    if tipo_real == "image/heic":
+        convertida = convertir_a_jpeg(imagen_bytes)
+        if convertida is None:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "No se pudo leer la foto del iPhone. Vuelve a intentarlo."
+            )
+        imagen_bytes = convertida
+        tipo_real = "image/jpeg"
+    return imagen_bytes, tipo_real
+
+
+async def _leer_y_validar_video(video: UploadFile) -> tuple[bytes, str]:
+    if video.content_type not in TIPOS_PERMITIDOS_VIDEO:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Solo se permiten videos MP4, MOV o WEBM")
+    video_bytes = await video.read()
+    if len(video_bytes) > MAX_BYTES_VIDEO:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El video no debe superar 100MB")
+    return video_bytes, video.content_type
+
+
+def _sesion_o_404(db: Session, sesion_id: str) -> Sesion:
+    sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
+    if sesion is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
+    return sesion
+
+
+def _item_de_sesion_o_404(db: Session, sesion_id: str, item_id: str) -> Item:
+    item = db.query(Item).filter(Item.id == item_id, Item.sesion_id == sesion_id).first()
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Producto no encontrado en esta cotización")
+    return item
 
 
 class _ItemCantidadReal:
@@ -394,3 +458,153 @@ def actualizar_telefono_cliente(
     cliente.telefono = telefono
     db.commit()
     return {"telefono": cliente.telefono}
+
+
+@router.get("/pedidos/{sesion_id}/cotizacion", response_model=InspeccionSesionResponse)
+def obtener_cotizacion_inspeccion(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> InspeccionSesionResponse:
+    """Cotización del cliente para que bodega la inspeccione: cada campo trae
+    el valor original (el que cargó la vendedora) y el corregido por bodega,
+    si acaso."""
+    sesion = _sesion_o_404(db, sesion_id)
+    return construir_inspeccion_sesion(db, sesion)
+
+
+@router.put("/pedidos/{sesion_id}/cotizacion", response_model=InspeccionSesionResponse)
+def guardar_cotizacion_inspeccion(
+    sesion_id: str,
+    datos: GuardarInspeccionInput,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> InspeccionSesionResponse:
+    """Guarda las correcciones de bodega sobre la cotización (cantidades
+    reales, medidas, descripciones, confirmación de referencia). Nunca toca
+    el Item original: el cliente no ve nada de esto, solo la vendedora."""
+    sesion = _sesion_o_404(db, sesion_id)
+    guardar_inspeccion(db, sesion, datos, usuario)
+
+    cliente = (
+        db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first() if sesion.cliente_id else None
+    )
+    avisar_inspeccion_actualizada(
+        db, sesion.id, _numero(sesion), cliente.nombre if cliente else sesion.nombre_cliente, sesion.user_id
+    )
+    db.commit()
+
+    return construir_inspeccion_sesion(db, sesion)
+
+
+@router.post("/pedidos/{sesion_id}/cotizacion/items/{item_id}/fotos")
+async def agregar_foto_inspeccion(
+    sesion_id: str,
+    item_id: str,
+    foto: UploadFile,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Agrega una foto de evidencia a un producto (máx. 4). No es la foto del
+    catálogo del cliente: es aparte, solo para bodega y la vendedora."""
+    _sesion_o_404(db, sesion_id)
+    item = _item_de_sesion_o_404(db, sesion_id, item_id)
+
+    insp = db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).first()
+    fotos_actuales = list(insp.fotos or []) if insp else []
+    if len(fotos_actuales) >= MAX_FOTOS_INSPECCION:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Máximo {MAX_FOTOS_INSPECCION} fotos por producto")
+
+    imagen_bytes, tipo_real = await _leer_y_validar_foto_inspeccion(foto)
+    extension = TIPOS_PERMITIDOS_FOTO_INSPECCION[tipo_real]
+    nombre_archivo = f"inspeccion/{item.id}/{uuid.uuid4().hex}{extension}"
+    url = subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+
+    if insp is None:
+        insp = ItemInspeccionBodega(item_id=item.id)
+        db.add(insp)
+    insp.fotos = fotos_actuales + [url]
+    insp.actualizado_en = datetime.now(timezone.utc)
+    insp.actualizado_por_id = usuario.id
+    db.commit()
+
+    return {"fotos": insp.fotos}
+
+
+@router.delete("/pedidos/{sesion_id}/cotizacion/items/{item_id}/fotos")
+def quitar_foto_inspeccion(
+    sesion_id: str,
+    item_id: str,
+    url: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    _sesion_o_404(db, sesion_id)
+    item = _item_de_sesion_o_404(db, sesion_id, item_id)
+    insp = db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).first()
+    if insp is None or not insp.fotos or url not in insp.fotos:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Esa foto no existe")
+
+    insp.fotos = [f for f in insp.fotos if f != url]
+    insp.actualizado_en = datetime.now(timezone.utc)
+    insp.actualizado_por_id = usuario.id
+    db.commit()
+    borrar_archivos("fotos", [ruta_desde_url(url, "fotos")])
+
+    return {"fotos": insp.fotos}
+
+
+@router.post("/pedidos/{sesion_id}/cotizacion/items/{item_id}/video")
+async def subir_video_inspeccion(
+    sesion_id: str,
+    item_id: str,
+    video: UploadFile,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sube (o reemplaza) el video de evidencia de un producto. Un solo video
+    por producto: si ya había uno, se borra el anterior."""
+    _sesion_o_404(db, sesion_id)
+    item = _item_de_sesion_o_404(db, sesion_id, item_id)
+
+    video_bytes, content_type = await _leer_y_validar_video(video)
+    extension = TIPOS_PERMITIDOS_VIDEO[content_type]
+    nombre_archivo = f"inspeccion/{item.id}/{uuid.uuid4().hex}{extension}"
+    url = subir_video(video_bytes, nombre_archivo, content_type)
+
+    insp = db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).first()
+    if insp is None:
+        insp = ItemInspeccionBodega(item_id=item.id)
+        db.add(insp)
+    url_anterior = insp.video_url
+    insp.video_url = url
+    insp.actualizado_en = datetime.now(timezone.utc)
+    insp.actualizado_por_id = usuario.id
+    db.commit()
+    if url_anterior:
+        borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
+
+    return {"video_url": insp.video_url}
+
+
+@router.delete("/pedidos/{sesion_id}/cotizacion/items/{item_id}/video")
+def quitar_video_inspeccion(
+    sesion_id: str,
+    item_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    _sesion_o_404(db, sesion_id)
+    item = _item_de_sesion_o_404(db, sesion_id, item_id)
+    insp = db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).first()
+    if insp is None or not insp.video_url:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este producto no tiene video")
+
+    url_anterior = insp.video_url
+    insp.video_url = None
+    insp.actualizado_en = datetime.now(timezone.utc)
+    insp.actualizado_por_id = usuario.id
+    db.commit()
+    borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
+
+    return {"video_url": None}

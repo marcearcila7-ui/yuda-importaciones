@@ -55,6 +55,10 @@ class Sesion(Base):
     # Marca de embarque: identifica la carga de este cliente dentro del contenedor.
     # Es la misma para todos los productos, por eso vive en la cotizacion.
     shipping_mark: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Corrección de bodega al shipping_mark, si el que cargó la vendedora no
+    # coincide con lo que llegó. None = bodega no lo corrigió (se usa el de
+    # arriba). El cliente nunca ve este campo, solo la vendedora.
+    shipping_mark_bodega: Mapped[str | None] = mapped_column(String, nullable=True)
     pedido_recibido_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

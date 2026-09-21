@@ -26,6 +26,7 @@ from app.schemas.pedidos import (
     PedidoGeneradoInfo,
     PedidoGeneradoResponse,
 )
+from app.schemas.inspeccion import InspeccionSesionResponse
 from app.services.aviso_cliente_service import avisar_cliente_fecha_tentativa, formatear_fecha_legible
 from app.services.excel_service import (
     agrupar_items_por_supplier,
@@ -33,6 +34,7 @@ from app.services.excel_service import (
     generar_formato_pedido,
 )
 from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
+from app.services.inspeccion_service import construir_inspeccion_sesion
 from app.services.notificacion_service import avisar_pedido_regenerado_tras_revision
 from app.services.pdf_service import html_pedido, render_pdf
 from app.services.storage_service import subir_csv, subir_excel, subir_pdf
@@ -438,3 +440,16 @@ def descargar_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{nombre_zip}"'},
     )
+
+
+@router.get("/{sesion_id}/cotizacion-inspeccion", response_model=InspeccionSesionResponse)
+def obtener_cotizacion_inspeccion(
+    sesion_id: str,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> InspeccionSesionResponse:
+    """Vista de solo lectura para la vendedora: la cotización con las
+    correcciones que bodega guardó al inspeccionar (cantidades reales,
+    medidas, fotos/video de evidencia). Nunca es lo que ve el cliente."""
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    return construir_inspeccion_sesion(db, sesion)

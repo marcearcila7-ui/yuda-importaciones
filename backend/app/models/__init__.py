@@ -9,6 +9,7 @@ from app.models.cuenta import MovimientoCuenta
 from app.models.tienda import PedidoTienda
 from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteVendedora, ClienteActividad
+from app.models.item_inspeccion import ItemInspeccionBodega
 
 __all__ = [
     "User",

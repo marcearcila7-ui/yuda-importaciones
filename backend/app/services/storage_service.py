@@ -100,6 +100,23 @@ def subir_csv(archivo_bytes: bytes, nombre_archivo: str) -> str:
         raise
 
 
+def subir_video(video_bytes: bytes, nombre_archivo: str, content_type: str) -> str:
+    """Sube un video (evidencia de inspección de bodega) al bucket 'pedidos' y
+    devuelve su URL pública. Mismo bucket que los documentos: ya es público y
+    acepta cualquier tipo de archivo, no hace falta uno nuevo."""
+    try:
+        storage = _storage()
+        storage.from_("pedidos").upload(
+            nombre_archivo,
+            video_bytes,
+            {"content-type": content_type, "upsert": "true"},
+        )
+        return f"{settings.SUPABASE_URL}/storage/v1/object/public/pedidos/{nombre_archivo}"
+    except Exception:
+        logger.exception("Error subiendo el video a Supabase Storage")
+        raise
+
+
 def subir_documento(archivo_bytes: bytes, nombre_archivo: str, content_type: str) -> str:
     """Sube un documento (PDF, CSV, Excel) al bucket 'pedidos' y devuelve su URL pública"""
     try:

@@ -4,6 +4,7 @@ from app.models.notificacion import (
     TIPO_DESPACHO_APROBADO,
     TIPO_ENVIO_VENDEDORA,
     TIPO_LISTO_PARA_ENVIO,
+    TIPO_INSPECCION_BODEGA_ACTUALIZADA,
     TIPO_ORDEN_ACTUALIZADA_BODEGA,
     TIPO_PEDIDO_CLIENTE,
     TIPO_PEDIDO_CONFIRMADO,
@@ -307,6 +308,46 @@ def avisar_pedido_regenerado_tras_revision(
                     f"Se volvió a generar el pedido de «{supplier}» de la cotización {numero} "
                     f"({cliente}), que bodega ya había revisado. Esa revisión se perdió: "
                     "bodega tiene que volver a contar las cantidades reales de este proveedor."
+                ),
+            )
+        )
+
+
+def avisar_inspeccion_actualizada(
+    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None
+) -> None:
+    """Avisa a la vendedora dueña y a Marcela que bodega guardó correcciones de
+    inspección sobre la cotización del cliente (cantidades reales, medidas,
+    fotos/video de evidencia). No evita duplicar por tipo+sesión: bodega puede
+    guardar varias veces mientras va inspeccionando producto por producto, y
+    cada guardado merece su propio aviso; si ya hay uno igual sin leer, no se
+    repite."""
+    destinatarios = {vendedor_id} if vendedor_id else set()
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        destinatarios.add(admin.id)
+
+    for usuario_id in destinatarios:
+        ya_existe = (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.usuario_id == usuario_id,
+                Notificacion.sesion_id == sesion_id,
+                Notificacion.tipo == TIPO_INSPECCION_BODEGA_ACTUALIZADA,
+                Notificacion.leida.is_(False),
+            )
+            .first()
+        )
+        if ya_existe:
+            continue
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                tipo=TIPO_INSPECCION_BODEGA_ACTUALIZADA,
+                titulo="Bodega actualizó la inspección de la cotización",
+                mensaje=(
+                    f"Bodega guardó correcciones de inspección en la cotización {numero} "
+                    f"({cliente}): cantidades reales, medidas o evidencia. Revísalas."
                 ),
             )
         )

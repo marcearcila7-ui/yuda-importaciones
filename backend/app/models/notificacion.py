@@ -24,6 +24,9 @@ TIPO_ORDEN_ACTUALIZADA_BODEGA = "orden_actualizada_bodega"
 TIPO_PEDIDO_REGENERADO_TRAS_REVISION = "pedido_regenerado_tras_revision"
 # Se acerca la fecha de pago del 70% a una tienda: aviso para la contadora.
 TIPO_ALERTA_PAGO_TIENDA = "alerta_pago_tienda"
+# Bodega guardó correcciones de inspección sobre la cotización del cliente
+# (cantidades reales, medidas, fotos/video de evidencia).
+TIPO_INSPECCION_BODEGA_ACTUALIZADA = "inspeccion_bodega_actualizada"
 
 
 class Notificacion(Base):
