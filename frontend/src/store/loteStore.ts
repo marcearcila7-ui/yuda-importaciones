@@ -16,7 +16,7 @@ import {
 } from '../api/lotes'
 import { comprimirImagen, comprimirFotoDetalle } from '../lib/comprimirImagen'
 import { causaDelFallo, type CausaFallo } from '../lib/causaFallo'
-import type { OCRResultado } from '../types/ocr'
+import type { OCRResultado, TipoFotoExtra } from '../types/ocr'
 
 export interface ResultadoLote {
   id: string
@@ -84,7 +84,7 @@ interface LoteState {
   reemplazarUno: (id: string, file: File) => Promise<void>
   subirFotoExtraUno: (
     id: string,
-    tipo: 'interior' | 'herrajes' | 'riata' | 'exterior',
+    tipo: TipoFotoExtra,
     file: File,
   ) => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
@@ -392,7 +392,7 @@ export const useLoteStore = create<LoteState>((set, get) => {
       }))
     },
 
-    // Sube una foto de detalle del bolso (interior/herrajes/riata/exterior).
+    // Sube una foto de detalle: las del bolso, o una genérica (extra1/2/3).
     subirFotoExtraUno: async (id, tipo, file) => {
       const loteId = get().loteId
       if (!loteId) return

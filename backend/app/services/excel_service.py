@@ -39,6 +39,13 @@ ANCHOS_BOLSOS = [15, 12, 15, 15, 12, 15, 14, 14, 12, 12, 12, 12]
 # agregan las columnas de arriba.
 TIPOS_FOTO_EXTRA_EXCEL = ["interior", "herrajes", "riata", "exterior"]
 
+# En cualquier otra cotización (no bolsos), hasta 3 fotos extra genéricas: el
+# cliente a veces pide más ángulos además de la foto principal. Solo se agregan
+# estas columnas si algún producto de verdad tiene alguna cargada.
+ENCABEZADOS_MAS_FOTOS = ["FOTO 2", "FOTO 3", "FOTO 4"]
+ANCHOS_MAS_FOTOS = [12, 12, 12]
+TIPOS_MAS_FOTOS_EXCEL = ["extra1", "extra2", "extra3"]
+
 
 def _encajar(img: XLImage, lado_max: int) -> None:
     """Achica una imagen de openpyxl a que su lado más largo mida `lado_max`,
@@ -64,8 +71,18 @@ def generar_packing_list_excel(
     ws.title = "Packing List"
 
     es_bolsos = tipo_cotizacion == "bolsos"
-    encabezados = ENCABEZADOS + ENCABEZADOS_BOLSOS if es_bolsos else ENCABEZADOS
-    anchos = ANCHOS + ANCHOS_BOLSOS if es_bolsos else ANCHOS
+    hay_mas_fotos = (not es_bolsos) and any(
+        (getattr(i, "fotos_extra", None) or {}).get(t) for i in items for t in TIPOS_MAS_FOTOS_EXCEL
+    )
+    if es_bolsos:
+        encabezados = ENCABEZADOS + ENCABEZADOS_BOLSOS
+        anchos = ANCHOS + ANCHOS_BOLSOS
+    elif hay_mas_fotos:
+        encabezados = ENCABEZADOS + ENCABEZADOS_MAS_FOTOS
+        anchos = ANCHOS + ANCHOS_MAS_FOTOS
+    else:
+        encabezados = ENCABEZADOS
+        anchos = ANCHOS
 
     # Estilos reutilizables
     fill_header = PatternFill(start_color="404040", end_color="404040", fill_type="solid")
@@ -168,6 +185,24 @@ def generar_packing_list_excel(
                         img = XLImage(buf)
                         _encajar(img, 55)
                         ws.add_image(img, f"{get_column_letter(32 + offset)}{fila}")
+                        ws.row_dimensions[fila].height = 45
+                    except Exception:
+                        pass
+        elif hay_mas_fotos:
+            # Mismas 3 fotos extra genéricas que la vendedora haya agregado
+            # para este producto, columnas 24..26.
+            fotos_extra = getattr(item, "fotos_extra", None) or {}
+            fotos_extra_final = getattr(item, "fotos_extra_final", None) or {}
+            for offset, tipo in enumerate(TIPOS_MAS_FOTOS_EXCEL):
+                url = fotos_extra_final.get(tipo) or fotos_extra.get(tipo)
+                if not url:
+                    continue
+                buf = descargar_imagen(url, lado_px=120)
+                if buf is not None:
+                    try:
+                        img = XLImage(buf)
+                        _encajar(img, 55)
+                        ws.add_image(img, f"{get_column_letter(24 + offset)}{fila}")
                         ws.row_dimensions[fila].height = 45
                     except Exception:
                         pass

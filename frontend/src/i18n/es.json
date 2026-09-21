@@ -293,7 +293,11 @@
     "errorGuardarCampo": "No se pudo guardar el cambio. Vuelve a intentarlo.",
     "deslizaParaVerMas": "Desliza o usa las flechas para ver más columnas →",
     "verColumnasAnteriores": "Ver columnas anteriores",
-    "verColumnasSiguientes": "Ver columnas siguientes"
+    "verColumnasSiguientes": "Ver columnas siguientes",
+    "masFotosTitulo": "Más fotos (opcional)",
+    "masFotosAyuda": "Si el cliente pidió ver el producto desde otros ángulos, agrégalas aquí.",
+    "masFotosSlot": "Foto {{n}}",
+    "agregarFoto": "Agregar foto"
   },
   "pedidos": {
     "faltaMarca": "Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido: es con lo que la tienda separa estas cajas de las de otro pedido.",

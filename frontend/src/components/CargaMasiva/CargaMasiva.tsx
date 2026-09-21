@@ -10,7 +10,7 @@ import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
-import type { OCRResultado } from '../../types/ocr'
+import type { OCRResultado, TipoFotoExtra } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
 const MAX_LOTE = 100
@@ -155,7 +155,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
   // el botón y no disparar dos subidas de la misma mientras la primera termina.
   const [subiendoExtra, setSubiendoExtra] = useState<string | null>(null)
   const inputExtraRef = useRef<HTMLInputElement>(null)
-  const [extraPedido, setExtraPedido] = useState<{ id: string; tipo: 'interior' | 'herrajes' | 'riata' | 'exterior' } | null>(null)
+  const [extraPedido, setExtraPedido] = useState<{ id: string; tipo: TipoFotoExtra } | null>(null)
 
   // Al entrar, retomar un lote en curso de esta sesión (si la vendedora cerró y volvió)
   useEffect(() => {
@@ -264,9 +264,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     }
   }
 
-  // Foto de detalle del bolso (interior/herrajes/riata/exterior): abre el
+  // Foto de detalle (la del bolso, o una genérica extra1/2/3): abre el
   // selector y, al elegir, la sube y la guarda dentro de datos.fotos_extra.
-  const pedirFotoExtra = (id: string, tipo: 'interior' | 'herrajes' | 'riata' | 'exterior') => {
+  const pedirFotoExtra = (id: string, tipo: TipoFotoExtra) => {
     setExtraPedido({ id, tipo })
     inputExtraRef.current?.click()
   }
@@ -320,6 +320,11 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         moq_cajas: d.cantidad_minima ?? undefined,
         ctns: 1,
         colores: d.colores ?? undefined,
+        // Las fotos extra (de detalle del bolso, o las genéricas extra1/2/3 de
+        // cualquier producto) se guardan siempre, no solo en bolsos: antes se
+        // capturaban acá pero se perdían al agregar el producto si la
+        // cotización no era de bolsos.
+        fotos_extra: d.fotos_extra ?? undefined,
         ...(esBolsos && {
           tamano: d.tamano ?? undefined,
           empaque: d.empaque ?? undefined,
@@ -328,7 +333,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
           riata: d.riata ?? undefined,
           minimo_cajas_tienda: d.minimo_cajas_tienda ?? undefined,
           minimo_piezas_caja_tienda: d.minimo_piezas_caja_tienda ?? undefined,
-          fotos_extra: d.fotos_extra ?? undefined,
         }),
       }
       await agregarItem(item)
@@ -740,6 +744,46 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                   </div>
                 </div>
               )}
+
+              {/* Más fotos (cualquier tipo de cotización): además de la foto con
+                  el cartel del OCR, el cliente a veces pide más ángulos. Se
+                  suben aparte y se pueden recortar/ajustar después, igual que
+                  las fotos de detalle del bolso. */}
+              <div className="flex flex-col gap-2 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-bg)' }}>
+                <span className="text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                  {t('packing.masFotosTitulo')}
+                </span>
+                <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('packing.masFotosAyuda')}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['extra1', 'extra2', 'extra3'] as const).map((tipo, i) => {
+                    const url = r.datos.fotos_extra?.[tipo]
+                    const ocupadoExtra = subiendoExtra === `${r.id}-${tipo}`
+                    return (
+                      <button
+                        key={tipo}
+                        type="button"
+                        onClick={() => pedirFotoExtra(r.id, tipo)}
+                        disabled={ocupadoExtra}
+                        className="relative flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed text-center disabled:opacity-60"
+                        style={{ borderColor: url ? 'var(--yuda-success)' : 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
+                      >
+                        {url ? (
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <>
+                            <Upload size={16} style={{ color: 'var(--yuda-primary)' }} />
+                            <span className="px-1 text-[10px] font-medium leading-tight" style={{ color: 'var(--yuda-primary)' }}>
+                              {ocupadoExtra ? t('lote.analizando') : t('packing.masFotosSlot', { n: i + 2 })}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
               <button
                 type="button"

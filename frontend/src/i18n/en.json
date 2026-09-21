@@ -293,7 +293,11 @@
     "errorGuardarCampo": "Could not save the change. Please try again.",
     "deslizaParaVerMas": "Swipe or use the arrows to see more columns →",
     "verColumnasAnteriores": "See previous columns",
-    "verColumnasSiguientes": "See next columns"
+    "verColumnasSiguientes": "See next columns",
+    "masFotosTitulo": "More photos (optional)",
+    "masFotosAyuda": "If the client asked to see the product from other angles, add them here.",
+    "masFotosSlot": "Photo {{n}}",
+    "agregarFoto": "Add photo"
   },
   "pedidos": {
     "faltaMarca": "Write the shipping mark (client's initials) before generating the order: it's how the store separates these boxes from another order's.",

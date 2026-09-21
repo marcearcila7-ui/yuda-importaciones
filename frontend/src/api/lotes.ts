@@ -1,6 +1,6 @@
 import apiClient from './client'
 import { TIMEOUT_SUBIDA } from '../lib/imagenes'
-import type { OCRResultado } from '../types/ocr'
+import type { OCRResultado, TipoFotoExtra } from '../types/ocr'
 
 export interface LoteItemInfo {
   id: string
@@ -59,12 +59,13 @@ export async function reemplazarItemLote(
   return data
 }
 
-// Sube una foto de detalle del bolso (interior/herrajes/riata/exterior), aparte
-// de la que ya lee el OCR. Devuelve el ítem completo con `datos.fotos_extra` actualizado.
+// Sube una foto de detalle (las del bolso, o una de las 3 genéricas
+// extra1/2/3 para cualquier producto), aparte de la que ya lee el OCR.
+// Devuelve el ítem completo con `datos.fotos_extra` actualizado.
 export async function subirFotoExtra(
   lote_id: string,
   item_id: string,
-  tipo: 'interior' | 'herrajes' | 'riata' | 'exterior',
+  tipo: TipoFotoExtra,
   file: File,
 ): Promise<{ tipo: string; foto_url: string }> {
   const fd = new FormData()

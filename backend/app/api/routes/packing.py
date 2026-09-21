@@ -448,9 +448,11 @@ async def guardar_recorte(
     return _construir_item_response(item, sesion.tipo_cambio_usd)
 
 
-# Tipos válidos de foto de detalle del bolso. Mismo set que lotes.py (donde se
-# suben), repetido acá para no acoplar los dos routers por un import cruzado.
-TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior"}
+# Tipos válidos de foto de detalle: los del bolso, más 3 genéricas ("extra1/2/3")
+# para cualquier producto (más ángulos que el cliente pidió). Mismo set que
+# lotes.py (donde se suben), repetido acá para no acoplar los dos routers por
+# un import cruzado.
+TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior", "extra1", "extra2", "extra3"}
 
 
 @router.post(

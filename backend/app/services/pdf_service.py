@@ -217,6 +217,14 @@ def generar_packing_list_pdf(
 
     # Fotos de detalle del bolso (item.fotos_extra), mismo orden que sus columnas.
     tipos_foto_extra = ["interior", "herrajes", "riata", "exterior"]
+    # En cualquier otra cotización (no bolsos), hasta 3 fotos extra genéricas:
+    # el cliente a veces pide más ángulos además de la foto principal. Solo se
+    # agregan las columnas si algún producto de verdad tiene alguna: si no,
+    # tres columnas vacías en cada cotización serían puro ruido.
+    tipos_mas_fotos = ["extra1", "extra2", "extra3"]
+    hay_mas_fotos = (not es_bolsos) and any(
+        (getattr(i, "fotos_extra", None) or {}).get(t) for i in items for t in tipos_mas_fotos
+    )
 
     for n, item in enumerate(items, start=1):
         ctns = item.ctns or 0
@@ -245,6 +253,7 @@ def generar_packing_list_pdf(
         foto = f'<img src="{_foto_doc}" />' if _foto_doc else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
         cols_bolsos = ""
+        cols_mas_fotos = ""
         if es_bolsos:
             fotos_extra_item = getattr(item, "fotos_extra", None) or {}
             fotos_extra_final_item = getattr(item, "fotos_extra_final", None) or {}
@@ -265,6 +274,16 @@ def generar_packing_list_pdf(
                 f"<td>{getattr(item, 'minimo_piezas_caja_tienda', None) or ''}</td>"
                 f"{fotos_extra_html}"
             )
+        elif hay_mas_fotos:
+            # Mismas 3 fotos extra genéricas que la vendedora haya agregado
+            # para este producto, en columnas aparte (no dentro de la celda
+            # de la foto principal, para no desbordar ni dañar el formato).
+            fotos_extra_item = getattr(item, "fotos_extra", None) or {}
+            fotos_extra_final_item = getattr(item, "fotos_extra_final", None) or {}
+            for tipo_foto in tipos_mas_fotos:
+                url = fotos_extra_final_item.get(tipo_foto) or fotos_extra_item.get(tipo_foto)
+                img_extra = f'<img src="{url}" />' if url else ""
+                cols_mas_fotos += f'<td class="foto-extra">{img_extra}</td>'
         filas_html.append(
             f"<tr{alt}>"
             f"<td>{n}</td>"
@@ -283,7 +302,7 @@ def generar_packing_list_pdf(
             f"<td>{t_cbm}</td>"
             f"<td>{gw}</td>"
             f"<td>{t_gw}</td>"
-            f"{cols_bolsos}"
+            f"{cols_bolsos}{cols_mas_fotos}"
             f"</tr>"
         )
 
@@ -294,19 +313,21 @@ def generar_packing_list_pdf(
         "<th>FOTO<br>INTERIOR</th><th>FOTO<br>HERRAJES</th>"
         "<th>FOTO<br>RIATA</th><th>FOTO<br>EXTERIOR</th>"
     ) if es_bolsos else ""
+    encab_mas_fotos = "<th>FOTO 2</th><th>FOTO 3</th><th>FOTO 4</th>" if hay_mas_fotos else ""
     encabezado = (
         "<tr><th>N°</th><th>FOTO</th><th>PROVEEDOR</th><th>N° ÍTEM</th><th>DESCRIPCIÓN</th>"
         "<th>CAJAS</th><th>UN/CAJA</th><th>T.UN</th><th>PRECIO ¥</th><th>TOTAL ¥</th>"
         "<th>PRECIO $</th><th>TOTAL $</th><th>CBM</th><th>T.CBM</th><th>GW</th><th>T.GW</th>"
-        f"{encab_bolsos}</tr>"
+        f"{encab_bolsos}{encab_mas_fotos}</tr>"
     )
     total_bolsos = "<td></td>" * 12 if es_bolsos else ""
+    total_mas_fotos = "<td></td>" * 3 if hay_mas_fotos else ""
     total = (
         f'<tr class="total"><td colspan="5">TOTALES</td>'
         f"<td>{int(tot_ctns)}</td><td></td><td></td><td></td>"
         f"<td>{round(tot_rmb, 2)}</td><td></td><td>{round(tot_usd, 2)}</td>"
         f"<td></td><td>{round(tot_tcbm, 6)}</td><td></td><td>{round(tot_tgw, 2)}</td>"
-        f"{total_bolsos}</tr>"
+        f"{total_bolsos}{total_mas_fotos}</tr>"
     )
 
     html = f"""<html><head><meta charset="utf-8"><style>{PACKING_CSS}</style></head><body>

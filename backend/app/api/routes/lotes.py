@@ -30,8 +30,10 @@ TIPOS_PERMITIDOS = {
 _DECLARADOS_HEIC = {"image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"}
 MAX_BYTES = 25 * 1024 * 1024
 
-# Fotos de detalle propias de un bolso, aparte de la que ya lee el OCR.
-TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior"}
+# Fotos de detalle propias de un bolso ("interior"/"herrajes"/"riata"/
+# "exterior"), más 3 fotos genéricas ("extra1/2/3") para cualquier producto:
+# el cliente a veces pide más ángulos además de la foto con el cartel del OCR.
+TIPOS_FOTO_EXTRA = {"interior", "herrajes", "riata", "exterior", "extra1", "extra2", "extra3"}
 
 
 def _verificar_dueno(db: Session, sesion_id: str, usuario: User) -> None:

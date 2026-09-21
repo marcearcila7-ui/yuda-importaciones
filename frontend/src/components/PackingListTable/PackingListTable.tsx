@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { ChangeEvent, CSSProperties } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -8,7 +8,7 @@ import {
 } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ChevronLeft, ChevronRight, Crop } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Crop, Plus } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { guardarRecorte, guardarRecorteFotoExtra, reemplazarFotoExtra, reemplazarFotoItem } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
@@ -80,6 +80,12 @@ const COLUMNAS_BOLSOS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'minimo_cajas_tienda', header: 'MÍN. CAJAS (TIENDA)', meta: { campo: 'minimo_cajas_tienda', kind: 'num-edit', width: 110 } },
   { id: 'minimo_piezas_caja_tienda', header: 'MÍN. PZS/CAJA (TIENDA)', meta: { campo: 'minimo_piezas_caja_tienda', kind: 'num-edit', width: 120 } },
   { id: 'fotos_extra', header: 'FOTOS DETALLE', meta: { kind: 'fotos-extra', width: 210 } },
+]
+
+// Fuera de bolsos, la misma columna de fotos extra (genéricas: extra1/2/3) va
+// sola al final -no todo el resto de campos propios del bolso.
+const COLUMNAS_FOTOS_EXTRA: Array<{ id: string; header: string; meta: ColMeta }> = [
+  { id: 'fotos_extra', header: 'FOTOS DETALLE', meta: { kind: 'fotos-extra', width: 160 } },
 ]
 
 const TEXTO: Array<ColMeta['kind']> = ['text-edit']
@@ -169,16 +175,22 @@ function CeldaEditable({
 }
 
 // Celda de solo lectura
+// Hasta 3 fotos extra genéricas por producto (además de las 4 propias del
+// bolso, que ya vienen con nombre): el cliente a veces pide más ángulos.
+const SLOTS_MAS_FOTOS = ['extra1', 'extra2', 'extra3'] as const
+
 function CeldaSoloLectura({
   item,
   meta,
   onRecortar,
   onRecortarExtra,
+  onAgregarExtra,
 }: {
   item: ItemResponse
   meta: ColMeta
   onRecortar?: (item: ItemResponse) => void
   onRecortarExtra?: (item: ItemResponse, tipo: string) => void
+  onAgregarExtra?: (item: ItemResponse, tipo: string) => void
 }) {
   const { t } = useTranslation()
   if (meta.kind === 'unit') {
@@ -215,9 +227,10 @@ function CeldaSoloLectura({
   if (meta.kind === 'fotos-extra') {
     const fotos = item.fotos_extra
     const tipos = fotos ? Object.keys(fotos).filter((tipo) => fotos[tipo]) : []
-    if (tipos.length === 0) {
-      return <div className="px-1 py-1 text-center text-gray-400">—</div>
-    }
+    // Cupo libre para agregar una nueva foto genérica (extra1/2/3): las
+    // propias del bolso ya se capturan todas juntas al hacer OCR, así que acá
+    // solo se ofrece agregar de las genéricas.
+    const slotLibre = SLOTS_MAS_FOTOS.find((tipo) => !fotos?.[tipo])
     return (
       <div className="flex gap-1.5 px-1 py-1">
         {tipos.map((tipo) => {
@@ -242,6 +255,17 @@ function CeldaSoloLectura({
             </button>
           )
         })}
+        {slotLibre && (
+          <button
+            type="button"
+            onClick={() => onAgregarExtra?.(item, slotLibre)}
+            title={t('packing.agregarFoto')}
+            className="flex flex-shrink-0 items-center justify-center rounded border-2 border-dashed"
+            style={{ width: 44, height: 44, borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }}
+          >
+            <Plus size={18} />
+          </button>
+        )}
       </div>
     )
   }
@@ -321,15 +345,18 @@ function TarjetaMovil({
   onItemActualizado,
   onRecortar,
   onRecortarExtra,
+  onAgregarExtra,
 }: {
   item: ItemResponse
   onItemActualizado: () => void
   onRecortar?: (item: ItemResponse) => void
   onRecortarExtra?: (item: ItemResponse, tipo: string) => void
+  onAgregarExtra?: (item: ItemResponse, tipo: string) => void
 }) {
   const { t } = useTranslation()
   const esBolsos = usePackingStore((s) => s.sesionActual?.tipo_cotizacion === 'bolsos')
   const tiposFotoExtra = item.fotos_extra ? Object.keys(item.fotos_extra).filter((tipo) => item.fotos_extra![tipo]) : []
+  const slotLibre = SLOTS_MAS_FOTOS.find((tipo) => !item.fotos_extra?.[tipo])
   // La foto que de verdad sale en los documentos: el recorte si existe, si no
   // la foto entera con el cartel (antes esta tarjeta mostraba siempre la
   // original sin recortar, sin importar el recorte guardado).
@@ -376,30 +403,49 @@ function TarjetaMovil({
             <CampoMovil item={item} campo="minimo_cajas_tienda" label={t('packing.campoMinimoCajasTienda')} tipo="num" onSaved={onItemActualizado} />
             <CampoMovil item={item} campo="minimo_piezas_caja_tienda" label={t('packing.campoMinimoPiezasCajaTienda')} tipo="num" onSaved={onItemActualizado} />
           </div>
-          {tiposFotoExtra.length > 0 && (
-            <div className="flex gap-2">
-              {tiposFotoExtra.map((tipo) => {
-                const fotoExtra = item.fotos_extra_final?.[tipo] || item.fotos_extra![tipo]
-                return (
-                  <button
-                    key={tipo}
-                    type="button"
-                    onClick={() => onRecortarExtra?.(item, tipo)}
-                    title={t('recorte.tocaAjustar')}
-                    className="relative flex-shrink-0"
+        </div>
+      )}
+
+      {/* Fotos de detalle: las del bolso arriba ya se ven en esta misma lista;
+          para cualquier producto se pueden agregar hasta 3 más genéricas. */}
+      {(tiposFotoExtra.length > 0 || slotLibre) && (
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
+            {t('packing.masFotosTitulo')}
+          </span>
+          <div className="flex gap-2">
+            {tiposFotoExtra.map((tipo) => {
+              const fotoExtra = item.fotos_extra_final?.[tipo] || item.fotos_extra![tipo]
+              return (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => onRecortarExtra?.(item, tipo)}
+                  title={t('recorte.tocaAjustar')}
+                  className="relative flex-shrink-0"
+                >
+                  <img src={fotoExtra} alt={tipo} style={{ width: 48, height: 48 }} className="rounded-lg object-contain" />
+                  <span
+                    className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
+                    style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
                   >
-                    <img src={fotoExtra} alt={tipo} style={{ width: 48, height: 48 }} className="rounded-lg object-contain" />
-                    <span
-                      className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full"
-                      style={{ width: 14, height: 14, backgroundColor: 'var(--yuda-primary)' }}
-                    >
-                      <Crop size={8} color="#fff" />
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+                    <Crop size={8} color="#fff" />
+                  </span>
+                </button>
+              )
+            })}
+            {slotLibre && (
+              <button
+                type="button"
+                onClick={() => onAgregarExtra?.(item, slotLibre)}
+                title={t('packing.agregarFoto')}
+                className="flex flex-shrink-0 items-center justify-center rounded-lg border-2 border-dashed"
+                style={{ width: 48, height: 48, borderColor: 'var(--yuda-border)', color: 'var(--yuda-text-secondary)' }}
+              >
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -415,7 +461,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   const { t } = useTranslation()
   const sesionActual = usePackingStore((s) => s.sesionActual)
   const esBolsos = sesionActual?.tipo_cotizacion === 'bolsos'
-  const columnasDef = esBolsos ? [...COLUMNAS, ...COLUMNAS_BOLSOS] : COLUMNAS
+  const columnasDef = esBolsos ? [...COLUMNAS, ...COLUMNAS_BOLSOS] : [...COLUMNAS, ...COLUMNAS_FOTOS_EXTRA]
   // Producto cuyo recorte se esta ajustando a mano (null = ninguno)
   const [itemRecorte, setItemRecorte] = useState<ItemResponse | null>(null)
   const [guardandoRecorte, setGuardandoRecorte] = useState(false)
@@ -423,6 +469,10 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
   // ajustando: además del ítem, hace falta saber CUÁL de las 4.
   const [extraRecorte, setExtraRecorte] = useState<{ item: ItemResponse; tipo: string } | null>(null)
   const [guardandoRecorteExtra, setGuardandoRecorteExtra] = useState(false)
+  // Foto extra genérica (extra1/2/3) que se está agregando de cero: distinto
+  // del recorte, acá no hay nada que ajustar todavía, solo elegir el archivo.
+  const [agregandoExtra, setAgregandoExtra] = useState<{ item: ItemResponse; tipo: string } | null>(null)
+  const inputAgregarExtraRef = useRef<HTMLInputElement>(null)
   // La tabla tiene muchas columnas y el scroll nativo del navegador no siempre
   // se ve (en Mac/Safari la barra queda invisible hasta que se está
   // arrastrando). Con estas flechas queda claro, sin depender de eso, que hay
@@ -491,6 +541,26 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     }
   }
 
+  // Agregar una foto extra genérica que todavía no existe: abre el selector y,
+  // al elegir, la sube directo (se puede recortar después tocándola).
+  const pedirAgregarExtra = (item: ItemResponse, tipo: string) => {
+    setAgregandoExtra({ item, tipo })
+    inputAgregarExtraRef.current?.click()
+  }
+  const handleAgregarExtra = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    const pedido = agregandoExtra
+    setAgregandoExtra(null)
+    if (!file || !pedido || !sesionActual) return
+    try {
+      await reemplazarFotoExtra(sesionActual.id, pedido.item.id, pedido.tipo, file)
+      onItemActualizado()
+    } catch {
+      toast.error(t('recorte.errorReemplazar'))
+    }
+  }
+
   // Construye las definiciones de columna para TanStack Table
   const columnas: ColumnDef<ItemResponse>[] = columnasDef.map((col) => ({
     id: col.id,
@@ -513,6 +583,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           meta={meta}
           onRecortar={setItemRecorte}
           onRecortarExtra={(item, tipo) => setExtraRecorte({ item, tipo })}
+          onAgregarExtra={pedirAgregarExtra}
         />
       )
     },
@@ -563,6 +634,7 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
                 onItemActualizado={onItemActualizado}
                 onRecortar={setItemRecorte}
                 onRecortarExtra={(item, tipo) => setExtraRecorte({ item, tipo })}
+                onAgregarExtra={pedirAgregarExtra}
               />
             ))}
             <div className="flex justify-between rounded-xl px-3 py-3" style={{ backgroundColor: 'var(--yuda-accent)' }}>
@@ -686,6 +758,13 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           onCerrar={() => setExtraRecorte(null)}
         />
       )}
+      <input
+        ref={inputAgregarExtraRef}
+        type="file"
+        accept="image/*"
+        onChange={handleAgregarExtra}
+        className="hidden"
+      />
     </>
   )
 }

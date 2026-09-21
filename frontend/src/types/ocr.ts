@@ -1,3 +1,8 @@
+// Tipos de foto "de detalle": las 4 propias del bolso, más 3 genéricas
+// (extra1/2/3) para cualquier producto -el cliente a veces pide más ángulos
+// además de la foto con el cartel del OCR.
+export type TipoFotoExtra = 'interior' | 'herrajes' | 'riata' | 'exterior' | 'extra1' | 'extra2' | 'extra3'
+
 export interface OCRResultado {
   descripcion_es: string | null
   descripcion_en: string | null

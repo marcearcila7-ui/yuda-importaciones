@@ -293,7 +293,11 @@
     "errorGuardarCampo": "无法保存修改，请重试。",
     "deslizaParaVerMas": "滑动或使用箭头查看更多列 →",
     "verColumnasAnteriores": "查看前面的列",
-    "verColumnasSiguientes": "查看后面的列"
+    "verColumnasSiguientes": "查看后面的列",
+    "masFotosTitulo": "更多照片（可选）",
+    "masFotosAyuda": "如果客户要求看产品的其他角度，请在这里添加。",
+    "masFotosSlot": "照片 {{n}}",
+    "agregarFoto": "添加照片"
   },
   "pedidos": {
     "faltaMarca": "生成订单前请填写唛头（客户缩写）：这是店铺用来区分这批货和其他订单的方式。",
