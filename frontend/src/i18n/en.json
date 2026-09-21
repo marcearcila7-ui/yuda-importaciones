@@ -317,7 +317,8 @@
     "errorGenerar": "Could not generate the orders",
     "errorZip": "Could not download the ZIP",
     "ayudaGenerar": "Ask the store for the boxes you loaded in the products table (CTNS column).",
-    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store — no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute."
+    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store — no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute.",
+    "regenerar": "Need to fix something? Generate the order again"
   },
   "historial": {
     "titulo": "Quotation history",
@@ -922,7 +923,8 @@
     "paso3Titulo": "Notify the warehouse",
     "faltaGenerarPrimero": "First generate the order to the stores (step 2). This step unlocks automatically once you do.",
     "editarCantidades": "Edit quantities",
-    "guardarCorreccion": "Save correction"
+    "guardarCorreccion": "Save correction",
+    "pedidoYaGenerado": "The order to the store was already generated."
   },
   "comun": {
     "confirmar": "Confirm",

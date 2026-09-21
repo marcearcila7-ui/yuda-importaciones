@@ -282,7 +282,8 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
         <Paso n={2} titulo={t('gestionPedido.generarTitulo')}>
           {confirmado && (
             <p className="mb-2 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
-              <CheckCircle2 size={16} /> {t('gestionPedido.confirmadoOk')}
+              <CheckCircle2 size={16} />{' '}
+              {pedidosGenerados.length > 0 ? t('gestionPedido.pedidoYaGenerado') : t('gestionPedido.confirmadoOk')}
             </p>
           )}
           <GenerarPedidos

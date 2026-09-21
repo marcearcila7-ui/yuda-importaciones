@@ -317,7 +317,8 @@
     "errorGenerar": "无法生成订单",
     "errorZip": "无法下载 ZIP",
     "ayudaGenerar": "向店铺申请您在产品表（CTNS列）中录入的箱数。",
-    "ayudaGenerarCliente": "系统会自动识别每个产品属于哪家店铺，并为每家店铺生成一个订单，不需要手动整理。订单按客户要求的数量生成；如果最后有变动，可以在上面先编辑数量再生成。"
+    "ayudaGenerarCliente": "系统会自动识别每个产品属于哪家店铺，并为每家店铺生成一个订单，不需要手动整理。订单按客户要求的数量生成；如果最后有变动，可以在上面先编辑数量再生成。",
+    "regenerar": "需要修改吗？重新生成订单"
   },
   "historial": {
     "titulo": "报价历史记录",
@@ -922,7 +923,8 @@
     "paso3Titulo": "通知仓库",
     "faltaGenerarPrimero": "请先生成向店铺的订单（第2步）。完成后此步骤会自动解锁。",
     "editarCantidades": "编辑数量",
-    "guardarCorreccion": "保存更正"
+    "guardarCorreccion": "保存更正",
+    "pedidoYaGenerado": "已生成向店铺的订单。"
   },
   "comun": {
     "confirmar": "确认",

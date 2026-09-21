@@ -38,6 +38,11 @@ function GenerarPedidos({
   const { t } = useTranslation()
   const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
   const [resultado, setResultado] = useState<GenerarPedidosResponse | null>(null)
+  // Una vez generado, el botón grande de "Generar" desaparece (ya se hizo, no
+  // tiene sentido seguir mostrándolo como si faltara) y se reemplaza por un
+  // enlace chico para volver a generar, solo si de verdad hace falta corregir
+  // algo (ej. se editaron las cantidades). Se vuelve a ocultar tras generar.
+  const [mostrarRegenerar, setMostrarRegenerar] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
   const [marcaActual, setMarcaActual] = useState(shippingMark ?? '')
@@ -93,6 +98,7 @@ function GenerarPedidos({
     try {
       const data = await generarPedidos(sesion_id, usarCantidadesCliente)
       setResultado(data)
+      setMostrarRegenerar(false)
       onGenerado?.()
     } catch (err) {
       let mensaje = t('pedidos.errorGenerar')
@@ -156,36 +162,50 @@ function GenerarPedidos({
           las CTNS internas (confundía a las vendedoras sobre cuál usar). El botón
           de CTNS internas queda solo para cuando el cliente TODAVÍA no ha
           contestado desde su portal. */}
-      {permitirCantidadesCliente ? (
-        <div className="flex flex-col gap-1">
-          <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
-            {generando === 'cliente' ? (
-              t('pedidos.generando')
-            ) : (
-              <>
-                <UserCheck size={18} /> {t('pedidos.generarCliente')}
-              </>
-            )}
-          </Button>
-          <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-            {t('pedidos.ayudaGenerarCliente')}
-          </p>
-        </div>
+      {!resultado || mostrarRegenerar ? (
+        permitirCantidadesCliente ? (
+          <div className="flex flex-col gap-1">
+            <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
+              {generando === 'cliente' ? (
+                t('pedidos.generando')
+              ) : (
+                <>
+                  <UserCheck size={18} /> {t('pedidos.generarCliente')}
+                </>
+              )}
+            </Button>
+            <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('pedidos.ayudaGenerarCliente')}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
+              {generando === 'normal' ? (
+                t('pedidos.generando')
+              ) : (
+                <>
+                  <FileText size={18} /> {t('pedidos.generar')}
+                </>
+              )}
+            </Button>
+            <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('pedidos.ayudaGenerar')}
+            </p>
+          </div>
+        )
       ) : (
-        <div className="flex flex-col gap-1">
-          <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
-            {generando === 'normal' ? (
-              t('pedidos.generando')
-            ) : (
-              <>
-                <FileText size={18} /> {t('pedidos.generar')}
-              </>
-            )}
-          </Button>
-          <p className="px-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-            {t('pedidos.ayudaGenerar')}
-          </p>
-        </div>
+        // Ya se generó: nada de un botón grande que parezca que falta hacer
+        // algo. Solo un enlace chico por si de verdad hay que corregir y
+        // volver a generar (ej. después de editar las cantidades).
+        <button
+          type="button"
+          onClick={() => setMostrarRegenerar(true)}
+          className="self-start text-sm font-medium underline"
+          style={{ color: 'var(--yuda-text-secondary)' }}
+        >
+          {t('pedidos.regenerar')}
+        </button>
       )}
 
       {/* SECCIÓN B — Advertencias */}

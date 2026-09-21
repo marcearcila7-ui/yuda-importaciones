@@ -317,7 +317,8 @@
     "errorGenerar": "No se pudieron generar los pedidos",
     "errorZip": "No se pudo descargar el ZIP",
     "ayudaGenerar": "Pide a la tienda las cajas que cargaste tú en la tabla de productos (columna CTNS).",
-    "ayudaGenerarCliente": "El sistema detecta a qué tienda pertenece cada producto y crea una orden por tienda; no hay que armarlas a mano. Se generan con las cantidades que el cliente pidió, y puedes editarlas arriba antes de generar si hay algún cambio de último momento."
+    "ayudaGenerarCliente": "El sistema detecta a qué tienda pertenece cada producto y crea una orden por tienda; no hay que armarlas a mano. Se generan con las cantidades que el cliente pidió, y puedes editarlas arriba antes de generar si hay algún cambio de último momento.",
+    "regenerar": "¿Necesitas corregir algo? Volver a generar el pedido"
   },
   "historial": {
     "titulo": "Historial de cotizaciones",
@@ -922,7 +923,8 @@
     "paso3Titulo": "Avisar a bodega",
     "faltaGenerarPrimero": "Primero genera el pedido a las tiendas (paso 2). Cuando lo hagas, este paso se activa solo.",
     "editarCantidades": "Editar cantidades",
-    "guardarCorreccion": "Guardar corrección"
+    "guardarCorreccion": "Guardar corrección",
+    "pedidoYaGenerado": "El pedido a la tienda ya se generó."
   },
   "comun": {
     "confirmar": "Confirmar",
