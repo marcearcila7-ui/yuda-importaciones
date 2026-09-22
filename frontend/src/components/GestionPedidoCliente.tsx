@@ -5,6 +5,7 @@ import axios from 'axios'
 import { CheckCircle2, Clock, FileSpreadsheet, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
+import { confirmar } from '../store/confirmStore'
 import {
   actualizarFechaTentativa,
   enviarABodegaGuiado,
@@ -144,11 +145,22 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     const archivo = e.target.files?.[0]
     e.target.value = ''
     if (!archivo) return
+
+    // Si bodega ya contó esta orden, ese conteo quedaría desactualizado con
+    // un archivo distinto: se pregunta antes de reemplazar, no después. El
+    // backend igual limpia la revisión y avisa, pero mejor que lo decida ella.
+    if (pg.revisado_en_bodega_at) {
+      const ok = await confirmar(t('gestionPedido.confirmarReemplazarRevisado', { tienda: pg.supplier }))
+      if (!ok) return
+    }
+
     setReemplazandoArchivo((s) => ({ ...s, [pg.id]: true }))
     try {
       const actualizado = await reemplazarArchivoPedidoGenerado(pg.id, archivo)
       setPedidosGenerados((lista) => lista.map((p) => (p.id === pg.id ? actualizado : p)))
-      toast.success(t('gestionPedido.archivoReemplazado'))
+      toast.success(
+        pg.revisado_en_bodega_at ? t('gestionPedido.archivoReemplazadoAvisado') : t('gestionPedido.archivoReemplazado'),
+      )
     } catch (err) {
       const mensaje = (axios.isAxiosError(err) && err.response?.data?.detail) || t('gestionPedido.errorReemplazarArchivo')
       toast.error(mensaje)
@@ -337,9 +349,13 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                   </div>
 
                   {/* Si el archivo que generó el sistema necesita un ajuste a
-                      mano, se puede reemplazar por una versión corregida antes
-                      de enviarlo a bodega. */}
-                  {(seguimiento?.estado === 'cotizacion_enviada' || seguimiento?.estado === 'pedido_confirmado') && (
+                      mano, se puede reemplazar por una versión corregida -
+                      incluso después de avisarle a bodega (ver reemplazarArchivo:
+                      si bodega ya la había contado, se pregunta antes y se le
+                      avisa). Una vez la mercancía ya quedó lista en bodega
+                      (en_bodega en adelante) ya no aplica: se está despachando. */}
+                  {seguimiento &&
+                    !['en_bodega', 'en_transito', 'en_destino', 'entregado'].includes(seguimiento.estado) && (
                     <label
                       className="flex w-fit cursor-pointer items-center gap-1.5 pl-5 text-xs font-medium"
                       style={{ color: 'var(--yuda-primary)' }}

@@ -927,7 +927,9 @@
     "faltaGenerarPrimero": "First generate the order to the stores (step 2). This step unlocks automatically once you do.",
     "editarCantidades": "Edit quantities",
     "guardarCorreccion": "Save correction",
-    "pedidoYaGenerado": "The order to the store was already generated."
+    "pedidoYaGenerado": "The order to the store was already generated.",
+    "confirmarReemplazarRevisado": "The warehouse already counted the order to «{{tienda}}». Replacing the file clears that count and the warehouse will have to count it again; they'll be notified. Continue?",
+    "archivoReemplazadoAvisado": "File replaced. The warehouse was notified it needs to count this order again."
   },
   "comun": {
     "confirmar": "Confirm",

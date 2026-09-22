@@ -927,7 +927,9 @@
     "faltaGenerarPrimero": "请先生成向店铺的订单（第2步）。完成后此步骤会自动解锁。",
     "editarCantidades": "编辑数量",
     "guardarCorreccion": "保存更正",
-    "pedidoYaGenerado": "已生成向店铺的订单。"
+    "pedidoYaGenerado": "已生成向店铺的订单。",
+    "confirmarReemplazarRevisado": "仓库已经清点了向«{{tienda}}»的订单。替换文件会清除该清点记录，仓库需要重新清点；系统会通知他们。是否继续？",
+    "archivoReemplazadoAvisado": "文件已替换。已通知仓库需要重新清点此订单。"
   },
   "comun": {
     "confirmar": "确认",

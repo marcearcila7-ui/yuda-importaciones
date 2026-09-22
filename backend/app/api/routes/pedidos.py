@@ -478,11 +478,18 @@ async def reemplazar_archivo_pedido_generado(
     """Si el Excel/PDF/CSV que generó el sistema para un proveedor necesita un
     ajuste a mano, la vendedora sube acá la versión corregida y reemplaza la
     que bodega va a ver. No cambia nada de los datos internos del pedido, solo
-    el archivo."""
+    el archivo.
+
+    Si bodega YA había contado esta orden, ese conteo quedaba silenciosamente
+    desactualizado (el documento que bodega tenía ya no es el vigente). Acá
+    se avisa igual que cuando se regenera el pedido completo: se limpia la
+    revisión anterior (bodega tiene que volver a contarla) y se le avisa a la
+    vendedora/Marcela, para que bodega no siga trabajando con datos viejos
+    sin que nadie se entere."""
     pedido = db.query(PedidoGenerado).filter(PedidoGenerado.id == pedido_generado_id).first()
     if pedido is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
-    _obtener_sesion(db, pedido.sesion_id, usuario)
+    sesion = _obtener_sesion(db, pedido.sesion_id, usuario)
 
     info = _TIPOS_ARCHIVO_PEDIDO.get(archivo.content_type or "")
     if info is None:
@@ -499,12 +506,28 @@ async def reemplazar_archivo_pedido_generado(
     url = subir(contenido, nombre_archivo)
     setattr(pedido, campo_url, url)
 
+    ya_revisado = pedido.revisado_en_bodega_at is not None
+    if ya_revisado:
+        pedido.archivo_real_xlsx_url = None
+        pedido.archivo_real_pdf_url = None
+        pedido.archivo_real_csv_url = None
+        pedido.revisado_en_bodega_at = None
+
     registrar_actividad_bodega(
         db, pedido.sesion_id, usuario.id, "archivo_reemplazado",
-        f"Reemplazó el archivo de la orden a «{pedido.supplier}»",
+        f"Reemplazó el archivo de la orden a «{pedido.supplier}»"
+        + (" (bodega ya la había revisado; hay que volver a contarla)" if ya_revisado else ""),
     )
     db.commit()
     db.refresh(pedido)
+
+    if ya_revisado:
+        numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+        avisar_pedido_regenerado_tras_revision(
+            db, pedido.sesion_id, numero, sesion.nombre_cliente, sesion.user_id, pedido.supplier
+        )
+        db.commit()
+
     return pedido
 
 
