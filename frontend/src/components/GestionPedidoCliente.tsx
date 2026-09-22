@@ -413,7 +413,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             (el proveedor todavía tiene que recibir/despachar el pedido antes).
             Solo se puede una vez, y solo hacia adelante: bodega recibe esto en
             Yuda Logistic apenas se marca. */}
-        {confirmado && seguimiento && (
+        {/* No depende de "confirmado": cuando el cliente ya envió sus
+            cantidades desde el portal, se puede generar el pedido y avisar a
+            bodega sin pasar por una confirmación aparte (ver GenerarPedidos,
+            permitirCantidadesCliente) -antes este paso se quedaba bloqueado
+            en ese caso aunque ya hubiera pedidos generados. */}
+        {seguimiento && (
           <Paso n={3} titulo={t('gestionPedido.paso3Titulo')} bloqueado={pedidosGenerados.length === 0}>
             {seguimiento.estado === 'cotizacion_enviada' || seguimiento.estado === 'pedido_confirmado' ? (
               pedidosGenerados.length === 0 ? (
