@@ -15,6 +15,33 @@ from app.models.notificacion import (
     Notificacion,
 )
 from app.models.user import RolUsuario, User
+from app.services.push_service import enviar_push
+
+
+def _crear(
+    db: Session,
+    usuario_id: str,
+    sesion_id: str,
+    tipo: str,
+    titulo: str,
+    mensaje: str,
+    ref_id: str | None = None,
+) -> None:
+    """Crea el aviso en la campanita y, de paso, intenta mandarlo como
+    notificación push al navegador (si el usuario está suscrito). El push es
+    mejor esfuerzo: si falla o no hay suscripción, el aviso en la campanita
+    queda de todas formas."""
+    db.add(
+        Notificacion(
+            usuario_id=usuario_id,
+            sesion_id=sesion_id,
+            ref_id=ref_id,
+            tipo=tipo,
+            titulo=titulo,
+            mensaje=mensaje,
+        )
+    )
+    enviar_push(db, usuario_id, titulo, mensaje, sesion_id)
 
 
 def _nombre_vendedora(db: Session, vendedor_id: str | None) -> str | None:
@@ -48,17 +75,14 @@ def avisar_listo_para_envio(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=admin.id,
-                sesion_id=sesion_id,
-                tipo=TIPO_LISTO_PARA_ENVIO,
-                titulo="Cotización lista para envío",
-                mensaje=(
-                    f"La cotización {numero} de {cliente}{quien} está en bodega. "
-                    "Es momento de cargar la naviera y el BL."
-                ),
-            )
+        _crear(
+            db,
+            admin.id,
+            sesion_id,
+            TIPO_LISTO_PARA_ENVIO,
+            "Cotización lista para envío",
+            f"La cotización {numero} de {cliente}{quien} está en bodega. "
+            "Es momento de cargar la naviera y el BL.",
         )
 
 
@@ -90,17 +114,14 @@ def avisar_pedido_cliente(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_PEDIDO_CLIENTE,
-                titulo="Pedido del cliente recibido",
-                mensaje=(
-                    f"{cliente}{quien} envió su pedido de la cotización {numero} "
-                    "(cantidades deseadas y notas). Ya puedes generar el pedido al proveedor."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_PEDIDO_CLIENTE,
+            "Pedido del cliente recibido",
+            f"{cliente}{quien} envió su pedido de la cotización {numero} "
+            "(cantidades deseadas y notas). Ya puedes generar el pedido al proveedor.",
         )
 
 
@@ -145,15 +166,7 @@ def avisar_envio_a_vendedora(
     )
     if ya_existe:
         return
-    db.add(
-        Notificacion(
-            usuario_id=vend.id,
-            sesion_id=sesion_id,
-            tipo=TIPO_ENVIO_VENDEDORA,
-            titulo=titulo,
-            mensaje=cuerpo.format(numero=numero, cliente=cliente),
-        )
-    )
+    _crear(db, vend.id, sesion_id, TIPO_ENVIO_VENDEDORA, titulo, cuerpo.format(numero=numero, cliente=cliente))
 
 
 def avisar_bodega_envio_a_vendedora(
@@ -170,18 +183,15 @@ def avisar_bodega_envio_a_vendedora(
     if vend is None or vend.rol != RolUsuario.vendedora or not vend.activo:
         return
 
-    db.add(
-        Notificacion(
-            usuario_id=vend.id,
-            sesion_id=sesion_id,
-            tipo=TIPO_BODEGA_ENVIO_A_VENDEDORA,
-            titulo="Bodega le envió la inspección a tu cliente",
-            mensaje=(
-                f"Bodega le mandó a {cliente} (cotización {numero}) las fotos y datos de la "
-                "inspección para que apruebe el despacho. Revisa el seguimiento de la cotización "
-                "para ver exactamente lo mismo que le llegó al cliente."
-            ),
-        )
+    _crear(
+        db,
+        vend.id,
+        sesion_id,
+        TIPO_BODEGA_ENVIO_A_VENDEDORA,
+        "Bodega le envió la inspección a tu cliente",
+        f"Bodega le mandó a {cliente} (cotización {numero}) las fotos y datos de la "
+        "inspección para que apruebe el despacho. Revisa el seguimiento de la cotización "
+        "para ver exactamente lo mismo que le llegó al cliente.",
     )
 
 
@@ -197,14 +207,13 @@ def avisar_cubicaje_a_vendedora(
         destinatarios.add(admin.id)
 
     for usuario_id in destinatarios:
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_CUBICAJE_BODEGA,
-                titulo="Reporte de cubicaje",
-                mensaje=f"Bodega actualizó el cubicaje de {cliente} (cotización {numero}): {resumen}",
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_CUBICAJE_BODEGA,
+            "Reporte de cubicaje",
+            f"Bodega actualizó el cubicaje de {cliente} (cotización {numero}): {resumen}",
         )
 
 
@@ -231,14 +240,13 @@ def avisar_cubicaje_a_bodega(
         }
 
     for usuario_id in destinatarios:
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_CUBICAJE_VENDEDORA,
-                titulo="Respuesta de la vendedora en cubicaje",
-                mensaje=f"{cliente} (cotización {numero}): {mensaje}",
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_CUBICAJE_VENDEDORA,
+            "Respuesta de la vendedora en cubicaje",
+            f"{cliente} (cotización {numero}): {mensaje}",
         )
 
 
@@ -265,17 +273,14 @@ def avisar_pedido_confirmado(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_PEDIDO_CONFIRMADO,
-                titulo="Pedido confirmado por el cliente",
-                mensaje=(
-                    f"{cliente} confirmó las cantidades de la cotización {numero}. "
-                    "Ya puedes generar el pedido al proveedor."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_PEDIDO_CONFIRMADO,
+            "Pedido confirmado por el cliente",
+            f"{cliente} confirmó las cantidades de la cotización {numero}. "
+            "Ya puedes generar el pedido al proveedor.",
         )
 
 
@@ -303,17 +308,13 @@ def avisar_despacho_aprobado(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_DESPACHO_APROBADO,
-                titulo="Cliente aprobó el despacho",
-                mensaje=(
-                    f"{cliente} aprobó el despacho de la cotización {numero}. "
-                    "Ya se puede mandar por barco."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_DESPACHO_APROBADO,
+            "Cliente aprobó el despacho",
+            f"{cliente} aprobó el despacho de la cotización {numero}. Ya se puede mandar por barco.",
         )
 
 
@@ -344,18 +345,15 @@ def avisar_orden_actualizada_bodega(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                ref_id=supplier,
-                tipo=TIPO_ORDEN_ACTUALIZADA_BODEGA,
-                titulo="Bodega actualizó una orden con lo que llegó",
-                mensaje=(
-                    f"Bodega revisó la orden de «{supplier}» de la cotización {numero} "
-                    f"({cliente}) y la corrigió con las cantidades reales. Revisa y avísale al cliente."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_ORDEN_ACTUALIZADA_BODEGA,
+            "Bodega actualizó una orden con lo que llegó",
+            f"Bodega revisó la orden de «{supplier}» de la cotización {numero} "
+            f"({cliente}) y la corrigió con las cantidades reales. Revisa y avísale al cliente.",
+            ref_id=supplier,
         )
 
 
@@ -386,19 +384,16 @@ def avisar_pedido_regenerado_tras_revision(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                ref_id=supplier,
-                tipo=TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
-                titulo="Se regeneró un pedido ya revisado por bodega",
-                mensaje=(
-                    f"Se volvió a generar el pedido de «{supplier}» de la cotización {numero} "
-                    f"({cliente}), que bodega ya había revisado. Esa revisión se perdió: "
-                    "bodega tiene que volver a contar las cantidades reales de este proveedor."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
+            "Se regeneró un pedido ya revisado por bodega",
+            f"Se volvió a generar el pedido de «{supplier}» de la cotización {numero} "
+            f"({cliente}), que bodega ya había revisado. Esa revisión se perdió: "
+            "bodega tiene que volver a contar las cantidades reales de este proveedor.",
+            ref_id=supplier,
         )
 
 
@@ -428,15 +423,12 @@ def avisar_inspeccion_actualizada(
         )
         if ya_existe:
             continue
-        db.add(
-            Notificacion(
-                usuario_id=usuario_id,
-                sesion_id=sesion_id,
-                tipo=TIPO_INSPECCION_BODEGA_ACTUALIZADA,
-                titulo="Bodega actualizó la inspección de la cotización",
-                mensaje=(
-                    f"Bodega guardó correcciones de inspección en la cotización {numero} "
-                    f"({cliente}): cantidades reales, medidas o evidencia. Revísalas."
-                ),
-            )
+        _crear(
+            db,
+            usuario_id,
+            sesion_id,
+            TIPO_INSPECCION_BODEGA_ACTUALIZADA,
+            "Bodega actualizó la inspección de la cotización",
+            f"Bodega guardó correcciones de inspección en la cotización {numero} "
+            f"({cliente}): cantidades reales, medidas o evidencia. Revísalas.",
         )

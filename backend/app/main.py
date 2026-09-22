@@ -20,6 +20,7 @@ from app.api.routes import (
     packing,
     pedidos,
     portal,
+    push,
     tiendas,
 )
 from app.core.config import settings
@@ -132,6 +133,7 @@ app.include_router(portal.router, prefix="/api/v1")
 app.include_router(notificaciones.router, prefix="/api/v1")
 app.include_router(bodega.router, prefix="/api/v1")
 app.include_router(cubicaje.router, prefix="/api/v1")
+app.include_router(push.router, prefix="/api/v1")
 
 
 @app.get("/")

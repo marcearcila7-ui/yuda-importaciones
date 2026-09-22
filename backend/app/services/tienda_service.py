@@ -14,6 +14,7 @@ from app.models.tienda import (
     PedidoTienda,
 )
 from app.models.user import RolUsuario, User
+from app.services.push_service import enviar_push
 
 
 def _f(v) -> float:
@@ -144,15 +145,17 @@ def revisar_alertas_pago_70(db: Session, hoy: date | None = None) -> int:
             )
             if existe:
                 continue
+            titulo = "Pago del 70% a tienda por vencer"
             db.add(
                 Notificacion(
                     usuario_id=c.id,
                     ref_id=p.id,
                     tipo=TIPO_ALERTA_PAGO_TIENDA,
-                    titulo="Pago del 70% a tienda por vencer",
+                    titulo=titulo,
                     mensaje=cuerpo,
                 )
             )
+            enviar_push(db, c.id, titulo, cuerpo)
             creados += 1
     if creados:
         db.commit()
