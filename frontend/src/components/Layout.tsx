@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { LogOut } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import { desuscribirPushDelNavegador, usePushSubscription } from '../hooks/usePushSubscription'
 import BottomNav from './BottomNav'
 import NotificacionesBell from './NotificacionesBell'
 import Sidebar from './Sidebar'
@@ -52,7 +53,10 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const { usuario, logout } = useAuthStore()
 
+  usePushSubscription(!!usuario)
+
   const cerrarSesion = () => {
+    desuscribirPushDelNavegador()
     logout()
     navigate('/login')
   }
