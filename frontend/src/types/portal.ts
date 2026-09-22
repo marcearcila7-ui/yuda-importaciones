@@ -6,6 +6,9 @@ export interface ClientePortal {
   email: string
   empresa: string | null
   pais: string | null
+  // True con la clave de plantilla de la importación masiva de Yuda
+  // Contable: el portal bloquea todo hasta que la cambie por una propia.
+  debe_cambiar_password: boolean
 }
 
 export interface PortalTokenResponse {

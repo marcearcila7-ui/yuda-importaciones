@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Wallet } from 'lucide-react'
+import { ArrowLeft, FileText, Wallet } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import MetricCard from '../../components/MetricCard'
 import { getMiCuenta } from '../../api/portal'
@@ -40,6 +40,29 @@ function PortalCuenta() {
         <div className="card"><p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.cargando')}</p></div>
       ) : (
         <div className="flex flex-col gap-5">
+          {cuenta.estado_cuenta_oficial_url && (
+            <a
+              href={cuenta.estado_cuenta_oficial_url}
+              target="_blank"
+              rel="noreferrer"
+              className="card flex items-center gap-3"
+              style={{ borderColor: 'var(--yuda-primary)', borderWidth: 1 }}
+            >
+              <div
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+              >
+                <FileText size={20} />
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--yuda-accent)' }}>
+                  {t('portal.estadoCuentaOficialTitulo')}
+                </p>
+                <p className="text-sm" style={{ color: 'var(--yuda-primary)' }}>{t('portal.verDocumento')}</p>
+              </div>
+            </a>
+          )}
+
           {cuenta.totales_por_moneda.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               {cuenta.totales_por_moneda.map((tm) => (

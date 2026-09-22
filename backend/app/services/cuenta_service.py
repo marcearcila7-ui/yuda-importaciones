@@ -133,4 +133,6 @@ def construir_estado_cuenta(
         "totales_por_moneda": totales_por_moneda,
         "fecha_ultimo_abono": fecha_ultimo_abono,
         "pedidos": pedidos,
+        "estado_cuenta_oficial_url": cliente.estado_cuenta_oficial_url,
+        "estado_cuenta_oficial_actualizado_en": cliente.estado_cuenta_oficial_actualizado_en,
     }

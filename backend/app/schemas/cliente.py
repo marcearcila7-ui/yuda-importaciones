@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ClienteCreate(BaseModel):
@@ -50,6 +50,11 @@ class ClienteResponse(BaseModel):
     # importó). El frontend lo usa para separarlo de los clientes reales en
     # vez de mezclarlos en la misma lista.
     pendiente_asignacion: bool = False
+    # True si todavía tiene la clave de plantilla de la importación masiva de
+    # Yuda Contable sin cambiar (el portal se lo exige en su próximo ingreso).
+    debe_cambiar_password: bool = False
+    estado_cuenta_oficial_url: str | None = None
+    estado_cuenta_oficial_actualizado_en: datetime | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -80,8 +85,31 @@ class ClientePublic(BaseModel):
     email: str
     empresa: str | None
     pais: str | None
+    # True con la clave de plantilla de la importación masiva: el portal
+    # bloquea todo lo demás hasta que la cambie por una propia.
+    debe_cambiar_password: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CambiarPasswordInput(BaseModel):
+    password_actual: str
+    password_nueva: str
+
+    @field_validator("password_nueva")
+    @classmethod
+    def _validar_nueva(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("La nueva contraseña debe tener al menos 6 caracteres")
+        return v
+
+
+class CambiarPasswordResponse(BaseModel):
+    """Nueva contraseña puesta: se manda un token nuevo porque cambiar la
+    clave invalida el token viejo (mismo mecanismo que un reset)."""
+
+    access_token: str
+    token_type: str = "bearer"
 
 
 class ClienteTokenResponse(BaseModel):

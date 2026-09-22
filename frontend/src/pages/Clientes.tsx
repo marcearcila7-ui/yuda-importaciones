@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
 import {
   actualizarCliente,
   crearCliente,
@@ -13,7 +13,9 @@ import {
   getCotizacionesCliente,
   importarContable,
   previewImportarContable,
+  quitarEstadoCuentaOficial,
   resetPasswordCliente,
+  subirEstadoCuentaOficial,
 } from '../api/clientes'
 import { eliminarSesion } from '../api/packing'
 import { getEquipo } from '../api/admin'
@@ -437,6 +439,32 @@ ${t('clientes.email')}: ${c.email}`
     }
   }
 
+  // Estado de cuenta oficial de Yuda Contable: PDF/imagen que se sube a
+  // mano, sin ninguna conexión en vivo entre las dos apps.
+  const [subiendoEstadoCuenta, setSubiendoEstadoCuenta] = useState(false)
+  const subirEstadoCuenta = async (c: Cliente, archivo: File) => {
+    setSubiendoEstadoCuenta(true)
+    try {
+      await subirEstadoCuentaOficial(c.id, archivo)
+      toast.success(t('clientes.estadoCuentaSubido'))
+      cargar()
+    } catch {
+      toast.error(t('clientes.errorEstadoCuenta'))
+    } finally {
+      setSubiendoEstadoCuenta(false)
+    }
+  }
+  const quitarEstadoCuenta = async (c: Cliente) => {
+    if (!(await confirmar({ mensaje: t('clientes.confirmarQuitarEstadoCuenta') }))) return
+    try {
+      await quitarEstadoCuentaOficial(c.id)
+      toast.success(t('clientes.estadoCuentaQuitado'))
+      cargar()
+    } catch {
+      toast.error(t('clientes.errorEstadoCuenta'))
+    }
+  }
+
   const vendedoras = equipo?.vendedoras ?? []
   const nombreVendedora: Record<string, string> = {}
   for (const v of vendedoras) nombreVendedora[v.user_id] = v.nombre
@@ -722,6 +750,7 @@ ${t('clientes.email')}: ${c.email}`
 
         {/* Pestaña "Acceso": cómo entra este cliente a su portal */}
         {tabCliente === 'acceso' && (
+        <>
         <div className="card flex flex-col gap-3">
           <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
             {t('clientes.accesoTitulo')}
@@ -741,6 +770,14 @@ ${t('clientes.email')}: ${c.email}`
                 <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
               ) : (
                 <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
+              )}
+              {c.debe_cambiar_password && (
+                <span
+                  className="ml-2 rounded-full px-2 py-0.5 text-xs font-semibold"
+                  style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}
+                >
+                  {t('clientes.claveSinCambiar')}
+                </span>
               )}
             </dd>
           </dl>
@@ -763,6 +800,72 @@ ${t('clientes.email')}: ${c.email}`
             </button>
           </div>
         </div>
+
+        {/* Estado de cuenta oficial de Yuda Contable: documento puntual que
+            Marcela sube a mano, sin ninguna conexión en vivo entre las apps. */}
+        <div className="card flex flex-col gap-3">
+          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            {t('clientes.estadoCuentaOficialTitulo')}
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('clientes.estadoCuentaOficialAyuda')}
+          </p>
+          {c.estado_cuenta_oficial_url ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={c.estado_cuenta_oficial_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold"
+                style={{ color: 'var(--yuda-primary)' }}
+              >
+                <FileText size={16} /> {t('clientes.verEstadoCuentaOficial')}
+              </a>
+              {c.estado_cuenta_oficial_actualizado_en && (
+                <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('clientes.actualizadoEl', {
+                    fecha: new Date(c.estado_cuenta_oficial_actualizado_en).toLocaleDateString('es-ES'),
+                  })}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => quitarEstadoCuenta(c)}
+                className="flex items-center gap-1 text-sm font-semibold"
+                style={{ color: 'var(--yuda-error)' }}
+              >
+                <X size={14} /> {t('clientes.quitar')}
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('clientes.sinEstadoCuentaOficial')}
+            </p>
+          )}
+          <label
+            className="flex w-fit cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold"
+            style={{ color: subiendoEstadoCuenta ? 'var(--yuda-text-secondary)' : 'var(--yuda-primary)' }}
+          >
+            <FileText size={16} />
+            {subiendoEstadoCuenta
+              ? t('clientes.subiendo')
+              : c.estado_cuenta_oficial_url
+                ? t('clientes.reemplazarEstadoCuentaOficial')
+                : t('clientes.subirEstadoCuentaOficial')}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              disabled={subiendoEstadoCuenta}
+              className="hidden"
+              onChange={(e) => {
+                const archivo = e.target.files?.[0]
+                e.target.value = ''
+                if (archivo) subirEstadoCuenta(c, archivo)
+              }}
+            />
+          </label>
+        </div>
+        </>
         )}
 
         {/* Pestaña "Cotizaciones" */}
@@ -885,6 +988,16 @@ ${t('clientes.email')}: ${c.email}`
           <UserPlus size={18} /> {t('clientes.nuevo')}
         </button>
       </div>
+
+      {/* Cómo se reparte el trabajo: quién crea el cliente y quién puede cotizarle.
+          Se explica acá, en la cuenta de Marcela, porque ella es quien controla
+          la asignación. */}
+      {esAdmin && (
+        <div className="rounded-xl border p-4 text-sm" style={{ borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-text)' }}>
+          <p style={{ fontWeight: 700, color: 'var(--yuda-accent)' }}>{t('clientes.reglaAsignacionTitulo')}</p>
+          <p className="mt-1">{t('clientes.reglaAsignacionTexto')}</p>
+        </div>
+      )}
 
       {/* Lo que Marcela tiene que atender: cotizaciones esperando naviera y BL */}
       {esAdmin && pendientesBl.length > 0 && (

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.rate_limit import esta_bloqueado, ip_del_request, limpiar, registrar_fallo
 
 from app.api.dependencies import get_current_cliente
-from app.core.security import create_access_token, verify_password, verify_token
+from app.core.security import create_access_token, hash_password, verify_password, verify_token
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
@@ -20,6 +20,8 @@ from app.models.sesion import (
     Sesion,
 )
 from app.schemas.cliente import (
+    CambiarPasswordInput,
+    CambiarPasswordResponse,
     ClienteLogin,
     ClientePublic,
     ClienteTokenResponse,
@@ -135,6 +137,27 @@ def magic_login(datos: MagicLoginInput, db: Session = Depends(get_db)) -> MagicL
 @router.get("/me", response_model=ClientePublic)
 def me_cliente(cliente: Cliente = Depends(get_current_cliente)) -> Cliente:
     return cliente
+
+
+@router.post("/cambiar-password", response_model=CambiarPasswordResponse)
+def cambiar_password_cliente(
+    datos: CambiarPasswordInput,
+    cliente: Cliente = Depends(get_current_cliente),
+    db: Session = Depends(get_db),
+) -> CambiarPasswordResponse:
+    """El cliente cambia su propia contraseña. Obligatorio cuando todavía
+    tiene la clave de plantilla de la importación de Yuda Contable
+    (debe_cambiar_password); también sirve como cambio de clave normal."""
+    if not verify_password(datos.password_actual, cliente.hashed_password):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "La contraseña actual no es correcta")
+    cliente.hashed_password = hash_password(datos.password_nueva)
+    cliente.debe_cambiar_password = False
+    # Invalida el token viejo (mismo mecanismo que un reset): se manda uno
+    # nuevo en la respuesta para no forzar un segundo login.
+    cliente.token_version = (cliente.token_version or 0) + 1
+    db.commit()
+    token = create_access_token({"sub": cliente.id, "tipo": "cliente", "tv": cliente.token_version})
+    return CambiarPasswordResponse(access_token=token)
 
 
 @router.get("/cuenta", response_model=EstadoCuentaResponse)

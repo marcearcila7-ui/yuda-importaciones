@@ -69,3 +69,16 @@ export async function getMiCuenta(): Promise<EstadoCuenta> {
   const { data } = await portalClient.get<EstadoCuenta>('/portal/cuenta')
   return data
 }
+
+// El cliente cambia su propia contraseña (obligatorio si debe_cambiar_password).
+// Devuelve un token nuevo: cambiar la clave invalida el viejo.
+export async function cambiarPasswordPortal(
+  password_actual: string,
+  password_nueva: string,
+): Promise<{ access_token: string }> {
+  const { data } = await portalClient.post<{ access_token: string }>('/portal/cambiar-password', {
+    password_actual,
+    password_nueva,
+  })
+  return data
+}

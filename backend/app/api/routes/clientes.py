@@ -1,6 +1,8 @@
 import asyncio
+import re
 import secrets
 import string
+import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -76,7 +78,7 @@ from app.services.aviso_cliente_service import (
     avisar_cliente_entregado,
     avisar_cliente_pedido_en_proveedor,
 )
-from app.services.storage_service import subir_documento, subir_foto, subir_pdf
+from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_documento, subir_foto, subir_pdf
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
@@ -87,6 +89,28 @@ def _generar_password(n: int = 10) -> str:
     """Contraseña inicial aleatoria fácil de copiar (sin ambigüedades visuales)"""
     alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
     return "".join(secrets.choice(alfabeto) for _ in range(n))
+
+
+# Clave de plantilla para la importación masiva de Yuda Contable: no se puede
+# mandar una clave distinta a cada cliente uno por uno, así que todos entran
+# con la misma y el portal los OBLIGA a cambiarla en su primer ingreso
+# (Cliente.debe_cambiar_password / POST /portal/cambiar-password).
+PASSWORD_PLANTILLA_CONTABLE = "Yuda2026**"
+
+
+def _slug_email(nombre: str, dominio: str, ocupados: set[str]) -> str:
+    """Usuario de portal a partir del nombre: 'Juan Pérez' -> 'juanperez@dominio'.
+    Si ya existe (mismo nombre repetido, o choca con otro cliente), le agrega
+    un número al final hasta encontrar uno libre."""
+    sin_acentos = unicodedata.normalize("NFKD", nombre).encode("ascii", "ignore").decode("ascii")
+    base = re.sub(r"[^a-z0-9]", "", sin_acentos.lower()) or "cliente"
+    email = f"{base}@{dominio}"
+    contador = 2
+    while email in ocupados:
+        email = f"{base}{contador}@{dominio}"
+        contador += 1
+    ocupados.add(email)
+    return email
 
 
 def _cliente_response(
@@ -501,28 +525,32 @@ def importar_contable(
 ) -> ImportarContableResultado:
     """Crea un Cliente nuevo por cada sigla elegida que todavía no exista.
     Queda con la propia Marcela como vendedora dueña por defecto: ella decide
-    después a quién asignárselo (con lo de la Fase 1). Se genera un email
-    de referencia (no real) y una contraseña de portal al azar, igual que
-    cuando se crea un cliente a mano."""
+    después a quién asignárselo (con lo de la Fase 1). El usuario del portal
+    sale del nombre (nombre@yudaimportaciones.com) y la clave es la misma
+    para todos (PASSWORD_PLANTILLA_CONTABLE): no se puede avisarle una clave
+    distinta a cada uno al importarlos en bloque. El portal los obliga a
+    cambiarla en su primer ingreso."""
     por_sigla = {c["sigla"]: c for c in CONTABLE_CLIENTES}
-    existentes = {c.sigla for c in db.query(Cliente).filter(Cliente.sigla.isnot(None)).all()}
+    existentes_sigla = {c.sigla for c in db.query(Cliente).filter(Cliente.sigla.isnot(None)).all()}
+    emails_ocupados = {e for (e,) in db.query(Cliente.email).all()}
 
     creados = 0
     omitidos = 0
     for sigla in datos.siglas:
         datos_contable = por_sigla.get(sigla)
-        if datos_contable is None or sigla in existentes:
+        if datos_contable is None or sigla in existentes_sigla:
             omitidos += 1
             continue
         nombre = datos_contable["nombre"] or f"Cliente {sigla}"
-        email = f"{sigla.lower()}@contable.yudaimportaciones.local"
+        email = _slug_email(nombre, "yudaimportaciones.com", emails_ocupados)
         cliente = Cliente(
             nombre=nombre,
             email=email,
             telefono=datos_contable["telefono"],
             pais=datos_contable["pais"],
             sigla=sigla,
-            hashed_password=hash_password(_generar_password()),
+            hashed_password=hash_password(PASSWORD_PLANTILLA_CONTABLE),
+            debe_cambiar_password=True,
             vendedora_id=usuario.id,
             origen=ORIGEN_IMPORTADO_CONTABLE,
         )
@@ -601,10 +629,90 @@ def reset_password_cliente(
     if len(nueva) < 6:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "La contraseña debe tener al menos 6 caracteres")
     cliente.hashed_password = hash_password(nueva)
+    # La está poniendo Marcela/la vendedora a propósito (se la comunican
+    # ellas mismas), a diferencia de la clave de plantilla de la importación
+    # masiva: no hace falta forzar que el cliente la vuelva a cambiar.
+    cliente.debe_cambiar_password = False
     # Invalida las sesiones abiertas del cliente con la contraseña vieja.
     cliente.token_version = (cliente.token_version or 0) + 1
     db.commit()
     return {"detail": "Contraseña actualizada"}
+
+
+@router.post("/clientes/{cliente_id}/estado-cuenta-oficial", response_model=ClienteResponse)
+async def subir_estado_cuenta_oficial(
+    cliente_id: str,
+    archivo: UploadFile,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Cliente:
+    """Marcela (o la vendedora dueña) sube el estado de cuenta real de Yuda
+    Contable -PDF o una foto/captura- para que el cliente lo vea en su
+    portal. No hay conexión en vivo entre las dos apps: esto reemplaza el
+    documento anterior si ya había uno subido."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+
+    nombre_original = archivo.filename or ""
+    punto = nombre_original.rfind(".")
+    extension = nombre_original[punto:].lower() if punto != -1 else ""
+    _PERMITIDAS = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }
+    if extension in _PERMITIDAS:
+        content_type = _PERMITIDAS[extension]
+    elif archivo.content_type in _PERMITIDAS.values():
+        content_type = archivo.content_type
+        extension = next(k for k, v in _PERMITIDAS.items() if v == content_type)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Solo se permite PDF o una imagen (JPG, PNG, WEBP)")
+
+    contenido = await archivo.read()
+    if len(contenido) > 25 * 1024 * 1024:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
+
+    nombre_archivo = f"estado-cuenta-oficial/{cliente_id}-{uuid.uuid4().hex[:8]}{extension}"
+    loop = asyncio.get_event_loop()
+    try:
+        url = await loop.run_in_executor(
+            None, lambda: subir_documento(contenido, nombre_archivo, content_type)
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo guardar el archivo: el almacenamiento no está disponible. "
+            "Intenta de nuevo en unos minutos.",
+        ) from exc
+
+    url_anterior = cliente.estado_cuenta_oficial_url
+    cliente.estado_cuenta_oficial_url = url
+    cliente.estado_cuenta_oficial_actualizado_en = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(cliente)
+    if url_anterior:
+        borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
+    return cliente
+
+
+@router.delete("/clientes/{cliente_id}/estado-cuenta-oficial", response_model=ClienteResponse)
+def quitar_estado_cuenta_oficial(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Cliente:
+    """Quita el estado de cuenta oficial (ej. se subió el archivo equivocado)."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    url_anterior = cliente.estado_cuenta_oficial_url
+    cliente.estado_cuenta_oficial_url = None
+    cliente.estado_cuenta_oficial_actualizado_en = None
+    db.commit()
+    db.refresh(cliente)
+    if url_anterior:
+        borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
+    return cliente
 
 
 # ──────────────── VÍNCULO COTIZACIÓN ↔ CLIENTE ────────────────

@@ -11,12 +11,15 @@ interface PortalState {
   error: string | null
   login: (email: string, password: string) => Promise<boolean>
   loginConToken: (token: string, cliente: ClientePortal) => void
+  // Tras cambiar la contraseña: guarda el token nuevo (el viejo queda
+  // invalidado) y marca que ya no debe cambiarla.
+  passwordCambiada: (token: string) => void
   logout: () => void
   initFromStorage: () => void
   clearError: () => void
 }
 
-export const usePortalStore = create<PortalState>((set) => ({
+export const usePortalStore = create<PortalState>((set, get) => ({
   cliente: null,
   token: null,
   isLoading: false,
@@ -49,6 +52,15 @@ export const usePortalStore = create<PortalState>((set) => ({
     localStorage.setItem('yuda_portal_token', token)
     localStorage.setItem('yuda_portal_cliente', JSON.stringify(cliente))
     set({ cliente, token, isLoading: false, error: null })
+  },
+
+  passwordCambiada: (token) => {
+    const clienteActual = get().cliente
+    if (!clienteActual) return
+    const cliente = { ...clienteActual, debe_cambiar_password: false }
+    localStorage.setItem('yuda_portal_token', token)
+    localStorage.setItem('yuda_portal_cliente', JSON.stringify(cliente))
+    set({ cliente, token })
   },
 
   logout: () => {

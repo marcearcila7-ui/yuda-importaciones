@@ -24,6 +24,7 @@ const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
 const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
 const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
 const PortalEntrar = lazy(() => import('./pages/portal/PortalEntrar'))
+const PortalCambiarPassword = lazy(() => import('./pages/portal/PortalCambiarPassword'))
 
 function Cargando() {
   return (
@@ -65,6 +66,7 @@ function App() {
           <Route path="/portal" element={<PortalCotizaciones />} />
           <Route path="/portal/cuenta" element={<PortalCuenta />} />
           <Route path="/portal/cotizacion/:sesionId" element={<PortalDetalle />} />
+          <Route path="/portal/cambiar-clave" element={<PortalCambiarPassword />} />
         </Route>
 
         {/* ── Área del equipo ── */}

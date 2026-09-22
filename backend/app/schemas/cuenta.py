@@ -129,3 +129,8 @@ class EstadoCuentaResponse(BaseModel):
     totales_por_moneda: list[TotalMoneda]
     fecha_ultimo_abono: date | None
     pedidos: list[PedidoCuenta]
+    # Documento real de Yuda Contable (PDF/imagen) que Marcela subió a mano;
+    # no tiene relación con los totales de arriba (esos son de la cuenta
+    # interna del cotizador). None si nunca se subió ninguno.
+    estado_cuenta_oficial_url: str | None = None
+    estado_cuenta_oficial_actualizado_en: datetime | None = None

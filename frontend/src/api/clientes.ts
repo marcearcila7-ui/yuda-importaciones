@@ -51,6 +51,25 @@ export async function resetPasswordCliente(id: string, nueva_password: string): 
   await apiClient.post(`/clientes/${id}/reset-password`, { nueva_password })
 }
 
+// Estado de cuenta oficial de Yuda Contable (PDF/imagen que Marcela sube a
+// mano): sin conexión en vivo entre las dos apps, esto solo guarda un
+// documento puntual y lo muestra en el portal del cliente.
+export async function subirEstadoCuentaOficial(id: string, archivo: File): Promise<Cliente> {
+  const form = new FormData()
+  form.append('archivo', archivo)
+  const { data } = await apiClient.post<Cliente>(
+    `/clientes/${id}/estado-cuenta-oficial`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+export async function quitarEstadoCuentaOficial(id: string): Promise<Cliente> {
+  const { data } = await apiClient.delete<Cliente>(`/clientes/${id}/estado-cuenta-oficial`)
+  return data
+}
+
 export async function eliminarCliente(id: string): Promise<void> {
   await apiClient.delete(`/clientes/${id}`)
 }

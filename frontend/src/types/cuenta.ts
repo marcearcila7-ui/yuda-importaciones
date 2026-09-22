@@ -57,6 +57,10 @@ export interface EstadoCuenta {
   totales_por_moneda: TotalMoneda[]
   fecha_ultimo_abono: string | null
   pedidos: PedidoCuenta[]
+  // Documento real de Yuda Contable que Marcela subió a mano; null si nunca
+  // se subió ninguno. No tiene relación con los totales de arriba.
+  estado_cuenta_oficial_url: string | null
+  estado_cuenta_oficial_actualizado_en: string | null
 }
 
 export interface MovimientoCreate {

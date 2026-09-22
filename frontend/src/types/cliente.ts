@@ -18,6 +18,14 @@ export interface Cliente {
   // (sigue a nombre del admin que lo importó) -se muestra aparte de los
   // clientes reales, no mezclado en la misma lista.
   pendiente_asignacion: boolean
+  // True si todavía tiene la clave de plantilla de la importación masiva de
+  // Yuda Contable sin cambiar.
+  debe_cambiar_password: boolean
+  // Documento real de Yuda Contable (PDF/imagen) que Marcela subió a mano;
+  // null si nunca se subió ninguno. No tiene relación con la cuenta interna
+  // (MovimientoCuenta) del cotizador.
+  estado_cuenta_oficial_url: string | null
+  estado_cuenta_oficial_actualizado_en: string | null
   created_at: string
 }
 

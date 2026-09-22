@@ -44,4 +44,20 @@ class Cliente(Base):
     token_version: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False
     )
+    # True cuando quedó con una contraseña "de plantilla" (ej. la importación
+    # masiva de Yuda Contable, que le pone la misma clave a todos): el portal
+    # lo obliga a cambiarla antes de dejarlo ver nada más. Si Marcela o la
+    # vendedora resetean la clave a mano (reset_password_cliente) o la crean
+    # manualmente, queda en False: ellas ya eligieron/comunicaron esa clave.
+    debe_cambiar_password: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
+    # Estado de cuenta oficial de Yuda Contable (el sistema aparte de
+    # contabilidad): Marcela lo sube como PDF/imagen para que el cliente lo
+    # vea en su portal. No hay conexión en vivo entre las dos apps -esto es
+    # un documento puntual que ella misma actualiza cuando quiere.
+    estado_cuenta_oficial_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    estado_cuenta_oficial_actualizado_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
