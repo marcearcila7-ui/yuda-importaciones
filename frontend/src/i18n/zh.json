@@ -700,7 +700,10 @@
       "en_camino": "运输中",
       "entregadas": "已交付"
     },
-    "verHistorialEnvio": "查看发货历史和手动编辑"
+    "verHistorialEnvio": "查看发货历史和手动编辑",
+    "pendientesTitulo": "从 Yuda Contable 导入,未分配 ({{n}})",
+    "pendientesAyuda": "这些是批量从 Yuda Contable 导入的。分配销售后会进入正式客户列表。",
+    "asignarA": "分配给..."
   },
   "colaboracion": {
     "errorCargar": "无法加载客户信息",

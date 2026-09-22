@@ -19,7 +19,7 @@ from app.services.borrado_service import (
     limpiar_storage,
     tiene_movimientos_cliente,
 )
-from app.models.cliente import Cliente
+from app.models.cliente import ORIGEN_IMPORTADO_CONTABLE, ORIGEN_MANUAL, Cliente
 from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.cuenta import MovimientoCuenta, calcular_comision, convertir_abono
 from app.services.estado_cuenta_service import (
@@ -89,14 +89,27 @@ def _generar_password(n: int = 10) -> str:
     return "".join(secrets.choice(alfabeto) for _ in range(n))
 
 
-def _cliente_response(cliente: Cliente, usuario: User) -> ClienteResponse:
+def _cliente_response(
+    cliente: Cliente, usuario: User, roles_por_usuario: dict[str, str] | None = None
+) -> ClienteResponse:
     """Convierte el cliente a su forma pública, ocultando la sigla de Yuda
     Contable si quien pregunta no es admin/contadora: es un dato interno de
     Marcela para conciliar cuentas, no algo que una vendedora necesite ver."""
     resp = ClienteResponse.model_validate(cliente)
     if usuario.rol.value not in ("admin", "contadora"):
         resp.sigla = None
+    rol_dueno = (roles_por_usuario or {}).get(cliente.vendedora_id)
+    resp.pendiente_asignacion = cliente.origen == ORIGEN_IMPORTADO_CONTABLE and rol_dueno == "admin"
     return resp
+
+
+def _roles_por_usuario(db: Session, clientes: list[Cliente]) -> dict[str, str]:
+    """{vendedora_id: rol} de todos los dueños de esta tanda de clientes, para
+    calcular pendiente_asignacion sin una consulta por cliente."""
+    dueno_ids = {c.vendedora_id for c in clientes}
+    if not dueno_ids:
+        return {}
+    return {u.id: u.rol.value for u in db.query(User).filter(User.id.in_(dueno_ids)).all()}
 
 
 def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
@@ -158,6 +171,7 @@ def crear_cliente(
         pais=datos.pais,
         hashed_password=hash_password(password),
         vendedora_id=usuario.id,
+        origen=ORIGEN_MANUAL,
     )
     db.add(cliente)
     db.commit()
@@ -185,7 +199,8 @@ def listar_clientes(
             (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
         )
     clientes = query.order_by(Cliente.created_at.desc()).all()
-    return [_cliente_response(c, usuario) for c in clientes]
+    roles = _roles_por_usuario(db, clientes)
+    return [_cliente_response(c, usuario, roles) for c in clientes]
 
 
 @router.get("/clientes/{cliente_id}", response_model=ClienteResponse)
@@ -196,7 +211,7 @@ def obtener_cliente(
     db: Session = Depends(get_db),
 ) -> ClienteResponse:
     cliente = _cliente_autorizado(db, cliente_id, usuario)
-    return _cliente_response(cliente, usuario)
+    return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
 
 
 @router.get("/clientes/{cliente_id}/cotizaciones", response_model=list[SesionResponse])
@@ -262,7 +277,7 @@ def actualizar_cliente(
         setattr(cliente, campo, valor)
     db.commit()
     db.refresh(cliente)
-    return _cliente_response(cliente, usuario)
+    return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
 
 
 # ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
@@ -509,6 +524,7 @@ def importar_contable(
             sigla=sigla,
             hashed_password=hash_password(_generar_password()),
             vendedora_id=usuario.id,
+            origen=ORIGEN_IMPORTADO_CONTABLE,
         )
         db.add(cliente)
         creados += 1

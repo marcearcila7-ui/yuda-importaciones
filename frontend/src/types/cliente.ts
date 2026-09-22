@@ -11,6 +11,13 @@ export interface Cliente {
   // Solo una etiqueta de referencia; nunca trae saldos ni movimientos.
   sigla: string | null
   activo: boolean
+  // "manual" (se creó a mano, el caso normal) o "importado_contable" (entró
+  // en bloque al importar el listado de Yuda Contable).
+  origen: 'manual' | 'importado_contable'
+  // true si es un importado que todavía nadie asignó a una vendedora real
+  // (sigue a nombre del admin que lo importó) -se muestra aparte de los
+  // clientes reales, no mezclado en la misma lista.
+  pendiente_asignacion: boolean
   created_at: string
 }
 

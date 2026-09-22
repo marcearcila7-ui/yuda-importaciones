@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     # Base pública del portal del cliente, para armar el link en los avisos.
     PORTAL_URL: str = "http://localhost:3000"
 
+    # Notificaciones push (avisos aunque el navegador esté cerrado): llaves
+    # VAPID propias de YUDA. La privada va en base64 porque un PEM con saltos
+    # de línea no siempre sobrevive intacto como variable de entorno. Si
+    # quedan vacías, el envío de push simplemente se omite (no rompe nada).
+    VAPID_PUBLIC_KEY: str = ""
+    VAPID_PRIVATE_KEY_B64: str = ""
+    VAPID_CLAIMS_EMAIL: str = "mailto:soporte@yudaimportaciones.com"
+
     # Tope GLOBAL de llamadas de OCR (Anthropic) en simultáneo en todo el sistema.
     # Protege contra rate limits y agotamiento de conexiones bajo picos de carga.
     OCR_CONCURRENCIA_GLOBAL: int = 6
@@ -106,6 +114,9 @@ class Settings(BaseSettings):
         "LUCIDBOT_API_KEY",
         "LUCIDBOT_API_URL",
         "PORTAL_URL",
+        "VAPID_PUBLIC_KEY",
+        "VAPID_PRIVATE_KEY_B64",
+        "VAPID_CLAIMS_EMAIL",
         mode="before",
     )
     @classmethod

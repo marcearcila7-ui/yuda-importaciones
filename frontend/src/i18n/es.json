@@ -700,7 +700,10 @@
       "en_camino": "En camino",
       "entregadas": "Entregadas"
     },
-    "verHistorialEnvio": "Ver historial y edición manual del envío"
+    "verHistorialEnvio": "Ver historial y edición manual del envío",
+    "pendientesTitulo": "Importados de Yuda Contable sin asignar ({{n}})",
+    "pendientesAyuda": "Entraron en bloque al importar el listado de Yuda Contable. Asígnales una vendedora para que pasen a la lista de clientes de verdad.",
+    "asignarA": "Asignar a..."
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",

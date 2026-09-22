@@ -7,6 +7,14 @@ from sqlalchemy.sql import func
 
 from app.database import Base
 
+# De dónde salió el registro: uno que alguien creó a mano (el caso normal),
+# o uno que entró en bloque al importar el listado de Yuda Contable. Sin
+# esto, un contacto recién importado (con datos mínimos, sin vendedora real
+# asignada todavía) era indistinguible de un cliente de verdad -se mezclaban
+# en la misma lista sin ninguna forma de separarlos.
+ORIGEN_MANUAL = "manual"
+ORIGEN_IMPORTADO_CONTABLE = "importado_contable"
+
 
 class Cliente(Base):
     """Cliente final de una vendedora. Tiene su propio acceso al portal."""
@@ -29,6 +37,9 @@ class Cliente(Base):
     # Vendedora dueña del cliente
     vendedora_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    origen: Mapped[str] = mapped_column(
+        String, default=ORIGEN_MANUAL, server_default=ORIGEN_MANUAL, nullable=False
+    )
     # Versión de token para revocación (ver User.token_version).
     token_version: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False

@@ -15,6 +15,17 @@ class UsuarioCreate(BaseModel):
     password: str
     rol: str
 
+    @field_validator("nombre")
+    @classmethod
+    def validar_nombre(cls, v: str) -> str:
+        # Un nombre vacío/solo espacios deja un usuario "fantasma": sin forma
+        # de identificarlo en listas y filtros (ej. una pestaña de vendedora
+        # sin nombre visible, mezclada con las demás).
+        v = v.strip()
+        if not v:
+            raise ValueError("El nombre no puede quedar vacío")
+        return v
+
     @field_validator("password")
     @classmethod
     def validar_password(cls, v: str) -> str:
@@ -36,6 +47,16 @@ class UsuarioUpdate(BaseModel):
     nombre: Optional[str] = None
     rol: Optional[str] = None
     activo: Optional[bool] = None
+
+    @field_validator("nombre")
+    @classmethod
+    def validar_nombre(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("El nombre no puede quedar vacío")
+        return v
 
     @field_validator("rol")
     @classmethod

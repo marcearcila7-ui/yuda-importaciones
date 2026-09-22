@@ -26,3 +26,7 @@ Pillow>=10.0,<12.0
 # Las fotos de iPhone son HEIC y Pillow no las lee de fabrica. Rango en vez de
 # version fija porque trae binarios por plataforma y el patch cambia seguido.
 pillow-heif>=0.18,<1.0
+# Notificaciones push (avisos aunque el navegador esté cerrado): manda el
+# payload cifrado al endpoint del navegador (FCM/Mozilla/etc.) firmado con
+# las llaves VAPID propias de YUDA.
+pywebpush==2.0.3

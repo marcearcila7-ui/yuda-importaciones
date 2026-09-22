@@ -700,7 +700,10 @@
       "en_camino": "On the way",
       "entregadas": "Delivered"
     },
-    "verHistorialEnvio": "View shipping history and manual editing"
+    "verHistorialEnvio": "View shipping history and manual editing",
+    "pendientesTitulo": "Imported from Yuda Contable, unassigned ({{n}})",
+    "pendientesAyuda": "These came in bulk from the Yuda Contable import. Assign a sales rep to move them into the real client list.",
+    "asignarA": "Assign to..."
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",

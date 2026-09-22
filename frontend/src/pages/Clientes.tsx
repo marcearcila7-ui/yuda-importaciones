@@ -275,6 +275,24 @@ function Clientes() {
     }
   }
 
+  // Asignar vendedora a un contacto importado pendiente, directo desde la
+  // lista de espera (sin tener que abrir su ficha).
+  const [asignandoPendiente, setAsignandoPendiente] = useState<Record<string, boolean>>({})
+  const asignarPendiente = async (clienteId: string, vendedoraId: string) => {
+    if (!vendedoraId) return
+    setAsignandoPendiente((s) => ({ ...s, [clienteId]: true }))
+    try {
+      await actualizarCliente(clienteId, { vendedora_id: vendedoraId })
+      toast.success(t('clientes.duenaGuardada'))
+      cargar()
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? (err.response?.data?.detail as string | undefined) : undefined
+      toast.error(detalle || t('clientes.errorDuena'))
+    } finally {
+      setAsignandoPendiente((s) => ({ ...s, [clienteId]: false }))
+    }
+  }
+
   const [editandoSigla, setEditandoSigla] = useState(false)
   const [siglaInput, setSiglaInput] = useState('')
   const [guardandoSigla, setGuardandoSigla] = useState(false)
@@ -466,9 +484,16 @@ ${t('clientes.email')}: ${c.email}`
     )
   }
 
+  // Los importados de Yuda Contable que todavía nadie asignó a una vendedora
+  // real van aparte: no son "tus clientes" todavía, son una lista de espera
+  // para que Marcela decida a quién dárselos. Mezclarlos con los de verdad
+  // era justo lo que hacía la pantalla ilegible.
+  const clientesPendientes = clientes.filter((c) => c.pendiente_asignacion)
+
   const clientesFiltrados = (() => {
     const texto = busqueda.trim().toLowerCase()
     return clientes.filter((c) => {
+      if (c.pendiente_asignacion) return false
       if (!c.activo && !verInactivos) return false
       if (filtroVendedora && c.vendedora_id !== filtroVendedora) return false
       if (!texto) return true
@@ -1003,6 +1028,46 @@ ${t('clientes.email')}: ${c.email}`
         </div>
       )}
 
+      {/* Importados de Yuda Contable sin asignar: aparte de "Tus clientes" a
+          propósito -no son clientes de verdad todavía, es una lista de
+          espera hasta que Marcela decida a qué vendedora dárselos. */}
+      {esAdmin && clientesPendientes.length > 0 && (
+        <div className="card flex flex-col gap-3" style={{ borderColor: 'var(--yuda-warning)', borderWidth: 1.5 }}>
+          <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
+            <UserPlus size={18} color="var(--yuda-warning-dark)" />
+            {t('clientes.pendientesTitulo', { n: clientesPendientes.length })}
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('clientes.pendientesAyuda')}
+          </p>
+          <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
+            {clientesPendientes.map((c) => (
+              <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <div className="min-w-0">
+                  <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>{c.nombre}</p>
+                  <p className="truncate text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {c.email}
+                    {c.pais ? ` · ${c.pais}` : ''}
+                  </p>
+                </div>
+                <select
+                  disabled={asignandoPendiente[c.id]}
+                  value=""
+                  onChange={(e) => e.target.value && asignarPendiente(c.id, e.target.value)}
+                  className="min-h-[36px] rounded-lg border px-2 text-sm focus:outline-none"
+                  style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-text)' }}
+                >
+                  <option value="">{t('clientes.asignarA')}</option>
+                  {vendedoras.map((v) => (
+                    <option key={v.user_id} value={v.user_id}>{v.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Lista de clientes */}
       <div className="card flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1045,7 +1110,9 @@ ${t('clientes.email')}: ${c.email}`
           <div className="flex flex-wrap gap-2">
             {[{ id: '', nombre: t('clientes.todasLasVendedoras') }, ...vendedoras.map((v) => ({ id: v.user_id, nombre: v.nombre }))].map((v) => {
               const activo = filtroVendedora === v.id
-              const cuantos = v.id ? clientes.filter((c) => c.vendedora_id === v.id).length : clientes.length
+              const cuantos = v.id
+                ? clientes.filter((c) => c.vendedora_id === v.id && !c.pendiente_asignacion).length
+                : clientes.filter((c) => !c.pendiente_asignacion).length
               return (
                 <button
                   key={v.id || 'todas'}

@@ -44,6 +44,12 @@ class ClienteResponse(BaseModel):
     vendedora_id: str
     sigla: str | None = None
     activo: bool
+    origen: str = "manual"
+    # True si vino de una importación de Yuda Contable y todavía nadie lo
+    # asignó a una vendedora de verdad (sigue a nombre del admin que
+    # importó). El frontend lo usa para separarlo de los clientes reales en
+    # vez de mezclarlos en la misma lista.
+    pendiente_asignacion: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
