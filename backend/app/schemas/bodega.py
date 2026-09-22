@@ -77,7 +77,13 @@ class BodegaPedidoDetalle(BaseModel):
     # Datos del cliente del portal (a quien se le avisa por correo/WhatsApp al
     # marcar "en bodega"). None si esta cotización no está vinculada a un cliente.
     cliente_nombre: str | None = None
+    cliente_email: str | None = None
     cliente_telefono: str | None = None
+    # Lo que Yuda Contable tiene registrado para este cliente (por "sigla"),
+    # como referencia/sugerencia -no reemplaza cliente_telefono sin que
+    # alguien lo confirme. None si no hay sigla, no hay conexión configurada,
+    # o Yuda Contable no tiene nada para esa sigla.
+    cliente_whatsapp_contable: str | None = None
     # Vendedora dueña de la cotización en el cotizador.
     vendedora_nombre: str | None = None
     vendedora_email: str | None = None

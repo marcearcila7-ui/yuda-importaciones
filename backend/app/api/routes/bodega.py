@@ -38,6 +38,7 @@ from app.services.inspeccion_service import _MAPEO_CAMPOS, construir_inspeccion_
 from app.services.notificacion_service import avisar_inspeccion_actualizada, avisar_orden_actualizada_bodega
 from app.services.pdf_service import generar_packing_list_pdf, html_pedido, render_pdf
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_csv, subir_excel, subir_foto, subir_pdf, subir_video
+from app.services.yuda_contable_service import buscar_contacto_por_sigla
 
 router = APIRouter(prefix="/bodega", tags=["bodega"])
 logger = logging.getLogger("app.bodega")
@@ -336,6 +337,7 @@ def detalle_pedido_bodega(
         if sesion.cliente_id
         else None
     )
+    contacto_contable = buscar_contacto_por_sigla(cliente.sigla) if cliente else None
     vendedora = db.query(User).filter(User.id == sesion.user_id).first()
     asignado = (
         db.query(User).filter(User.id == seg.bodega_asignado_a_id).first()
@@ -367,7 +369,9 @@ def detalle_pedido_bodega(
         pedidos_generados=pedidos_generados,
         seguimiento=seguimiento,
         cliente_nombre=cliente.nombre if cliente else None,
+        cliente_email=cliente.email if cliente else None,
         cliente_telefono=cliente.telefono if cliente else None,
+        cliente_whatsapp_contable=(contacto_contable or {}).get("whatsapp") or (contacto_contable or {}).get("telefono"),
         vendedora_nombre=vendedora.nombre if vendedora else None,
         vendedora_email=vendedora.email if vendedora else None,
         bodega_asignado_a_id=asignado.id if asignado else None,

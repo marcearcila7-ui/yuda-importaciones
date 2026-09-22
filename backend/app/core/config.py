@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
 
+    # Yuda Contable (app aparte, base de datos separada): solo para heredar
+    # el teléfono/WhatsApp del cliente por "sigla" (la misma que Marcela ya
+    # escribe a mano para cruzar el cliente entre las dos apps). Si quedan
+    # vacías, simplemente no hay dato de contacto que heredar -no rompe nada.
+    CONTABLE_SUPABASE_URL: str = ""
+    CONTABLE_SUPABASE_SERVICE_KEY: str = ""
+
     # Avisos al cliente (portal): correo transaccional por Brevo y notificación
     # por el bot propio de Yuda. Ambos son opcionales; si faltan, el aviso
     # correspondiente simplemente se omite (no rompe el flujo de bodega/Marcela).
@@ -92,6 +99,8 @@ class Settings(BaseSettings):
         "CORS_ORIGINS",
         "SUPABASE_URL",
         "SUPABASE_SERVICE_KEY",
+        "CONTABLE_SUPABASE_URL",
+        "CONTABLE_SUPABASE_SERVICE_KEY",
         "SENTRY_DSN",
         "BREVO_API_KEY",
         "LUCIDBOT_API_KEY",
