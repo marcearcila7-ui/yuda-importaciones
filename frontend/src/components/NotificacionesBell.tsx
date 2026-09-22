@@ -9,7 +9,8 @@ import type { Notificacion } from '../types/notificacion'
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
 // Campana de avisos para Marcela: muestra las cotizaciones listas para cargar BL.
-// Refresca cada 60s para no requerir recargar la página.
+// Refresca cada 8s para que un aviso de bodega (ej. cubicaje) le llegue casi
+// al instante, sin tener que recargar la página.
 // posicion: hacia dónde abre el panel. 'arriba' (sidebar de escritorio) o
 // 'abajo' (TopBar móvil).
 function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'abajo' }) {
@@ -26,7 +27,7 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
 
   useEffect(() => {
     cargar()
-    const id = setInterval(cargar, 60000)
+    const id = setInterval(cargar, 8000)
     return () => clearInterval(id)
   }, [])
 

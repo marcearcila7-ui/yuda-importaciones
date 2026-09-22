@@ -396,7 +396,8 @@
     "tab": {
       "gestion": "订单管理",
       "cotizacion": "报价单",
-      "seguimiento": "跟踪"
+      "seguimiento": "跟踪",
+      "cubicaje": "体积"
     },
     "volverCliente": "返回{{nombre}}"
   },
@@ -1121,5 +1122,26 @@
       "confirmado_envio": "发货已确认",
       "archivo_reemplazado": "文件已替换"
     }
+  },
+  "cubicaje": {
+    "titulo": "此订单的体积",
+    "ayuda": "仓库根据集装箱范围(68-72立方米)计算的结果。",
+    "resultado": {
+      "sobra": "货物过多:装不下",
+      "falta": "体积不足:还有空间",
+      "ajustado": "体积符合集装箱"
+    },
+    "cbmActual": "已计算 {{cbm}} 立方米(集装箱:{{min}}-{{max}} 立方米)",
+    "hiloTitulo": "报告与对话",
+    "sinMensajes": "此订单还没有体积报告。",
+    "tipoReporte": "(仓库报告)",
+    "detalleSobra": "{{n}} 箱「{{referencia}}」装不下集装箱。",
+    "detalleFalta": "体积不足:还剩 {{espacio}} 立方米空间。",
+    "detalleAjustado": "整个订单符合集装箱范围。",
+    "responderLabel": "回复仓库",
+    "responderPlaceholder": "输入回复...",
+    "responderBoton": "发送回复",
+    "respuestaEnviada": "回复已发送",
+    "errorResponder": "无法发送回复"
   }
 }

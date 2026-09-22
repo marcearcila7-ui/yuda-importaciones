@@ -396,7 +396,8 @@
     "tab": {
       "gestion": "Order management",
       "cotizacion": "Quotation",
-      "seguimiento": "Tracking"
+      "seguimiento": "Tracking",
+      "cubicaje": "Cubic volume"
     },
     "volverCliente": "Back to {{nombre}}"
   },
@@ -1121,5 +1122,26 @@
       "confirmado_envio": "Shipment confirmed",
       "archivo_reemplazado": "File replaced"
     }
+  },
+  "cubicaje": {
+    "titulo": "This order's cubic volume",
+    "ayuda": "What the warehouse calculated against a container's range (68-72 m³).",
+    "resultado": {
+      "sobra": "Surplus: not everything fits",
+      "falta": "Short on volume: space remains",
+      "ajustado": "Volume fits the container"
+    },
+    "cbmActual": "{{cbm}} m³ calculated (container: {{min}}-{{max}} m³)",
+    "hiloTitulo": "Reports and conversation",
+    "sinMensajes": "No cubic-volume reports for this order yet.",
+    "tipoReporte": "(warehouse report)",
+    "detalleSobra": "{{n}} box(es) of «{{referencia}}» did not fit in the container.",
+    "detalleFalta": "Short on volume: {{espacio}} m³ remain free.",
+    "detalleAjustado": "The whole order fits within the container range.",
+    "responderLabel": "Reply to warehouse",
+    "responderPlaceholder": "Write your reply...",
+    "responderBoton": "Send reply",
+    "respuestaEnviada": "Reply sent",
+    "errorResponder": "Could not send the reply"
   }
 }

@@ -11,6 +11,7 @@ from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteVendedora, ClienteActividad
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
+from app.models.cubicaje import CubicajeMensaje
 
 __all__ = [
     "User",

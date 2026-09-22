@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Receipt, Ship, Store } from 'lucide-react'
+import CubicajePanel from '../components/CubicajePanel'
 import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import MetricCard from '../components/MetricCard'
 import PedidoCliente from '../components/PedidoCliente'
@@ -52,7 +53,7 @@ function CotizacionDetalle() {
   // en vez de una sola pantalla larga con todo mezclado.
   // Gestión primero para quien puede actuar (admin/vendedora); la contadora no
   // gestiona pedidos, así que arranca directo en la cotización.
-  const [tab, setTab] = useState<'gestion' | 'cotizacion' | 'seguimiento'>(
+  const [tab, setTab] = useState<'gestion' | 'cotizacion' | 'seguimiento' | 'cubicaje'>(
     rol === 'admin' || rol === 'vendedora' ? 'gestion' : 'cotizacion',
   )
   const [recargarTick, setRecargarTick] = useState(0)
@@ -217,8 +218,8 @@ function CotizacionDetalle() {
               aparte que se abría en la lista) eran dos cosas separadas y
               confusas -ahora es un solo lugar. */}
           <div className="flex gap-2 border-b" style={{ borderColor: 'var(--yuda-border)' }}>
-            {(['gestion', 'cotizacion', 'seguimiento'] as const)
-              .filter((tabId) => tabId !== 'gestion' || rol === 'admin' || rol === 'vendedora')
+            {(['gestion', 'cotizacion', 'seguimiento', 'cubicaje'] as const)
+              .filter((tabId) => (tabId !== 'gestion' && tabId !== 'cubicaje') || rol === 'admin' || rol === 'vendedora')
               .map((tabId) => (
                 <button
                   key={tabId}
@@ -249,6 +250,10 @@ function CotizacionDetalle() {
               )}
             </>
           )}
+
+          {/* Pestaña "Cubicaje": control de cubicaje del pedido frente al
+              contenedor, y la conversación con bodega alrededor. */}
+          {tab === 'cubicaje' && (rol === 'admin' || rol === 'vendedora') && <CubicajePanel sesionId={id} />}
 
           {/* Pestaña "Seguimiento": tracking del envío */}
           {tab === 'seguimiento' && (

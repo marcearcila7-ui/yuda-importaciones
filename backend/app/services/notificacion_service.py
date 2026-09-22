@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 
 from app.models.notificacion import (
     TIPO_BODEGA_ENVIO_A_VENDEDORA,
+    TIPO_CUBICAJE_BODEGA,
+    TIPO_CUBICAJE_VENDEDORA,
     TIPO_DESPACHO_APROBADO,
     TIPO_ENVIO_VENDEDORA,
     TIPO_LISTO_PARA_ENVIO,
@@ -181,6 +183,63 @@ def avisar_bodega_envio_a_vendedora(
             ),
         )
     )
+
+
+def avisar_cubicaje_a_vendedora(
+    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None, resumen: str
+) -> None:
+    """Bodega mandó un reporte o nota de cubicaje sobre este pedido: aviso
+    instantáneo (campanita) para la vendedora dueña y Marcela. No evita
+    duplicar por tipo+sesión: cada entrada del hilo de cubicaje es su propio
+    aviso, igual que las correcciones de inspección."""
+    destinatarios = {vendedor_id} if vendedor_id else set()
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        destinatarios.add(admin.id)
+
+    for usuario_id in destinatarios:
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                tipo=TIPO_CUBICAJE_BODEGA,
+                titulo="Reporte de cubicaje",
+                mensaje=f"Bodega actualizó el cubicaje de {cliente} (cotización {numero}): {resumen}",
+            )
+        )
+
+
+def avisar_cubicaje_a_bodega(
+    db: Session,
+    sesion_id: str,
+    numero: str,
+    cliente: str,
+    bodega_asignado_a_id: str | None,
+    mensaje: str,
+) -> None:
+    """La vendedora respondió en el hilo de cubicaje: aviso instantáneo
+    (campanita) para quien tiene asignado el pedido en bodega, o para todo
+    bodega/admin activo si nadie lo tiene asignado (mismo criterio de
+    visibilidad que la cola de bodega sin asignar)."""
+    if bodega_asignado_a_id:
+        destinatarios = {bodega_asignado_a_id}
+    else:
+        destinatarios = {
+            u.id
+            for u in db.query(User)
+            .filter(User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+            .all()
+        }
+
+    for usuario_id in destinatarios:
+        db.add(
+            Notificacion(
+                usuario_id=usuario_id,
+                sesion_id=sesion_id,
+                tipo=TIPO_CUBICAJE_VENDEDORA,
+                titulo="Respuesta de la vendedora en cubicaje",
+                mensaje=f"{cliente} (cotización {numero}): {mensaje}",
+            )
+        )
 
 
 def avisar_pedido_confirmado(

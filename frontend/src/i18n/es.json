@@ -396,7 +396,8 @@
     "tab": {
       "gestion": "Gestión del pedido",
       "cotizacion": "Cotización",
-      "seguimiento": "Seguimiento"
+      "seguimiento": "Seguimiento",
+      "cubicaje": "Cubicaje"
     },
     "volverCliente": "Volver a {{nombre}}"
   },
@@ -1121,5 +1122,26 @@
       "confirmado_envio": "Envío confirmado",
       "archivo_reemplazado": "Archivo reemplazado"
     }
+  },
+  "cubicaje": {
+    "titulo": "Cubicaje de este pedido",
+    "ayuda": "Lo que bodega calculó frente al rango de un contenedor (68-72 m³).",
+    "resultado": {
+      "sobra": "Sobra mercancía: no cabe todo",
+      "falta": "Falta cubicaje: queda espacio",
+      "ajustado": "Cubicaje ajustado al contenedor"
+    },
+    "cbmActual": "{{cbm}} m³ calculados (contenedor: {{min}}-{{max}} m³)",
+    "hiloTitulo": "Reportes y conversación",
+    "sinMensajes": "Todavía no hay reportes de cubicaje para este pedido.",
+    "tipoReporte": "(reporte de bodega)",
+    "detalleSobra": "Sobraron {{n}} caja(s) de «{{referencia}}», no cupieron en el contenedor.",
+    "detalleFalta": "Falta cubicaje: quedan {{espacio}} m³ libres.",
+    "detalleAjustado": "El pedido completo cabe en el rango del contenedor.",
+    "responderLabel": "Responder a bodega",
+    "responderPlaceholder": "Escribe tu respuesta...",
+    "responderBoton": "Enviar respuesta",
+    "respuestaEnviada": "Respuesta enviada",
+    "errorResponder": "No se pudo enviar la respuesta"
   }
 }

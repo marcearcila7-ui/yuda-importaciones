@@ -13,6 +13,7 @@ from app.api.routes import (
     bodega,
     clientes,
     contenedores,
+    cubicaje,
     lotes,
     notificaciones,
     ocr,
@@ -130,6 +131,7 @@ app.include_router(tiendas.router, prefix="/api/v1")
 app.include_router(portal.router, prefix="/api/v1")
 app.include_router(notificaciones.router, prefix="/api/v1")
 app.include_router(bodega.router, prefix="/api/v1")
+app.include_router(cubicaje.router, prefix="/api/v1")
 
 
 @app.get("/")

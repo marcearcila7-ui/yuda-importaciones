@@ -31,6 +31,11 @@ TIPO_INSPECCION_BODEGA_ACTUALIZADA = "inspeccion_bodega_actualizada"
 # cliente"), que ya le mandó al cliente lo que inspeccionó -para que la
 # vendedora sepa revisarlo sin depender de que Marcela se lo cuente.
 TIPO_BODEGA_ENVIO_A_VENDEDORA = "bodega_envio_a_vendedora"
+# Bodega mandó un reporte o nota de cubicaje sobre un pedido: aviso para la
+# vendedora dueña.
+TIPO_CUBICAJE_BODEGA = "cubicaje_bodega"
+# La vendedora respondió en el hilo de cubicaje de un pedido: aviso para bodega.
+TIPO_CUBICAJE_VENDEDORA = "cubicaje_vendedora"
 
 
 class Notificacion(Base):
