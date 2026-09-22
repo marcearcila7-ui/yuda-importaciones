@@ -936,7 +936,8 @@
     "guardarCorreccion": "保存更正",
     "pedidoYaGenerado": "已生成向店铺的订单。",
     "confirmarReemplazarRevisado": "仓库已经清点了向«{{tienda}}»的订单。替换文件会清除该清点记录，仓库需要重新清点；系统会通知他们。是否继续？",
-    "archivoReemplazadoAvisado": "文件已替换。已通知仓库需要重新清点此订单。"
+    "archivoReemplazadoAvisado": "文件已替换。已通知仓库需要重新清点此订单。",
+    "errorDescargarLoQueLlego": "无法下载文件"
   },
   "comun": {
     "confirmar": "确认",

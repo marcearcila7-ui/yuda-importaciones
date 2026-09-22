@@ -795,13 +795,14 @@ def _items_inspeccionados(db: Session, sesion_id: str) -> list:
 @router.get("/pedidos/{sesion_id}/cotizacion/exportar-excel")
 def exportar_cotizacion_inspeccion_excel(
     sesion_id: str,
-    usuario: User = Depends(require_roles("admin", "bodega")),
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
     db: Session = Depends(get_db),
 ) -> Response:
     """Packing List (Excel) con las correcciones de bodega ya fusionadas, para
     que bodega se lo devuelva a la vendedora actualizado. No modifica el Item:
     es un documento aparte, la vendedora decide si aplica los cambios."""
     sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
     contenido = generar_packing_list_excel(
         _items_inspeccionados(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
     )
@@ -817,11 +818,12 @@ def exportar_cotizacion_inspeccion_excel(
 @router.get("/pedidos/{sesion_id}/cotizacion/exportar-pdf")
 def exportar_cotizacion_inspeccion_pdf(
     sesion_id: str,
-    usuario: User = Depends(require_roles("admin", "bodega")),
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
     db: Session = Depends(get_db),
 ) -> Response:
     """Igual que el Excel de arriba, pero en PDF (con fotos)."""
     sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
     contenido = generar_packing_list_pdf(
         _items_inspeccionados(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
     )

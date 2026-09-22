@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Receipt, Ship, Store } from 'lucide-react'
@@ -32,6 +32,7 @@ const IDIOMAS = [
 function CotizacionDetalle() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t, i18n } = useTranslation()
   const rol = useAuthStore((s) => s.usuario?.rol)
   const esAdmin = rol === 'admin'
@@ -48,13 +49,17 @@ function CotizacionDetalle() {
   // De (FROM) y Para (TO) editables de la factura. Para se precarga con el cliente.
   const [facturaDe, setFacturaDe] = useState<string>('')
   const [facturaPara, setFacturaPara] = useState<string>('')
-  // 3 pestañas: cada una responde una sola pregunta (qué se le cotizó al
-  // cliente / qué hay que hacer con el pedido y bodega / en qué va el envío),
-  // en vez de una sola pantalla larga con todo mezclado.
+  // 4 pestañas: cada una responde una sola pregunta (qué se le cotizó al
+  // cliente / qué hay que hacer con el pedido y bodega / en qué va el envío /
+  // cubicaje), en vez de una sola pantalla larga con todo mezclado.
   // Gestión primero para quien puede actuar (admin/vendedora); la contadora no
-  // gestiona pedidos, así que arranca directo en la cotización.
+  // gestiona pedidos, así que arranca directo en la cotización. Si se llegó
+  // acá desde un aviso de la campanita, ese aviso ya dice a qué pestaña ir
+  // (ej. un reporte de cubicaje abre directo en "Cubicaje").
+  const tabDesdeAviso = (location.state as { tab?: string } | null)?.tab
   const [tab, setTab] = useState<'gestion' | 'cotizacion' | 'seguimiento' | 'cubicaje'>(
-    rol === 'admin' || rol === 'vendedora' ? 'gestion' : 'cotizacion',
+    (tabDesdeAviso as 'gestion' | 'cotizacion' | 'seguimiento' | 'cubicaje') ??
+      (rol === 'admin' || rol === 'vendedora' ? 'gestion' : 'cotizacion'),
   )
   const [recargarTick, setRecargarTick] = useState(0)
   const recargar = () => setRecargarTick((n) => n + 1)

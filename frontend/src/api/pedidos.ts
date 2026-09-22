@@ -111,3 +111,21 @@ export async function asignarPedidoBodega(
   })
   return data
 }
+
+// Packing List con las correcciones de bodega ya fusionadas (mismo formato
+// que usa la cotización, con foto/referencia/descripción en los 3 idiomas):
+// es el documento que de verdad refleja lo que llegó, a diferencia del "Real"
+// por proveedor (que es un formato aparte, para comparar contra la tienda).
+export async function exportarInspeccionExcel(sesionId: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/bodega/pedidos/${sesionId}/cotizacion/exportar-excel`, {
+    responseType: 'blob',
+  })
+  return data as Blob
+}
+
+export async function exportarInspeccionPdf(sesionId: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/bodega/pedidos/${sesionId}/cotizacion/exportar-pdf`, {
+    responseType: 'blob',
+  })
+  return data as Blob
+}

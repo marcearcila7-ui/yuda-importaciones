@@ -3,10 +3,25 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Bell, Check } from 'lucide-react'
 import { getNotificaciones, marcarLeida, marcarTodasLeidas } from '../api/notificaciones'
-import { useAuthStore } from '../store/authStore'
 import type { Notificacion } from '../types/notificacion'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
+
+// A qué pestaña de /cotizacion/:id llevar según qué está avisando el sistema
+// -así el clic entra directo a lo que la notificación describe, en vez de
+// dejar a quien la lee adivinando dónde mirar.
+const TAB_POR_TIPO: Record<string, string> = {
+  cubicaje_bodega: 'cubicaje',
+  bodega_envio_a_vendedora: 'seguimiento',
+  despacho_aprobado: 'seguimiento',
+  envio_vendedora: 'seguimiento',
+  listo_para_envio: 'seguimiento',
+  inspeccion_bodega_actualizada: 'gestion',
+  orden_actualizada_bodega: 'gestion',
+  pedido_regenerado_tras_revision: 'gestion',
+  pedido_cliente: 'gestion',
+  pedido_confirmado: 'gestion',
+}
 
 // Campana de avisos para Marcela: muestra las cotizaciones listas para cargar BL.
 // Refresca cada 8s para que un aviso de bodega (ej. cubicaje) le llegue casi
@@ -16,7 +31,6 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'abajo' }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const rol = useAuthStore((s) => s.usuario?.rol)
   const [items, setItems] = useState<Notificacion[]>([])
   const [abierto, setAbierto] = useState(false)
   const cajaRef = useRef<HTMLDivElement>(null)
@@ -44,9 +58,9 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
   const noLeidas = items.filter((n) => !n.leida).length
   const locale = LOCALES[i18n.language] || 'es-ES'
 
-  // Al tocar un aviso: lo marca leído y lleva a la ficha de la cotización, donde
-  // Marcela ve el tracking del cliente. La vendedora va a su lista de clientes
-  // (no tiene acceso a la ficha de detalle).
+  // Al tocar un aviso: lo marca leído y lleva directo a la pestaña de la
+  // cotización que describe (según el tipo de aviso), no solo a la ficha en
+  // general -así no hay que adivinar dónde mirar.
   const leerUna = async (n: Notificacion) => {
     setAbierto(false)
     if (!n.leida) {
@@ -54,7 +68,8 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
       marcarLeida(n.id).catch(() => cargar())
     }
     if (n.sesion_id) {
-      navigate(rol === 'admin' ? `/cotizacion/${n.sesion_id}` : '/clientes')
+      const tab = TAB_POR_TIPO[n.tipo]
+      navigate(`/cotizacion/${n.sesion_id}`, tab ? { state: { tab } } : undefined)
     }
   }
 

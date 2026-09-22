@@ -936,7 +936,8 @@
     "guardarCorreccion": "Save correction",
     "pedidoYaGenerado": "The order to the store was already generated.",
     "confirmarReemplazarRevisado": "The warehouse already counted the order to «{{tienda}}». Replacing the file clears that count and the warehouse will have to count it again; they'll be notified. Continue?",
-    "archivoReemplazadoAvisado": "File replaced. The warehouse was notified it needs to count this order again."
+    "archivoReemplazadoAvisado": "File replaced. The warehouse was notified it needs to count this order again.",
+    "errorDescargarLoQueLlego": "Could not download the file"
   },
   "comun": {
     "confirmar": "Confirm",

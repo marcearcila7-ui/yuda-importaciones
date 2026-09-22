@@ -2,13 +2,15 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { CheckCircle2, Clock, FileSpreadsheet, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
+import { CheckCircle2, Clock, FileSpreadsheet, FileText, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
 import { confirmar } from '../store/confirmStore'
 import {
   actualizarFechaTentativa,
   enviarABodegaGuiado,
+  exportarInspeccionExcel,
+  exportarInspeccionPdf,
   getPedidos,
   listarUsuariosBodega,
   reemplazarArchivoPedidoGenerado,
@@ -67,6 +69,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [usuariosBodega, setUsuariosBodega] = useState<UsuarioBodega[]>([])
   const [asignadoAId, setAsignadoAId] = useState('')
   const [reemplazandoArchivo, setReemplazandoArchivo] = useState<Record<string, boolean>>({})
+  const [descargandoLoQueLlego, setDescargandoLoQueLlego] = useState<'excel' | 'pdf' | null>(null)
   // Aunque ya esté confirmado, puede haber que corregir algo antes de generar
   // el pedido a la tienda (el cliente se equivocó, o hay que ajustar algo de
   // último momento). Sin esto, una vez confirmado quedaba de solo lectura.
@@ -136,6 +139,26 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       toast.error(mensaje)
     } finally {
       setEnviandoABodega(false)
+    }
+  }
+
+  // El packing list con las correcciones de bodega ya fusionadas (mismo
+  // formato de la cotización) -no el "Real" por proveedor, que es un
+  // documento aparte para comparar contra la tienda.
+  const descargarLoQueLlego = async (tipo: 'excel' | 'pdf') => {
+    setDescargandoLoQueLlego(tipo)
+    try {
+      const blob = tipo === 'excel' ? await exportarInspeccionExcel(sesion.id) : await exportarInspeccionPdf(sesion.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `LoQueLlego_${sesion.nombre_cliente}.${tipo === 'excel' ? 'xlsx' : 'pdf'}`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      toast.error(t('gestionPedido.errorDescargarLoQueLlego'))
+    } finally {
+      setDescargandoLoQueLlego(null)
     }
   }
 
@@ -311,6 +334,36 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
               <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                 {t('gestionPedido.ordenesTitulo')}
               </p>
+
+              {/* Un solo documento para toda la cotización (no por tienda):
+                  el packing list con las correcciones de bodega ya
+                  fusionadas -mismo formato que ve el cliente. */}
+              {pedidosGenerados.some((pg) => pg.revisado_en_bodega_at) && (
+                <div className="mb-1 flex flex-wrap items-center gap-3 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-success-soft)' }}>
+                  <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--yuda-success-dark)' }}>
+                    <CheckCircle2 size={14} /> {t('gestionPedido.verLoQueLlego')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => descargarLoQueLlego('excel')}
+                    disabled={descargandoLoQueLlego !== null}
+                    className="flex items-center gap-1 text-sm font-medium disabled:opacity-60"
+                    style={{ color: 'var(--yuda-primary)' }}
+                  >
+                    <FileSpreadsheet size={14} /> {descargandoLoQueLlego === 'excel' ? t('common.subiendo') : 'Excel'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => descargarLoQueLlego('pdf')}
+                    disabled={descargandoLoQueLlego !== null}
+                    className="flex items-center gap-1 text-sm font-medium disabled:opacity-60"
+                    style={{ color: 'var(--yuda-primary)' }}
+                  >
+                    <FileText size={14} /> {descargandoLoQueLlego === 'pdf' ? t('common.subiendo') : 'PDF'}
+                  </button>
+                </div>
+              )}
+
               {pedidosGenerados.map((pg) => (
                 <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -335,17 +388,6 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                         </>
                       )}
                     </span>
-                    {pg.revisado_en_bodega_at && pg.archivo_real_xlsx_url && (
-                      <a
-                        href={pg.archivo_real_xlsx_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-medium"
-                        style={{ color: 'var(--yuda-primary)' }}
-                      >
-                        {t('gestionPedido.verLoQueLlego')}
-                      </a>
-                    )}
                   </div>
 
                   {/* Si el archivo que generó el sistema necesita un ajuste a
