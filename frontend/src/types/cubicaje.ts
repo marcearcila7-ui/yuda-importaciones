@@ -13,6 +13,7 @@ export interface CubicajeMensaje {
   autor_nombre: string | null
   mensaje: string | null
   cbm_calculado: number | null
+  cbm_ajustado: number | null
   resultado: string | null
   referencia: string | null
   cajas_afectadas: number | null

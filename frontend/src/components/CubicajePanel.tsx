@@ -30,7 +30,16 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
   useEffect(() => {
     cargar()
     const id = setInterval(cargar, 8000)
-    return () => clearInterval(id)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') cargar()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [cargar])
 
   const enviarRespuesta = async () => {
@@ -55,13 +64,19 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
 
   const detalleMensaje = (m: CubicajeMensaje): string | null => {
     if (m.tipo !== 'reporte') return null
+    const cbmTexto =
+      m.cbm_ajustado != null
+        ? t('cubicaje.cbmAjustadoDetalle', { ajustado: m.cbm_ajustado, calculado: m.cbm_calculado })
+        : null
     if (m.resultado === 'sobra' && m.referencia && m.cajas_afectadas) {
       return t('cubicaje.detalleSobra', { n: m.cajas_afectadas, referencia: m.referencia })
     }
     if (m.resultado === 'falta' && m.espacio_restante_cbm != null) {
-      return t('cubicaje.detalleFalta', { espacio: m.espacio_restante_cbm })
+      return cbmTexto
+        ? `${t('cubicaje.detalleFalta', { espacio: m.espacio_restante_cbm })} · ${cbmTexto}`
+        : t('cubicaje.detalleFalta', { espacio: m.espacio_restante_cbm })
     }
-    return t('cubicaje.detalleAjustado')
+    return cbmTexto ?? t('cubicaje.detalleAjustado')
   }
 
   if (!detalle) {

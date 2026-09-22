@@ -40,6 +40,10 @@ class CubicajeMensaje(Base):
     # Solo se llenan en tipo="reporte": lo que el sistema calculó en ese
     # momento (nunca lo escribe el usuario, evita que quede desactualizado).
     cbm_calculado: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Corrección a mano de bodega, cuando cree que el cálculo automático no
+    # refleja lo real (ej. una medida mal registrada). Va APARTE del
+    # calculado, nunca lo reemplaza: la vendedora ve los dos.
+    cbm_ajustado: Mapped[float | None] = mapped_column(Float, nullable=True)
     resultado: Mapped[str | None] = mapped_column(String, nullable=True)
     # Si resultado="sobra": qué referencia y cuántas cajas quedaron afuera
     # (bodega las elige de las referencias reales del pedido).

@@ -21,6 +21,9 @@ class CubicajeMensajeResponse(BaseModel):
     autor_nombre: str | None = None
     mensaje: str | None = None
     cbm_calculado: float | None = None
+    # Corrección a mano de bodega sobre el calculado (si cree que el
+    # automático no refleja lo real). None = se mandó tal cual lo calculó el sistema.
+    cbm_ajustado: float | None = None
     resultado: str | None = None
     referencia: str | None = None
     cajas_afectadas: int | None = None
@@ -41,11 +44,16 @@ class CubicajeReporteInput(BaseModel):
     """Bodega manda un reporte: elige si sobró (con referencia+cajas) o si
     falta cubicaje (el sistema calcula el espacio restante solo). El
     cbm_calculado y el resultado real los decide siempre el servidor -esto
-    solo dice qué datos adicionales completar."""
+    solo dice qué datos adicionales completar.
+
+    cbm_ajustado es opcional: si bodega cree que el cálculo automático no
+    refleja lo real y lo corrige a mano, va aparte del calculado (nunca lo
+    reemplaza) para que la vendedora vea los dos."""
 
     resultado: str  # "sobra" | "falta" | "ajustado"
     referencia: str | None = None
     cajas_afectadas: int | None = None
+    cbm_ajustado: float | None = None
     nota: str | None = None
 
 

@@ -48,7 +48,19 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
   useEffect(() => {
     cargar()
     const id = setInterval(cargar, 8000)
-    return () => clearInterval(id)
+    // En el celular, el navegador congela los timers cuando la pantalla se
+    // apaga o se cambia de app: al volver, esto refresca de una vez en vez
+    // de esperar hasta 8s (o quedarse pegado si el intervalo se perdió).
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') cargar()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [])
 
   // Cierra el panel al hacer clic fuera

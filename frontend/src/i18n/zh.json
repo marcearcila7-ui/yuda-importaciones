@@ -1158,6 +1158,7 @@
     "responderPlaceholder": "输入回复...",
     "responderBoton": "发送回复",
     "respuestaEnviada": "回复已发送",
-    "errorResponder": "无法发送回复"
+    "errorResponder": "无法发送回复",
+    "cbmAjustadoDetalle": "仓库调整为 {{ajustado}} 立方米(系统计算为 {{calculado}} 立方米)"
   }
 }

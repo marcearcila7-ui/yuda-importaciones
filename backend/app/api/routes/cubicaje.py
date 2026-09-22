@@ -40,12 +40,16 @@ def _sesion_o_404(db: Session, sesion_id: str, usuario: User) -> Sesion:
     return sesion
 
 
-def _resumen_texto(resultado: str, cbm: float, referencia: str | None, cajas: int | None, espacio: float | None) -> str:
+def _resumen_texto(
+    resultado: str, cbm: float, referencia: str | None, cajas: int | None, espacio: float | None,
+    cbm_ajustado: float | None = None,
+) -> str:
+    cbm_texto = f"{cbm_ajustado} m³ (bodega ajustó; el sistema calculó {cbm})" if cbm_ajustado is not None else f"{cbm} m³ calculados"
     if resultado == RESULTADO_SOBRA and referencia and cajas:
-        return f"sobraron {cajas} caja(s) de «{referencia}» ({cbm} m³ calculados)"
+        return f"sobraron {cajas} caja(s) de «{referencia}» ({cbm_texto})"
     if resultado == "falta" and espacio is not None:
-        return f"faltan {espacio} m³ para completar el contenedor ({cbm} m³ calculados)"
-    return f"cubicaje ajustado: {cbm} m³"
+        return f"faltan {espacio} m³ para completar el contenedor ({cbm_texto})"
+    return f"cubicaje ajustado: {cbm_texto}"
 
 
 def _mensaje_response(m: CubicajeMensaje, autores: dict[str, User]) -> CubicajeMensajeResponse:
@@ -57,6 +61,7 @@ def _mensaje_response(m: CubicajeMensaje, autores: dict[str, User]) -> CubicajeM
         autor_nombre=autor.nombre if autor else None,
         mensaje=m.mensaje,
         cbm_calculado=m.cbm_calculado,
+        cbm_ajustado=m.cbm_ajustado,
         resultado=m.resultado,
         referencia=m.referencia,
         cajas_afectadas=m.cajas_afectadas,
@@ -130,12 +135,22 @@ def enviar_reporte_cubicaje(
     elif datos.resultado == "falta":
         espacio_restante = round(LIMITE_MAX_CBM - cbm, 4)
 
+    # cbm_ajustado es la corrección a mano de bodega: solo se guarda si de
+    # verdad difiere del calculado (si mandan el mismo número, no aporta nada
+    # aparte y solo confundiría mostrar "bodega ajustó a lo mismo").
+    cbm_ajustado = (
+        round(datos.cbm_ajustado, 4)
+        if datos.cbm_ajustado is not None and round(datos.cbm_ajustado, 4) != cbm
+        else None
+    )
+
     mensaje = CubicajeMensaje(
         sesion_id=sesion_id,
         tipo=TIPO_REPORTE,
         autor_id=usuario.id,
         mensaje=(datos.nota or "").strip() or None,
         cbm_calculado=cbm,
+        cbm_ajustado=cbm_ajustado,
         resultado=datos.resultado,
         referencia=referencia,
         cajas_afectadas=cajas_afectadas,
@@ -144,7 +159,7 @@ def enviar_reporte_cubicaje(
     db.add(mensaje)
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
-    resumen_texto = _resumen_texto(datos.resultado, cbm, referencia, cajas_afectadas, espacio_restante)
+    resumen_texto = _resumen_texto(datos.resultado, cbm, referencia, cajas_afectadas, espacio_restante, cbm_ajustado)
     avisar_cubicaje_a_vendedora(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, resumen_texto)
     db.commit()
     db.refresh(mensaje)

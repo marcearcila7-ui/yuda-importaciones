@@ -1158,6 +1158,7 @@
     "responderPlaceholder": "Escribe tu respuesta...",
     "responderBoton": "Enviar respuesta",
     "respuestaEnviada": "Respuesta enviada",
-    "errorResponder": "No se pudo enviar la respuesta"
+    "errorResponder": "No se pudo enviar la respuesta",
+    "cbmAjustadoDetalle": "bodega ajustó a {{ajustado}} m³ (el sistema había calculado {{calculado}} m³)"
   }
 }

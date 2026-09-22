@@ -1158,6 +1158,7 @@
     "responderPlaceholder": "Write your reply...",
     "responderBoton": "Send reply",
     "respuestaEnviada": "Reply sent",
-    "errorResponder": "Could not send the reply"
+    "errorResponder": "Could not send the reply",
+    "cbmAjustadoDetalle": "warehouse adjusted to {{ajustado}} m³ (the system had calculated {{calculado}} m³)"
   }
 }
