@@ -343,7 +343,9 @@
     "exportar": "导出 CSV",
     "cargarMas": "加载更多",
     "cargandoMas": "加载中…",
-    "vendedora": "销售"
+    "vendedora": "销售",
+    "filtrandoPorVendedora": "仅显示：{{nombre}}",
+    "quitarFiltro": "清除筛选"
   },
   "pedidoCliente": {
     "titulo": "客户订单",
@@ -472,7 +474,8 @@
     "esteMes": "本月",
     "panoramaBodega": "仓库与发货概览",
     "esperandoBodega": "等待仓库接收",
-    "esperandoAprobacionCliente": "等待客户批准"
+    "esperandoAprobacionCliente": "等待客户批准",
+    "verCotizacionesDe": "查看{{nombre}}本月的报价"
   },
   "cotizacion": {
     "titulo": "导出客户报价单",

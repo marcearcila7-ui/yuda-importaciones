@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import axios from 'axios'
@@ -60,12 +60,34 @@ function PageHeader({ titulo, accesorio }: { titulo: string; accesorio?: ReactNo
 
 // Cifra del mes, en texto y sin tarjeta. Antes cada una vivia en su propia
 // tarjeta blanca con icono, y seis tarjetas seguidas tapaban lo importante.
-function DatoDelMes({ etiqueta, valor }: { etiqueta: string; valor: string | number }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>{valor}</span>
+// Si se le pasa onClick, se ve y se comporta como un enlace: Marcela pidió
+// poder tocar estos números para ir directo al detalle en vez de solo mirarlos.
+function DatoDelMes({
+  etiqueta,
+  valor,
+  onClick,
+}: {
+  etiqueta: string
+  valor: string | number
+  onClick?: () => void
+}) {
+  const contenido = (
+    <>
+      <span style={{ fontWeight: 700, fontSize: 22, color: onClick ? 'var(--yuda-primary)' : 'var(--yuda-accent)' }}>
+        {valor}
+      </span>
       <span className="text-sm leading-tight" style={{ color: 'var(--yuda-text-secondary)' }}>{etiqueta}</span>
-    </div>
+    </>
+  )
+  if (!onClick) return <div className="flex flex-col gap-0.5">{contenido}</div>
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-start gap-0.5 text-left underline-offset-4 hover:underline"
+    >
+      {contenido}
+    </button>
   )
 }
 
@@ -82,8 +104,19 @@ function SectionCard({ titulo, children, id }: { titulo: string; children: React
   )
 }
 
+// Primer y último día del mes actual, en formato YYYY-MM-DD (lo que espera
+// el filtro de fechas del Historial).
+function rangoMesActual(): { desde: string; hasta: string } {
+  const hoy = new Date()
+  const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  const hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  return { desde: fmt(desde), hasta: fmt(hasta) }
+}
+
 function Dashboard() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const { usuario } = useAuthStore()
   const {
@@ -284,7 +317,14 @@ function Dashboard() {
             {t('metricas.esteMes')}
           </h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3 lg:grid-cols-6">
-            <DatoDelMes etiqueta={t('metricas.cotizacionesMes')} valor={metricas.total_sesiones_mes} />
+            <DatoDelMes
+              etiqueta={t('metricas.cotizacionesMes')}
+              valor={metricas.total_sesiones_mes}
+              onClick={() => {
+                const { desde, hasta } = rangoMesActual()
+                navigate('/historial', { state: { fecha_desde: desde, fecha_hasta: hasta } })
+              }}
+            />
             <DatoDelMes etiqueta={t('metricas.itemsProcesados')} valor={metricas.total_items_mes} />
             <DatoDelMes etiqueta={t('metricas.proveedoresUnicos')} valor={metricas.proveedores_unicos_mes} />
             <DatoDelMes etiqueta={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} />
@@ -307,10 +347,12 @@ function Dashboard() {
             <DatoDelMes
               etiqueta={t('metricas.esperandoBodega')}
               valor={metricas.pedidos_esperando_bodega}
+              onClick={() => navigate('/bodega-seguimiento', { state: { estado: 'proveedor_recibio' } })}
             />
             <DatoDelMes
               etiqueta={t('metricas.esperandoAprobacionCliente')}
               valor={metricas.pedidos_esperando_aprobacion_cliente}
+              onClick={() => navigate('/bodega-seguimiento', { state: { estado: 'en_bodega' } })}
             />
           </div>
         </section>

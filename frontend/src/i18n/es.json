@@ -343,7 +343,9 @@
     "exportar": "Exportar CSV",
     "cargarMas": "Cargar más",
     "cargandoMas": "Cargando…",
-    "vendedora": "Vendedora"
+    "vendedora": "Vendedora",
+    "filtrandoPorVendedora": "Mostrando solo lo de: {{nombre}}",
+    "quitarFiltro": "Quitar filtro"
   },
   "pedidoCliente": {
     "titulo": "Pedido del cliente",
@@ -472,7 +474,8 @@
     "esteMes": "Este mes",
     "panoramaBodega": "Panorama de bodega y despacho",
     "esperandoBodega": "Esperando que bodega los reciba",
-    "esperandoAprobacionCliente": "Esperando aprobación del cliente"
+    "esperandoAprobacionCliente": "Esperando aprobación del cliente",
+    "verCotizacionesDe": "Ver las cotizaciones de {{nombre}} de este mes"
   },
   "cotizacion": {
     "titulo": "Exportar cotización para el cliente",

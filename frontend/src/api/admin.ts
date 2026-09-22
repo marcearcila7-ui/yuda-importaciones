@@ -73,6 +73,7 @@ export async function getHistorial(filtros?: {
   fecha_desde?: string
   fecha_hasta?: string
   nombre_cliente?: string
+  vendedora_id?: string
   limit?: number
   offset?: number
 }): Promise<SesionHistorial[]> {

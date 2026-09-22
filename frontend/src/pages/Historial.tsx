@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Download } from 'lucide-react'
+import { Download, X } from 'lucide-react'
 import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
@@ -17,28 +17,51 @@ const inputClase =
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
+// Lo que puede llegar por navegación desde el dashboard: "ver las cotizaciones
+// de este mes" o "ver las cotizaciones de esta vendedora" sin tener que
+// escribir los filtros a mano.
+interface FiltrosDesdeNavegacion {
+  fecha_desde?: string
+  fecha_hasta?: string
+  vendedora_id?: string
+  vendedora_nombre?: string
+}
+
 function Historial() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t, i18n } = useTranslation()
+  const estadoInicial = location.state as FiltrosDesdeNavegacion | null
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
   const [cargando, setCargando] = useState(false)
   const [cargandoMas, setCargandoMas] = useState(false)
   const [hayMas, setHayMas] = useState(false)
-  const [fechaDesde, setFechaDesde] = useState('')
-  const [fechaHasta, setFechaHasta] = useState('')
+  const [fechaDesde, setFechaDesde] = useState(estadoInicial?.fecha_desde || '')
+  const [fechaHasta, setFechaHasta] = useState(estadoInicial?.fecha_hasta || '')
   const [nombreCliente, setNombreCliente] = useState('')
+  // Filtro por vendedora: no tiene su propio input, solo llega desde "Por
+  // vendedora" del dashboard. Se muestra como una etiqueta que se puede quitar.
+  const [vendedoraFiltro, setVendedoraFiltro] = useState<{ id: string; nombre: string } | null>(
+    estadoInicial?.vendedora_id
+      ? { id: estadoInicial.vendedora_id, nombre: estadoInicial.vendedora_nombre || '' }
+      : null,
+  )
 
   // Cotizaciones por página; se piden de a tandas con "Cargar más" para no traer
   // cientos de golpe. Los filtros reinician a la primera página.
   const PAGINA = 50
 
-  const buscar = async () => {
+  // Acepta un id de vendedora explícito para el caso de "quitar el filtro":
+  // sin esto, limpiar el estado y buscar en el mismo clic seguía mandando el
+  // filtro viejo (el cierre de la función no ve el setState hasta el próximo render).
+  const buscar = async (vendedoraIdOverride?: string | null) => {
     setCargando(true)
     try {
       const data = await getHistorial({
         fecha_desde: fechaDesde || undefined,
         fecha_hasta: fechaHasta || undefined,
         nombre_cliente: nombreCliente || undefined,
+        vendedora_id: (vendedoraIdOverride !== undefined ? vendedoraIdOverride : vendedoraFiltro?.id) || undefined,
         limit: PAGINA,
         offset: 0,
       })
@@ -49,6 +72,11 @@ function Historial() {
     }
   }
 
+  const quitarFiltroVendedora = () => {
+    setVendedoraFiltro(null)
+    buscar(null)
+  }
+
   const cargarMas = async () => {
     setCargandoMas(true)
     try {
@@ -56,6 +84,7 @@ function Historial() {
         fecha_desde: fechaDesde || undefined,
         fecha_hasta: fechaHasta || undefined,
         nombre_cliente: nombreCliente || undefined,
+        vendedora_id: vendedoraFiltro?.id,
         limit: PAGINA,
         offset: sesiones.length,
       })
@@ -150,6 +179,19 @@ function Historial() {
         </p>
       </div>
 
+      {/* Filtro por vendedora: solo aparece si se llegó desde "Por vendedora" del dashboard */}
+      {vendedoraFiltro && (
+        <div
+          className="flex w-fit items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
+          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+        >
+          {t('historial.filtrandoPorVendedora', { nombre: vendedoraFiltro.nombre })}
+          <button type="button" onClick={quitarFiltroVendedora} aria-label={t('historial.quitarFiltro')}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Filtros */}
       <div className="card flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -166,7 +208,7 @@ function Historial() {
         </label>
         <button
           type="button"
-          onClick={buscar}
+          onClick={() => buscar()}
           disabled={cargando}
           className="font-semibold text-white disabled:opacity-60"
           style={{ minHeight: 48, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px', fontSize: 16 }}

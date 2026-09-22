@@ -343,7 +343,9 @@
     "exportar": "Export CSV",
     "cargarMas": "Load more",
     "cargandoMas": "Loading…",
-    "vendedora": "Sales rep"
+    "vendedora": "Sales rep",
+    "filtrandoPorVendedora": "Showing only: {{nombre}}",
+    "quitarFiltro": "Clear filter"
   },
   "pedidoCliente": {
     "titulo": "Client's order",
@@ -472,7 +474,8 @@
     "esteMes": "This month",
     "panoramaBodega": "Warehouse and shipping overview",
     "esperandoBodega": "Waiting for the warehouse to receive",
-    "esperandoAprobacionCliente": "Waiting for client approval"
+    "esperandoAprobacionCliente": "Waiting for client approval",
+    "verCotizacionesDe": "View {{nombre}}'s quotations for this month"
   },
   "cotizacion": {
     "titulo": "Export quotation for the client",

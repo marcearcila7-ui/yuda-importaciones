@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
@@ -29,12 +29,17 @@ const ORDEN_ESTADOS = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_dest
 function BodegaSeguimiento() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Llega preseleccionado desde "Panorama de bodega y despacho" del dashboard:
+  // por ejemplo, tocar "esperando aprobación del cliente" abre esta pantalla
+  // ya filtrada en "en_bodega", en vez de que Marcela tenga que elegirlo ella.
+  const estadoInicial = (location.state as { estado?: string } | null)?.estado || ''
   const [pedidos, setPedidos] = useState<PedidoBodegaSeguimiento[]>([])
   const [usuariosBodega, setUsuariosBodega] = useState<UsuarioBodega[]>([])
   const [cargando, setCargando] = useState(true)
   const [reasignando, setReasignando] = useState<Record<string, boolean>>({})
   const [busqueda, setBusqueda] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState(estadoInicial)
   const [filtroAsignado, setFiltroAsignado] = useState('')
 
   useEffect(() => {

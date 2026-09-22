@@ -724,6 +724,10 @@ def historial_sesiones(
     fecha_desde: Optional[date] = Query(None),
     fecha_hasta: Optional[date] = Query(None),
     nombre_cliente: Optional[str] = Query(None),
+    # Para entrar directo desde "Por vendedora" del dashboard: solo las
+    # cotizaciones de esa vendedora, sin tener que adivinar el nombre en el
+    # filtro de texto.
+    vendedora_id: Optional[str] = Query(None),
     # Paginación opcional: sin `limit` devuelve todo (comportamiento anterior);
     # el frontend pide de a páginas con "Cargar más" para no traer cientos de golpe.
     limit: Optional[int] = Query(None, ge=1, le=200),
@@ -739,6 +743,8 @@ def historial_sesiones(
         query = query.filter(Sesion.fecha <= fecha_hasta)
     if nombre_cliente:
         query = query.filter(Sesion.nombre_cliente.ilike(f"%{nombre_cliente}%"))
+    if vendedora_id:
+        query = query.filter(Sesion.user_id == vendedora_id)
 
     query = query.order_by(Sesion.fecha.desc())
     if limit is not None:
