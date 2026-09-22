@@ -95,3 +95,7 @@ class SeguimientoPedido(Base):
     bodega_asignado_por_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("users.id"), nullable=True
     )
+    # Bodega puede sacar un pedido de su propia cola (ej. ya está completado
+    # hace rato) sin borrar nada del sistema: solo deja de aparecer en sus 4
+    # pestañas, para que la lista no se llene de trabajo ya resuelto.
+    bodega_archivado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

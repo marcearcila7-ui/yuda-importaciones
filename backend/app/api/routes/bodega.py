@@ -142,27 +142,40 @@ def listar_pedidos_bodega(
     usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
 ) -> list[BodegaPedidoResumen]:
-    """Cola de bodega, en 3 vistas para que varias personas se repartan el
-    trabajo sin pisarse: "sin_asignar" (nadie lo tomó todavía, lo ven todos),
-    "asignados" (ya alguien lo tomó, se ve a quién) y "revisado" (ya se marcó
-    como recibido y listo para envío)."""
-    if vista not in ("sin_asignar", "asignados", "revisado"):
+    """Cola de bodega, en 4 vistas que reflejan el flujo real de un pedido:
+    "sin_asignar" (nadie lo tomó todavía, lo ven todos), "asignados" (ya
+    alguien lo tomó, se ve a quién), "pendiente_cliente" (bodega ya lo revisó
+    y lo marcó listo, pero el cliente todavía no aprueba el despacho) y
+    "completados" (el cliente ya aprobó, o el despacho ya avanzó a tránsito).
+    Un pedido archivado (ver /archivar) no aparece en ninguna."""
+    if vista not in ("sin_asignar", "asignados", "pendiente_cliente", "completados"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Vista inválida")
-    estado = "en_bodega" if vista == "revisado" else "proveedor_recibio"
 
     # OJO: no filtrar por Sesion.pedido_confirmado_at. Ese campo se borra si el
     # cliente vuelve a su portal y reenvía cantidades (aunque sea después de
     # que la vendedora ya mandó el pedido a bodega), y eso NO deshace el envío
     # a bodega — solo dejaba el pedido invisible acá sin ningún aviso. Lo único
     # que de verdad indica que bodega debe verlo es la etapa del seguimiento.
-    filas = (
+    query = (
         db.query(Sesion, SeguimientoPedido, User)
         .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
         .outerjoin(User, User.id == Sesion.user_id)
-        .filter(SeguimientoPedido.estado == estado)
-        .order_by(SeguimientoPedido.updated_at.asc())
-        .all()
+        .filter(SeguimientoPedido.bodega_archivado_en.is_(None))
     )
+    if vista in ("sin_asignar", "asignados"):
+        query = query.filter(SeguimientoPedido.estado == "proveedor_recibio")
+    elif vista == "pendiente_cliente":
+        query = query.filter(
+            SeguimientoPedido.estado == "en_bodega",
+            SeguimientoPedido.cliente_aprobo_despacho_at.is_(None),
+        )
+    else:  # completados
+        query = query.filter(
+            (SeguimientoPedido.cliente_aprobo_despacho_at.isnot(None))
+            | (SeguimientoPedido.estado.in_(["en_transito", "en_destino", "entregado"]))
+        )
+    filas = query.order_by(SeguimientoPedido.updated_at.asc()).all()
+
     if vista == "sin_asignar":
         filas = [f for f in filas if f[1].bodega_asignado_a_id is None]
     elif vista == "asignados":
@@ -250,6 +263,24 @@ def asignar_pedido_bodega(
         bodega_asignado_a_id=seg.bodega_asignado_a_id,
         bodega_asignado_a_nombre=asignado.nombre if asignado else None,
     )
+
+
+@router.post("/pedidos/{sesion_id}/archivar")
+def archivar_pedido_bodega(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Saca un pedido de la cola de bodega (no borra nada del sistema: la
+    cotización, el seguimiento y todo lo demás siguen intactos). Sirve para
+    que la lista no se llene de trabajo ya resuelto hace tiempo."""
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este pedido todavía no tiene seguimiento")
+    seg.bodega_archivado_en = datetime.now(timezone.utc)
+    registrar_actividad_bodega(db, sesion_id, usuario.id, "archivado", "Se sacó de la cola de bodega")
+    db.commit()
+    return {"detail": "Pedido archivado"}
 
 
 @router.get("/pedidos/{sesion_id}", response_model=BodegaPedidoDetalle)
