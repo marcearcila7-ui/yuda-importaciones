@@ -55,3 +55,33 @@ def marcar_todas_leidas(
     ).update({Notificacion.leida: True})
     db.commit()
     return {"ok": True}
+
+
+@router.delete("/todas")
+def eliminar_todas(
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Borra todos los avisos del usuario (leídos o no)"""
+    db.query(Notificacion).filter(Notificacion.usuario_id == usuario.id).delete()
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{notificacion_id}")
+def eliminar_notificacion(
+    notificacion_id: str,
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Borra un aviso puntual del usuario"""
+    notif = (
+        db.query(Notificacion)
+        .filter(Notificacion.id == notificacion_id, Notificacion.usuario_id == usuario.id)
+        .first()
+    )
+    if notif is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Aviso no encontrado")
+    db.delete(notif)
+    db.commit()
+    return {"ok": True}

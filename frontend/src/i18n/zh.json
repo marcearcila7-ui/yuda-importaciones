@@ -890,7 +890,10 @@
   "notif": {
     "titulo": "通知",
     "marcarTodas": "全部标为已读",
-    "sinAvisos": "暂无通知"
+    "sinAvisos": "暂无通知",
+    "eliminar": "删除通知",
+    "eliminarTodas": "全部删除",
+    "confirmarEliminarTodas": "删除所有通知?此操作无法撤销。"
   },
   "gestionPedido": {
     "titulo": "客户订单",

@@ -17,3 +17,11 @@ export async function marcarLeida(id: string): Promise<void> {
 export async function marcarTodasLeidas(): Promise<void> {
   await apiClient.post('/notificaciones/leer-todas')
 }
+
+export async function eliminarNotificacion(id: string): Promise<void> {
+  await apiClient.delete(`/notificaciones/${id}`)
+}
+
+export async function eliminarTodasNotificaciones(): Promise<void> {
+  await apiClient.delete('/notificaciones/todas')
+}

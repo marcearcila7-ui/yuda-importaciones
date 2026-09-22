@@ -890,7 +890,10 @@
   "notif": {
     "titulo": "Avisos",
     "marcarTodas": "Marcar todas leídas",
-    "sinAvisos": "No tienes avisos"
+    "sinAvisos": "No tienes avisos",
+    "eliminar": "Eliminar aviso",
+    "eliminarTodas": "Eliminar todas",
+    "confirmarEliminarTodas": "¿Eliminar todos los avisos? Esta acción no se puede deshacer."
   },
   "gestionPedido": {
     "titulo": "Pedido del cliente",

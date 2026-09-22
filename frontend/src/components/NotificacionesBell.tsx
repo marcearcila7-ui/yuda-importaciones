@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Bell, Check } from 'lucide-react'
-import { getNotificaciones, marcarLeida, marcarTodasLeidas } from '../api/notificaciones'
+import { Bell, Check, Trash2 } from 'lucide-react'
+import {
+  eliminarNotificacion,
+  eliminarTodasNotificaciones,
+  getNotificaciones,
+  marcarLeida,
+  marcarTodasLeidas,
+} from '../api/notificaciones'
 import type { Notificacion } from '../types/notificacion'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
@@ -82,6 +88,18 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
     }
   }
 
+  const eliminarUna = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    setItems((xs) => xs.filter((x) => x.id !== id))
+    eliminarNotificacion(id).catch(() => cargar())
+  }
+
+  const eliminarTodas = () => {
+    if (!window.confirm(t('notif.confirmarEliminarTodas'))) return
+    setItems([])
+    eliminarTodasNotificaciones().catch(() => cargar())
+  }
+
   return (
     <div className="relative" ref={cajaRef}>
       <button
@@ -109,20 +127,32 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
           }`}
           style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
         >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
             <p className="text-sm font-bold" style={{ color: 'var(--yuda-accent)' }}>
               {t('notif.titulo')}
             </p>
-            {noLeidas > 0 && (
-              <button
-                type="button"
-                onClick={leerTodas}
-                className="flex items-center gap-1 text-xs font-medium"
-                style={{ color: 'var(--yuda-primary)' }}
-              >
-                <Check size={14} /> {t('notif.marcarTodas')}
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {noLeidas > 0 && (
+                <button
+                  type="button"
+                  onClick={leerTodas}
+                  className="flex items-center gap-1 text-xs font-medium"
+                  style={{ color: 'var(--yuda-primary)' }}
+                >
+                  <Check size={14} /> {t('notif.marcarTodas')}
+                </button>
+              )}
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={eliminarTodas}
+                  className="flex items-center gap-1 text-xs font-medium"
+                  style={{ color: 'var(--yuda-text-secondary)' }}
+                >
+                  <Trash2 size={14} /> {t('notif.eliminarTodas')}
+                </button>
+              )}
+            </div>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {items.length === 0 ? (
@@ -131,30 +161,43 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
               </p>
             ) : (
               items.map((n) => (
-                <button
+                <div
                   key={n.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => leerUna(n)}
-                  className="flex w-full flex-col gap-1 border-b border-gray-50 px-4 py-3 text-left"
+                  onKeyDown={(e) => e.key === 'Enter' && leerUna(n)}
+                  className="flex w-full cursor-pointer items-start gap-2 border-b border-gray-50 px-4 py-3 text-left"
                   style={{ backgroundColor: n.leida ? 'var(--yuda-white)' : 'var(--yuda-primary-soft)' }}
                 >
-                  <div className="flex items-center gap-2">
-                    {!n.leida && (
-                      <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-primary)' }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {!n.leida && (
+                        <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-primary)' }} />
+                      )}
+                      <span className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                        {n.titulo}
+                      </span>
+                    </div>
+                    {n.mensaje && (
+                      <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {n.mensaje}
+                      </p>
                     )}
-                    <span className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                      {n.titulo}
-                    </span>
+                    <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {new Date(n.created_at).toLocaleString(locale)}
+                    </p>
                   </div>
-                  {n.mensaje && (
-                    <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {n.mensaje}
-                    </span>
-                  )}
-                  <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                    {new Date(n.created_at).toLocaleString(locale)}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={(e) => eliminarUna(e, n.id)}
+                    aria-label={t('notif.eliminar')}
+                    className="flex-shrink-0 rounded p-1"
+                    style={{ color: 'var(--yuda-text-secondary)' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               ))
             )}
           </div>

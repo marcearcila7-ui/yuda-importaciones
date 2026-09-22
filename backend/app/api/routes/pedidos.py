@@ -354,6 +354,90 @@ def generar_pedidos(
     return GenerarPedidosResponse(pedidos=resultados, warnings=warnings)
 
 
+@router.get("/bodega-resumen", response_model=list[PedidoBodegaSeguimientoResumen])
+def bodega_resumen(
+    usuario: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[PedidoBodegaSeguimientoResumen]:
+    """Panel de control para la vendedora: todo lo que se ha enviado a
+    bodega, sin importar el cliente. Qué le devolvió bodega, quién lo tiene
+    asignado y quién actualizó qué. Admin ve todas; la vendedora solo las
+    suyas (dueña o colaboradora).
+
+    Registrada ANTES de "/{sesion_id}": si no, esa ruta con parámetro
+    capturaba "/bodega-resumen" como si "bodega-resumen" fuera un sesion_id,
+    nunca encontraba la sesión y devolvía 404 -exactamente lo que le pasaba
+    a Marcela en "Seguimiento de bodega"."""
+    exigir_roles(usuario, "admin", "vendedora")
+
+    query = (
+        db.query(Sesion, SeguimientoPedido)
+        .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
+        .filter(SeguimientoPedido.estado.in_(ESTADOS_ENVIO[ESTADOS_ENVIO.index("proveedor_recibio"):]))
+    )
+    if usuario.rol.value == "vendedora":
+        compartidos = db.query(ClienteVendedora.cliente_id).filter(
+            ClienteVendedora.vendedora_id == usuario.id
+        )
+        clientes_con_acceso = db.query(Cliente.id).filter(
+            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
+        )
+        query = query.filter(
+            (Sesion.user_id == usuario.id) | (Sesion.cliente_id.in_(clientes_con_acceso))
+        )
+
+    filas = query.order_by(SeguimientoPedido.updated_at.desc()).all()
+    if not filas:
+        return []
+
+    sesion_ids = [s.id for s, _ in filas]
+    asignado_ids = {seg.bodega_asignado_a_id for _, seg in filas if seg.bodega_asignado_a_id}
+    asignados_por_id = (
+        {u.id: u for u in db.query(User).filter(User.id.in_(asignado_ids)).all()} if asignado_ids else {}
+    )
+
+    ordenes_por_sesion: dict[str, list[PedidoGenerado]] = {}
+    for pg in db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id.in_(sesion_ids)).all():
+        ordenes_por_sesion.setdefault(pg.sesion_id, []).append(pg)
+
+    actividad_por_sesion: dict[str, list[ActividadBodegaResponse]] = {}
+    actividad_filas = (
+        db.query(PedidoBodegaActividad, User)
+        .outerjoin(User, User.id == PedidoBodegaActividad.usuario_id)
+        .filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids))
+        .order_by(PedidoBodegaActividad.created_at.desc())
+        .all()
+    )
+    for a, u in actividad_filas:
+        lista = actividad_por_sesion.setdefault(a.sesion_id, [])
+        if len(lista) < 5:
+            lista.append(
+                ActividadBodegaResponse(
+                    usuario_nombre=u.nombre if u else None, tipo=a.tipo, detalle=a.detalle, created_at=a.created_at
+                )
+            )
+
+    resultado: list[PedidoBodegaSeguimientoResumen] = []
+    for sesion, seg in filas:
+        ordenes = ordenes_por_sesion.get(sesion.id, [])
+        asignado = asignados_por_id.get(seg.bodega_asignado_a_id) if seg.bodega_asignado_a_id else None
+        resultado.append(
+            PedidoBodegaSeguimientoResumen(
+                sesion_id=sesion.id,
+                numero=f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}",
+                cliente_nombre=sesion.nombre_cliente,
+                fecha=sesion.fecha,
+                estado_envio=seg.estado,
+                total_ordenes=len(ordenes),
+                ordenes_revisadas=sum(1 for o in ordenes if o.revisado_en_bodega_at is not None),
+                bodega_asignado_a_id=seg.bodega_asignado_a_id,
+                bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+                actividad_reciente=actividad_por_sesion.get(sesion.id, []),
+            )
+        )
+    return resultado
+
+
 @router.get("/{sesion_id}", response_model=list[PedidoGeneradoResponse])
 def listar_pedidos(
     sesion_id: str,
@@ -588,82 +672,3 @@ def enviar_a_bodega(
         db.refresh(resultado)
 
     return SeguimientoResponse.model_validate(resultado).model_dump()
-
-
-@router.get("/bodega-resumen", response_model=list[PedidoBodegaSeguimientoResumen])
-def bodega_resumen(
-    usuario: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-) -> list[PedidoBodegaSeguimientoResumen]:
-    """Panel de control para la vendedora: todo lo que se ha enviado a
-    bodega, sin importar el cliente. Qué le devolvió bodega, quién lo tiene
-    asignado y quién actualizó qué. Admin ve todas; la vendedora solo las
-    suyas (dueña o colaboradora)."""
-    exigir_roles(usuario, "admin", "vendedora")
-
-    query = (
-        db.query(Sesion, SeguimientoPedido)
-        .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
-        .filter(SeguimientoPedido.estado.in_(ESTADOS_ENVIO[ESTADOS_ENVIO.index("proveedor_recibio"):]))
-    )
-    if usuario.rol.value == "vendedora":
-        compartidos = db.query(ClienteVendedora.cliente_id).filter(
-            ClienteVendedora.vendedora_id == usuario.id
-        )
-        clientes_con_acceso = db.query(Cliente.id).filter(
-            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
-        )
-        query = query.filter(
-            (Sesion.user_id == usuario.id) | (Sesion.cliente_id.in_(clientes_con_acceso))
-        )
-
-    filas = query.order_by(SeguimientoPedido.updated_at.desc()).all()
-    if not filas:
-        return []
-
-    sesion_ids = [s.id for s, _ in filas]
-    asignado_ids = {seg.bodega_asignado_a_id for _, seg in filas if seg.bodega_asignado_a_id}
-    asignados_por_id = (
-        {u.id: u for u in db.query(User).filter(User.id.in_(asignado_ids)).all()} if asignado_ids else {}
-    )
-
-    ordenes_por_sesion: dict[str, list[PedidoGenerado]] = {}
-    for pg in db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id.in_(sesion_ids)).all():
-        ordenes_por_sesion.setdefault(pg.sesion_id, []).append(pg)
-
-    actividad_por_sesion: dict[str, list[ActividadBodegaResponse]] = {}
-    actividad_filas = (
-        db.query(PedidoBodegaActividad, User)
-        .outerjoin(User, User.id == PedidoBodegaActividad.usuario_id)
-        .filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids))
-        .order_by(PedidoBodegaActividad.created_at.desc())
-        .all()
-    )
-    for a, u in actividad_filas:
-        lista = actividad_por_sesion.setdefault(a.sesion_id, [])
-        if len(lista) < 5:
-            lista.append(
-                ActividadBodegaResponse(
-                    usuario_nombre=u.nombre if u else None, tipo=a.tipo, detalle=a.detalle, created_at=a.created_at
-                )
-            )
-
-    resultado: list[PedidoBodegaSeguimientoResumen] = []
-    for sesion, seg in filas:
-        ordenes = ordenes_por_sesion.get(sesion.id, [])
-        asignado = asignados_por_id.get(seg.bodega_asignado_a_id) if seg.bodega_asignado_a_id else None
-        resultado.append(
-            PedidoBodegaSeguimientoResumen(
-                sesion_id=sesion.id,
-                numero=f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}",
-                cliente_nombre=sesion.nombre_cliente,
-                fecha=sesion.fecha,
-                estado_envio=seg.estado,
-                total_ordenes=len(ordenes),
-                ordenes_revisadas=sum(1 for o in ordenes if o.revisado_en_bodega_at is not None),
-                bodega_asignado_a_id=seg.bodega_asignado_a_id,
-                bodega_asignado_a_nombre=asignado.nombre if asignado else None,
-                actividad_reciente=actividad_por_sesion.get(sesion.id, []),
-            )
-        )
-    return resultado

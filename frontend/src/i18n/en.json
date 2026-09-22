@@ -890,7 +890,10 @@
   "notif": {
     "titulo": "Notifications",
     "marcarTodas": "Mark all read",
-    "sinAvisos": "No notifications"
+    "sinAvisos": "No notifications",
+    "eliminar": "Delete alert",
+    "eliminarTodas": "Delete all",
+    "confirmarEliminarTodas": "Delete all alerts? This cannot be undone."
   },
   "gestionPedido": {
     "titulo": "Client's order",
