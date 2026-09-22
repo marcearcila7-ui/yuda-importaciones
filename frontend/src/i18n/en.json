@@ -342,7 +342,8 @@
     "errorEliminar": "Could not delete the quotation",
     "exportar": "Export CSV",
     "cargarMas": "Load more",
-    "cargandoMas": "Loading…"
+    "cargandoMas": "Loading…",
+    "vendedora": "Sales rep"
   },
   "pedidoCliente": {
     "titulo": "Client's order",

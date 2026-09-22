@@ -660,6 +660,17 @@ def historial_sesiones(
         query = query.limit(limit).offset(offset)
     sesiones = query.all()
 
+    # Marcela y la contadora ven el historial de TODAS las vendedoras
+    # mezclado: sin el nombre de quién es cada cotización, "Cliente" se
+    # confunde fácil con una vendedora (ej. varias cotizaciones de un mismo
+    # nombre corto, o un nombre que también es el de alguien del equipo).
+    vendedora_ids = {s.user_id for s in sesiones if s.user_id}
+    vendedoras_por_id = (
+        {u.id: u.nombre for u in db.query(User).filter(User.id.in_(vendedora_ids)).all()}
+        if vendedora_ids
+        else {}
+    )
+
     resultado = []
     for sesion in sesiones:
         items = db.query(Item).filter(Item.sesion_id == sesion.id).all()
@@ -677,6 +688,7 @@ def historial_sesiones(
             {
                 "id": sesion.id,
                 "nombre_cliente": sesion.nombre_cliente,
+                "vendedora_nombre": vendedoras_por_id.get(sesion.user_id),
                 "fecha": sesion.fecha,
                 "total_items": total_items,
                 "total_rmb": total_rmb,

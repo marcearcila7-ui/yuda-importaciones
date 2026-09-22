@@ -22,6 +22,7 @@ export interface ConfiguracionResponse {
 export interface SesionHistorial {
   id: string
   nombre_cliente: string
+  vendedora_nombre: string | null
   fecha: string
   total_items: number
   total_rmb: number

@@ -73,6 +73,7 @@ function Historial() {
     const cols = [
       t('historial.fecha'),
       t('historial.cliente'),
+      t('historial.vendedora'),
       t('historial.items'),
       t('historial.totalRmb'),
       t('historial.totalUsd'),
@@ -84,6 +85,7 @@ function Historial() {
       [
         s.fecha,
         s.nombre_cliente,
+        s.vendedora_nombre || '',
         s.total_items,
         s.total_rmb.toFixed(2),
         s.total_usd.toFixed(2),
@@ -195,6 +197,7 @@ function Historial() {
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.fecha')}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.cliente')}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t('historial.vendedora')}</th>
                 <th className="px-4 py-3 text-right font-semibold">{t('historial.items')}</th>
                 <th className="px-4 py-3 text-right font-semibold">{t('historial.totalRmb')}</th>
                 <th className="px-4 py-3 text-right font-semibold">{t('historial.totalUsd')}</th>
@@ -208,6 +211,9 @@ function Historial() {
                 <tr key={s.id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
                   <td className="px-4 py-3">{s.fecha}</td>
                   <td className="px-4 py-3 font-medium">{s.nombre_cliente}</td>
+                  <td className="px-4 py-3" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {s.vendedora_nombre || '—'}
+                  </td>
                   <td className="px-4 py-3 text-right">{s.total_items}</td>
                   <td className="px-4 py-3 text-right">{s.total_rmb.toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">{s.total_usd.toFixed(2)}</td>

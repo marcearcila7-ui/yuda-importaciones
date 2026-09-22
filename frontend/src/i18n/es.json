@@ -342,7 +342,8 @@
     "errorEliminar": "No se pudo eliminar la cotización",
     "exportar": "Exportar CSV",
     "cargarMas": "Cargar más",
-    "cargandoMas": "Cargando…"
+    "cargandoMas": "Cargando…",
+    "vendedora": "Vendedora"
   },
   "pedidoCliente": {
     "titulo": "Pedido del cliente",

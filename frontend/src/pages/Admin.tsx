@@ -265,8 +265,8 @@ function Admin() {
                           type="button"
                           onClick={() => handleToggleActivo(u)}
                           disabled={cargando}
-                          className="rounded-lg px-3 py-1 text-sm font-medium disabled:opacity-60"
-                          style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)' }}
+                          className="rounded-lg px-3 py-1 text-center text-sm font-medium disabled:opacity-60"
+                          style={{ backgroundColor: '#F3F4F6', color: 'var(--yuda-accent)', minWidth: 100 }}
                         >
                           {u.activo ? t('admin.desactivar') : t('admin.activar')}
                         </button>
