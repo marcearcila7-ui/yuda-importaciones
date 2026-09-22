@@ -3,7 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, FileSpreadsheet, FileText, Pencil, PlayCircle, Plus, RefreshCw, Send, Trash2, Truck } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileSpreadsheet,
+  FileText,
+  Lock,
+  Pencil,
+  PlayCircle,
+  Plus,
+  RefreshCw,
+  Send,
+  Trash2,
+  Truck,
+  X,
+} from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import SeguimientoTimeline from '../../components/portal/SeguimientoTimeline'
 import {
@@ -18,10 +36,159 @@ import type { CotizacionDetalle, PortalItem } from '../../types/portal'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
+// Desde que el pedido llega a la tienda en adelante, ya se compró físicamente
+// con las cantidades que el cliente mandó -editarlas acá no cambia nada real
+// y solo confunde, así que el pedido queda de solo lectura.
+const ESTADOS_EN_PROCESO = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_destino', 'entregado']
+
 function descripcion(item: PortalItem, idioma: string): string {
   if (idioma === 'en') return item.descripcion_en || item.descripcion_es || ''
   if (idioma === 'zh') return item.descripcion_zh || item.descripcion_es || ''
   return item.descripcion_es || item.descripcion_en || ''
+}
+
+interface Media {
+  tipo: 'foto' | 'video'
+  url: string
+}
+
+function mediaDeItem(item: PortalItem): Media[] {
+  if (!item.inspeccion_bodega) return []
+  const media: Media[] = item.inspeccion_bodega.fotos.map((url) => ({ tipo: 'foto' as const, url }))
+  if (item.inspeccion_bodega.video_url) media.push({ tipo: 'video', url: item.inspeccion_bodega.video_url })
+  return media
+}
+
+// Visor de evidencia: fotos/video de un producto, en la misma página (sin
+// abrir pestañas), con flechas para pasar entre ellas y el contexto del
+// producto (y lo que reportó bodega) debajo.
+function VisorEvidencia({
+  item,
+  indiceInicial,
+  idioma,
+  onCerrar,
+}: {
+  item: PortalItem
+  indiceInicial: number
+  idioma: string
+  onCerrar: () => void
+}) {
+  const { t } = useTranslation()
+  const media = mediaDeItem(item)
+  const [indice, setIndice] = useState(indiceInicial)
+  const actual = media[indice]
+  const insp = item.inspeccion_bodega
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCerrar()
+      if (e.key === 'ArrowLeft') setIndice((i) => (i - 1 + media.length) % media.length)
+      if (e.key === 'ArrowRight') setIndice((i) => (i + 1) % media.length)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [media.length])
+
+  if (!actual || !insp) return null
+
+  const descCorregida = idioma === 'en' ? insp.descripcion_en : insp.descripcion_es
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black/90 p-4"
+      role="dialog"
+      aria-modal="true"
+      onClick={onCerrar}
+    >
+      <button
+        type="button"
+        onClick={onCerrar}
+        aria-label={t('portal.cerrar')}
+        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white"
+      >
+        <X size={22} />
+      </button>
+
+      <div className="flex flex-1 items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+        {media.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setIndice((i) => (i - 1 + media.length) % media.length)}
+            aria-label={t('portal.anterior')}
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/40 text-white"
+          >
+            <ChevronLeft size={24} />
+          </button>
+        )}
+
+        <div className="flex max-h-full max-w-full flex-1 items-center justify-center">
+          {actual.tipo === 'foto' ? (
+            <img src={actual.url} alt="" className="max-h-[70vh] max-w-full rounded-lg object-contain" />
+          ) : (
+            <video src={actual.url} controls autoPlay className="max-h-[70vh] max-w-full rounded-lg" />
+          )}
+        </div>
+
+        {media.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setIndice((i) => (i + 1) % media.length)}
+            aria-label={t('portal.siguiente')}
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-black/40 text-white"
+          >
+            <ChevronRight size={24} />
+          </button>
+        )}
+      </div>
+
+      <div
+        className="mx-auto w-full max-w-lg rounded-xl bg-white p-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {item.referencia && (
+          <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
+            {item.referencia}
+          </p>
+        )}
+        <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
+          {descripcion(item, idioma) || '—'}
+        </p>
+        <div className="mt-2 border-t border-gray-100 pt-2">
+          <p
+            className="mb-1 flex items-center gap-2 text-xs font-semibold"
+            style={{
+              color: insp.referencia_coincide === false ? 'var(--yuda-warning-dark)' : 'var(--yuda-success-dark)',
+            }}
+          >
+            {insp.referencia_coincide === false ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+            {t('portal.inspeccionTitulo')}
+            {' · '}
+            {insp.referencia_coincide === false
+              ? t('portal.inspeccionNoCoincide')
+              : insp.referencia_coincide === true
+                ? t('portal.inspeccionCoincide')
+                : ''}
+          </p>
+          {insp.ctns != null && insp.ctns !== item.ctns && (
+            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('portal.inspeccionCantidadEncontrada', { n: insp.ctns, original: item.ctns })}
+            </p>
+          )}
+          {descCorregida && (
+            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('portal.inspeccionDescripcionEncontrada', { texto: descCorregida })}
+            </p>
+          )}
+        </div>
+        {media.length > 1 && (
+          <p className="mt-2 text-center text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {indice + 1} / {media.length}
+          </p>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function PortalDetalle() {
@@ -45,6 +212,9 @@ function PortalDetalle() {
   const [aprobando, setAprobando] = useState(false)
   // Para modificar un pedido ya confirmado hace falta una acción explícita.
   const [editando, setEditando] = useState(false)
+  // Visor de evidencia (fotos/video) de un producto: qué item y en qué índice
+  // de su galería se abrió.
+  const [visor, setVisor] = useState<{ itemId: string; indice: number } | null>(null)
 
   const cargar = useCallback(() => {
     if (!sesionId) return
@@ -165,8 +335,11 @@ function PortalDetalle() {
   }
 
   const confirmado = detalle?.pedido_estado === 'confirmado'
+  // Desde que el pedido ya está en proceso con el proveedor (o más allá), ya
+  // se compró con estas cantidades: no hay "Modificar pedido" que valga.
+  const enProceso = !!detalle && ESTADOS_EN_PROCESO.includes(detalle.seguimiento.estado)
   // Con el pedido confirmado los campos quedan bloqueados hasta "Modificar pedido".
-  const bloqueado = confirmado && !editando
+  const bloqueado = enProceso || (confirmado && !editando)
 
   return (
     <PortalLayout>
@@ -242,20 +415,28 @@ function PortalDetalle() {
             <p className="mb-4 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.miPedidoAyuda')}
             </p>
-            {detalle.pedido_estado === 'por_confirmar' && (
-              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}>
-                {t('portal.porConfirmarAviso')}
+            {enProceso ? (
+              <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-bg)', color: 'var(--yuda-text-secondary)' }}>
+                <Lock size={16} /> {t('portal.pedidoEnProceso')}
               </p>
-            )}
-            {detalle.pedido_estado === 'confirmado' && (
-              <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }}>
-                <CheckCircle2 size={16} /> {t('portal.confirmadoAviso')}
-              </p>
-            )}
-            {detalle.pedido_estado === 'recibido' && (
-              <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
-                {t('portal.pedidoRecibidoAviso')}
-              </p>
+            ) : (
+              <>
+                {detalle.pedido_estado === 'por_confirmar' && (
+                  <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}>
+                    {t('portal.porConfirmarAviso')}
+                  </p>
+                )}
+                {detalle.pedido_estado === 'confirmado' && (
+                  <p className="mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success-dark)' }}>
+                    <CheckCircle2 size={16} /> {t('portal.confirmadoAviso')}
+                  </p>
+                )}
+                {detalle.pedido_estado === 'recibido' && (
+                  <p className="mb-4 rounded-lg px-3 py-2 text-sm font-medium" style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
+                    {t('portal.pedidoRecibidoAviso')}
+                  </p>
+                )}
+              </>
             )}
 
             <div className="flex flex-col gap-3">
@@ -358,9 +539,89 @@ function PortalDetalle() {
                         )}
                       </div>
                     )}
+                    {item.inspeccion_bodega && (
+                      <div className="border-t border-gray-100 pt-2">
+                        <p
+                          className="mb-2 flex items-center gap-2 text-xs font-semibold"
+                          style={{
+                            color:
+                              item.inspeccion_bodega.referencia_coincide === false
+                                ? 'var(--yuda-warning-dark)'
+                                : 'var(--yuda-success-dark)',
+                          }}
+                        >
+                          {item.inspeccion_bodega.referencia_coincide === false ? (
+                            <AlertTriangle size={14} />
+                          ) : (
+                            <CheckCircle2 size={14} />
+                          )}
+                          {t('portal.inspeccionTitulo')}
+                          {' · '}
+                          {item.inspeccion_bodega.referencia_coincide === false
+                            ? t('portal.inspeccionNoCoincide')
+                            : item.inspeccion_bodega.referencia_coincide === true
+                              ? t('portal.inspeccionCoincide')
+                              : ''}
+                        </p>
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {item.inspeccion_bodega.fotos.map((url, i) => (
+                            <button
+                              key={url}
+                              type="button"
+                              onClick={() => setVisor({ itemId: item.item_id, indice: i })}
+                            >
+                              <img
+                                src={url}
+                                alt=""
+                                style={{ width: 56, height: 56 }}
+                                className="rounded-lg object-cover"
+                              />
+                            </button>
+                          ))}
+                          {item.inspeccion_bodega.video_url && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVisor({ itemId: item.item_id, indice: item.inspeccion_bodega!.fotos.length })
+                              }
+                              style={{ width: 56, height: 56, backgroundColor: 'var(--yuda-bg)' }}
+                              className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                              aria-label={t('portal.inspeccionVerVideo')}
+                            >
+                              <PlayCircle size={22} color="var(--yuda-primary)" />
+                            </button>
+                          )}
+                        </div>
+                        {item.inspeccion_bodega.ctns != null && item.inspeccion_bodega.ctns !== item.ctns && (
+                          <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                            {t('portal.inspeccionCantidadEncontrada', {
+                              n: item.inspeccion_bodega.ctns,
+                              original: item.ctns,
+                            })}
+                          </p>
+                        )}
+                        {(() => {
+                          const desc =
+                            i18n.language === 'en'
+                              ? item.inspeccion_bodega.descripcion_en
+                              : item.inspeccion_bodega.descripcion_es
+                          return desc ? (
+                            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                              {t('portal.inspeccionDescripcionEncontrada', { texto: desc })}
+                            </p>
+                          ) : null
+                        })()}
+                      </div>
+                    )}
                   </div>
                 )
               })}
+            </div>
+
+            <div className="mt-3 flex justify-end border-t border-gray-100 pt-3">
+              <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+                {t('portal.totalEstimado')}: US$ {detalle.total_usd.toLocaleString('es-ES')}
+              </p>
             </div>
 
             <label className="mt-4 flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -376,7 +637,7 @@ function PortalDetalle() {
               />
             </label>
 
-            {detalle.pedido_estado === 'por_confirmar' ? (
+            {enProceso ? null : detalle.pedido_estado === 'por_confirmar' ? (
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
@@ -424,124 +685,6 @@ function PortalDetalle() {
                       : t('portal.enviarPedido')}
               </button>
             )}
-          </div>
-
-          {/* Productos (resumen con totales de la cotización) */}
-          <div className="card">
-            <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
-              {t('portal.productos', { n: detalle.items.length })}
-            </h2>
-            <div className="flex flex-col gap-3">
-              {detalle.items.map((item) => (
-                <div key={item.item_id} className="flex flex-col rounded-xl border border-gray-200 p-3">
-                  <div className="flex gap-3">
-                    {item.foto_url ? (
-                      <img
-                        src={item.foto_url}
-                        alt=""
-                        style={{ width: 64, height: 64 }}
-                        className="flex-shrink-0 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      {item.referencia && (
-                        <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
-                          {item.referencia}
-                        </p>
-                      )}
-                      <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
-                        {descripcion(item, i18n.language) || '—'}
-                      </p>
-                      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                        {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                        US$ {item.total_usd.toLocaleString('es-ES')}
-                      </p>
-                    </div>
-                  </div>
-                  {item.inspeccion_bodega && (
-                    <div className="mt-2 rounded-lg border-t border-gray-100 pt-2">
-                      <p
-                        className="mb-2 flex items-center gap-2 text-xs font-semibold"
-                        style={{
-                          color:
-                            item.inspeccion_bodega.referencia_coincide === false
-                              ? 'var(--yuda-warning-dark)'
-                              : 'var(--yuda-success-dark)',
-                        }}
-                      >
-                        {item.inspeccion_bodega.referencia_coincide === false ? (
-                          <AlertTriangle size={14} />
-                        ) : (
-                          <CheckCircle2 size={14} />
-                        )}
-                        {t('portal.inspeccionTitulo')}
-                        {' · '}
-                        {item.inspeccion_bodega.referencia_coincide === false
-                          ? t('portal.inspeccionNoCoincide')
-                          : item.inspeccion_bodega.referencia_coincide === true
-                            ? t('portal.inspeccionCoincide')
-                            : ''}
-                      </p>
-                      {item.inspeccion_bodega.fotos.length > 0 && (
-                        <div className="mb-2 flex flex-wrap gap-2">
-                          {item.inspeccion_bodega.fotos.map((url) => (
-                            <a key={url} href={url} target="_blank" rel="noreferrer">
-                              <img
-                                src={url}
-                                alt=""
-                                style={{ width: 56, height: 56 }}
-                                className="rounded-lg object-cover"
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                      {item.inspeccion_bodega.video_url && (
-                        <a
-                          href={item.inspeccion_bodega.video_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mb-2 flex items-center gap-1 text-xs font-semibold"
-                          style={{ color: 'var(--yuda-primary)' }}
-                        >
-                          <PlayCircle size={14} /> {t('portal.inspeccionVerVideo')}
-                        </a>
-                      )}
-                      {item.inspeccion_bodega.ctns != null && item.inspeccion_bodega.ctns !== item.ctns && (
-                        <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                          {t('portal.inspeccionCantidadEncontrada', {
-                            n: item.inspeccion_bodega.ctns,
-                            original: item.ctns,
-                          })}
-                        </p>
-                      )}
-                      {(() => {
-                        const desc =
-                          i18n.language === 'en'
-                            ? item.inspeccion_bodega.descripcion_en
-                            : item.inspeccion_bodega.descripcion_es
-                        return desc ? (
-                          <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                            {t('portal.inspeccionDescripcionEncontrada', { texto: desc })}
-                          </p>
-                        ) : null
-                      })()}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end border-t border-gray-100 pt-3">
-              <p style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
-                {t('portal.total')}: US$ {detalle.total_usd.toLocaleString('es-ES')}
-              </p>
-            </div>
           </div>
 
           {/* Seguimiento */}
@@ -653,6 +796,20 @@ function PortalDetalle() {
           </div>
         </div>
       )}
+
+      {visor &&
+        (() => {
+          const item = detalle?.items.find((i) => i.item_id === visor.itemId)
+          if (!item) return null
+          return (
+            <VisorEvidencia
+              item={item}
+              indiceInicial={visor.indice}
+              idioma={i18n.language}
+              onCerrar={() => setVisor(null)}
+            />
+          )
+        })()}
     </PortalLayout>
   )
 }

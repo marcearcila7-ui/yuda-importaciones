@@ -887,7 +887,11 @@
     "inspeccionNoCoincide": "Doesn't match what was quoted, check the photos",
     "inspeccionCantidadEncontrada": "Warehouse received {{n}} boxes (quoted: {{original}})",
     "inspeccionDescripcionEncontrada": "Warehouse describes: {{texto}}",
-    "inspeccionVerVideo": "View video"
+    "inspeccionVerVideo": "View video",
+    "pedidoEnProceso": "Your order is already in process with the supplier: quantities can no longer be changed.",
+    "cerrar": "Close",
+    "anterior": "Previous",
+    "siguiente": "Next"
   },
   "notif": {
     "titulo": "Notifications",

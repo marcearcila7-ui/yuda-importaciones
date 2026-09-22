@@ -887,7 +887,11 @@
     "inspeccionNoCoincide": "与报价不一致,请查看照片",
     "inspeccionCantidadEncontrada": "仓库收到 {{n}} 箱(报价为 {{original}} 箱)",
     "inspeccionDescripcionEncontrada": "仓库描述:{{texto}}",
-    "inspeccionVerVideo": "查看视频"
+    "inspeccionVerVideo": "查看视频",
+    "pedidoEnProceso": "您的订单已在供应商处处理中:数量无法再修改。",
+    "cerrar": "关闭",
+    "anterior": "上一个",
+    "siguiente": "下一个"
   },
   "notif": {
     "titulo": "通知",

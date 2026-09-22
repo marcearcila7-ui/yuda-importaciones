@@ -887,7 +887,11 @@
     "inspeccionNoCoincide": "No es igual a lo cotizado, revisa las fotos",
     "inspeccionCantidadEncontrada": "Bodega recibió {{n}} cajas (se cotizaron {{original}})",
     "inspeccionDescripcionEncontrada": "Bodega describe: {{texto}}",
-    "inspeccionVerVideo": "Ver video"
+    "inspeccionVerVideo": "Ver video",
+    "pedidoEnProceso": "Tu pedido ya está en proceso con el proveedor: las cantidades ya no se pueden modificar.",
+    "cerrar": "Cerrar",
+    "anterior": "Anterior",
+    "siguiente": "Siguiente"
   },
   "notif": {
     "titulo": "Avisos",
