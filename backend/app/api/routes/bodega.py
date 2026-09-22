@@ -404,6 +404,94 @@ def listar_ordenes_bodega(
     return resultado
 
 
+def _completar_orden(
+    db: Session, sesion: Sesion, orden: PedidoGenerado, lineas: list[PedidoGeneradoItem]
+) -> None:
+    """Ya se conoce la cantidad recibida de TODOS los ítems de esta orden:
+    regenera el mismo archivo (Excel/PDF/CSV) con las cantidades reales,
+    marca la orden como revisada y le avisa a la vendedora. Lanza si algo
+    falla (descarga de fotos, generación, subida); quien llama decide si
+    eso debe interrumpir su propia operación o solo quedar en el log."""
+    items_por_id = {
+        i.id: i
+        for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas])).all()
+    }
+    items_reales = [
+        _ItemCantidadReal(items_por_id[linea.item_id], linea.cantidad_recibida, linea.cantidad_recibida)
+        for linea in lineas
+    ]
+    fecha_hoy = date.today()
+    supplier_nombre = items_reales[0].supplier_nombre
+    supplier_numero = items_reales[0].supplier_numero
+
+    urls_fotos = [
+        (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
+    ]
+    fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
+    fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
+
+    excel_bytes = generar_formato_pedido(
+        supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+        fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
+    )
+    html = html_pedido(
+        supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+        fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
+    )
+    pdf_bytes = render_pdf(html)
+    csv_bytes = generar_csv_pedido(
+        supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
+    )
+
+    ruta = f"{sesion.id}/{fecha_hoy:%Y%m%d}_{orden.supplier}_Real"
+    orden.archivo_real_xlsx_url = subir_excel(excel_bytes, f"{ruta}.xlsx")
+    orden.archivo_real_pdf_url = subir_pdf(pdf_bytes, f"{ruta}.pdf")
+    orden.archivo_real_csv_url = subir_csv(csv_bytes, f"{ruta}.csv")
+    orden.revisado_en_bodega_at = datetime.now(timezone.utc)
+    avisar_orden_actualizada_bodega(
+        db, sesion.id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, orden.supplier
+    )
+    db.commit()
+
+
+def _sincronizar_cantidad_recibida(db: Session, sesion: Sesion, item_id: str, cantidad: int) -> None:
+    """Cuando bodega corrige "Cajas" en la cotización (pestaña Cotización),
+    ese YA es el conteo real de lo que llegó: se refleja directo en la línea
+    del pedido a la tienda correspondiente, para que "Órdenes" no vuelva a
+    pedir el mismo número aparte. Si la orden ya estaba revisada, no se toca
+    (ver comentario en el caller): evita reabrir/reenviar algo ya cerrado.
+    Best-effort: nunca interrumpe el guardado de la cotización."""
+    linea = (
+        db.query(PedidoGeneradoItem)
+        .join(PedidoGenerado, PedidoGenerado.id == PedidoGeneradoItem.pedido_generado_id)
+        .filter(PedidoGeneradoItem.item_id == item_id, PedidoGenerado.sesion_id == sesion.id)
+        .first()
+    )
+    if linea is None:
+        return
+    orden = db.query(PedidoGenerado).filter(PedidoGenerado.id == linea.pedido_generado_id).first()
+    if orden is None or orden.revisado_en_bodega_at is not None:
+        return
+
+    linea.cantidad_recibida = cantidad
+    db.commit()
+
+    lineas = (
+        db.query(PedidoGeneradoItem)
+        .filter(PedidoGeneradoItem.pedido_generado_id == orden.id)
+        .all()
+    )
+    if all(l.cantidad_recibida is not None for l in lineas):
+        try:
+            _completar_orden(db, sesion, orden, lineas)
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "No se pudo completar automáticamente la orden %s tras corregir la cotización (sesión %s)",
+                orden.id, sesion.id,
+            )
+
+
 @router.put("/pedidos/{sesion_id}/ordenes/{pedido_generado_id}", response_model=OrdenGenerada)
 def guardar_orden_real(
     sesion_id: str,
@@ -461,46 +549,7 @@ def guardar_orden_real(
     # la vendedora más que ayudarla.
     if all(linea.cantidad_recibida is not None for linea in lineas):
         try:
-            items_por_id = {
-                i.id: i
-                for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas])).all()
-            }
-            items_reales = [
-                _ItemCantidadReal(items_por_id[linea.item_id], linea.cantidad_recibida, linea.cantidad_recibida)
-                for linea in lineas
-            ]
-            fecha_hoy = date.today()
-            supplier_nombre = items_reales[0].supplier_nombre
-            supplier_numero = items_reales[0].supplier_numero
-
-            urls_fotos = [
-                (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
-            ]
-            fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
-            fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
-
-            excel_bytes = generar_formato_pedido(
-                supplier_nombre, supplier_numero, items_reales, fecha_hoy,
-                fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
-            )
-            html = html_pedido(
-                supplier_nombre, supplier_numero, items_reales, fecha_hoy,
-                fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
-            )
-            pdf_bytes = render_pdf(html)
-            csv_bytes = generar_csv_pedido(
-                supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
-            )
-
-            ruta = f"{sesion_id}/{fecha_hoy:%Y%m%d}_{orden.supplier}_Real"
-            orden.archivo_real_xlsx_url = subir_excel(excel_bytes, f"{ruta}.xlsx")
-            orden.archivo_real_pdf_url = subir_pdf(pdf_bytes, f"{ruta}.pdf")
-            orden.archivo_real_csv_url = subir_csv(csv_bytes, f"{ruta}.csv")
-            orden.revisado_en_bodega_at = datetime.now(timezone.utc)
-            avisar_orden_actualizada_bodega(
-                db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, orden.supplier
-            )
-            db.commit()
+            _completar_orden(db, sesion, orden, lineas)
         except Exception:
             db.rollback()
             logger.exception(
@@ -604,6 +653,13 @@ def guardar_cotizacion_inspeccion(
     sesion = _sesion_o_404(db, sesion_id)
     guardar_inspeccion(db, sesion, datos, usuario)
     registrar_actividad_bodega(db, sesion_id, usuario.id, "inspeccion_actualizada", "Corrigió la cotización del cliente")
+
+    # La "Cajas" que bodega corrige acá ES el conteo real de lo que llegó: se
+    # refleja en la orden a la tienda correspondiente para no pedir el mismo
+    # número dos veces (antes había que volver a escribirlo en "Órdenes").
+    for entrada in datos.items:
+        if entrada.cajas is not None:
+            _sincronizar_cantidad_recibida(db, sesion, entrada.item_id, entrada.cajas)
 
     cliente = (
         db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first() if sesion.cliente_id else None
