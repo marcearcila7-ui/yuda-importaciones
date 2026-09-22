@@ -7,8 +7,11 @@ from pathlib import Path
 import httpx
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.utils.units import pixels_to_EMU
 from app.services.imagen_service import CALIDAD_JPEG
 from app.services.pdf_service import render_pdf
 
@@ -141,7 +144,7 @@ ETIQUETAS_COLUMNA = {
 }
 
 ANCHOS_COLUMNA = {
-    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 18, "referencia": 13, "codigo": 12,
+    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 22, "referencia": 13, "codigo": 12,
     "desc_es": 30, "desc_en": 30, "desc_zh": 24, "material": 13, "uso": 16,
     "cajas": 7, "uds_caja": 9, "unidad": 7, "cant_total": 11,
     "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
@@ -278,6 +281,35 @@ def _descargar_imagen(url: str):
         return None
 
 
+def _fotos_extra_ordenadas(item) -> list[str]:
+    """URLs de las fotos extra de un ítem (más ángulos, o detalle de bolso),
+    en orden estable. El recorte a mano si existe; si no, la original."""
+    originales = getattr(item, "fotos_extra", None) or {}
+    finales = getattr(item, "fotos_extra_final", None) or {}
+    claves = sorted(set(originales) | set(finales))
+    urls = [finales.get(k) or originales.get(k) for k in claves]
+    return [u for u in urls if u]
+
+
+def _anclar_imagen(ws, buf, col_idx0: int, row_idx0: int, x_off_px: float, y_off_px: float, lado_px: float) -> None:
+    """Coloca una imagen en un punto exacto DENTRO de una celda (columna y
+    fila, más un desplazamiento en píxeles), en vez de que openpyxl la
+    alinee sola a la esquina de la celda. Así la foto principal y las fotos
+    extra de un producto caben juntas en la misma columna "Foto", sin
+    agregar columnas nuevas al final."""
+    img = XLImage(buf)
+    escala = lado_px / max(img.width, img.height)
+    img.width = round(img.width * escala)
+    img.height = round(img.height * escala)
+    marcador = AnchorMarker(
+        col=col_idx0, colOff=pixels_to_EMU(x_off_px),
+        row=row_idx0, rowOff=pixels_to_EMU(y_off_px),
+    )
+    tamano = XDRPositiveSize2D(pixels_to_EMU(img.width), pixels_to_EMU(img.height))
+    img.anchor = OneCellAnchor(_from=marcador, ext=tamano)
+    ws.add_image(img)
+
+
 def generar_cotizacion_excel(
     items: list, sesion: Sesion, idioma: str, tipo_cambio: float, columnas: list[str] | None = None,
 ) -> bytes:
@@ -362,7 +394,8 @@ def generar_cotizacion_excel(
         celda.border = borde_fino
 
     # Columna de la foto: se resuelve una vez (siempre está en columnas_activas).
-    col_foto = get_column_letter(columnas_activas.index("foto") + 1)
+    col_foto_idx0 = columnas_activas.index("foto")
+    col_foto = get_column_letter(col_foto_idx0 + 1)
 
     # Filas de datos
     fila = fila_head + 1
@@ -376,23 +409,35 @@ def generar_cotizacion_excel(
             celda.border = borde_fino
             if n % 2 == 0:
                 celda.fill = fill_alt
-        ws.row_dimensions[fila].height = 90
+        # Fila más alta que antes (90 -> 130): deja espacio para la foto
+        # principal arriba y una fila de fotos extra (más ángulos) debajo,
+        # todo dentro de la misma columna "Foto", no en columnas nuevas.
+        ws.row_dimensions[fila].height = 130
 
-        # Foto: la final (limpia) si existe; si no, la de datos como respaldo.
+        # Foto principal: la final (limpia) si existe; si no, la de datos.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         if foto_doc:
             buf = _descargar_imagen(foto_doc)
             if buf is not None:
                 try:
-                    img = XLImage(buf)
-                    # Respeta la proporción: forzar 110x110 parejo estiraba
-                    # cualquier foto que no fuera cuadrada.
-                    escala = 110 / max(img.width, img.height)
-                    img.width = round(img.width * escala)
-                    img.height = round(img.height * escala)
-                    ws.add_image(img, f"{col_foto}{fila}")
+                    _anclar_imagen(ws, buf, col_foto_idx0, fila - 1, x_off_px=8, y_off_px=4, lado_px=95)
                 except Exception:
                     pass
+
+        # Fotos extra (más ángulos que pidió el cliente): en miniatura, en
+        # fila, debajo de la foto principal -misma columna, no al final.
+        urls_extra = _fotos_extra_ordenadas(item)[:4]
+        for i, url_extra in enumerate(urls_extra):
+            buf_extra = _descargar_imagen(url_extra)
+            if buf_extra is None:
+                continue
+            try:
+                _anclar_imagen(
+                    ws, buf_extra, col_foto_idx0, fila - 1,
+                    x_off_px=6 + i * 26, y_off_px=102, lado_px=22,
+                )
+            except Exception:
+                pass
 
         tot_cajas += item.ctns or 0
         tot_rmb += calc["total_rmb"]
@@ -478,7 +523,13 @@ def generar_cotizacion_pdf(
         calc = _calcular(item, tipo_cambio)
         gw_total = round((item.gw or 0) * (item.ctns or 0), 2)
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        foto = f'<img src="{foto_doc}" />' if foto_doc else ""
+        foto_principal = f'<img class="principal" src="{foto_doc}" />' if foto_doc else ""
+        # Fotos extra (más ángulos que pidió el cliente): miniaturas debajo de
+        # la principal, en la MISMA celda de la columna "Foto" -no columnas
+        # nuevas al final.
+        urls_extra = _fotos_extra_ordenadas(item)[:4]
+        extra_html = "".join(f'<img src="{u}" />' for u in urls_extra)
+        foto = foto_principal + (f'<div class="extra">{extra_html}</div>' if extra_html else "")
         alt = ' class="alt"' if n % 2 == 0 else ""
         celdas_por_clave = {
             "numero": f"<td>{n}</td>",
@@ -574,7 +625,10 @@ def generar_cotizacion_pdf(
             padding: 6px 8px; margin: 8px 0; line-height: 1.35; }}
   .aviso p {{ margin: 0 0 3px; }}
   tr.alt td {{ background: #F5F5F0; }}
-  td.foto img {{ max-width: 90px; max-height: 90px; }}
+  td.foto {{ width: 100px; }}
+  td.foto img.principal {{ max-width: 80px; max-height: 80px; display: block; margin: 0 auto; }}
+  td.foto .extra {{ display: flex; justify-content: center; gap: 2px; margin-top: 2px; }}
+  td.foto .extra img {{ max-width: 20px; max-height: 20px; object-fit: cover; }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
   .resumen {{ background: #EEF0FD; color: #4B52E8; font-weight: bold; text-align: center;
              padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 11px; }}
