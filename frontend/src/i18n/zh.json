@@ -454,7 +454,8 @@
     "vendedorasDesactivadas": "已停用 {{n}} 位销售员",
     "clientesOcultados": "已隐藏 {{n}} 个客户",
     "errorLimpieza": "无法完成清理",
-    "ocultar": "隐藏"
+    "ocultar": "隐藏",
+    "eliminarDeTodasFormas": "仍然删除"
   },
   "metricas": {
     "cotizacionesMes": "本月报价数",
@@ -1126,7 +1127,13 @@
       "enviado": "订单已发送至仓库",
       "confirmado_envio": "发货已确认",
       "archivo_reemplazado": "文件已替换"
-    }
+    },
+    "buscarLabel": "搜索",
+    "buscarPlaceholder": "客户或报价编号...",
+    "filtroEstadoLabel": "状态",
+    "filtroAsignadoLabel": "分配给",
+    "filtroTodos": "全部",
+    "sinResultados": "没有符合条件的订单。"
   },
   "cubicaje": {
     "titulo": "此订单的体积",

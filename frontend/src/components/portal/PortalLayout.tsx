@@ -62,7 +62,7 @@ function PortalLayout({ children }: { children: ReactNode }) {
         className="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 sm:px-8"
         style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
       >
-        <img src="/logo-yuda-importaciones.svg" alt="YUDA Importaciones" style={{ height: 40, width: 'auto' }} />
+        <img src="/logo-yuda-importaciones.svg" alt="YUDA Importaciones" style={{ height: 32, width: 'auto' }} />
 
         <div className="flex items-center gap-3">
           <SelectorIdioma />

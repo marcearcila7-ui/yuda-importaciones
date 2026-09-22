@@ -454,7 +454,8 @@
     "vendedorasDesactivadas": "{{n}} vendedoras desactivadas",
     "clientesOcultados": "{{n}} clientes ocultados",
     "errorLimpieza": "No se pudo completar la limpieza",
-    "ocultar": "Ocultar"
+    "ocultar": "Ocultar",
+    "eliminarDeTodasFormas": "Eliminar de todas formas"
   },
   "metricas": {
     "cotizacionesMes": "Cotizaciones este mes",
@@ -1126,7 +1127,13 @@
       "enviado": "Pedido enviado a bodega",
       "confirmado_envio": "Envío confirmado",
       "archivo_reemplazado": "Archivo reemplazado"
-    }
+    },
+    "buscarLabel": "Buscar",
+    "buscarPlaceholder": "Cliente o número de cotización...",
+    "filtroEstadoLabel": "Estado",
+    "filtroAsignadoLabel": "Asignado a",
+    "filtroTodos": "Todos",
+    "sinResultados": "No hay pedidos que coincidan con el filtro."
   },
   "cubicaje": {
     "titulo": "Cubicaje de este pedido",

@@ -22,6 +22,10 @@ const BADGE_ESTADO: Record<string, { bg: string; fg: string; icon: React.ReactNo
   entregado: { bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success-dark)', icon: <CheckCircle2 size={13} /> },
 }
 
+// Estados de envío, en el mismo orden en que aparecen en el timeline, para
+// que el selector de filtro se lea de arriba a abajo como el flujo real.
+const ORDEN_ESTADOS = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_destino', 'entregado']
+
 function BodegaSeguimiento() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -29,6 +33,9 @@ function BodegaSeguimiento() {
   const [usuariosBodega, setUsuariosBodega] = useState<UsuarioBodega[]>([])
   const [cargando, setCargando] = useState(true)
   const [reasignando, setReasignando] = useState<Record<string, boolean>>({})
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('')
+  const [filtroAsignado, setFiltroAsignado] = useState('')
 
   useEffect(() => {
     setCargando(true)
@@ -65,6 +72,17 @@ function BodegaSeguimiento() {
   const fmtFecha = (iso: string) =>
     new Date(iso).toLocaleString(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
+  const texto = busqueda.trim().toLowerCase()
+  const pedidosFiltrados = pedidos.filter((p) => {
+    if (texto && !p.cliente_nombre.toLowerCase().includes(texto) && !p.numero.toLowerCase().includes(texto)) {
+      return false
+    }
+    if (filtroEstado && p.estado_envio !== filtroEstado) return false
+    if (filtroAsignado === 'sin_asignar' && p.bodega_asignado_a_id) return false
+    if (filtroAsignado && filtroAsignado !== 'sin_asignar' && p.bodega_asignado_a_id !== filtroAsignado) return false
+    return true
+  })
+
   return (
     <div>
       <h1 className="mb-1" style={{ fontWeight: 700, fontSize: 24, color: 'var(--yuda-accent)' }}>
@@ -73,6 +91,53 @@ function BodegaSeguimiento() {
       <p className="mb-5 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
         {t('bodegaSeguimiento.ayuda')}
       </p>
+
+      {!cargando && pedidos.length > 0 && (
+        <div className="card mb-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="flex flex-1 flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('bodegaSeguimiento.buscarLabel')}
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder={t('bodegaSeguimiento.buscarPlaceholder')}
+              className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none"
+              style={{ fontSize: 16 }}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('bodegaSeguimiento.filtroEstadoLabel')}
+            <select
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              className="min-h-[44px] rounded-lg border border-gray-200 px-3 focus:border-[var(--yuda-primary)] focus:outline-none"
+              style={{ fontSize: 16 }}
+            >
+              <option value="">{t('bodegaSeguimiento.filtroTodos')}</option>
+              {ORDEN_ESTADOS.map((estado) => (
+                <option key={estado} value={estado}>{t(`bodegaSeguimiento.estado.${estado}`)}</option>
+              ))}
+            </select>
+          </label>
+          {usuariosBodega.length > 0 && (
+            <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('bodegaSeguimiento.filtroAsignadoLabel')}
+              <select
+                value={filtroAsignado}
+                onChange={(e) => setFiltroAsignado(e.target.value)}
+                className="min-h-[44px] rounded-lg border border-gray-200 px-3 focus:border-[var(--yuda-primary)] focus:outline-none"
+                style={{ fontSize: 16 }}
+              >
+                <option value="">{t('bodegaSeguimiento.filtroTodos')}</option>
+                <option value="sin_asignar">{t('bodegaSeguimiento.sinAsignar')}</option>
+                {usuariosBodega.map((u) => (
+                  <option key={u.id} value={u.id}>{u.nombre}</option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       {cargando ? (
         <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -84,9 +149,15 @@ function BodegaSeguimiento() {
             {t('bodegaSeguimiento.sinPedidos')}
           </p>
         </div>
+      ) : pedidosFiltrados.length === 0 ? (
+        <div className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('bodegaSeguimiento.sinResultados')}
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {pedidos.map((p) => {
+          {pedidosFiltrados.map((p) => {
             const badge = BADGE_ESTADO[p.estado_envio] ?? BADGE_ESTADO.proveedor_recibio
             return (
               <div key={p.sesion_id} className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>

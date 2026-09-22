@@ -25,9 +25,22 @@ type Rol = 'admin' | 'vendedora' | 'contadora' | 'bodega'
 function mensajeError(err: unknown, generico: string): string {
   if (axios.isAxiosError(err) && err.response?.data?.detail) {
     const d = err.response.data.detail
-    return typeof d === 'string' ? d : generico
+    if (typeof d === 'string') return d
+    if (d && typeof d === 'object' && typeof d.mensaje === 'string') return d.mensaje
+    return generico
   }
   return generico
+}
+
+// El backend distingue el 409 "tiene cotizaciones/clientes, puedes forzar"
+// del 409 "tiene contabilidad, nunca se puede forzar" -así el frontend sabe
+// si vale la pena ofrecer un segundo confirm o simplemente mostrar el error.
+function tipoErrorEliminar(err: unknown): string | null {
+  if (axios.isAxiosError(err) && err.response?.data?.detail) {
+    const d = err.response.data.detail
+    if (d && typeof d === 'object' && typeof d.tipo === 'string') return d.tipo
+  }
+  return null
 }
 
 const btnPrimario: CSSProperties = {
@@ -115,9 +128,12 @@ function Admin() {
     }
   }
 
-  // Borra de verdad, no solo desactiva. El backend rechaza (409) si el
-  // usuario ya tiene cotizaciones/clientes/compras, y ese mensaje explica
-  // qué hacer en su lugar (desactivar) — se muestra tal cual.
+  // Borra de verdad, no solo desactiva. Si el usuario ya tiene
+  // cotizaciones/clientes/compras, el backend rechaza con un 409 que dice
+  // exactamente qué se perdería -se muestra ese detalle en un segundo
+  // confirm, y solo si Marcela confirma OTRA VEZ se reintenta con forzar=true
+  // (que sí borra todo, sin reasignar nada a nadie). La única excepción que
+  // nunca se puede forzar es contabilidad (abonos/cobros ya registrados).
   const handleEliminar = async (u: UsuarioAdmin) => {
     const ok = await confirmar({
       mensaje: t('admin.confirmarEliminarUsuario', { nombre: u.nombre }),
@@ -130,6 +146,22 @@ function Admin() {
       toast.success(t('admin.usuarioEliminado'))
       await cargar()
     } catch (err) {
+      if (tipoErrorEliminar(err) === 'requiere_confirmacion') {
+        const okForzar = await confirmar({
+          mensaje: mensajeError(err, t('admin.errorEliminar')),
+          peligro: true,
+          textoConfirmar: t('admin.eliminarDeTodasFormas'),
+        })
+        if (!okForzar) return
+        try {
+          await eliminarUsuario(u.id, true)
+          toast.success(t('admin.usuarioEliminado'))
+          await cargar()
+        } catch (err2) {
+          toast.error(mensajeError(err2, t('admin.errorEliminar')))
+        }
+        return
+      }
       toast.error(mensajeError(err, t('admin.errorEliminar')))
     }
   }

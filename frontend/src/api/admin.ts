@@ -51,8 +51,8 @@ export async function resetPassword(id: string, nueva_password: string): Promise
 
 // Solo borra de verdad si el usuario no tiene cotizaciones/clientes/compras
 // asociadas; si tiene, el backend responde 409 y hay que desactivar en su lugar.
-export async function eliminarUsuario(id: string): Promise<void> {
-  await apiClient.delete(`/admin/usuarios/${id}`)
+export async function eliminarUsuario(id: string, forzar = false): Promise<void> {
+  await apiClient.delete(`/admin/usuarios/${id}`, { params: forzar ? { forzar: true } : undefined })
 }
 
 export async function getConfiguracion(): Promise<ConfiguracionResponse> {

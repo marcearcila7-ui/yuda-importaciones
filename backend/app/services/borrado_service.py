@@ -12,6 +12,7 @@ eso está desactivar al cliente.
 from sqlalchemy.orm import Session
 
 from app.models.cuenta import MovimientoCuenta
+from app.models.cubicaje import CubicajeMensaje
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.lote import LoteItem, LoteOCR
@@ -84,6 +85,7 @@ def borrar_sesiones(db: Session, sesion_ids: list[str]) -> list[tuple[str, list[
 
     # Primero lo que depende de la cotización (FK), después la cotización.
     borrar = lambda consulta: consulta.delete(synchronize_session=False)  # noqa: E731
+    borrar(db.query(CubicajeMensaje).filter(CubicajeMensaje.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids)))
     if item_ids:
         borrar(db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)))

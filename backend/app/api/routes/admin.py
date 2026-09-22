@@ -3,7 +3,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_roles
@@ -11,14 +11,24 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.configuracion import Configuracion
+from app.models.cubicaje import CubicajeMensaje
 from app.models.item import Item
+from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.notificacion import Notificacion
 from app.models.pedido import PedidoGenerado
+from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.tienda import PedidoTienda
 from app.models.user import RolUsuario, User
+from app.services.borrado_service import (
+    borrar_sesiones,
+    limpiar_storage,
+    tiene_movimientos_cliente,
+    tiene_movimientos_sesion,
+)
 from app.schemas.admin import (
     ConfiguracionResponse,
     ConfiguracionUpdate,
@@ -124,15 +134,23 @@ def actualizar_usuario(
 @router.delete("/usuarios/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_usuario(
     usuario_id: str,
+    forzar: bool = Query(False),
     usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> None:
-    """Borra un usuario por completo, solo si no tiene actividad asociada.
+    """Borra un usuario. Si tiene cotizaciones, clientes o compras a su
+    nombre, por defecto se rechaza (409 con detalle "requiere_confirmacion")
+    y se sugiere desactivar en su lugar; con `forzar=true` (tras confirmar
+    explícitamente en el frontend) se borra de todas formas, junto con TODO
+    lo suyo -sus cotizaciones, sus clientes del portal, y su huella en
+    cotizaciones/clientes ajenos (asignaciones, actividad, avisos, hilos de
+    cubicaje). Decisión explícita de Marcela: no se reasigna nada a otro
+    usuario, se pierde para siempre.
 
-    Con cotizaciones, clientes o compras de tienda a su nombre, borrarlo de
-    verdad dejaría esos registros históricos sin dueño (o rompería la
-    referencia): en ese caso se rechaza y se sugiere desactivar en su lugar,
-    que sí sigue disponible sin condición.
+    La contabilidad (abonos/cobros) es la única excepción que NO se puede
+    forzar: si el usuario tiene cotizaciones o clientes con movimientos de
+    cuenta registrados, sigue bloqueado incluso con forzar=true -para eso
+    hay que borrar esos movimientos aparte primero.
     """
     objetivo = db.query(User).filter(User.id == usuario_id).first()
     if objetivo is None:
@@ -145,23 +163,90 @@ def eliminar_usuario(
             detail="No puedes eliminar tu propio usuario",
         )
 
-    tiene_sesiones = db.query(Sesion).filter(Sesion.user_id == usuario_id).first() is not None
-    tiene_clientes = db.query(Cliente).filter(Cliente.vendedora_id == usuario_id).first() is not None
+    cliente_ids = [cid for (cid,) in db.query(Cliente.id).filter(Cliente.vendedora_id == usuario_id).all()]
+    condicion_sesiones = (
+        or_(Sesion.user_id == usuario_id, Sesion.cliente_id.in_(cliente_ids))
+        if cliente_ids
+        else Sesion.user_id == usuario_id
+    )
+    sesion_ids = list({sid for (sid,) in db.query(Sesion.id).filter(condicion_sesiones).all()})
     tiene_compras = db.query(PedidoTienda).filter(PedidoTienda.empleada_id == usuario_id).first() is not None
-    if tiene_sesiones or tiene_clientes or tiene_compras:
+
+    if not forzar and (cliente_ids or sesion_ids or tiene_compras):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "Este usuario ya tiene cotizaciones, clientes o compras registradas: "
-                "no se puede eliminar sin perder ese historial. Desactívalo en su lugar."
-            ),
+            detail={
+                "tipo": "requiere_confirmacion",
+                "mensaje": (
+                    f"Este usuario tiene {len(sesion_ids)} cotización(es) y {len(cliente_ids)} "
+                    "cliente(s) del portal a su nombre. Si lo eliminas de todas formas, se "
+                    "borran también esos registros -no se pueden recuperar después."
+                ),
+            },
         )
+
+    # La contabilidad nunca se borra en cascada, ni siquiera forzando: es la
+    # misma regla que ya rige al borrar una cotización o un cliente suelto.
+    for cid in cliente_ids:
+        if tiene_movimientos_cliente(db, cid):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "tipo": "bloqueado_contabilidad",
+                    "mensaje": (
+                        "Uno de los clientes de este usuario tiene abonos o cobros "
+                        "registrados en su cuenta. Borra esos movimientos primero."
+                    ),
+                },
+            )
+    for sid in sesion_ids:
+        if tiene_movimientos_sesion(db, sid):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "tipo": "bloqueado_contabilidad",
+                    "mensaje": (
+                        "Una de las cotizaciones de este usuario tiene abonos o cobros "
+                        "registrados en la cuenta del cliente. Borra esos movimientos primero."
+                    ),
+                },
+            )
+
+    archivos = borrar_sesiones(db, sesion_ids)
+    if cliente_ids:
+        db.query(ClienteVendedora).filter(ClienteVendedora.cliente_id.in_(cliente_ids)).delete(synchronize_session=False)
+        db.query(ClienteActividad).filter(ClienteActividad.cliente_id.in_(cliente_ids)).delete(synchronize_session=False)
+        db.query(Cliente).filter(Cliente.id.in_(cliente_ids)).delete(synchronize_session=False)
+
+    # La huella de este usuario en cotizaciones/clientes AJENOS (que no se
+    # borran): asignaciones y actividad se limpian, no se reasignan a nadie.
+    db.query(PedidoTienda).filter(PedidoTienda.empleada_id == usuario_id).update(
+        {PedidoTienda.empleada_id: None}, synchronize_session=False
+    )
+    db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.actualizado_por_id == usuario_id).update(
+        {ItemInspeccionBodega.actualizado_por_id: None}, synchronize_session=False
+    )
+    db.query(SeguimientoPedido).filter(SeguimientoPedido.bodega_asignado_a_id == usuario_id).update(
+        {SeguimientoPedido.bodega_asignado_a_id: None, SeguimientoPedido.bodega_asignado_en: None},
+        synchronize_session=False,
+    )
+    db.query(SeguimientoPedido).filter(SeguimientoPedido.bodega_asignado_por_id == usuario_id).update(
+        {SeguimientoPedido.bodega_asignado_por_id: None}, synchronize_session=False
+    )
+    db.query(ClienteVendedora).filter(ClienteVendedora.vendedora_id == usuario_id).delete(synchronize_session=False)
+    db.query(ClienteVendedora).filter(ClienteVendedora.asignado_por_id == usuario_id).update(
+        {ClienteVendedora.asignado_por_id: None}, synchronize_session=False
+    )
+    db.query(ClienteActividad).filter(ClienteActividad.usuario_id == usuario_id).delete(synchronize_session=False)
+    db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.usuario_id == usuario_id).delete(synchronize_session=False)
+    db.query(CubicajeMensaje).filter(CubicajeMensaje.autor_id == usuario_id).delete(synchronize_session=False)
 
     # Notificaciones propias: no son "historial" del negocio, solo avisos
     # internos para este usuario — se borran junto con él.
-    db.query(Notificacion).filter(Notificacion.usuario_id == usuario_id).delete()
+    db.query(Notificacion).filter(Notificacion.usuario_id == usuario_id).delete(synchronize_session=False)
     db.delete(objetivo)
     db.commit()
+    limpiar_storage(archivos)
 
 
 @router.post("/usuarios/desactivar-vendedoras-excepto")

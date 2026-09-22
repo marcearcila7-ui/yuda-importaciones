@@ -454,7 +454,8 @@
     "vendedorasDesactivadas": "{{n}} salespeople deactivated",
     "clientesOcultados": "{{n}} clients hidden",
     "errorLimpieza": "Could not finish the cleanup",
-    "ocultar": "Hide"
+    "ocultar": "Hide",
+    "eliminarDeTodasFormas": "Delete anyway"
   },
   "metricas": {
     "cotizacionesMes": "Quotations this month",
@@ -1126,7 +1127,13 @@
       "enviado": "Order sent to warehouse",
       "confirmado_envio": "Shipment confirmed",
       "archivo_reemplazado": "File replaced"
-    }
+    },
+    "buscarLabel": "Search",
+    "buscarPlaceholder": "Client or quote number...",
+    "filtroEstadoLabel": "Status",
+    "filtroAsignadoLabel": "Assigned to",
+    "filtroTodos": "All",
+    "sinResultados": "No orders match this filter."
   },
   "cubicaje": {
     "titulo": "This order's cubic volume",
