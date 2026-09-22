@@ -8,6 +8,8 @@ from datetime import date
 
 from weasyprint import HTML
 
+from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
+
 PED_CSS = """
 @page { size: A4 landscape; margin: 0.8cm; }
 * { font-family: 'Noto Sans CJK SC', 'Arial', sans-serif; box-sizing: border-box; }
@@ -55,10 +57,13 @@ table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px
 th { background: #404040; color: #fff; padding: 5px 4px; border: 1px solid #555; }
 td { padding: 4px; border: 1px solid #ccc; text-align: center; vertical-align: middle; }
 td.desc { text-align: left; }
-td.foto img { width: 50px; height: 50px; object-fit: cover; }
-/* Fotos de detalle del bolso (interior/herrajes/riata/exterior): van más chicas
-   que la foto principal, si no la tabla de bolsos no entra ni en A4 apaisado. */
-td.foto-extra img { width: 36px; height: 36px; object-fit: cover; }
+/* object-fit: contain (no cover) para que se vea la foto COMPLETA: con cover
+   se recortaban los bordes del producto en vez de solo achicar la imagen. */
+td.foto img { width: 50px; height: 50px; object-fit: contain; }
+/* Fotos de detalle del bolso (interior/herrajes/riata/exterior) o de más
+   ángulos: van más chicas que la foto principal, si no la tabla no entra ni
+   en A4 apaisado -pero completas, no recortadas. */
+td.foto-extra img { width: 36px; height: 36px; object-fit: contain; }
 tr.alt td { background: #F7F7FA; }
 tr.total td { background: #EEE; font-weight: bold; }
 """
@@ -226,6 +231,26 @@ def generar_packing_list_pdf(
         (getattr(i, "fotos_extra", None) or {}).get(t) for i in items for t in tipos_mas_fotos
     )
 
+    # Antes cada <img> apuntaba a la URL real y WeasyPrint la bajaba por red al
+    # renderizar, una por una: con varios productos y varias fotos por
+    # producto (principal + extras) esto se volvía lento y, si tardaba mucho,
+    # la descarga del documento fallaba por timeout. Ahora se bajan TODAS en
+    # paralelo antes de armar el HTML y se incrustan como data URI (sin red
+    # al renderizar) -mismo patrón que ya usa el pedido a la tienda.
+    urls_fotos: list[str] = []
+    for i in items:
+        principal = getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)
+        if principal:
+            urls_fotos.append(principal)
+        fotos_extra_i = getattr(i, "fotos_extra", None) or {}
+        fotos_extra_final_i = getattr(i, "fotos_extra_final", None) or {}
+        for tipo_foto in set(tipos_foto_extra) | set(tipos_mas_fotos):
+            url_extra = fotos_extra_final_i.get(tipo_foto) or fotos_extra_i.get(tipo_foto)
+            if url_extra:
+                urls_fotos.append(url_extra)
+    fotos_bytes = descargar_imagenes(urls_fotos, lado_px=300)
+    fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
+
     for n, item in enumerate(items, start=1):
         ctns = item.ctns or 0
         qty_ctn = item.qty_por_ctn or 0
@@ -250,7 +275,8 @@ def generar_packing_list_pdf(
 
         # Foto final (recortada a mano o por el OCR) si existe; si no, la original.
         _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        foto = f'<img src="{_foto_doc}" />' if _foto_doc else ""
+        _foto_datauri = fotos_datauri.get(_foto_doc) if _foto_doc else None
+        foto = f'<img src="{_foto_datauri}" />' if _foto_datauri else ""
         alt = ' class="alt"' if n % 2 == 0 else ""
         cols_bolsos = ""
         cols_mas_fotos = ""
@@ -261,7 +287,8 @@ def generar_packing_list_pdf(
             for tipo_foto in tipos_foto_extra:
                 # El recorte a mano si existe; si no, la original tal como se subió.
                 url = fotos_extra_final_item.get(tipo_foto) or fotos_extra_item.get(tipo_foto)
-                img_extra = f'<img src="{url}" />' if url else ""
+                url_datauri = fotos_datauri.get(url) if url else None
+                img_extra = f'<img src="{url_datauri}" />' if url_datauri else ""
                 fotos_extra_html += f'<td class="foto-extra">{img_extra}</td>'
             cols_bolsos = (
                 f"<td>{getattr(item, 'colores', None) or ''}</td>"
@@ -282,7 +309,8 @@ def generar_packing_list_pdf(
             fotos_extra_final_item = getattr(item, "fotos_extra_final", None) or {}
             for tipo_foto in tipos_mas_fotos:
                 url = fotos_extra_final_item.get(tipo_foto) or fotos_extra_item.get(tipo_foto)
-                img_extra = f'<img src="{url}" />' if url else ""
+                url_datauri = fotos_datauri.get(url) if url else None
+                img_extra = f'<img src="{url_datauri}" />' if url_datauri else ""
                 cols_mas_fotos += f'<td class="foto-extra">{img_extra}</td>'
         filas_html.append(
             f"<tr{alt}>"

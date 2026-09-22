@@ -9,7 +9,7 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter, range_boundaries
 
-from app.services.imagen_service import descargar_imagen
+from app.services.imagen_service import descargar_imagen, descargar_imagenes
 
 # Plantilla literal del formato de pedido al proveedor (FORMATO PEDIDO de YUDA)
 PLANTILLA_PEDIDO = os.path.join(
@@ -96,6 +96,29 @@ def generar_packing_list_excel(
 
     ultima_col = len(encabezados)  # 23, o 31 en modo bolsos
 
+    # Antes cada foto se bajaba una por una (descargar_imagen) dentro del
+    # loop de filas: con varios productos y varias fotos por producto
+    # (principal + extras) esto se volvía lento y, si tardaba mucho, la
+    # descarga del Excel fallaba por timeout. Ahora se bajan TODAS en
+    # paralelo antes de armar las filas.
+    urls_fotos: list[str] = []
+    for i in items:
+        principal = getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)
+        if principal:
+            urls_fotos.append(principal)
+        fotos_extra_i = getattr(i, "fotos_extra", None) or {}
+        fotos_extra_final_i = getattr(i, "fotos_extra_final", None) or {}
+        for tipo in set(TIPOS_FOTO_EXTRA_EXCEL) | set(TIPOS_MAS_FOTOS_EXCEL):
+            url_extra = fotos_extra_final_i.get(tipo) or fotos_extra_i.get(tipo)
+            if url_extra:
+                urls_fotos.append(url_extra)
+    fotos_bytes = descargar_imagenes(urls_fotos, lado_px=120)
+
+    def _buffer_de(url: str | None):
+        if not url or url not in fotos_bytes:
+            return None
+        return BytesIO(fotos_bytes[url])
+
     # Fila 1 y 2: encabezado de la empresa, mergeados de A hasta T
     ws.merge_cells("A1:T1")
     ws["A1"] = "义乌市与达贸易有限公司  YIWU YUDA TRADING CO.,LTD"
@@ -122,7 +145,7 @@ def generar_packing_list_excel(
         # Final (recortada a mano o por el OCR) si existe; si no, la original.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
         if foto_doc:
-            buf = descargar_imagen(foto_doc, lado_px=120)
+            buf = _buffer_de(foto_doc)
             if buf is not None:
                 try:
                     img = XLImage(buf)
@@ -179,7 +202,7 @@ def generar_packing_list_excel(
                 url = fotos_extra_final.get(tipo) or fotos_extra.get(tipo)
                 if not url:
                     continue
-                buf = descargar_imagen(url, lado_px=120)
+                buf = _buffer_de(url)
                 if buf is not None:
                     try:
                         img = XLImage(buf)
@@ -197,7 +220,7 @@ def generar_packing_list_excel(
                 url = fotos_extra_final.get(tipo) or fotos_extra.get(tipo)
                 if not url:
                     continue
-                buf = descargar_imagen(url, lado_px=120)
+                buf = _buffer_de(url)
                 if buf is not None:
                     try:
                         img = XLImage(buf)
