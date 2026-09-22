@@ -32,6 +32,16 @@ export interface CotizacionResumen {
   actualizado: string | null
 }
 
+export interface PortalInspeccionItem {
+  fotos: string[]
+  video_url: string | null
+  referencia_coincide: boolean | null
+  descripcion_es: string | null
+  descripcion_en: string | null
+  ctns: number | null
+  qty_por_ctn: number | null
+}
+
 export interface PortalItem {
   item_id: string
   foto_url: string | null
@@ -47,6 +57,7 @@ export interface PortalItem {
   cbm: number
   t_cbm: number
   cantidad_solicitada: number | null
+  inspeccion_bodega: PortalInspeccionItem | null
 }
 
 export interface PortalPedidoGeneradoResumen {

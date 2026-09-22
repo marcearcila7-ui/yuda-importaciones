@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, FileSpreadsheet, FileText, Pencil, Plus, RefreshCw, Send, Trash2, Truck } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, FileSpreadsheet, FileText, Pencil, PlayCircle, Plus, RefreshCw, Send, Trash2, Truck } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import SeguimientoTimeline from '../../components/portal/SeguimientoTimeline'
 import {
@@ -433,35 +433,107 @@ function PortalDetalle() {
             </h2>
             <div className="flex flex-col gap-3">
               {detalle.items.map((item) => (
-                <div key={item.item_id} className="flex gap-3 rounded-xl border border-gray-200 p-3">
-                  {item.foto_url ? (
-                    <img
-                      src={item.foto_url}
-                      alt=""
-                      style={{ width: 64, height: 64 }}
-                      className="flex-shrink-0 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    {item.referencia && (
-                      <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
-                        {item.referencia}
-                      </p>
+                <div key={item.item_id} className="flex flex-col rounded-xl border border-gray-200 p-3">
+                  <div className="flex gap-3">
+                    {item.foto_url ? (
+                      <img
+                        src={item.foto_url}
+                        alt=""
+                        style={{ width: 64, height: 64 }}
+                        className="flex-shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div style={{ width: 64, height: 64 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                     )}
-                    <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
-                      {descripcion(item, i18n.language) || '—'}
-                    </p>
-                    <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
-                    </p>
+                    <div className="min-w-0 flex-1">
+                      {item.referencia && (
+                        <p className="text-xs font-semibold tracking-wide" style={{ color: 'var(--yuda-primary)' }}>
+                          {item.referencia}
+                        </p>
+                      )}
+                      <p className="font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                        {descripcion(item, i18n.language) || '—'}
+                      </p>
+                      <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {t('portal.cantidad')}: {item.t_qty} · {t('portal.precioUnit')}: US$ {item.price_usd.toLocaleString('es-ES')}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                        US$ {item.total_usd.toLocaleString('es-ES')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-shrink-0 text-right">
-                    <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                      US$ {item.total_usd.toLocaleString('es-ES')}
-                    </p>
-                  </div>
+                  {item.inspeccion_bodega && (
+                    <div className="mt-2 rounded-lg border-t border-gray-100 pt-2">
+                      <p
+                        className="mb-2 flex items-center gap-2 text-xs font-semibold"
+                        style={{
+                          color:
+                            item.inspeccion_bodega.referencia_coincide === false
+                              ? 'var(--yuda-warning-dark)'
+                              : 'var(--yuda-success-dark)',
+                        }}
+                      >
+                        {item.inspeccion_bodega.referencia_coincide === false ? (
+                          <AlertTriangle size={14} />
+                        ) : (
+                          <CheckCircle2 size={14} />
+                        )}
+                        {t('portal.inspeccionTitulo')}
+                        {' · '}
+                        {item.inspeccion_bodega.referencia_coincide === false
+                          ? t('portal.inspeccionNoCoincide')
+                          : item.inspeccion_bodega.referencia_coincide === true
+                            ? t('portal.inspeccionCoincide')
+                            : ''}
+                      </p>
+                      {item.inspeccion_bodega.fotos.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-2">
+                          {item.inspeccion_bodega.fotos.map((url) => (
+                            <a key={url} href={url} target="_blank" rel="noreferrer">
+                              <img
+                                src={url}
+                                alt=""
+                                style={{ width: 56, height: 56 }}
+                                className="rounded-lg object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {item.inspeccion_bodega.video_url && (
+                        <a
+                          href={item.inspeccion_bodega.video_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mb-2 flex items-center gap-1 text-xs font-semibold"
+                          style={{ color: 'var(--yuda-primary)' }}
+                        >
+                          <PlayCircle size={14} /> {t('portal.inspeccionVerVideo')}
+                        </a>
+                      )}
+                      {item.inspeccion_bodega.ctns != null && item.inspeccion_bodega.ctns !== item.ctns && (
+                        <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                          {t('portal.inspeccionCantidadEncontrada', {
+                            n: item.inspeccion_bodega.ctns,
+                            original: item.ctns,
+                          })}
+                        </p>
+                      )}
+                      {(() => {
+                        const desc =
+                          i18n.language === 'en'
+                            ? item.inspeccion_bodega.descripcion_en
+                            : item.inspeccion_bodega.descripcion_es
+                        return desc ? (
+                          <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                            {t('portal.inspeccionDescripcionEncontrada', { texto: desc })}
+                          </p>
+                        ) : null
+                      })()}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -878,7 +878,13 @@
     "volverCotizaciones": "返回我的报价单",
     "enlaceInvalido": "此链接已失效或已过期。请使用邮箱和密码登录。",
     "irALogin": "前往登录",
-    "entrando": "正在打开您的订单…"
+    "entrando": "正在打开您的订单…",
+    "inspeccionTitulo": "仓库已检查此产品",
+    "inspeccionCoincide": "与报价一致",
+    "inspeccionNoCoincide": "与报价不一致,请查看照片",
+    "inspeccionCantidadEncontrada": "仓库收到 {{n}} 箱(报价为 {{original}} 箱)",
+    "inspeccionDescripcionEncontrada": "仓库描述:{{texto}}",
+    "inspeccionVerVideo": "查看视频"
   },
   "notif": {
     "titulo": "通知",

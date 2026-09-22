@@ -878,7 +878,13 @@
     "volverCotizaciones": "Back to my quotations",
     "enlaceInvalido": "This link is no longer valid or has expired. Log in with your email and password.",
     "irALogin": "Go to login",
-    "entrando": "Opening your order…"
+    "entrando": "Opening your order…",
+    "inspeccionTitulo": "Warehouse reviewed this product",
+    "inspeccionCoincide": "Matches what was quoted",
+    "inspeccionNoCoincide": "Doesn't match what was quoted, check the photos",
+    "inspeccionCantidadEncontrada": "Warehouse received {{n}} boxes (quoted: {{original}})",
+    "inspeccionDescripcionEncontrada": "Warehouse describes: {{texto}}",
+    "inspeccionVerVideo": "View video"
   },
   "notif": {
     "titulo": "Notifications",

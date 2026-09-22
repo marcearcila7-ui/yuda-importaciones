@@ -18,6 +18,25 @@ class PortalCotizacionResumen(BaseModel):
     actualizado: datetime | None = None
 
 
+class PortalInspeccionItem(BaseModel):
+    """Lo que bodega encontró al inspeccionar este producto, para que el
+    cliente lo vea al aprobar el despacho: fotos de evidencia y, si algo no
+    coincidía con lo cotizado, la corrección. Solo se llena una vez bodega
+    marca el pedido "en bodega" (antes de eso, el cliente no ve nada de
+    esto -sigue viendo solo lo que cotizó la vendedora)."""
+
+    fotos: list[str] = []
+    video_url: str | None = None
+    # None = bodega no revisó si coincide con la referencia cotizada;
+    # True/False = si coincide o no.
+    referencia_coincide: bool | None = None
+    # Solo se llenan si bodega corrigió algo distinto a lo cotizado.
+    descripcion_es: str | None = None
+    descripcion_en: str | None = None
+    ctns: int | None = None
+    qty_por_ctn: int | None = None
+
+
 class PortalItem(BaseModel):
     """Producto tal como lo ve el cliente (sin datos del proveedor)"""
 
@@ -37,6 +56,9 @@ class PortalItem(BaseModel):
     t_cbm: float
     # Cajas que el cliente pidió (null hasta que envíe su pedido).
     cantidad_solicitada: int | None = None
+    # Evidencia y correcciones de bodega (ver PortalInspeccionItem). None hasta
+    # que el pedido llegue a bodega.
+    inspeccion_bodega: PortalInspeccionItem | None = None
 
 
 class PortalPedidoGeneradoResumen(BaseModel):

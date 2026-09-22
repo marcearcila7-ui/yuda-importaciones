@@ -878,7 +878,13 @@
     "volverCotizaciones": "Volver a mis cotizaciones",
     "enlaceInvalido": "Este enlace ya no es válido o venció. Inicia sesión con tu correo y contraseña.",
     "irALogin": "Ir a iniciar sesión",
-    "entrando": "Entrando a tu pedido…"
+    "entrando": "Entrando a tu pedido…",
+    "inspeccionTitulo": "Bodega revisó este producto",
+    "inspeccionCoincide": "Es igual a lo cotizado",
+    "inspeccionNoCoincide": "No es igual a lo cotizado, revisa las fotos",
+    "inspeccionCantidadEncontrada": "Bodega recibió {{n}} cajas (se cotizaron {{original}})",
+    "inspeccionDescripcionEncontrada": "Bodega describe: {{texto}}",
+    "inspeccionVerVideo": "Ver video"
   },
   "notif": {
     "titulo": "Avisos",

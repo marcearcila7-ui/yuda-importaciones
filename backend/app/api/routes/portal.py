@@ -10,8 +10,9 @@ from app.core.security import create_access_token, verify_password, verify_token
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.item import Item
+from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado
-from app.models.seguimiento import ESTADO_INICIAL, SeguimientoPedido
+from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import (
     PEDIDO_CONFIRMADO,
     PEDIDO_POR_CONFIRMAR,
@@ -34,6 +35,7 @@ from app.services.notificacion_service import (
 from app.schemas.portal import (
     PortalCotizacionDetalle,
     PortalCotizacionResumen,
+    PortalInspeccionItem,
     PortalItem,
     PortalPedidoGeneradoResumen,
     PortalPedidoInput,
@@ -194,6 +196,23 @@ def detalle_cotizacion(
         db.query(Item).filter(Item.sesion_id == sesion_id).order_by(Item.orden.asc()).all()
     )
 
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+
+    # La evidencia y correcciones de bodega solo se le muestran al cliente
+    # desde que el pedido llega a "en bodega" en adelante (ahí es cuando se le
+    # pide aprobar el despacho). Antes de eso sigue viendo solo lo cotizado.
+    ya_en_bodega = (
+        seg is not None and ESTADOS_ENVIO.index(seg.estado) >= ESTADOS_ENVIO.index("en_bodega")
+    )
+    inspecciones: dict[str, ItemInspeccionBodega] = {}
+    if ya_en_bodega and items:
+        inspecciones = {
+            insp.item_id: insp
+            for insp in db.query(ItemInspeccionBodega)
+            .filter(ItemInspeccionBodega.item_id.in_([i.id for i in items]))
+            .all()
+        }
+
     portal_items: list[PortalItem] = []
     total_usd = 0.0
     total_cbm = 0.0
@@ -201,6 +220,20 @@ def detalle_cotizacion(
         calc = _calcular(i, sesion.tipo_cambio_usd)
         total_usd += calc["total_usd"]
         total_cbm += calc["t_cbm"]
+        insp = inspecciones.get(i.id)
+        inspeccion_bodega = (
+            PortalInspeccionItem(
+                fotos=insp.fotos or [],
+                video_url=insp.video_url,
+                referencia_coincide=insp.referencia_coincide,
+                descripcion_es=insp.descripcion_es,
+                descripcion_en=insp.descripcion_en,
+                ctns=insp.ctns,
+                qty_por_ctn=insp.qty_por_ctn,
+            )
+            if insp is not None
+            else None
+        )
         portal_items.append(
             PortalItem(
                 item_id=i.id,
@@ -217,10 +250,10 @@ def detalle_cotizacion(
                 cbm=calc["cbm"],
                 t_cbm=calc["t_cbm"],
                 cantidad_solicitada=i.cantidad_solicitada,
+                inspeccion_bodega=inspeccion_bodega,
             )
         )
 
-    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     seguimiento = (
         SeguimientoResponse.model_validate(seg)
         if seg
