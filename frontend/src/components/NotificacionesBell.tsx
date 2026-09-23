@@ -134,8 +134,12 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
 
       {abierto && (
         <div
-          className={`absolute z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl bg-white ${
-            posicion === 'abajo' ? 'right-0 top-12' : 'bottom-12 left-0'
+          // En el TopBar móvil ("abajo") la campana no está pegada al borde
+          // derecho de la pantalla, así que "absolute right-0" abría el
+          // panel relativo al propio ícono y se salía de la pantalla por la
+          // izquierda. "fixed" + posición respecto a la pantalla lo evita.
+          className={`z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl bg-white ${
+            posicion === 'abajo' ? 'fixed right-4 top-14' : 'absolute bottom-12 left-0'
           }`}
           style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.25)' }}
         >
