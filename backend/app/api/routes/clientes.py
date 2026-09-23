@@ -635,14 +635,15 @@ def sincronizar_cliente_desde_contable(
     db: Session = Depends(get_db),
     _autorizado: None = Depends(_verificar_token_contable),
 ) -> ClienteResponse:
-    """Yuda Contable llama a esto justo después de crear un cliente ahí,
-    cuando Marcela elige sincronizarlo de una vez (checkbox en su formulario
-    de "Nuevo cliente"). Sin sesión de usuario: se autoriza con un token
-    compartido entre las dos apps, no con require_roles.
+    """Yuda Contable llama a esto justo después de crear O EDITAR un cliente
+    ahí. Sin sesión de usuario: se autoriza con un token compartido entre las
+    dos apps, no con require_roles.
 
-    Idempotente: si el cliente ya existe acá (mismo sigla, por ejemplo porque
-    ya se había importado antes a mano), no lo duplica -solo confirma que
-    existe."""
+    Si el cliente ya existe acá (mismo sigla), no lo duplica: actualiza sus
+    datos de contacto (nombre, teléfono, país, whatsapp, correo) con lo que
+    Contable tenga ahora. Antes esto era un no-op puro -si Marcela corregía
+    el WhatsApp o el correo de un cliente ya sincronizado, ese cambio nunca
+    llegaba acá y los avisos automáticos le seguían llegando al dato viejo."""
     sigla = datos.sigla.strip().upper()
     admin = db.query(User).filter(User.rol == RolUsuario.admin, User.activo).order_by(User.created_at.asc()).first()
     if admin is None:
@@ -650,6 +651,14 @@ def sincronizar_cliente_desde_contable(
 
     existente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
     if existente:
+        if datos.nombre:
+            existente.nombre = datos.nombre
+        existente.telefono = datos.telefono
+        existente.pais = datos.pais
+        existente.whatsapp = datos.whatsapp
+        existente.email_contacto = datos.email
+        db.commit()
+        db.refresh(existente)
         return _cliente_response(existente, admin, _roles_por_usuario(db, [existente]))
 
     cliente = _crear_cliente_desde_contable(
