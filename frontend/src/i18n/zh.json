@@ -187,7 +187,7 @@
     "tomarFoto": "拍照或上传图片",
     "cbm": "体积 (m³)",
     "mqt": "最少箱数",
-    "noLegibleTitulo": "照片不清晰 — 请重新拍摄",
+    "noLegibleTitulo": "照片不清晰，请重新拍摄",
     "noLegibleImagen": "图片无法识别（{{motivo}}）。",
     "noLegibleImagenSin": "图片无法清晰识别。",
     "noLegibleFaltan": "未识别到以下数据：{{campos}}。",
@@ -214,7 +214,7 @@
     "reintentarIA": "用 AI 重试",
     "reemplazarFoto": "替换照片",
     "oCompletaManual": "或手动填写带 * 的字段以直接添加。",
-    "errorSistemaTitulo": "无法处理这张照片 — 不是你的问题",
+    "errorSistemaTitulo": "无法处理这张照片，不是你的问题",
     "errorSistemaTexto": "是系统这边出了问题，重拍也没用。请通知技术支持，稍后重试；照片已保存。",
     "sinSaldoTitulo": "分析服务余额不足",
     "sinSaldoTexto": "不是照片的问题，也不是应用故障：支付图片分析的账户余额不足，需要充值才能恢复。请通知 Marcela 或技术支持；照片已保存。"
@@ -345,7 +345,12 @@
     "cargandoMas": "加载中…",
     "vendedora": "销售",
     "filtrandoPorVendedora": "仅显示：{{nombre}}",
-    "quitarFiltro": "清除筛选"
+    "quitarFiltro": "清除筛选",
+    "confirmarEliminarVarias": "删除 {{cantidad}} 个报价吗?此操作无法撤销。",
+    "eliminadasVarias": "已删除 {{cantidad}} 个报价",
+    "eliminarSeleccionadas": "删除所选 ({{cantidad}})",
+    "seleccionarTodo": "全选",
+    "seleccionarFila": "选择 {{cliente}} 的报价"
   },
   "pedidoCliente": {
     "titulo": "客户订单",
@@ -670,7 +675,7 @@
     "errorBuscarContable": "无法连接 Yuda Contable",
     "contableImportadoUno": "{{sigla}} 已导入",
     "estadoCuentaContableTitulo": "实时对账单（Yuda Contable）",
-    "estadoCuentaContableAyuda": "由 Yuda Contable 即时生成的真实 PDF——不是你上传的文件。",
+    "estadoCuentaContableAyuda": "由 Yuda Contable 即时生成的真实 PDF，不是你上传的文件。",
     "descargarEstadoCuentaContable": "下载 PDF",
     "errorEstadoCuentaContable": "无法从 Yuda Contable 获取对账单",
     "sincronizacionTitulo": "与 Yuda Contable 的同步状态",

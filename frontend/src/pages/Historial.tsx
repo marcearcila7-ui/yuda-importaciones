@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { Download, X } from 'lucide-react'
+import { Download, Trash2, X } from 'lucide-react'
 import { getHistorial } from '../api/admin'
 import { eliminarSesion } from '../api/packing'
 import { confirmar } from '../store/confirmStore'
@@ -33,6 +33,8 @@ function Historial() {
   const { t, i18n } = useTranslation()
   const estadoInicial = location.state as FiltrosDesdeNavegacion | null
   const [sesiones, setSesiones] = useState<SesionHistorial[]>([])
+  const [seleccionadas, setSeleccionadas] = useState<Set<string>>(new Set())
+  const [eliminando, setEliminando] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [cargandoMas, setCargandoMas] = useState(false)
   const [hayMas, setHayMas] = useState(false)
@@ -67,6 +69,7 @@ function Historial() {
       })
       setSesiones(data)
       setHayMas(data.length === PAGINA)
+      setSeleccionadas(new Set())
     } finally {
       setCargando(false)
     }
@@ -135,22 +138,57 @@ function Historial() {
     setTimeout(() => URL.revokeObjectURL(url), 60000)
   }
 
-  const handleEliminar = async (s: SesionHistorial) => {
+  const toggleSeleccion = (id: string) => {
+    setSeleccionadas((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const todoSeleccionado = sesiones.length > 0 && seleccionadas.size === sesiones.length
+
+  const toggleSeleccionarTodo = () => {
+    setSeleccionadas(todoSeleccionado ? new Set() : new Set(sesiones.map((s) => s.id)))
+  }
+
+  // Borra lo que esté marcado con el checkbox: una sola cotización o varias
+  // a la vez. Si alguna no se pudo borrar (p. ej. tiene movimientos de cuenta),
+  // se avisa cuál y por qué, en vez de fallar todo el lote en silencio.
+  const handleEliminarSeleccionadas = async () => {
+    const idsAEliminar = sesiones.filter((s) => seleccionadas.has(s.id))
+    if (idsAEliminar.length === 0) return
     const ok = await confirmar({
-      mensaje: t('historial.confirmarEliminar', { cliente: s.nombre_cliente }),
+      mensaje:
+        idsAEliminar.length === 1
+          ? t('historial.confirmarEliminar', { cliente: idsAEliminar[0].nombre_cliente })
+          : t('historial.confirmarEliminarVarias', { cantidad: idsAEliminar.length }),
       peligro: true,
       textoConfirmar: t('historial.eliminar'),
     })
     if (!ok) return
+
+    setEliminando(true)
     try {
-      await eliminarSesion(s.id)
-      toast.success(t('historial.eliminada'))
+      const resultados = await Promise.allSettled(idsAEliminar.map((s) => eliminarSesion(s.id)))
+      const fallidas: string[] = []
+      resultados.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          const detalle = axios.isAxiosError(r.reason) ? r.reason.response?.data?.detail : null
+          fallidas.push(
+            `${idsAEliminar[i].nombre_cliente}: ${typeof detalle === 'string' ? detalle : t('historial.errorEliminar')}`,
+          )
+        }
+      })
+      const exitosas = idsAEliminar.length - fallidas.length
+      if (exitosas > 0) {
+        toast.success(exitosas === 1 ? t('historial.eliminada') : t('historial.eliminadasVarias', { cantidad: exitosas }))
+      }
+      fallidas.forEach((msg) => toast.error(msg))
       buscar()
-    } catch (err) {
-      // Si el backend explica por qué no se puede (p. ej. tiene movimientos de
-      // cuenta), se muestra ese motivo en vez de un error genérico.
-      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
-      toast.error(typeof detalle === 'string' ? detalle : t('historial.errorEliminar'))
+    } finally {
+      setEliminando(false)
     }
   }
 
@@ -224,6 +262,28 @@ function Historial() {
         >
           <Download size={18} /> {t('historial.exportar')}
         </button>
+        {/* Solo aparece habilitado si hay algo marcado con el checkbox de la
+            tabla; borra uno o varios de una vez, según lo que esté marcado. */}
+        <button
+          type="button"
+          onClick={handleEliminarSeleccionadas}
+          disabled={seleccionadas.size === 0 || eliminando}
+          aria-label={t('historial.eliminarSeleccionadas', { cantidad: seleccionadas.size })}
+          title={t('historial.eliminarSeleccionadas', { cantidad: seleccionadas.size })}
+          className="flex items-center justify-center gap-2 font-semibold disabled:opacity-40"
+          style={{
+            minHeight: 48,
+            minWidth: 48,
+            backgroundColor: 'var(--yuda-error-soft)',
+            color: 'var(--yuda-error)',
+            borderRadius: 8,
+            padding: '0 16px',
+            fontSize: 16,
+          }}
+        >
+          <Trash2 size={18} />
+          {seleccionadas.size > 0 && seleccionadas.size}
+        </button>
       </div>
 
       {/* Tabla */}
@@ -237,6 +297,15 @@ function Historial() {
           <table className="w-full min-w-[720px] text-sm">
             <thead style={{ backgroundColor: 'var(--yuda-accent)', color: 'var(--yuda-white)' }}>
               <tr>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={todoSeleccionado}
+                    onChange={toggleSeleccionarTodo}
+                    aria-label={t('historial.seleccionarTodo')}
+                    className="h-4 w-4"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.fecha')}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.cliente')}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t('historial.vendedora')}</th>
@@ -251,6 +320,15 @@ function Historial() {
             <tbody>
               {sesiones.map((s, i) => (
                 <tr key={s.id} style={{ backgroundColor: i % 2 === 0 ? 'var(--yuda-white)' : '#F9F9F7' }}>
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={seleccionadas.has(s.id)}
+                      onChange={() => toggleSeleccion(s.id)}
+                      aria-label={t('historial.seleccionarFila', { cliente: s.nombre_cliente })}
+                      className="h-4 w-4"
+                    />
+                  </td>
                   <td className="px-4 py-3">{s.fecha}</td>
                   <td className="px-4 py-3 font-medium">{s.nombre_cliente}</td>
                   <td className="px-4 py-3" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -273,26 +351,14 @@ function Historial() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/cotizacion/${s.id}`)}
-                        className="rounded-lg px-3 py-1 text-sm font-medium"
-                        style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
-                      >
-                        {t('historial.verDetalle')}
-                      </button>
-                      {/* La vendedora solo ve aquí sus propias cotizaciones, así que
-                          puede borrarlas; admin puede borrar cualquiera. */}
-                      <button
-                        type="button"
-                        onClick={() => handleEliminar(s)}
-                        className="rounded-lg px-3 py-1 text-sm font-medium"
-                        style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
-                      >
-                        {t('historial.eliminar')}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/cotizacion/${s.id}`)}
+                      className="rounded-lg px-3 py-1 text-sm font-medium"
+                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                    >
+                      {t('historial.verDetalle')}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -405,7 +405,7 @@ function Clientes() {
   // Copia el acceso del cliente (link + correo, y la clave si se acaba de generar)
   const copiarCredenciales = async (c: Cliente) => {
     const pass = nuevasPass[c.id]
-    let texto = `YUDA Importaciones — acceso a tu portal
+    let texto = `YUDA Importaciones: acceso a tu portal
 ${t('clientes.portalLink')}: ${portalUrl}
 ${t('clientes.email')}: ${c.email}`
     if (pass) texto += `\n${t('clientes.password')}: ${pass}`
@@ -1079,7 +1079,7 @@ ${t('clientes.email')}: ${c.email}`
                   <option value="">{t('clientes.elegirParaSincronizar')}</option>
                   {noSincronizados.map((r) => (
                     <option key={r.sigla} value={r.sigla}>
-                      {(r.nombre || t('clientes.contableSinNombre')) + ' — ' + r.sigla}
+                      {(r.nombre || t('clientes.contableSinNombre')) + ' · ' + r.sigla}
                     </option>
                   ))}
                 </select>

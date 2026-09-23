@@ -184,7 +184,7 @@
     "tomarFoto": "Take photo or upload image",
     "cbm": "Volume (m³)",
     "mqt": "Min. boxes",
-    "noLegibleTitulo": "Photo not legible — please retake it",
+    "noLegibleTitulo": "Photo not legible, please retake it",
     "noLegibleImagen": "The image can't be read ({{motivo}}).",
     "noLegibleImagenSin": "The image can't be read clearly.",
     "noLegibleFaltan": "These fields were not detected: {{campos}}.",
@@ -211,7 +211,7 @@
     "reintentarIA": "Retry with AI",
     "reemplazarFoto": "Replace photo",
     "oCompletaManual": "Or fill the fields marked with * by hand to add it anyway.",
-    "errorSistemaTitulo": "We couldn't process this photo — it's not your fault",
+    "errorSistemaTitulo": "We couldn't process this photo. It's not your fault",
     "errorSistemaTexto": "The system failed to analyze it on our side. Retaking it won't help. Let support know and retry later; the photo is saved.",
     "sinSaldoTitulo": "The analysis service ran out of balance",
     "sinSaldoTexto": "It's not your photo or an app failure: the account that pays for image analysis ran out of balance. It needs a top-up to work again. Let Marcela or support know; your photo is saved."
@@ -314,7 +314,7 @@
     "errorGenerar": "Could not generate the orders",
     "errorZip": "Could not download the ZIP",
     "ayudaGenerar": "Ask the store for the boxes you loaded in the products table (CTNS column).",
-    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store — no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute.",
+    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store, no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute.",
     "regenerar": "If you already corrected the quantities above (in «Edit quantities»), generate the order again here"
   },
   "historial": {
@@ -342,7 +342,12 @@
     "cargandoMas": "Loading…",
     "vendedora": "Sales rep",
     "filtrandoPorVendedora": "Showing only: {{nombre}}",
-    "quitarFiltro": "Clear filter"
+    "quitarFiltro": "Clear filter",
+    "confirmarEliminarVarias": "Delete {{cantidad}} quotations? This action cannot be undone.",
+    "eliminadasVarias": "{{cantidad}} quotations deleted",
+    "eliminarSeleccionadas": "Delete selected ({{cantidad}})",
+    "seleccionarTodo": "Select all",
+    "seleccionarFila": "Select {{cliente}}'s quotation"
   },
   "pedidoCliente": {
     "titulo": "Client's order",
@@ -667,7 +672,7 @@
     "errorBuscarContable": "Could not connect to Yuda Contable",
     "contableImportadoUno": "{{sigla}} imported",
     "estadoCuentaContableTitulo": "Live statement (Yuda Contable)",
-    "estadoCuentaContableAyuda": "The real PDF, generated on the spot by Yuda Contable -not something you upload.",
+    "estadoCuentaContableAyuda": "The real PDF, generated on the spot by Yuda Contable. Not something you upload.",
     "descargarEstadoCuentaContable": "Download PDF",
     "errorEstadoCuentaContable": "Could not fetch the statement from Yuda Contable",
     "sincronizacionTitulo": "Sync with Yuda Contable",
