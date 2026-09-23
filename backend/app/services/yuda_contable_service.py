@@ -54,7 +54,14 @@ def _url_interna(ruta: str) -> str | None:
     if not settings.YUDA_CONTABLE_BASE_URL or not settings.YUDA_CONTABLE_API_TOKEN:
         return None
     base = settings.YUDA_CONTABLE_BASE_URL.rstrip("/")
-    return f"{base}/api/interno/{settings.YUDA_CONTABLE_API_TOKEN}/{ruta}"
+    return f"{base}/api/interno/{ruta}"
+
+
+def _headers_internos() -> dict[str, str]:
+    # El token va en el header, no en la URL: esta ruta no tiene la
+    # restricción del conector MCP (que solo se puede configurar con una
+    # URL), así que no hace falta dejarlo expuesto en logs de acceso.
+    return {"Authorization": f"Bearer {settings.YUDA_CONTABLE_API_TOKEN}"}
 
 
 def buscar_clientes_contable(termino: str) -> list[dict] | None:
@@ -65,7 +72,7 @@ def buscar_clientes_contable(termino: str) -> list[dict] | None:
     if not url or not termino.strip():
         return None
     try:
-        resp = httpx.get(url, params={"q": termino.strip()}, timeout=8)
+        resp = httpx.get(url, params={"q": termino.strip()}, headers=_headers_internos(), timeout=8)
         if resp.status_code != 200:
             return None
         return resp.json().get("clientes", [])
@@ -82,7 +89,7 @@ def listar_todos_clientes_contable() -> list[dict] | None:
     if not url:
         return None
     try:
-        resp = httpx.get(url, timeout=15)
+        resp = httpx.get(url, headers=_headers_internos(), timeout=15)
         if resp.status_code != 200:
             return None
         return resp.json().get("clientes", [])
@@ -99,7 +106,7 @@ def obtener_estado_cuenta_contable(sigla: str) -> dict | None:
     if not url:
         return None
     try:
-        resp = httpx.get(url, params={"cliente": sigla}, timeout=8)
+        resp = httpx.get(url, params={"cliente": sigla}, headers=_headers_internos(), timeout=8)
         if resp.status_code != 200:
             return None
         return resp.json()
@@ -115,7 +122,9 @@ def obtener_pdf_estado_cuenta_contable(sigla: str) -> bytes | None:
     if not url:
         return None
     try:
-        resp = httpx.get(url, params={"cliente": sigla, "formato": "pdf"}, timeout=20)
+        resp = httpx.get(
+            url, params={"cliente": sigla, "formato": "pdf"}, headers=_headers_internos(), timeout=20
+        )
         if resp.status_code != 200 or resp.headers.get("content-type") != "application/pdf":
             return None
         return resp.content
