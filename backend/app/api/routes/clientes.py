@@ -241,7 +241,7 @@ def clientes_no_sincronizados(
     todos = listar_todos_clientes_contable()
     if todos is None:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo conectar con Yuda Contable")
-    existentes = {c.sigla for (c,) in db.query(Cliente.sigla).filter(Cliente.sigla.isnot(None)).all()}
+    existentes = {sigla for (sigla,) in db.query(Cliente.sigla).filter(Cliente.sigla.isnot(None)).all()}
     return [
         ContableClientePreview(
             sigla=r["sigla"],

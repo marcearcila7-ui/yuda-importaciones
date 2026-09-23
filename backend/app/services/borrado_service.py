@@ -17,7 +17,7 @@ from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.lote import LoteItem, LoteOCR
 from app.models.notificacion import Notificacion
-from app.models.pedido import PedidoGenerado
+from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
@@ -83,12 +83,23 @@ def borrar_sesiones(db: Session, sesion_ids: list[str]) -> list[tuple[str, list[
             fotos_urls.extend(fotos or [])
             pedidos_urls.append(video_url)
 
+    pedido_generado_ids = [
+        pid for (pid,) in db.query(PedidoGenerado.id).filter(PedidoGenerado.sesion_id.in_(sesion_ids)).all()
+    ]
+
     # Primero lo que depende de la cotización (FK), después la cotización.
     borrar = lambda consulta: consulta.delete(synchronize_session=False)  # noqa: E731
     borrar(db.query(CubicajeMensaje).filter(CubicajeMensaje.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids)))
     if item_ids:
         borrar(db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)))
+        # Las líneas de "cuánto se pidió/llegó" de cada ítem en un pedido a
+        # proveedor: sin esto, borrar el ítem viola su FK (item_id) apenas la
+        # cotización ya generó al menos un pedido -es justo lo que bloqueaba
+        # eliminar un cliente con una cotización en curso.
+        borrar(db.query(PedidoGeneradoItem).filter(PedidoGeneradoItem.item_id.in_(item_ids)))
+    if pedido_generado_ids:
+        borrar(db.query(PedidoGeneradoItem).filter(PedidoGeneradoItem.pedido_generado_id.in_(pedido_generado_ids)))
     borrar(db.query(Item).filter(Item.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id.in_(sesion_ids)))
     borrar(db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id.in_(sesion_ids)))
