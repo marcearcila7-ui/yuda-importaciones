@@ -4,7 +4,9 @@
     "volver": "返回",
     "guardar": "保存",
     "cancelar": "取消",
-    "subiendo": "上传中…"
+    "subiendo": "上传中…",
+    "sinAccesoTitulo": "你没有权限访问此页面",
+    "sinAccesoAyuda": "你的账号没有权限查看此页面。如果你认为这是错误，请告诉 Marcela。"
   },
   "nav": {
     "cotizacion": "报价",

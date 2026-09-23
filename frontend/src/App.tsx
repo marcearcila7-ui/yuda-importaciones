@@ -72,8 +72,9 @@ function App() {
         {/* ── Área del equipo ── */}
         <Route path="/login" element={<Login />} />
 
-        {/* Rutas protegidas (sin restricción de rol) */}
-        <Route element={<ProtectedRoute />}>
+        {/* Cotización: admin y vendedora, igual que en el Sidebar (contadora
+            no debe poder cotizar ni generar pedidos, solo ver Historial). */}
+        <Route element={<ProtectedRoute roles={['admin', 'vendedora']} />}>
           <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />
         </Route>
 

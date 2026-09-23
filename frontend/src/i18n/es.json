@@ -4,7 +4,9 @@
     "volver": "Volver",
     "guardar": "Guardar",
     "cancelar": "Cancelar",
-    "subiendo": "Subiendo…"
+    "subiendo": "Subiendo…",
+    "sinAccesoTitulo": "No tienes acceso a esta sección",
+    "sinAccesoAyuda": "Tu cuenta no tiene permiso para ver esta página. Si crees que es un error, avísale a Marcela."
   },
   "nav": {
     "cotizacion": "Cotización",

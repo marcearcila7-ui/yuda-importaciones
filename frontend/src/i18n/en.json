@@ -4,7 +4,9 @@
     "volver": "Back",
     "guardar": "Save",
     "cancelar": "Cancel",
-    "subiendo": "Uploading…"
+    "subiendo": "Uploading…",
+    "sinAccesoTitulo": "You don't have access to this section",
+    "sinAccesoAyuda": "Your account doesn't have permission to view this page. If you think this is a mistake, let Marcela know."
   },
   "nav": {
     "cotizacion": "Quotation",
