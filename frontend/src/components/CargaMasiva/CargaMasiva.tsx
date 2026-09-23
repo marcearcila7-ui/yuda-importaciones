@@ -745,10 +745,13 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 </div>
               )}
 
-              {/* Más fotos (cualquier tipo de cotización): además de la foto con
-                  el cartel del OCR, el cliente a veces pide más ángulos. Se
-                  suben aparte y se pueden recortar/ajustar después, igual que
-                  las fotos de detalle del bolso. */}
+              {/* Más fotos: además de la foto con el cartel del OCR, el
+                  cliente a veces pide más ángulos. En bolsos esto ya está
+                  cubierto por las 4 fotos de detalle de arriba (interior,
+                  herrajes, riata, exterior) -pedir esto también era pedir
+                  más fotos de las que el sistema ya exige. Solo aparece
+                  fuera de bolsos ("productos varios"). */}
+              {!esBolsos && (
               <div className="flex flex-col gap-2 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-bg)' }}>
                 <span className="text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
                   {t('packing.masFotosTitulo')}
@@ -784,6 +787,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                   })}
                 </div>
               </div>
+              )}
 
               <button
                 type="button"
