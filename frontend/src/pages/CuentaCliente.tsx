@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { ArrowLeft, Download, FileText, Package, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
 import { useAuthStore } from '../store/authStore'
+import { confirmar } from '../store/confirmStore'
 import {
   actualizarMovimiento,
   crearMovimiento,
@@ -200,7 +201,8 @@ function CuentaCliente() {
   }
 
   const borrar = async (m: Movimiento) => {
-    if (!window.confirm(t('cuenta.confirmarEliminar'))) return
+    const ok = await confirmar({ mensaje: t('cuenta.confirmarEliminar'), peligro: true })
+    if (!ok) return
     try {
       const actualizada = await eliminarMovimiento(clienteId, m.id)
       setCuenta(actualizada)

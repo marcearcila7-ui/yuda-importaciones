@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { AlertTriangle, Coins, Pencil, Plus, Store, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
+import { confirmar } from '../store/confirmStore'
 import {
   actualizarPedidoTienda,
   crearPedidoTienda,
@@ -110,7 +111,11 @@ function Tiendas() {
   }
 
   const borrar = async (p: PedidoTienda) => {
-    if (!window.confirm(t('tiendas.confirmarEliminar', { tienda: p.nombre_tienda }))) return
+    const ok = await confirmar({
+      mensaje: t('tiendas.confirmarEliminar', { tienda: p.nombre_tienda }),
+      peligro: true,
+    })
+    if (!ok) return
     try { await eliminarPedidoTienda(p.id); await cargar() } catch { toast.error(t('tiendas.errorGuardar')) }
   }
 

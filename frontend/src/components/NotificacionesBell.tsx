@@ -10,6 +10,7 @@ import {
   marcarTodasLeidas,
 } from '../api/notificaciones'
 import type { Notificacion } from '../types/notificacion'
+import { confirmar } from '../store/confirmStore'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
@@ -106,8 +107,9 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
     eliminarNotificacion(id).catch(() => cargar())
   }
 
-  const eliminarTodas = () => {
-    if (!window.confirm(t('notif.confirmarEliminarTodas'))) return
+  const eliminarTodas = async () => {
+    const ok = await confirmar({ mensaje: t('notif.confirmarEliminarTodas'), peligro: true })
+    if (!ok) return
     setItems([])
     eliminarTodasNotificaciones().catch(() => cargar())
   }
