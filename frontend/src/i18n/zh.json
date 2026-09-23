@@ -1186,7 +1186,8 @@
     "filtroEstadoLabel": "状态",
     "filtroAsignadoLabel": "分配给",
     "filtroTodos": "全部",
-    "sinResultados": "没有符合条件的订单。"
+    "sinResultados": "没有符合条件的订单。",
+    "sinPedidosAdmin": "还没有人给仓库发送订单。"
   },
   "cubicaje": {
     "titulo": "此订单的体积",

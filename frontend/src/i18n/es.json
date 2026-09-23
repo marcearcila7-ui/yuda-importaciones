@@ -1183,7 +1183,8 @@
     "filtroEstadoLabel": "Estado",
     "filtroAsignadoLabel": "Asignado a",
     "filtroTodos": "Todos",
-    "sinResultados": "No hay pedidos que coincidan con el filtro."
+    "sinResultados": "No hay pedidos que coincidan con el filtro.",
+    "sinPedidosAdmin": "Todavía nadie ha enviado un pedido a bodega."
   },
   "cubicaje": {
     "titulo": "Cubicaje de este pedido",

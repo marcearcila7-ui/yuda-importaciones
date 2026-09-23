@@ -11,6 +11,7 @@ import {
   type UsuarioBodega,
 } from '../api/pedidos'
 import type { PedidoBodegaSeguimiento } from '../types/pedidos'
+import { useAuthStore } from '../store/authStore'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
@@ -28,6 +29,8 @@ const ORDEN_ESTADOS = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_dest
 
 function BodegaSeguimiento() {
   const { t, i18n } = useTranslation()
+  const { usuario } = useAuthStore()
+  const esAdmin = usuario?.rol === 'admin'
   const navigate = useNavigate()
   const location = useLocation()
   // Llega preseleccionado desde "Panorama de bodega y despacho" del dashboard:
@@ -151,7 +154,7 @@ function BodegaSeguimiento() {
       ) : pedidos.length === 0 ? (
         <div className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-            {t('bodegaSeguimiento.sinPedidos')}
+            {esAdmin ? t('bodegaSeguimiento.sinPedidosAdmin') : t('bodegaSeguimiento.sinPedidos')}
           </p>
         </div>
       ) : pedidosFiltrados.length === 0 ? (

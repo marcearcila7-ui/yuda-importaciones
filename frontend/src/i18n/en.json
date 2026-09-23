@@ -1183,7 +1183,8 @@
     "filtroEstadoLabel": "Status",
     "filtroAsignadoLabel": "Assigned to",
     "filtroTodos": "All",
-    "sinResultados": "No orders match this filter."
+    "sinResultados": "No orders match this filter.",
+    "sinPedidosAdmin": "Nobody has sent an order to the warehouse yet."
   },
   "cubicaje": {
     "titulo": "This order's cubic volume",
