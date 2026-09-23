@@ -68,8 +68,13 @@ def formatear_fecha_legible(fecha_iso: str) -> str:
 
 
 def _enviar_correo_brevo(destinatario: Cliente, asunto: str, html: str) -> None:
+    # email_contacto es el correo REAL (para clientes importados de Yuda
+    # Contable, `email` es un usuario de portal sintético que no recibe
+    # correo). Si nunca se guardó uno aparte, `email` es el respaldo -el
+    # caso de los clientes creados a mano, donde sí es la casilla real.
+    correo_real = destinatario.email_contacto or destinatario.email
     if not settings.BREVO_API_KEY or not settings.BREVO_SENDER_EMAIL:
-        logger.warning("Brevo no está configurado; se omite el correo a %s", destinatario.email)
+        logger.warning("Brevo no está configurado; se omite el correo a %s", correo_real)
         return
     resp = httpx.post(
         "https://api.brevo.com/v3/smtp/email",
@@ -80,7 +85,7 @@ def _enviar_correo_brevo(destinatario: Cliente, asunto: str, html: str) -> None:
         },
         json={
             "sender": {"email": settings.BREVO_SENDER_EMAIL, "name": settings.BREVO_SENDER_NAME},
-            "to": [{"email": destinatario.email, "name": destinatario.nombre}],
+            "to": [{"email": correo_real, "name": destinatario.nombre}],
             "subject": asunto,
             "htmlContent": html,
         },
@@ -103,7 +108,9 @@ def _normalizar_telefono(telefono: str) -> str:
 def _buscar_o_crear_contacto_lucidbot(cliente: Cliente) -> str | None:
     """Devuelve el contact_id interno de Lucid Bot para este teléfono,
     buscándolo primero y creándolo si no existe."""
-    telefono = _normalizar_telefono(cliente.telefono or "")
+    # whatsapp (de Yuda Contable) puede ser distinto del teléfono normal; si
+    # no se guardó, se cae al teléfono, igual que antes.
+    telefono = _normalizar_telefono(cliente.whatsapp or cliente.telefono or "")
     if not telefono or telefono == "+":
         logger.warning("Cliente %s no tiene teléfono; se omite el WhatsApp", cliente.email)
         return None
@@ -130,7 +137,7 @@ def _buscar_o_crear_contacto_lucidbot(cliente: Cliente) -> str | None:
             "phone": telefono,
             "first_name": nombre[0] if nombre else cliente.nombre,
             "last_name": nombre[1] if len(nombre) > 1 else "",
-            "email": cliente.email,
+            "email": cliente.email_contacto or cliente.email,
         },
         timeout=10,
     )

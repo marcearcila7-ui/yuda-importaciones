@@ -28,6 +28,15 @@ class Cliente(Base):
     # NIT / identificación tributaria del cliente (aparece en el estado de cuenta).
     nit: Mapped[str | None] = mapped_column(String, nullable=True)
     telefono: Mapped[str | None] = mapped_column(String, nullable=True)
+    whatsapp: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Correo REAL del cliente, para mandarle avisos por Brevo (aprobar
+    # despacho, pedido enviado a proveedor, etc.). Separado de `email` porque
+    # ese es el usuario de acceso al portal -para los clientes importados de
+    # Yuda Contable es una dirección sintética (nombre@yudaimportaciones.com),
+    # no una casilla real. Si queda vacío, los avisos usan `email` como
+    # respaldo (el caso de los clientes creados a mano antes de esto, donde
+    # el email SÍ era el real).
+    email_contacto: Mapped[str | None] = mapped_column(String, nullable=True)
     pais: Mapped[str | None] = mapped_column(String, nullable=True)
     # Código corto ("sigla") con el que este cliente aparece en Yuda Contable
     # (app aparte). Es solo una etiqueta de referencia cruzada, la escribe

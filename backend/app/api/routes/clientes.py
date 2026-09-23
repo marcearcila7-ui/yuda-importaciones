@@ -43,6 +43,7 @@ from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
 from app.models.user import RolUsuario, User
 from app.data.contable_clientes import CONTABLE_CLIENTES
 from app.schemas.cliente import (
+    AccionClienteContableInput,
     ActividadInput,
     ActividadResponse,
     AsignarVendedorasInput,
@@ -547,17 +548,30 @@ def preview_importar_contable(
 
 
 def _crear_cliente_desde_contable(
-    db: Session, usuario: User, sigla: str, nombre: str | None, telefono: str | None, pais: str | None
+    db: Session,
+    usuario: User,
+    sigla: str,
+    nombre: str | None,
+    telefono: str | None,
+    pais: str | None,
+    whatsapp: str | None = None,
+    email_contacto: str | None = None,
 ) -> Cliente:
     """Crea el Cliente con la clave de plantilla forzada, igual en la
     importación en bloque (lista fija) que en la importación individual
-    (búsqueda en vivo) -mismo criterio en ambas."""
+    (búsqueda en vivo) -mismo criterio en ambas.
+
+    email_contacto es el correo REAL del cliente en Yuda Contable (para
+    avisos por Brevo); se guarda aparte de `email`, que es un usuario de
+    portal sintético, no una casilla real."""
     emails_ocupados = {e for (e,) in db.query(Cliente.email).all()}
     nombre_final = nombre or f"Cliente {sigla}"
     cliente = Cliente(
         nombre=nombre_final,
         email=_slug_email(nombre_final, "yudaimportaciones.com", emails_ocupados),
         telefono=telefono,
+        whatsapp=whatsapp,
+        email_contacto=email_contacto,
         pais=pais,
         sigla=sigla,
         hashed_password=hash_password(PASSWORD_PLANTILLA_CONTABLE),
@@ -592,7 +606,14 @@ def importar_contable_uno(
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No se encontró ningún cliente con sigla {sigla} en Yuda Contable")
 
     cliente = _crear_cliente_desde_contable(
-        db, usuario, sigla, encontrado.get("nombre_completo"), encontrado.get("telefono"), encontrado.get("pais")
+        db,
+        usuario,
+        sigla,
+        encontrado.get("nombre_completo"),
+        encontrado.get("telefono"),
+        encontrado.get("pais"),
+        whatsapp=encontrado.get("whatsapp"),
+        email_contacto=encontrado.get("email"),
     )
     return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
 
@@ -631,7 +652,10 @@ def sincronizar_cliente_desde_contable(
     if existente:
         return _cliente_response(existente, admin, _roles_por_usuario(db, [existente]))
 
-    cliente = _crear_cliente_desde_contable(db, admin, sigla, datos.nombre, datos.telefono, datos.pais)
+    cliente = _crear_cliente_desde_contable(
+        db, admin, sigla, datos.nombre, datos.telefono, datos.pais,
+        whatsapp=datos.whatsapp, email_contacto=datos.email,
+    )
     return _cliente_response(cliente, admin, _roles_por_usuario(db, [cliente]))
 
 
@@ -698,6 +722,36 @@ def desactivar_clientes_excepto(
     return {"desactivados": len(afectados)}
 
 
+def _eliminar_cliente_cascada(db: Session, cliente: Cliente, forzar: bool) -> None:
+    """Borra el cliente con TODAS sus cotizaciones, pedidos generados y
+    seguimiento. Compartido entre el DELETE de la UI (bloquea si hay
+    contabilidad, salvo que forzar=True) y la sincronización desde Yuda
+    Contable (forzar=True siempre: "eliminar es eliminar", decisión explícita
+    para que ambas apps queden consistentes sin excepción -incluye borrar
+    también los movimientos de cuenta, no solo saltarse el aviso)."""
+    if forzar:
+        db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).delete()
+    elif tiene_movimientos_cliente(db, cliente.id):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este cliente tiene abonos o cobros registrados en su cuenta. "
+            "Desactívalo en lugar de eliminarlo, o pide que se eliminen esos "
+            "movimientos primero.",
+        )
+
+    sesion_ids = [
+        sid for (sid,) in db.query(Sesion.id).filter(Sesion.cliente_id == cliente.id)
+    ]
+    archivos = borrar_sesiones(db, sesion_ids)
+    # Limpieza de la Fase 1 (colaboración): sin esto, un cliente compartido con
+    # otra vendedora o con actividad registrada no se puede borrar (viola la FK).
+    db.query(ClienteVendedora).filter(ClienteVendedora.cliente_id == cliente.id).delete()
+    db.query(ClienteActividad).filter(ClienteActividad.cliente_id == cliente.id).delete()
+    db.delete(cliente)
+    db.commit()
+    limpiar_storage(archivos)
+
+
 @router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_cliente(
     cliente_id: str,
@@ -712,26 +766,41 @@ def eliminar_cliente(
     """
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     _exigir_dueno_o_admin(cliente, usuario)
+    _eliminar_cliente_cascada(db, cliente, forzar=False)
 
-    if tiene_movimientos_cliente(db, cliente_id):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Este cliente tiene abonos o cobros registrados en su cuenta. "
-            "Desactívalo en lugar de eliminarlo, o pide que se eliminen esos "
-            "movimientos primero.",
-        )
 
-    sesion_ids = [
-        sid for (sid,) in db.query(Sesion.id).filter(Sesion.cliente_id == cliente_id)
-    ]
-    archivos = borrar_sesiones(db, sesion_ids)
-    # Limpieza de la Fase 1 (colaboración): sin esto, un cliente compartido con
-    # otra vendedora o con actividad registrada no se puede borrar (viola la FK).
-    db.query(ClienteVendedora).filter(ClienteVendedora.cliente_id == cliente_id).delete()
-    db.query(ClienteActividad).filter(ClienteActividad.cliente_id == cliente_id).delete()
-    db.delete(cliente)
+@router.post("/clientes/eliminar-desde-contable", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_cliente_desde_contable(
+    datos: AccionClienteContableInput,
+    db: Session = Depends(get_db),
+    _autorizado: None = Depends(_verificar_token_contable),
+) -> None:
+    """Yuda Contable llama a esto al eliminar un cliente allá, para que
+    desaparezca también del cotizador. Se elimina SIEMPRE (sin el bloqueo de
+    "tiene movimientos" que sí aplica al botón manual): decisión explícita
+    para que las dos apps queden consistentes sin excepción. Si no existe acá
+    (nunca se importó), no hace nada -no es un error."""
+    sigla = datos.sigla.strip().upper()
+    cliente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
+    if cliente is None:
+        return
+    _eliminar_cliente_cascada(db, cliente, forzar=True)
+
+
+@router.post("/clientes/desactivar-desde-contable", status_code=status.HTTP_204_NO_CONTENT)
+def desactivar_cliente_desde_contable(
+    datos: AccionClienteContableInput,
+    db: Session = Depends(get_db),
+    _autorizado: None = Depends(_verificar_token_contable),
+) -> None:
+    """Yuda Contable llama a esto al desactivar un cliente allá. Si no existe
+    acá, no hace nada."""
+    sigla = datos.sigla.strip().upper()
+    cliente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
+    if cliente is None:
+        return
+    cliente.activo = False
     db.commit()
-    limpiar_storage(archivos)
 
 
 @router.post("/clientes/{cliente_id}/reset-password")

@@ -27,6 +27,10 @@ class ClienteResponse(BaseModel):
     empresa: str | None
     nit: str | None
     telefono: str | None
+    whatsapp: str | None = None
+    # Correo real para avisos (Brevo); None si nunca se guardó uno distinto
+    # del `email` de login del portal (ver modelo).
+    email_contacto: str | None = None
     pais: str | None
     vendedora_id: str
     sigla: str | None = None
@@ -190,7 +194,16 @@ class SincronizarClienteContableInput(BaseModel):
     sigla: str
     nombre: str | None = None
     telefono: str | None = None
+    whatsapp: str | None = None
+    email: str | None = None
     pais: str | None = None
+
+
+class AccionClienteContableInput(BaseModel):
+    """Yuda Contable manda esto al eliminar o desactivar un cliente allá,
+    para que el cotizador haga lo mismo del lado suyo."""
+
+    sigla: str
 
 
 class ImportarContableResultado(BaseModel):
