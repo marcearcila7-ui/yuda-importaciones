@@ -194,6 +194,13 @@ class ImportarContableInput(BaseModel):
     siglas: list[str]
 
 
+class ImportarContableUnoInput(BaseModel):
+    """Importa un solo cliente encontrado por búsqueda en vivo (a diferencia
+    de ImportarContableInput, que trae varios de la lista fija de una vez)."""
+
+    sigla: str
+
+
 class ImportarContableResultado(BaseModel):
     creados: int
     omitidos: int

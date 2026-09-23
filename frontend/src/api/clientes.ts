@@ -118,6 +118,28 @@ export async function importarContable(siglas: string[]): Promise<ImportarContab
   return data
 }
 
+// Búsqueda EN VIVO contra la API interna de Yuda Contable (no la lista fija
+// de arriba). Puede tirar 502 si esa app no responde.
+export async function buscarContable(q: string): Promise<ContableClientePreview[]> {
+  const { data } = await apiClient.get<ContableClientePreview[]>('/clientes/buscar-contable', {
+    params: { q },
+  })
+  return data
+}
+
+export async function importarContableUno(sigla: string): Promise<Cliente> {
+  const { data } = await apiClient.post<Cliente>('/clientes/importar-contable-uno', { sigla })
+  return data
+}
+
+// El PDF oficial de Yuda Contable en vivo (no el que se sube a mano).
+export async function descargarEstadoCuentaContablePdf(clienteId: string): Promise<Blob> {
+  const { data } = await apiClient.get(`/clientes/${clienteId}/estado-cuenta-contable/pdf`, {
+    responseType: 'blob',
+  })
+  return data
+}
+
 // Limpieza masiva: desactiva todos los clientes cuya vendedora dueña no esté
 // en la lista dada. No borra nada, solo los saca de la UI (activo=false).
 export async function desactivarClientesExcepto(vendedora_ids: string[]): Promise<{ desactivados: number }> {

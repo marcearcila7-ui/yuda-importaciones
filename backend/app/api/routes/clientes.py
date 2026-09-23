@@ -6,7 +6,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -53,6 +53,7 @@ from app.schemas.cliente import (
     ContableClientePreview,
     CotizacionResumenCliente,
     ImportarContableInput,
+    ImportarContableUnoInput,
     ImportarContableResultado,
     ResetPasswordRequest,
     VendedoraAsignadaResponse,
@@ -79,6 +80,7 @@ from app.services.aviso_cliente_service import (
     avisar_cliente_pedido_en_proveedor,
 )
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_documento, subir_foto, subir_pdf
+from app.services.yuda_contable_service import buscar_clientes_contable, obtener_pdf_estado_cuenta_contable
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
@@ -225,6 +227,35 @@ def listar_clientes(
     clientes = query.order_by(Cliente.created_at.desc()).all()
     roles = _roles_por_usuario(db, clientes)
     return [_cliente_response(c, usuario, roles) for c in clientes]
+
+
+@router.get("/clientes/buscar-contable", response_model=list[ContableClientePreview])
+def buscar_contable(
+    q: str = Query(..., min_length=2),
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> list[ContableClientePreview]:
+    """Busca clientes de Yuda Contable EN VIVO, por su API interna (no la
+    lista fija que usa /importar-contable/preview). 502 si no se pudo
+    conectar (no configurada, o esa app no respondió). Va ANTES de
+    /clientes/{cliente_id} a propósito: si no, esa ruta paramétrica capturaba
+    "buscar-contable" como si fuera un cliente_id y esto siempre daba 404
+    (mismo bug que tuvo /pedidos/bodega-resumen)."""
+    resultados = buscar_clientes_contable(q)
+    if resultados is None:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo conectar con Yuda Contable")
+    existentes = {c.sigla: c.id for c in db.query(Cliente).filter(Cliente.sigla.isnot(None)).all()}
+    return [
+        ContableClientePreview(
+            sigla=r["sigla"],
+            nombre=r.get("nombre_completo"),
+            pais=r.get("pais"),
+            telefono=r.get("telefono"),
+            ya_existe=r["sigla"] in existentes,
+            cliente_id_existente=existentes.get(r["sigla"]),
+        )
+        for r in resultados
+    ]
 
 
 @router.get("/clientes/{cliente_id}", response_model=ClienteResponse)
@@ -517,6 +548,57 @@ def preview_importar_contable(
     ]
 
 
+def _crear_cliente_desde_contable(
+    db: Session, usuario: User, sigla: str, nombre: str | None, telefono: str | None, pais: str | None
+) -> Cliente:
+    """Crea el Cliente con la clave de plantilla forzada, igual en la
+    importación en bloque (lista fija) que en la importación individual
+    (búsqueda en vivo) -mismo criterio en ambas."""
+    emails_ocupados = {e for (e,) in db.query(Cliente.email).all()}
+    nombre_final = nombre or f"Cliente {sigla}"
+    cliente = Cliente(
+        nombre=nombre_final,
+        email=_slug_email(nombre_final, "yudaimportaciones.com", emails_ocupados),
+        telefono=telefono,
+        pais=pais,
+        sigla=sigla,
+        hashed_password=hash_password(PASSWORD_PLANTILLA_CONTABLE),
+        debe_cambiar_password=True,
+        vendedora_id=usuario.id,
+        origen=ORIGEN_IMPORTADO_CONTABLE,
+    )
+    db.add(cliente)
+    db.commit()
+    db.refresh(cliente)
+    return cliente
+
+
+@router.post("/clientes/importar-contable-uno", response_model=ClienteResponse)
+def importar_contable_uno(
+    datos: ImportarContableUnoInput,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> ClienteResponse:
+    """Importa UN cliente encontrado por /clientes/buscar-contable (búsqueda
+    en vivo), a diferencia de /clientes/importar-contable que trae varios de
+    la lista fija de una vez."""
+    sigla = datos.sigla.strip().upper()
+    if db.query(Cliente).filter(Cliente.sigla == sigla).first():
+        raise HTTPException(status.HTTP_409_CONFLICT, f"Ya existe un cliente con la sigla {sigla}")
+
+    resultados = buscar_clientes_contable(sigla)
+    if resultados is None:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo conectar con Yuda Contable")
+    encontrado = next((r for r in resultados if r["sigla"].upper() == sigla), None)
+    if encontrado is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No se encontró ningún cliente con sigla {sigla} en Yuda Contable")
+
+    cliente = _crear_cliente_desde_contable(
+        db, usuario, sigla, encontrado.get("nombre_completo"), encontrado.get("telefono"), encontrado.get("pais")
+    )
+    return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
+
+
 @router.post("/clientes/importar-contable", response_model=ImportarContableResultado)
 def importar_contable(
     datos: ImportarContableInput,
@@ -645,7 +727,7 @@ async def subir_estado_cuenta_oficial(
     archivo: UploadFile,
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
-) -> Cliente:
+) -> ClienteResponse:
     """Marcela (o la vendedora dueña) sube el estado de cuenta real de Yuda
     Contable -PDF o una foto/captura- para que el cliente lo vea en su
     portal. No hay conexión en vivo entre las dos apps: esto reemplaza el
@@ -694,7 +776,7 @@ async def subir_estado_cuenta_oficial(
     db.refresh(cliente)
     if url_anterior:
         borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
-    return cliente
+    return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
 
 
 @router.delete("/clientes/{cliente_id}/estado-cuenta-oficial", response_model=ClienteResponse)
@@ -702,7 +784,7 @@ def quitar_estado_cuenta_oficial(
     cliente_id: str,
     usuario: User = Depends(require_roles("admin", "vendedora")),
     db: Session = Depends(get_db),
-) -> Cliente:
+) -> ClienteResponse:
     """Quita el estado de cuenta oficial (ej. se subió el archivo equivocado)."""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     url_anterior = cliente.estado_cuenta_oficial_url
@@ -712,7 +794,28 @@ def quitar_estado_cuenta_oficial(
     db.refresh(cliente)
     if url_anterior:
         borrar_archivos("pedidos", [ruta_desde_url(url_anterior, "pedidos")])
-    return cliente
+    return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
+
+
+@router.get("/clientes/{cliente_id}/estado-cuenta-contable/pdf")
+def descargar_estado_cuenta_contable(
+    cliente_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """El PDF oficial del estado de cuenta de Yuda Contable, en vivo (no el
+    que Marcela sube a mano). 404 si el cliente no tiene sigla vinculada."""
+    cliente = _cliente_autorizado(db, cliente_id, usuario)
+    if not cliente.sigla:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este cliente no tiene sigla de Yuda Contable")
+    pdf = obtener_pdf_estado_cuenta_contable(cliente.sigla)
+    if pdf is None:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo traer el estado de cuenta de Yuda Contable")
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="estado_cuenta_{cliente.sigla}.pdf"'},
+    )
 
 
 # ──────────────── VÍNCULO COTIZACIÓN ↔ CLIENTE ────────────────

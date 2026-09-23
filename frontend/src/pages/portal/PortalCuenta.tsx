@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, FileText, Wallet } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { AlertTriangle, ArrowLeft, Download, FileText, Wallet } from 'lucide-react'
 import PortalLayout from '../../components/portal/PortalLayout'
 import MetricCard from '../../components/MetricCard'
-import { getMiCuenta } from '../../api/portal'
+import { descargarMiCuentaPdfContable, getMiCuenta } from '../../api/portal'
 import type { EstadoCuenta } from '../../types/cuenta'
 
 function PortalCuenta() {
@@ -12,6 +13,7 @@ function PortalCuenta() {
   const { t } = useTranslation()
   const [cuenta, setCuenta] = useState<EstadoCuenta | null>(null)
   const [error, setError] = useState(false)
+  const [descargandoPdf, setDescargandoPdf] = useState(false)
 
   useEffect(() => {
     getMiCuenta().then(setCuenta).catch(() => setError(true))
@@ -19,6 +21,23 @@ function PortalCuenta() {
 
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const fmtMon = (n: number, moneda: string) => `${moneda} ${fmt(n)}`
+
+  const descargarPdfOficial = async () => {
+    setDescargandoPdf(true)
+    try {
+      const blob = await descargarMiCuentaPdfContable()
+      const url = URL.createObjectURL(blob)
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = 'estado_cuenta.pdf'
+      enlace.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      toast.error(t('portal.errorDescargarPdfContable'))
+    } finally {
+      setDescargandoPdf(false)
+    }
+  }
 
   return (
     <PortalLayout>
@@ -40,7 +59,66 @@ function PortalCuenta() {
         <div className="card"><p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.cargando')}</p></div>
       ) : (
         <div className="flex flex-col gap-5">
-          {cuenta.estado_cuenta_oficial_url && (
+          {cuenta.estado_cuenta_contable ? (
+            <section className="card flex flex-col gap-3" style={{ borderColor: 'var(--yuda-primary)', borderWidth: 1 }}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+                  {t('portal.estadoCuentaOficialTitulo')}
+                </h2>
+                <button
+                  type="button"
+                  onClick={descargarPdfOficial}
+                  disabled={descargandoPdf}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-primary)' }}
+                >
+                  <Download size={16} /> {descargandoPdf ? t('cuenta.descargando') : t('portal.descargarPdfContable')}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span style={{ fontWeight: 700, fontSize: 22, color: 'var(--yuda-accent)' }}>
+                  {fmtMon(cuenta.estado_cuenta_contable.saldo_pendiente, cuenta.estado_cuenta_contable.moneda)}
+                </span>
+                <span className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {cuenta.estado_cuenta_contable.es_a_favor ? t('portal.saldoAFavor') : t('cuenta.saldoPendiente')}
+                </span>
+                {cuenta.estado_cuenta_contable.dias_vencido != null && !cuenta.estado_cuenta_contable.es_a_favor && (
+                  <span
+                    className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                    style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}
+                  >
+                    <AlertTriangle size={12} /> {cuenta.estado_cuenta_contable.estado_atraso}
+                  </span>
+                )}
+              </div>
+              {cuenta.estado_cuenta_contable.pedidos.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}>
+                        <th className="px-3 py-2 text-left font-semibold">{t('portal.pedido')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('cuenta.fecha')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.valor')}</th>
+                        <th className="px-3 py-2 text-right font-semibold">{t('cuenta.saldo')}</th>
+                        <th className="px-3 py-2 text-left font-semibold">{t('portal.estado')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cuenta.estado_cuenta_contable.pedidos.map((p, i) => (
+                        <tr key={p.numero_pedido} style={{ background: i % 2 ? 'var(--yuda-bg)' : 'transparent', borderBottom: '1px solid var(--yuda-border)' }}>
+                          <td className="px-3 py-2">{p.numero_pedido}</td>
+                          <td className="px-3 py-2">{p.fecha_pedido ?? ''}</td>
+                          <td className="px-3 py-2 text-right">{fmtMon(p.total, cuenta.estado_cuenta_contable!.moneda)}</td>
+                          <td className="px-3 py-2 text-right font-semibold">{fmtMon(p.pendiente, cuenta.estado_cuenta_contable!.moneda)}</td>
+                          <td className="px-3 py-2">{p.estado}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          ) : cuenta.estado_cuenta_oficial_url ? (
             <a
               href={cuenta.estado_cuenta_oficial_url}
               target="_blank"
@@ -61,7 +139,7 @@ function PortalCuenta() {
                 <p className="text-sm" style={{ color: 'var(--yuda-primary)' }}>{t('portal.verDocumento')}</p>
               </div>
             </a>
-          )}
+          ) : null}
 
           {cuenta.totales_por_moneda.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

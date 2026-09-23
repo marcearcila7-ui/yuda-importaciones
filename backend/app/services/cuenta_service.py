@@ -9,6 +9,7 @@ from datetime import date
 from app.models.cliente import Cliente
 from app.models.cuenta import MovimientoCuenta
 from app.models.sesion import Sesion
+from app.services.yuda_contable_service import obtener_estado_cuenta_contable
 
 
 def _f(valor) -> float:
@@ -135,4 +136,25 @@ def construir_estado_cuenta(
         "pedidos": pedidos,
         "estado_cuenta_oficial_url": cliente.estado_cuenta_oficial_url,
         "estado_cuenta_oficial_actualizado_en": cliente.estado_cuenta_oficial_actualizado_en,
+        "estado_cuenta_contable": _armar_estado_cuenta_contable(cliente.sigla),
+    }
+
+
+def _armar_estado_cuenta_contable(sigla: str | None) -> dict | None:
+    if not sigla:
+        return None
+    dato = obtener_estado_cuenta_contable(sigla)
+    if not dato:
+        return None
+    return {
+        "sigla": sigla,
+        "moneda": dato.get("moneda", "CNY"),
+        "saldo_pendiente": dato.get("saldo_pendiente", 0),
+        "es_a_favor": dato.get("es_a_favor", False),
+        "otros_conceptos_pendientes": dato.get("otros_conceptos_pendientes", 0),
+        "saldo_a_favor": dato.get("saldo_a_favor", 0),
+        "dias_vencido": dato.get("dias_vencido"),
+        "estado_atraso": dato.get("estado_atraso"),
+        "pedidos": dato.get("pedidos", []),
+        "abonos_recientes": dato.get("abonos_recientes", []),
     }

@@ -108,6 +108,42 @@ class PedidoCuenta(BaseModel):
     movimientos: list[MovimientoResponse]
 
 
+class PedidoContable(BaseModel):
+    """Un pedido de Yuda Contable, ya calculado allá (FIFO, con intereses)."""
+
+    numero_pedido: str
+    fecha_pedido: str | None
+    total: float
+    pendiente: float
+    estado: str
+    dias: int
+
+
+class AbonoContable(BaseModel):
+    fecha_abono: str | None
+    monto: float
+    numero_pedido: str | None
+    estado: str
+    es_saldo_a_favor: bool
+
+
+class EstadoCuentaContableResponse(BaseModel):
+    """Estado de cuenta REAL de Yuda Contable (app aparte), traído en vivo
+    por su API interna -no tiene relación con la cuenta interna de arriba
+    (MovimientoCuenta). None en el campo del cliente si no se pudo traer."""
+
+    sigla: str
+    moneda: str
+    saldo_pendiente: float
+    es_a_favor: bool
+    otros_conceptos_pendientes: float
+    saldo_a_favor: float
+    dias_vencido: int | None
+    estado_atraso: str | None
+    pedidos: list[PedidoContable]
+    abonos_recientes: list[AbonoContable]
+
+
 class TotalMoneda(BaseModel):
     """Totales del cliente en UNA moneda (no se suman monedas distintas)."""
 
@@ -131,6 +167,12 @@ class EstadoCuentaResponse(BaseModel):
     pedidos: list[PedidoCuenta]
     # Documento real de Yuda Contable (PDF/imagen) que Marcela subió a mano;
     # no tiene relación con los totales de arriba (esos son de la cuenta
-    # interna del cotizador). None si nunca se subió ninguno.
+    # interna del cotizador). None si nunca se subió ninguno. Se usa solo
+    # como respaldo para clientes sin sigla (sin conexión en vivo posible).
     estado_cuenta_oficial_url: str | None = None
     estado_cuenta_oficial_actualizado_en: datetime | None = None
+    # Estado de cuenta REAL de Yuda Contable, traído en vivo por su API
+    # interna (ver yuda_contable_service.py). None si el cliente no tiene
+    # sigla, la conexión no está configurada, o falló al traerlo -en
+    # cualquier caso, el estado_cuenta_oficial_url de arriba sigue de respaldo.
+    estado_cuenta_contable: EstadoCuentaContableResponse | None = None

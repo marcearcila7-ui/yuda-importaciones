@@ -41,3 +41,67 @@ def buscar_contacto_por_sigla(sigla: str | None) -> dict | None:
     except Exception:
         logger.exception("No se pudo consultar el contacto en Yuda Contable (sigla=%s)", sigla)
         return None
+
+
+# ──────────────── API interna de Yuda Contable (búsqueda + estado de cuenta en vivo) ────────────────
+# A diferencia de lo de arriba (que consulta la base de datos directo, solo
+# tabla "clientes"), esto llama a la propia app de Yuda Contable: así el
+# saldo, los pedidos y el PDF salen calculados exactamente como ella los ve
+# ahí, sin duplicar esa lógica financiera acá. Token propio, distinto del de
+# arriba (INTERNAL_API_TOKEN allá).
+
+def _url_interna(ruta: str) -> str | None:
+    if not settings.YUDA_CONTABLE_BASE_URL or not settings.YUDA_CONTABLE_API_TOKEN:
+        return None
+    base = settings.YUDA_CONTABLE_BASE_URL.rstrip("/")
+    return f"{base}/api/interno/{settings.YUDA_CONTABLE_API_TOKEN}/{ruta}"
+
+
+def buscar_clientes_contable(termino: str) -> list[dict] | None:
+    """Clientes de Yuda Contable que coinciden con la sigla o el nombre
+    (búsqueda en vivo, no una lista fija). None si la conexión no está
+    configurada o falla -nunca lanza."""
+    url = _url_interna("clientes")
+    if not url or not termino.strip():
+        return None
+    try:
+        resp = httpx.get(url, params={"q": termino.strip()}, timeout=8)
+        if resp.status_code != 200:
+            return None
+        return resp.json().get("clientes", [])
+    except Exception:
+        logger.exception("No se pudo buscar clientes en Yuda Contable (termino=%s)", termino)
+        return None
+
+
+def obtener_estado_cuenta_contable(sigla: str) -> dict | None:
+    """Estado de cuenta real de Yuda Contable (saldo, pedidos, abonos) para
+    el cliente con esa sigla. None si no está configurado, no se encuentra,
+    o falla la conexión."""
+    url = _url_interna("estado-cuenta")
+    if not url:
+        return None
+    try:
+        resp = httpx.get(url, params={"cliente": sigla}, timeout=8)
+        if resp.status_code != 200:
+            return None
+        return resp.json()
+    except Exception:
+        logger.exception("No se pudo traer el estado de cuenta de Yuda Contable (sigla=%s)", sigla)
+        return None
+
+
+def obtener_pdf_estado_cuenta_contable(sigla: str) -> bytes | None:
+    """El PDF oficial del estado de cuenta, tal cual lo genera Yuda Contable.
+    None si no está configurado, no se encuentra, o falla la conexión."""
+    url = _url_interna("estado-cuenta")
+    if not url:
+        return None
+    try:
+        resp = httpx.get(url, params={"cliente": sigla, "formato": "pdf"}, timeout=20)
+        if resp.status_code != 200 or resp.headers.get("content-type") != "application/pdf":
+            return None
+        return resp.content
+    except Exception:
+        logger.exception("No se pudo traer el PDF del estado de cuenta de Yuda Contable (sigla=%s)", sigla)
+        return None

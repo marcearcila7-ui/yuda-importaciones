@@ -51,6 +51,7 @@ from app.services.cotizacion_service import (
     generar_cotizacion_pdf,
 )
 from app.services.cuenta_service import construir_estado_cuenta
+from app.services.yuda_contable_service import obtener_pdf_estado_cuenta_contable
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -172,6 +173,23 @@ def mi_cuenta(
     )
     sesiones = db.query(Sesion).filter(Sesion.cliente_id == cliente.id).all()
     return construir_estado_cuenta(cliente, movimientos, sesiones)
+
+
+@router.get("/cuenta/pdf-contable")
+def mi_cuenta_pdf_contable(cliente: Cliente = Depends(get_current_cliente)) -> Response:
+    """El PDF oficial del estado de cuenta, tal cual lo genera Yuda Contable
+    en vivo. 404 si el cliente no tiene sigla vinculada, o si esa app no
+    respondió (sin conexión configurada, o falló)."""
+    if not cliente.sigla:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este cliente no está vinculado a Yuda Contable")
+    pdf = obtener_pdf_estado_cuenta_contable(cliente.sigla)
+    if pdf is None:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo traer el estado de cuenta de Yuda Contable")
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="estado_cuenta_{cliente.sigla}.pdf"'},
+    )
 
 
 @router.get("/cotizaciones", response_model=list[PortalCotizacionResumen])

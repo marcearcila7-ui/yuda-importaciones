@@ -49,6 +49,36 @@ export interface TotalMoneda {
   saldo_pendiente: number
 }
 
+export interface PedidoContable {
+  numero_pedido: string
+  fecha_pedido: string | null
+  total: number
+  pendiente: number
+  estado: string
+  dias: number
+}
+
+export interface AbonoContable {
+  fecha_abono: string | null
+  monto: number
+  numero_pedido: string | null
+  estado: string
+  es_saldo_a_favor: boolean
+}
+
+export interface EstadoCuentaContable {
+  sigla: string
+  moneda: string
+  saldo_pendiente: number
+  es_a_favor: boolean
+  otros_conceptos_pendientes: number
+  saldo_a_favor: number
+  dias_vencido: number | null
+  estado_atraso: string | null
+  pedidos: PedidoContable[]
+  abonos_recientes: AbonoContable[]
+}
+
 export interface EstadoCuenta {
   cliente_id: string
   nombre: string
@@ -58,9 +88,13 @@ export interface EstadoCuenta {
   fecha_ultimo_abono: string | null
   pedidos: PedidoCuenta[]
   // Documento real de Yuda Contable que Marcela subió a mano; null si nunca
-  // se subió ninguno. No tiene relación con los totales de arriba.
+  // se subió ninguno. No tiene relación con los totales de arriba. Se usa
+  // solo de respaldo para clientes sin sigla (sin conexión en vivo posible).
   estado_cuenta_oficial_url: string | null
   estado_cuenta_oficial_actualizado_en: string | null
+  // Estado de cuenta REAL de Yuda Contable, traído en vivo. null si el
+  // cliente no tiene sigla, o si esa app no respondió.
+  estado_cuenta_contable: EstadoCuentaContable | null
 }
 
 export interface MovimientoCreate {

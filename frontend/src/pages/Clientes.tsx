@@ -7,11 +7,14 @@ import axios from 'axios'
 import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
 import {
   actualizarCliente,
+  buscarContable,
   crearCliente,
+  descargarEstadoCuentaContablePdf,
   eliminarCliente,
   getClientes,
   getCotizacionesCliente,
   importarContable,
+  importarContableUno,
   previewImportarContable,
   quitarEstadoCuentaOficial,
   resetPasswordCliente,
@@ -368,6 +371,44 @@ function Clientes() {
     }
   }
 
+  // Búsqueda EN VIVO en Yuda Contable (a diferencia de la lista fija de
+  // arriba, que hay que pedirme que la regenere a mano de vez en cuando).
+  const [busquedaContable, setBusquedaContable] = useState('')
+  const [resultadosContable, setResultadosContable] = useState<ContableClientePreview[] | null>(null)
+  const [buscandoContable, setBuscandoContable] = useState(false)
+  const [importandoUno, setImportandoUno] = useState<Record<string, boolean>>({})
+
+  const buscarEnContable = async () => {
+    const q = busquedaContable.trim()
+    if (q.length < 2) return
+    setBuscandoContable(true)
+    try {
+      setResultadosContable(await buscarContable(q))
+    } catch {
+      toast.error(t('clientes.errorBuscarContable'))
+      setResultadosContable(null)
+    } finally {
+      setBuscandoContable(false)
+    }
+  }
+
+  const importarUno = async (sigla: string) => {
+    setImportandoUno((s) => ({ ...s, [sigla]: true }))
+    try {
+      await importarContableUno(sigla)
+      toast.success(t('clientes.contableImportadoUno', { sigla }))
+      setResultadosContable((prev) =>
+        prev ? prev.map((r) => (r.sigla === sigla ? { ...r, ya_existe: true } : r)) : prev,
+      )
+      cargar()
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? (err.response?.data?.detail as string | undefined) : undefined
+      toast.error(detalle || t('clientes.errorImportarContable'))
+    } finally {
+      setImportandoUno((s) => ({ ...s, [sigla]: false }))
+    }
+  }
+
   const eliminar = async (c: Cliente) => {
     const ok = await confirmar({
       mensaje: t('clientes.confirmarEliminar', { nombre: c.nombre }),
@@ -454,6 +495,24 @@ ${t('clientes.email')}: ${c.email}`
       setSubiendoEstadoCuenta(false)
     }
   }
+  const [descargandoPdfContable, setDescargandoPdfContable] = useState(false)
+  const descargarPdfContableStaff = async (c: Cliente) => {
+    setDescargandoPdfContable(true)
+    try {
+      const blob = await descargarEstadoCuentaContablePdf(c.id)
+      const url = URL.createObjectURL(blob)
+      const enlace = document.createElement('a')
+      enlace.href = url
+      enlace.download = `estado_cuenta_${c.sigla || c.nombre}.pdf`
+      enlace.click()
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      toast.error(t('clientes.errorEstadoCuentaContable'))
+    } finally {
+      setDescargandoPdfContable(false)
+    }
+  }
+
   const quitarEstadoCuenta = async (c: Cliente) => {
     if (!(await confirmar({ mensaje: t('clientes.confirmarQuitarEstadoCuenta') }))) return
     try {
@@ -801,8 +860,33 @@ ${t('clientes.email')}: ${c.email}`
           </div>
         </div>
 
+        {/* Estado de cuenta EN VIVO de Yuda Contable: solo si el cliente
+            tiene sigla vinculada. Es el mismo PDF que genera esa app, al
+            momento -no algo que Marcela suba a mano. */}
+        {c.sigla && (
+          <div className="card flex flex-col gap-3">
+            <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+              <FileText size={18} /> {t('clientes.estadoCuentaContableTitulo')}
+            </h2>
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('clientes.estadoCuentaContableAyuda')}
+            </p>
+            <button
+              type="button"
+              onClick={() => descargarPdfContableStaff(c)}
+              disabled={descargandoPdfContable}
+              className="flex w-fit items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: 'var(--yuda-primary)' }}
+            >
+              <FileText size={16} />
+              {descargandoPdfContable ? t('clientes.subiendo') : t('clientes.descargarEstadoCuentaContable')}
+            </button>
+          </div>
+        )}
+
         {/* Estado de cuenta oficial de Yuda Contable: documento puntual que
-            Marcela sube a mano, sin ninguna conexión en vivo entre las apps. */}
+            Marcela sube a mano. Respaldo para clientes sin sigla (sin
+            conexión en vivo posible). */}
         <div className="card flex flex-col gap-3">
           <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
             {t('clientes.estadoCuentaOficialTitulo')}
@@ -1062,6 +1146,80 @@ ${t('clientes.email')}: ${c.email}`
               {t('clientes.cancelar')}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Buscar EN VIVO en Yuda Contable: para un cliente puntual, sin
+          esperar a que se regenere la lista fija de abajo. Solo admin. */}
+      {esAdmin && (
+        <div className="card flex flex-col gap-3">
+          <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            <Search size={18} /> {t('clientes.buscarContableTitulo')}
+          </h2>
+          <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('clientes.buscarContableAyuda')}
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={busquedaContable}
+              onChange={(e) => setBusquedaContable(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && buscarEnContable()}
+              placeholder={t('clientes.buscarContablePlaceholder')}
+              className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              style={{ fontSize: 16 }}
+            />
+            <button
+              type="button"
+              onClick={buscarEnContable}
+              disabled={busquedaContable.trim().length < 2 || buscandoContable}
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              style={{ backgroundColor: 'var(--yuda-primary)' }}
+            >
+              {buscandoContable ? t('common.cargando') : t('historial.buscar')}
+            </button>
+          </div>
+          {resultadosContable !== null && (
+            resultadosContable.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.buscarContableSinResultados')}</p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto rounded-lg border" style={{ borderColor: 'var(--yuda-border)' }}>
+                {resultadosContable.map((r) => (
+                  <div
+                    key={r.sigla}
+                    className="flex items-center gap-3 border-b px-3 py-2 text-sm last:border-b-0"
+                    style={{ borderColor: 'var(--yuda-border)' }}
+                  >
+                    <span
+                      className="rounded-full px-2 py-0.5 text-xs font-bold"
+                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                    >
+                      {r.sigla}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate" style={{ color: 'var(--yuda-accent)' }}>
+                      {r.nombre || t('clientes.contableSinNombre')}
+                      {r.pais && <span style={{ color: 'var(--yuda-text-secondary)' }}> · {r.pais}</span>}
+                    </span>
+                    {r.ya_existe ? (
+                      <span className="flex-shrink-0 text-xs font-semibold" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {t('clientes.contableYaImportado')}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => importarUno(r.sigla)}
+                        disabled={importandoUno[r.sigla]}
+                        className="flex-shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                        style={{ backgroundColor: 'var(--yuda-primary)' }}
+                      >
+                        {importandoUno[r.sigla] ? t('clientes.importando') : t('clientes.importar')}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          )}
         </div>
       )}
 

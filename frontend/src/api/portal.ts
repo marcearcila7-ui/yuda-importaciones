@@ -70,6 +70,12 @@ export async function getMiCuenta(): Promise<EstadoCuenta> {
   return data
 }
 
+// El PDF oficial de Yuda Contable en vivo (solo si el cliente tiene sigla vinculada).
+export async function descargarMiCuentaPdfContable(): Promise<Blob> {
+  const { data } = await portalClient.get('/portal/cuenta/pdf-contable', { responseType: 'blob' })
+  return data
+}
+
 // El cliente cambia su propia contraseña (obligatorio si debe_cambiar_password).
 // Devuelve un token nuevo: cambiar la clave invalida el viejo.
 export async function cambiarPasswordPortal(

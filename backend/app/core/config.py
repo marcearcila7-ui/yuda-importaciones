@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     CONTABLE_SUPABASE_URL: str = ""
     CONTABLE_SUPABASE_SERVICE_KEY: str = ""
 
+    # Yuda Contable, API interna (su propia app, no la base de datos directo):
+    # búsqueda de clientes en vivo, estado de cuenta y el PDF oficial. Token
+    # propio (INTERNAL_API_TOKEN allá), distinto del de arriba. Si quedan
+    # vacías, esas funciones simplemente no responden -no rompe nada.
+    YUDA_CONTABLE_BASE_URL: str = ""
+    YUDA_CONTABLE_API_TOKEN: str = ""
+
     # Avisos al cliente (portal): correo transaccional por Brevo y notificación
     # por el bot propio de Yuda. Ambos son opcionales; si faltan, el aviso
     # correspondiente simplemente se omite (no rompe el flujo de bodega/Marcela).
@@ -109,6 +116,8 @@ class Settings(BaseSettings):
         "SUPABASE_SERVICE_KEY",
         "CONTABLE_SUPABASE_URL",
         "CONTABLE_SUPABASE_SERVICE_KEY",
+        "YUDA_CONTABLE_BASE_URL",
+        "YUDA_CONTABLE_API_TOKEN",
         "SENTRY_DSN",
         "BREVO_API_KEY",
         "LUCIDBOT_API_KEY",
