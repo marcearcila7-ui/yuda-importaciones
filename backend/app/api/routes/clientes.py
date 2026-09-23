@@ -803,6 +803,22 @@ def desactivar_cliente_desde_contable(
     db.commit()
 
 
+@router.post("/clientes/reactivar-desde-contable", status_code=status.HTTP_204_NO_CONTENT)
+def reactivar_cliente_desde_contable(
+    datos: AccionClienteContableInput,
+    db: Session = Depends(get_db),
+    _autorizado: None = Depends(_verificar_token_contable),
+) -> None:
+    """Yuda Contable llama a esto al reactivar un cliente allá. Si no existe
+    acá, no hace nada."""
+    sigla = datos.sigla.strip().upper()
+    cliente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
+    if cliente is None:
+        return
+    cliente.activo = True
+    db.commit()
+
+
 @router.post("/clientes/{cliente_id}/reset-password")
 def reset_password_cliente(
     cliente_id: str,
