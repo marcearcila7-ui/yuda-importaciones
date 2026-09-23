@@ -484,7 +484,7 @@ def actualizar_fecha_tentativa(
         if cliente is not None:
             numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
             avisar_cliente_fecha_tentativa(
-                cliente, sesion.id, numero, formatear_fecha_legible(datos.fecha.isoformat()), pedido.supplier
+                db, cliente, sesion.id, numero, formatear_fecha_legible(datos.fecha.isoformat()), pedido.supplier
             )
 
     return pedido

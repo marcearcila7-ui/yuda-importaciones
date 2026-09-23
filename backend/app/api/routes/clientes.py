@@ -1262,22 +1262,22 @@ def actualizar_seguimiento(
     # la nota que bodega haya escrito (la misma que ve el cliente en el portal).
     if cliente_a_avisar is not None:
         avisar_cliente_aprobar_despacho(
-            cliente_a_avisar, sesion_id, numero, plazo_a_avisar, novedades_a_avisar
+            db, cliente_a_avisar, sesion_id, numero, plazo_a_avisar, novedades_a_avisar
         )
 
     if cliente_proveedor is not None:
-        avisar_cliente_pedido_en_proveedor(cliente_proveedor, sesion_id, numero)
+        avisar_cliente_pedido_en_proveedor(db, cliente_proveedor, sesion_id, numero)
 
     if cliente_envio is not None:
         if nuevo_en_transito:
             avisar_cliente_despachado(
-                cliente_envio, sesion_id, numero, naviera_a_avisar, tracking_a_avisar,
+                db, cliente_envio, sesion_id, numero, naviera_a_avisar, tracking_a_avisar,
                 url_tracking_a_avisar, fecha_eta_a_avisar,
             )
         if nuevo_en_destino:
-            avisar_cliente_en_destino(cliente_envio, sesion_id, numero)
+            avisar_cliente_en_destino(db, cliente_envio, sesion_id, numero)
         if nuevo_entregado:
-            avisar_cliente_entregado(cliente_envio, sesion_id, numero)
+            avisar_cliente_entregado(db, cliente_envio, sesion_id, numero)
 
     return seg
 

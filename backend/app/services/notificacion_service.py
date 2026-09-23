@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.notificacion import (
+    TIPO_AVISO_CLIENTE_FALLIDO,
     TIPO_BODEGA_ENVIO_A_VENDEDORA,
     TIPO_CUBICAJE_BODEGA,
     TIPO_CUBICAJE_VENDEDORA,
@@ -42,6 +43,30 @@ def _crear(
         )
     )
     enviar_push(db, usuario_id, titulo, mensaje, sesion_id)
+
+
+def avisar_fallo_aviso_cliente(
+    db: Session, sesion_id: str, cliente_nombre: str, canal: str, motivo: str
+) -> None:
+    """Un correo o WhatsApp automático a un cliente falló (Brevo/Lucid Bot
+    caídos, sin configurar, o el cliente sin teléfono/correo). Antes esto
+    solo quedaba en el log del servidor: nadie del equipo se enteraba de que
+    un cliente se quedó sin ese aviso. Avisa a cada admin activo.
+
+    Hace su propio commit a propósito: se llama desde dentro de un `except`,
+    después de que ya falló una llamada de red (Brevo/Lucid Bot), en rutas
+    que no vuelven a comitear después de ese punto -sin esto, el aviso
+    quedaría solo agregado a la sesión y se perdería al cerrarla."""
+    for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
+        _crear(
+            db,
+            admin.id,
+            sesion_id,
+            TIPO_AVISO_CLIENTE_FALLIDO,
+            f"No se pudo avisar a {cliente_nombre} por {canal}",
+            motivo,
+        )
+    db.commit()
 
 
 def _nombre_vendedora(db: Session, vendedor_id: str | None) -> str | None:

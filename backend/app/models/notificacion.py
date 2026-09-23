@@ -36,6 +36,10 @@ TIPO_BODEGA_ENVIO_A_VENDEDORA = "bodega_envio_a_vendedora"
 TIPO_CUBICAJE_BODEGA = "cubicaje_bodega"
 # La vendedora respondió en el hilo de cubicaje de un pedido: aviso para bodega.
 TIPO_CUBICAJE_VENDEDORA = "cubicaje_vendedora"
+# El correo o WhatsApp automático a un cliente falló (Brevo/Lucid Bot caídos,
+# sin configurar, o el cliente sin teléfono/correo): aviso para cada admin,
+# porque antes esto solo quedaba en el log del servidor y nadie se enteraba.
+TIPO_AVISO_CLIENTE_FALLIDO = "aviso_cliente_fallido"
 
 
 class Notificacion(Base):

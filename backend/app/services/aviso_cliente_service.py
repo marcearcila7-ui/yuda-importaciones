@@ -18,12 +18,23 @@ import re
 from datetime import date, datetime, timezone
 
 import httpx
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.cliente import Cliente
+from app.services.notificacion_service import avisar_fallo_aviso_cliente
 
 logger = logging.getLogger("app.aviso_cliente")
+
+
+def _avisar_fallo(db: Session, sesion_id: str, cliente: Cliente, numero: str, canal: str, exc: Exception) -> None:
+    """Además del log, deja un aviso para cada admin: antes esto solo
+    quedaba en el servidor y nadie del equipo se enteraba de que un cliente
+    se quedó sin ese correo/WhatsApp."""
+    avisar_fallo_aviso_cliente(
+        db, sesion_id, cliente.nombre, canal, f"Pedido {numero}. Motivo: {exc}"
+    )
 
 _MESES = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -233,7 +244,7 @@ def _enviar_whatsapp_lucidbot(
 
 
 def avisar_cliente_aprobar_despacho(
-    cliente: Cliente, sesion_id: str, numero: str, plazo: datetime, novedades: str | None = None
+    db: Session, cliente: Cliente, sesion_id: str, numero: str, plazo: datetime, novedades: str | None = None
 ) -> None:
     """Bodega recibió e inspeccionó el pedido: el cliente tiene hasta `plazo`
     para aprobar el despacho desde su portal. Se avisa por correo y por
@@ -266,8 +277,9 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
 <p><a href="{link}">Revisar y aprobar mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de aprobación de despacho a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         nota_wsp = f"\n\nNota de bodega: {nota}" if nota else ""
@@ -289,11 +301,12 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
             },
             texto_libre=texto_libre,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de aprobación de despacho a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
-def avisar_cliente_pedido_en_proveedor(cliente: Cliente, sesion_id: str, numero: str) -> None:
+def avisar_cliente_pedido_en_proveedor(db: Session, cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Aviso simple: el pedido ya se mandó a comprar a los proveedores. Es el
     primer aviso externo que recibe el cliente después de confirmar sus
     cantidades, mucho antes de que bodega reciba nada. Correo y WhatsApp, cada
@@ -310,8 +323,9 @@ una fecha estimada de cuándo va a estar listo te avisamos.</p>
 <p><a href="{link}">Ver el estado de mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de 'pedido enviado a proveedor' a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         texto_libre = (
@@ -327,12 +341,13 @@ una fecha estimada de cuándo va a estar listo te avisamos.</p>
             },
             texto_libre=texto_libre,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de 'pedido enviado a proveedor' a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
 def avisar_cliente_fecha_tentativa(
-    cliente: Cliente, sesion_id: str, numero: str, fecha_legible: str, supplier: str
+    db: Session, cliente: Cliente, sesion_id: str, numero: str, fecha_legible: str, supplier: str
 ) -> None:
     """Avisa al cliente la fecha aproximada que dio UN proveedor puntual para
     tener listo su pedido. Es por proveedor (no por cotización): si el
@@ -351,8 +366,9 @@ aproximadamente el <strong>{fecha_legible}</strong>. Es una fecha estimada, pued
 <p><a href="{link}">Ver el estado de mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de fecha tentativa a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         texto_libre = (
@@ -370,11 +386,13 @@ aproximadamente el <strong>{fecha_legible}</strong>. Es una fecha estimada, pued
             },
             texto_libre=texto_libre,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de fecha tentativa a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
 def avisar_cliente_despachado(
+    db: Session,
     cliente: Cliente,
     sesion_id: str,
     numero: str,
@@ -412,8 +430,9 @@ def avisar_cliente_despachado(
 <p><a href="{link}">Ver el estado de mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de despacho a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         partes = [f"Hola {cliente.nombre}, tu pedido {numero} ya salió: el contenedor está en tránsito."]
@@ -436,11 +455,12 @@ def avisar_cliente_despachado(
             },
             texto_libre=" ".join(partes),
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de despacho a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
-def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> None:
+def avisar_cliente_en_destino(db: Session, cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Avisa al cliente que su contenedor llegó al país de destino, antes de
     la entrega final. Correo y WhatsApp, cada uno best-effort."""
     link = _link_portal(sesion_id)
@@ -454,8 +474,9 @@ def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> 
 <p><a href="{link}">Ver el estado de mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de llegada a destino a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         texto_libre = (
@@ -471,11 +492,12 @@ def avisar_cliente_en_destino(cliente: Cliente, sesion_id: str, numero: str) -> 
             },
             texto_libre=texto_libre,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de llegada a destino a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
-def avisar_cliente_entregado(cliente: Cliente, sesion_id: str, numero: str) -> None:
+def avisar_cliente_entregado(db: Session, cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Avisa al cliente que su pedido fue entregado. Correo y WhatsApp, cada
     uno best-effort."""
     link = _link_portal(sesion_id)
@@ -489,8 +511,9 @@ def avisar_cliente_entregado(cliente: Cliente, sesion_id: str, numero: str) -> N
 <p><a href="{link}">Ver mi pedido</a></p>
 <p>YUDA Importaciones</p>""",
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el correo de entrega a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
         texto_libre = (
@@ -506,5 +529,6 @@ def avisar_cliente_entregado(cliente: Cliente, sesion_id: str, numero: str) -> N
             },
             texto_libre=texto_libre,
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("No se pudo enviar el WhatsApp de entrega a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
