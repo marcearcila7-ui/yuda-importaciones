@@ -89,7 +89,7 @@ def test_adjunta_xlsx(client, crear_usuario, crear_sesion, token_staff, monkeypa
 def test_adjunta_xls(client, crear_usuario, crear_sesion, token_staff, monkeypatch):
     llamadas = _storage_ok(monkeypatch)
     s, tok = _sesion_de_vendedora(crear_usuario, crear_sesion, token_staff)
-    r = _subir(client, tok, s.id, "viejo.xls", b"\xd0\xcf", "application/vnd.ms-excel")
+    r = _subir(client, tok, s.id, "viejo.xls", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", "application/vnd.ms-excel")
     assert r.status_code == 200, r.text
     assert r.json()["tipo"] == "excel"
     assert llamadas["content_type"] == "application/vnd.ms-excel"

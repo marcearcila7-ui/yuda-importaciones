@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, require_roles
+from app.core.archivo_valida import es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
@@ -94,6 +95,8 @@ async def _leer_y_validar_video(video: UploadFile) -> tuple[bytes, str]:
     video_bytes = await video.read()
     if len(video_bytes) > MAX_BYTES_VIDEO:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El video no debe superar 100MB")
+    if not es_video_valido(video_bytes):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no es un video MP4, MOV o WEBM válido")
     return video_bytes, video.content_type
 
 

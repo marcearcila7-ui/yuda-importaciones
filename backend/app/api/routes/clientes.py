@@ -15,7 +15,9 @@ from app.api.dependencies import (
     require_roles,
     vendedora_tiene_acceso_cliente,
 )
+from app.core.archivo_valida import detectar_tipo_documento
 from app.core.config import settings
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.services.borrado_service import (
     borrar_sesiones,
@@ -1375,6 +1377,17 @@ async def subir_adjunto_seguimiento(
     contenido = await archivo.read()
     if len(contenido) > 25 * 1024 * 1024:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
+
+    # Valida el contenido REAL (magic bytes), no solo el content-type/extensión
+    # declarados por el cliente (falsificables). CSV no tiene una firma binaria
+    # confiable -es texto plano-, así que solo se descarta si trae bytes nulos
+    # (señal de que en realidad es un archivo binario disfrazado de .csv).
+    if tipo == "imagen" and detectar_tipo_imagen(contenido) is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo in ("pdf", "excel") and detectar_tipo_documento(contenido) is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo == "csv" and b"\x00" in contenido[:4096]:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
 
     nombre_archivo = f"seguimiento/{sesion_id}-{uuid.uuid4().hex[:8]}{extension}"
     loop = asyncio.get_event_loop()
