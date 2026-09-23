@@ -1330,9 +1330,17 @@ ${t('clientes.email')}: ${c.email}`
           <div className="flex flex-wrap gap-2">
             {[{ id: '', nombre: t('clientes.todasLasVendedoras') }, ...vendedoras.map((v) => ({ id: v.user_id, nombre: v.nombre }))].map((v) => {
               const activo = filtroVendedora === v.id
-              const cuantos = v.id
-                ? clientes.filter((c) => c.vendedora_id === v.id && !c.pendiente_asignacion).length
-                : clientes.filter((c) => !c.pendiente_asignacion).length
+              // Mismo criterio que clientesFiltrados: si no se está viendo
+              // desactivados, no se cuentan -si no, el número del contador
+              // no coincidía con cuántos aparecían realmente en la lista
+              // (ej. "Sara Prueba 2" pero solo se veía 1 porque el otro
+              // estaba desactivado).
+              const cuantos = clientes.filter(
+                (c) =>
+                  !c.pendiente_asignacion &&
+                  (c.activo || verInactivos) &&
+                  (!v.id || c.vendedora_id === v.id),
+              ).length
               return (
                 <button
                   key={v.id || 'todas'}
