@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import toast from 'react-hot-toast'
-import axios from 'axios'
-import { Check, FileText, Package, Plus, ShoppingBag, UserPlus, Users } from 'lucide-react'
+import { Check, FileText, Package, ShoppingBag, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
-import { crearCliente, getClientes } from '../../api/clientes'
+import { useAuthStore } from '../../store/authStore'
+import { getClientes } from '../../api/clientes'
 import { getConfiguracion } from '../../api/admin'
-import CredencialesCliente from '../CredencialesCliente'
 import SelectorCliente from '../SelectorCliente/SelectorCliente'
-import type { Cliente, ClienteCreado } from '../../types/cliente'
+import type { Cliente } from '../../types/cliente'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none'
 
-// La primera decisión de la cotización: cliente que ya existe, cliente nuevo, o
-// ninguno todavía. Arranca sin elegir a propósito: mientras no se elija, no se
-// muestra ningún formulario, y así queda claro que esto es lo primero que hay que hacer.
-type Modo = 'existente' | 'nuevo' | 'libre'
+// La primera decisión de la cotización: cliente que ya existe, o ninguno
+// todavía (cotización libre). Ya no se puede crear un cliente nuevo desde
+// acá: todo cliente tiene que existir primero en Yuda Contable e importarse
+// (pantalla de Clientes) -así Marcela mantiene un solo origen de clientes
+// reales, sin duplicados sueltos creados a mano en el cotizador.
+type Modo = 'existente' | 'libre'
 
 // Qué se va a cotizar: cambia qué datos pide el OCR (bolsos necesita más rigor:
 // tamaño, empaque, herrajes, riata, mínimos de la tienda, fotos de detalle).
@@ -80,6 +81,8 @@ function OpcionCard({
 function SesionSelector() {
   const { t } = useTranslation()
   const { isLoading, crearSesion } = usePackingStore()
+  const { usuario } = useAuthStore()
+  const esAdmin = usuario?.rol === 'admin'
 
   const [tipoCotizacion, setTipoCotizacion] = useState<TipoCotizacion | null>(null)
   const [modo, setModo] = useState<Modo | null>(null)
@@ -92,13 +95,6 @@ function SesionSelector() {
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
   const [clienteSel, setClienteSel] = useState('')
-
-  // Crear cliente nuevo
-  const [guardandoCliente, setGuardandoCliente] = useState(false)
-  const [nuevoNombre, setNuevoNombre] = useState('')
-  const [nuevoEmail, setNuevoEmail] = useState('')
-  const [nuevaPass, setNuevaPass] = useState('')
-  const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
 
   // Antes esto fallaba en silencio total: con mala señal en el mercado, la
   // lista de clientes se quedaba vacía para siempre, sin spinner ni error ni
@@ -131,39 +127,6 @@ function SesionSelector() {
     // Cambiar de opción no debe arrastrar lo elegido en la anterior. (El texto
     // buscado vive dentro de SelectorCliente y se reinicia solo al desmontarse.)
     if (m === 'libre') setClienteSel('')
-    if (m === 'existente') setCredenciales(null)
-  }
-
-  const crearClienteNuevo = async () => {
-    if (!nuevoNombre.trim() || !nuevoEmail.trim()) {
-      toast.error(t('clientes.faltanDatos'))
-      return
-    }
-    setGuardandoCliente(true)
-    try {
-      const creado = await crearCliente({
-        nombre: nuevoNombre.trim(),
-        email: nuevoEmail.trim(),
-        password: nuevaPass.trim() || undefined,
-      })
-      setClientes((c) => [creado, ...c])
-      setClienteSel(creado.id)
-      setCredenciales(creado)
-      setNuevoNombre('')
-      setNuevoEmail('')
-      setNuevaPass('')
-      setAviso(null)
-      toast.success(t('clientes.creado'))
-    } catch (err) {
-      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
-      // Con la sesion vencida el interceptor ya manda al login, que lo explica:
-      // mostrar aca "No autenticado" solo confunde.
-      if (!axios.isAxiosError(err) || err.response?.status !== 401) {
-        toast.error(detalle || t('clientes.errorCrear'))
-      }
-    } finally {
-      setGuardandoCliente(false)
-    }
   }
 
   const elegirTipoCotizacion = (tp: TipoCotizacion) => {
@@ -191,7 +154,7 @@ function SesionSelector() {
       setNombreLibre('')
     } else {
       if (!clienteSel) {
-        setAviso(modo === 'nuevo' ? t('dashboard.avisoCrearCliente') : t('dashboard.avisoElegirCliente'))
+        setAviso(t('dashboard.avisoElegirCliente'))
         return
       }
       setAviso(null)
@@ -230,7 +193,7 @@ function SesionSelector() {
       {tipoCotizacion && (
       <>
       <Paso titulo={t('dashboard.paraQuien')}>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <OpcionCard
             activo={modo === 'existente'}
             icono={<Users size={18} />}
@@ -243,13 +206,6 @@ function SesionSelector() {
                   : t('dashboard.opcionExistenteVacio')
             }
             onClick={() => elegirModo('existente')}
-          />
-          <OpcionCard
-            activo={modo === 'nuevo'}
-            icono={<UserPlus size={18} />}
-            titulo={t('dashboard.opcionNuevo')}
-            ayuda={t('dashboard.opcionNuevoAyuda')}
-            onClick={() => elegirModo('nuevo')}
           />
           <OpcionCard
             activo={modo === 'libre'}
@@ -291,16 +247,17 @@ function SesionSelector() {
               style={{ borderRadius: 12, backgroundColor: 'var(--yuda-primary-soft)' }}
             >
               <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('dashboard.sinClientes')}
+                {esAdmin ? t('dashboard.sinClientesAdmin') : t('dashboard.sinClientesVendedora')}
               </p>
-              <button
-                type="button"
-                onClick={() => elegirModo('nuevo')}
-                className="flex items-center gap-2 font-semibold text-white"
-                style={{ minHeight: 40, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
-              >
-                <UserPlus size={16} /> {t('dashboard.crearPrimerCliente')}
-              </button>
+              {esAdmin && (
+                <Link
+                  to="/clientes"
+                  className="flex items-center gap-2 font-semibold text-white"
+                  style={{ minHeight: 40, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 14px', fontSize: 14 }}
+                >
+                  {t('dashboard.irAClientes')}
+                </Link>
+              )}
             </div>
           ) : (
             <SelectorCliente
@@ -311,45 +268,6 @@ function SesionSelector() {
                 setAviso(null)
               }}
             />
-          )}
-        </Paso>
-      )}
-
-      {modo === 'nuevo' && (
-        <Paso titulo={t('clientes.nuevo')}>
-          {clienteElegido ? (
-            <div
-              className="flex items-center gap-3 p-3"
-              style={{ borderRadius: 12, border: '2px solid var(--yuda-primary)', backgroundColor: 'var(--yuda-primary-soft)' }}
-            >
-              <Check size={18} style={{ color: 'var(--yuda-primary)' }} />
-              <span className="text-sm" style={{ color: 'var(--yuda-accent)' }}>
-                {t('dashboard.clienteCreado', { nombre: clienteElegido.nombre })}
-              </span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input style={inputStyle} className={`${inputClase} min-h-[44px]`} placeholder={t('clientes.nombre')} value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} />
-                <input style={inputStyle} className={`${inputClase} min-h-[44px]`} type="email" placeholder={t('clientes.email')} value={nuevoEmail} onChange={(e) => setNuevoEmail(e.target.value)} />
-                <input style={inputStyle} className={`${inputClase} min-h-[44px] sm:col-span-2`} placeholder={t('clientes.passwordOpcional')} value={nuevaPass} onChange={(e) => setNuevaPass(e.target.value)} />
-              </div>
-              <button
-                type="button"
-                onClick={crearClienteNuevo}
-                disabled={guardandoCliente}
-                className="flex items-center gap-2 self-start font-semibold text-white disabled:opacity-60"
-                style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 16px', fontSize: 15 }}
-              >
-                <Plus size={16} /> {guardandoCliente ? t('clientes.creando') : t('clientes.crear')}
-              </button>
-            </div>
-          )}
-
-          {credenciales && (
-            <div className="mt-3">
-              <CredencialesCliente cliente={credenciales} onCerrar={() => setCredenciales(null)} />
-            </div>
           )}
         </Paso>
       )}

@@ -3,8 +3,6 @@ import type {
   ActividadCliente,
   Cliente,
   ClienteColaboracion,
-  ClienteCreado,
-  ClienteCreate,
   ContableClientePreview,
   ImportarContableResultado,
   VendedoraAsignada,
@@ -21,11 +19,6 @@ export async function getClientes(): Promise<Cliente[]> {
 
 export async function getCliente(id: string): Promise<Cliente> {
   const { data } = await apiClient.get<Cliente>(`/clientes/${id}`)
-  return data
-}
-
-export async function crearCliente(datos: ClienteCreate): Promise<ClienteCreado> {
-  const { data } = await apiClient.post<ClienteCreado>('/clientes', datos)
   return data
 }
 
@@ -129,6 +122,13 @@ export async function buscarContable(q: string): Promise<ContableClientePreview[
 
 export async function importarContableUno(sigla: string): Promise<Cliente> {
   const { data } = await apiClient.post<Cliente>('/clientes/importar-contable-uno', { sigla })
+  return data
+}
+
+// Todos los clientes que existen en Yuda Contable pero todavía NO en el
+// cotizador (ni importados, ni sincronizados solos al crearlos allá).
+export async function getClientesNoSincronizados(): Promise<ContableClientePreview[]> {
+  const { data } = await apiClient.get<ContableClientePreview[]>('/clientes/no-sincronizados')
   return data
 }
 

@@ -74,6 +74,23 @@ def buscar_clientes_contable(termino: str) -> list[dict] | None:
         return None
 
 
+def listar_todos_clientes_contable() -> list[dict] | None:
+    """TODOS los clientes de Yuda Contable (hasta 1000), sin filtro -para
+    comparar contra los que ya existen acá y armar la lista de "no
+    sincronizados". None si la conexión no está configurada o falla."""
+    url = _url_interna("clientes")
+    if not url:
+        return None
+    try:
+        resp = httpx.get(url, timeout=15)
+        if resp.status_code != 200:
+            return None
+        return resp.json().get("clientes", [])
+    except Exception:
+        logger.exception("No se pudo listar los clientes de Yuda Contable")
+        return None
+
+
 def obtener_estado_cuenta_contable(sigla: str) -> dict | None:
     """Estado de cuenta real de Yuda Contable (saldo, pedidos, abonos) para
     el cliente con esa sigla. None si no está configurado, no se encuentra,

@@ -29,20 +29,6 @@ export interface Cliente {
   created_at: string
 }
 
-export interface ClienteCreado extends Cliente {
-  password_inicial: string
-}
-
-export interface ClienteCreate {
-  nombre: string
-  email: string
-  empresa?: string
-  nit?: string
-  telefono?: string
-  pais?: string
-  password?: string
-}
-
 // ──────────────── Colaboración: clientes compartidos entre vendedoras ────────────────
 
 export interface VendedoraBasica {

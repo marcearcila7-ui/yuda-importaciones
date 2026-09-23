@@ -3,19 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
-class ClienteCreate(BaseModel):
-    """Datos para crear un cliente del portal"""
-
-    nombre: str
-    email: str
-    empresa: str | None = None
-    nit: str | None = None
-    telefono: str | None = None
-    pais: str | None = None
-    # Si no se envía contraseña, el backend genera una y la devuelve una sola vez
-    password: str | None = None
-
-
 class ClienteUpdate(BaseModel):
     """Campos editables de un cliente"""
 
@@ -58,12 +45,6 @@ class ClienteResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class ClienteCreado(ClienteResponse):
-    """Respuesta al crear: incluye la contraseña inicial (se muestra una vez)"""
-
-    password_inicial: str
 
 
 class ResetPasswordRequest(BaseModel):
@@ -199,6 +180,17 @@ class ImportarContableUnoInput(BaseModel):
     de ImportarContableInput, que trae varios de la lista fija de una vez)."""
 
     sigla: str
+
+
+class SincronizarClienteContableInput(BaseModel):
+    """Lo que manda Yuda Contable (app aparte) cuando Marcela crea un cliente
+    ahí y elige sincronizarlo de una vez -en vez de esperar a que alguien lo
+    busque e importe manualmente después."""
+
+    sigla: str
+    nombre: str | None = None
+    telefono: str | None = None
+    pais: str | None = None
 
 
 class ImportarContableResultado(BaseModel):

@@ -130,9 +130,17 @@ class AbonoContable(BaseModel):
 class EstadoCuentaContableResponse(BaseModel):
     """Estado de cuenta REAL de Yuda Contable (app aparte), traído en vivo
     por su API interna -no tiene relación con la cuenta interna de arriba
-    (MovimientoCuenta). None en el campo del cliente si no se pudo traer."""
+    (MovimientoCuenta). None en el campo del cliente si no se pudo traer.
+
+    compartido: si Marcela decidió a propósito que el CLIENTE vea esto en su
+    portal (botón "Enviar por el portal" en Yuda Contable). El staff
+    (Marcela/vendedora) siempre ve el dato completo desde su propia vista
+    interna, sin importar este valor -/portal/cuenta es quien hace valer
+    esto y le manda None al cliente si compartido es False."""
 
     sigla: str
+    compartido: bool = False
+    compartido_en: datetime | None = None
     moneda: str
     saldo_pendiente: float
     es_a_favor: bool

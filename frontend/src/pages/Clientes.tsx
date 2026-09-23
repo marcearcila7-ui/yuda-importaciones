@@ -4,14 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, Plus, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
 import {
   actualizarCliente,
   buscarContable,
-  crearCliente,
   descargarEstadoCuentaContablePdf,
   eliminarCliente,
   getClientes,
+  getClientesNoSincronizados,
   getCotizacionesCliente,
   importarContable,
   importarContableUno,
@@ -24,8 +24,7 @@ import { eliminarSesion } from '../api/packing'
 import { getEquipo } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
 import { confirmar } from '../store/confirmStore'
-import CredencialesCliente from '../components/CredencialesCliente'
-import type { Cliente, ClienteCreado, ClienteCreate, ContableClientePreview } from '../types/cliente'
+import type { Cliente, ContableClientePreview } from '../types/cliente'
 import type { Sesion } from '../types/packing'
 import type { EquipoResponse } from '../types/equipo'
 
@@ -60,34 +59,6 @@ const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
 
-function Campo({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  type?: string
-  placeholder?: string
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-      {label}
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={inputStyle}
-        className={inputClase}
-      />
-    </label>
-  )
-}
-
 function Clientes() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -99,9 +70,6 @@ function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
-  const [mostrarForm, setMostrarForm] = useState(false)
-  const [guardando, setGuardando] = useState(false)
-  const [credenciales, setCredenciales] = useState<ClienteCreado | null>(null)
   const [copiadoLink, setCopiadoLink] = useState(false)
   // Contraseña recién generada por cliente (solo en memoria, para reenviarla)
   const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
@@ -130,8 +98,6 @@ function Clientes() {
   // Dentro de "Cotizaciones": por etapa, para no mezclar borradores con lo
   // que ya está en camino. "todas" no filtra, solo agrupa visualmente.
   const [subTabCot, setSubTabCot] = useState<'todas' | EtapaCot>('todas')
-
-  const [form, setForm] = useState<ClienteCreate>({ nombre: '', email: '' })
 
   // Al entrar a un cliente (por click, por atrás/adelante del navegador, o
   // por refrescar con esa URL abierta) siempre arranca en la misma pestaña y
@@ -206,46 +172,6 @@ function Clientes() {
       .then(setEquipo)
       .catch(() => setEquipo({ vendedoras: [] }))
   }, [esAdmin])
-
-  const setCampo = (campo: keyof ClienteCreate, valor: string) =>
-    setForm((f) => ({ ...f, [campo]: valor }))
-
-  const handleCrear = async () => {
-    if (!form.nombre.trim() || !form.email.trim()) {
-      toast.error(t('clientes.faltanDatos'))
-      return
-    }
-    setGuardando(true)
-    try {
-      const creado = await crearCliente({
-        nombre: form.nombre.trim(),
-        email: form.email.trim(),
-        empresa: form.empresa?.trim() || undefined,
-        nit: form.nit?.trim() || undefined,
-        pais: form.pais?.trim() || undefined,
-        telefono: form.telefono?.trim() || undefined,
-        password: form.password?.trim() || undefined,
-      })
-      setCredenciales(creado)
-      setForm({ nombre: '', email: '' })
-      setMostrarForm(false)
-      toast.success(t('clientes.creado'))
-      cargar()
-    } catch (err) {
-      const detalle =
-        typeof err === 'object' && err && 'response' in err
-          ? // @ts-expect-error acceso defensivo al detalle de axios
-            err.response?.data?.detail
-          : null
-      // Con la sesion vencida el interceptor ya manda al login, que lo explica:
-      // mostrar aca "No autenticado" solo confunde.
-      if (!axios.isAxiosError(err) || err.response?.status !== 401) {
-        toast.error(detalle || t('clientes.errorCrear'))
-      }
-    } finally {
-      setGuardando(false)
-    }
-  }
 
   const toggleActivo = async (c: Cliente) => {
     try {
@@ -371,6 +297,29 @@ function Clientes() {
     }
   }
 
+  // Estado de sincronización con Yuda Contable: todo, o el listado de lo que
+  // falta (nombre + sigla) para importar desde acá. Se carga solo al entrar
+  // (no hace falta que Marcela busque nada para verlo).
+  const [noSincronizados, setNoSincronizados] = useState<ContableClientePreview[] | null>(null)
+  const [cargandoNoSincronizados, setCargandoNoSincronizados] = useState(false)
+  const [siglaSeleccionadaSync, setSiglaSeleccionadaSync] = useState('')
+
+  const cargarNoSincronizados = async () => {
+    setCargandoNoSincronizados(true)
+    try {
+      setNoSincronizados(await getClientesNoSincronizados())
+    } catch {
+      setNoSincronizados(null)
+    } finally {
+      setCargandoNoSincronizados(false)
+    }
+  }
+
+  useEffect(() => {
+    if (esAdmin) cargarNoSincronizados()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esAdmin])
+
   // Búsqueda EN VIVO en Yuda Contable (a diferencia de la lista fija de
   // arriba, que hay que pedirme que la regenere a mano de vez en cuando).
   const [busquedaContable, setBusquedaContable] = useState('')
@@ -400,6 +349,8 @@ function Clientes() {
       setResultadosContable((prev) =>
         prev ? prev.map((r) => (r.sigla === sigla ? { ...r, ya_existe: true } : r)) : prev,
       )
+      setNoSincronizados((prev) => (prev ? prev.filter((r) => r.sigla !== sigla) : prev))
+      if (siglaSeleccionadaSync === sigla) setSiglaSeleccionadaSync('')
       cargar()
     } catch (err) {
       const detalle = axios.isAxiosError(err) ? (err.response?.data?.detail as string | undefined) : undefined
@@ -1063,14 +1014,6 @@ ${t('clientes.email')}: ${c.email}`
             {t('clientes.subtitulo')}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setMostrarForm((v) => !v)}
-          className="flex items-center gap-2 font-semibold text-white"
-          style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
-        >
-          <UserPlus size={18} /> {t('clientes.nuevo')}
-        </button>
       </div>
 
       {/* Cómo se reparte el trabajo: quién crea el cliente y quién puede cotizarle.
@@ -1107,45 +1050,51 @@ ${t('clientes.email')}: ${c.email}`
         </div>
       )}
 
-      {/* Credenciales recién creadas (incluye el link del portal) */}
-      {credenciales && (
-        <div className="card">
-          <CredencialesCliente cliente={credenciales} onCerrar={() => setCredenciales(null)} />
-        </div>
-      )}
-
-      {/* Formulario nuevo cliente */}
-      {mostrarForm && (
-        <div className="card flex flex-col gap-4">
-          <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>{t('clientes.nuevo')}</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Campo label={t('clientes.nombre')} value={form.nombre} onChange={(v) => setCampo('nombre', v)} />
-            <Campo label={t('clientes.email')} type="email" value={form.email} onChange={(v) => setCampo('email', v)} placeholder="cliente@correo.com" />
-            <Campo label={t('clientes.empresa')} value={form.empresa ?? ''} onChange={(v) => setCampo('empresa', v)} />
-            <Campo label={t('clientes.nit')} value={form.nit ?? ''} onChange={(v) => setCampo('nit', v)} />
-            <Campo label={t('clientes.pais')} value={form.pais ?? ''} onChange={(v) => setCampo('pais', v)} />
-            <Campo label={t('clientes.telefono')} value={form.telefono ?? ''} onChange={(v) => setCampo('telefono', v)} />
-            <Campo label={t('clientes.passwordOpcional')} value={form.password ?? ''} onChange={(v) => setCampo('password', v)} placeholder={t('clientes.passwordAuto')} />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleCrear}
-              disabled={guardando}
-              className="flex items-center gap-2 font-semibold text-white disabled:opacity-60"
-              style={{ minHeight: 44, backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 18px', fontSize: 15 }}
-            >
-              <Plus size={18} /> {guardando ? t('clientes.creando') : t('clientes.crear')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMostrarForm(false)}
-              className="rounded-lg px-4 text-sm font-medium"
-              style={{ color: 'var(--yuda-text-secondary)' }}
-            >
-              {t('clientes.cancelar')}
-            </button>
-          </div>
+      {/* Estado de sincronización con Yuda Contable: todo, o un selector con
+          lo que falta importar (nombre + sigla). No hay botón de crear
+          cliente acá: todo cliente nace en Yuda Contable. */}
+      {esAdmin && (
+        <div className="card flex flex-col gap-3">
+          <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            <Users size={18} /> {t('clientes.sincronizacionTitulo')}
+          </h2>
+          {cargandoNoSincronizados ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('common.cargando')}</p>
+          ) : noSincronizados === null ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-error)' }}>{t('clientes.errorBuscarContable')}</p>
+          ) : noSincronizados.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--yuda-success)' }}>{t('clientes.todoSincronizado')}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('clientes.faltanSincronizar', { n: noSincronizados.length })}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={siglaSeleccionadaSync}
+                  onChange={(e) => setSiglaSeleccionadaSync(e.target.value)}
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  style={{ fontSize: 16, minHeight: 44 }}
+                >
+                  <option value="">{t('clientes.elegirParaSincronizar')}</option>
+                  {noSincronizados.map((r) => (
+                    <option key={r.sigla} value={r.sigla}>
+                      {(r.nombre || t('clientes.contableSinNombre')) + ' — ' + r.sigla}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => siglaSeleccionadaSync && importarUno(siglaSeleccionadaSync)}
+                  disabled={!siglaSeleccionadaSync || importandoUno[siglaSeleccionadaSync]}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-primary)', minHeight: 44 }}
+                >
+                  {importandoUno[siglaSeleccionadaSync] ? t('clientes.importando') : t('clientes.importar')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

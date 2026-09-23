@@ -51,7 +51,7 @@ from app.services.cotizacion_service import (
     generar_cotizacion_pdf,
 )
 from app.services.cuenta_service import construir_estado_cuenta
-from app.services.yuda_contable_service import obtener_pdf_estado_cuenta_contable
+from app.services.yuda_contable_service import obtener_estado_cuenta_contable, obtener_pdf_estado_cuenta_contable
 
 router = APIRouter(prefix="/portal", tags=["portal"])
 
@@ -172,16 +172,27 @@ def mi_cuenta(
         db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).all()
     )
     sesiones = db.query(Sesion).filter(Sesion.cliente_id == cliente.id).all()
-    return construir_estado_cuenta(cliente, movimientos, sesiones)
+    resultado = construir_estado_cuenta(cliente, movimientos, sesiones)
+    # El estado de cuenta de Yuda Contable solo se le muestra al CLIENTE si
+    # Marcela lo compartió a propósito (botón "Enviar por el portal" allá).
+    # La vista de Marcela/vendedora en el cotizador (GET /clientes/{id}/cuenta,
+    # misma función) sí ve el dato completo siempre, sin este filtro.
+    ecc = resultado.get("estado_cuenta_contable")
+    if ecc and not ecc.get("compartido"):
+        resultado["estado_cuenta_contable"] = None
+    return resultado
 
 
 @router.get("/cuenta/pdf-contable")
 def mi_cuenta_pdf_contable(cliente: Cliente = Depends(get_current_cliente)) -> Response:
     """El PDF oficial del estado de cuenta, tal cual lo genera Yuda Contable
-    en vivo. 404 si el cliente no tiene sigla vinculada, o si esa app no
-    respondió (sin conexión configurada, o falló)."""
+    en vivo. 404 si el cliente no tiene sigla vinculada, si Marcela no lo ha
+    compartido con este cliente todavía, o si esa app no respondió."""
     if not cliente.sigla:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Este cliente no está vinculado a Yuda Contable")
+    datos = obtener_estado_cuenta_contable(cliente.sigla)
+    if not datos or not datos.get("compartido"):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este estado de cuenta todavía no se compartió contigo")
     pdf = obtener_pdf_estado_cuenta_contable(cliente.sigla)
     if pdf is None:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo traer el estado de cuenta de Yuda Contable")

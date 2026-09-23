@@ -148,6 +148,8 @@ def _armar_estado_cuenta_contable(sigla: str | None) -> dict | None:
         return None
     return {
         "sigla": sigla,
+        "compartido": dato.get("compartido", False),
+        "compartido_en": dato.get("compartido_en"),
         "moneda": dato.get("moneda", "CNY"),
         "saldo_pendiente": dato.get("saldo_pendiente", 0),
         "es_a_favor": dato.get("es_a_favor", False),

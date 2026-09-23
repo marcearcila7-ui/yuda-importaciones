@@ -6,7 +6,7 @@ import unicodedata
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -15,13 +15,14 @@ from app.api.dependencies import (
     require_roles,
     vendedora_tiene_acceso_cliente,
 )
+from app.core.config import settings
 from app.database import get_db
 from app.services.borrado_service import (
     borrar_sesiones,
     limpiar_storage,
     tiene_movimientos_cliente,
 )
-from app.models.cliente import ORIGEN_IMPORTADO_CONTABLE, ORIGEN_MANUAL, Cliente
+from app.models.cliente import ORIGEN_IMPORTADO_CONTABLE, Cliente
 from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.cuenta import MovimientoCuenta, calcular_comision, convertir_abono
 from app.services.estado_cuenta_service import (
@@ -46,14 +47,13 @@ from app.schemas.cliente import (
     ActividadResponse,
     AsignarVendedorasInput,
     ClienteColaboracionResponse,
-    ClienteCreado,
-    ClienteCreate,
     ClienteResponse,
     ClienteUpdate,
     ContableClientePreview,
     CotizacionResumenCliente,
     ImportarContableInput,
     ImportarContableUnoInput,
+    SincronizarClienteContableInput,
     ImportarContableResultado,
     ResetPasswordRequest,
     VendedoraAsignadaResponse,
@@ -80,17 +80,15 @@ from app.services.aviso_cliente_service import (
     avisar_cliente_pedido_en_proveedor,
 )
 from app.services.storage_service import borrar_archivos, ruta_desde_url, subir_documento, subir_foto, subir_pdf
-from app.services.yuda_contable_service import buscar_clientes_contable, obtener_pdf_estado_cuenta_contable
+from app.services.yuda_contable_service import (
+    buscar_clientes_contable,
+    listar_todos_clientes_contable,
+    obtener_pdf_estado_cuenta_contable,
+)
 from app.core.security import hash_password
 
 # Se monta en main.py bajo /api/v1 (sin prefijo propio)
 router = APIRouter(tags=["clientes"])
-
-
-def _generar_password(n: int = 10) -> str:
-    """Contraseña inicial aleatoria fácil de copiar (sin ambigüedades visuales)"""
-    alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
-    return "".join(secrets.choice(alfabeto) for _ in range(n))
 
 
 # Clave de plantilla para la importación masiva de Yuda Contable: no se puede
@@ -174,39 +172,12 @@ def _sesion_autorizada(db: Session, sesion_id: str, usuario: User) -> Sesion:
 
 
 # ──────────────── CLIENTES (CRUD) ────────────────
-
-
-@router.post("/clientes", response_model=ClienteCreado, status_code=status.HTTP_201_CREATED)
-def crear_cliente(
-    datos: ClienteCreate,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
-    db: Session = Depends(get_db),
-) -> ClienteCreado:
-    """Crea un cliente con acceso al portal. La vendedora queda como dueña."""
-    email = datos.email.strip().lower()
-    if db.query(Cliente).filter(Cliente.email == email).first():
-        raise HTTPException(status.HTTP_409_CONFLICT, "Ya existe un cliente con ese email")
-
-    password = (datos.password or "").strip() or _generar_password()
-    cliente = Cliente(
-        nombre=datos.nombre.strip(),
-        email=email,
-        empresa=datos.empresa,
-        nit=datos.nit,
-        telefono=datos.telefono,
-        pais=datos.pais,
-        hashed_password=hash_password(password),
-        vendedora_id=usuario.id,
-        origen=ORIGEN_MANUAL,
-    )
-    db.add(cliente)
-    db.commit()
-    db.refresh(cliente)
-
-    return ClienteCreado(
-        **ClienteResponse.model_validate(cliente).model_dump(),
-        password_inicial=password,
-    )
+# Ya no existe un POST /clientes de creación manual a propósito: todo cliente
+# tiene que nacer en Yuda Contable (app aparte) y llegar acá por
+# sincronización automática (POST /clientes/sincronizar-desde-contable) o
+# importación manual (POST /clientes/importar-contable-uno /
+# /clientes/importar-contable). Los clientes con origen "manual" que ya
+# existían de antes de esta regla se conservan tal cual (ver ORIGEN_MANUAL).
 
 
 @router.get("/clientes", response_model=list[ClienteResponse])
@@ -255,6 +226,33 @@ def buscar_contable(
             cliente_id_existente=existentes.get(r["sigla"]),
         )
         for r in resultados
+    ]
+
+
+@router.get("/clientes/no-sincronizados", response_model=list[ContableClientePreview])
+def clientes_no_sincronizados(
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> list[ContableClientePreview]:
+    """Todos los clientes que existen en Yuda Contable pero todavía NO en el
+    cotizador (ni importados ni sincronizados automáticamente al crearlos
+    allá) -para el selector "nombre + sigla" de la pantalla de Clientes.
+    502 si no se pudo conectar con Yuda Contable."""
+    todos = listar_todos_clientes_contable()
+    if todos is None:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo conectar con Yuda Contable")
+    existentes = {c.sigla for (c,) in db.query(Cliente.sigla).filter(Cliente.sigla.isnot(None)).all()}
+    return [
+        ContableClientePreview(
+            sigla=r["sigla"],
+            nombre=r.get("nombre_completo"),
+            pais=r.get("pais"),
+            telefono=r.get("telefono"),
+            ya_existe=False,
+            cliente_id_existente=None,
+        )
+        for r in todos
+        if r["sigla"] not in existentes
     ]
 
 
@@ -597,6 +595,44 @@ def importar_contable_uno(
         db, usuario, sigla, encontrado.get("nombre_completo"), encontrado.get("telefono"), encontrado.get("pais")
     )
     return _cliente_response(cliente, usuario, _roles_por_usuario(db, [cliente]))
+
+
+def _verificar_token_contable(authorization: str | None = Header(None)) -> None:
+    """Autoriza la llamada de servidor a servidor desde Yuda Contable (no hay
+    sesión de usuario acá): mismo secreto que ya comparten las dos apps para
+    la dirección contraria (YUDA_CONTABLE_API_TOKEN)."""
+    if not settings.YUDA_CONTABLE_API_TOKEN:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "La integración con Yuda Contable no está configurada")
+    esperado = f"Bearer {settings.YUDA_CONTABLE_API_TOKEN}"
+    if not authorization or not secrets.compare_digest(authorization, esperado):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "No autorizado")
+
+
+@router.post("/clientes/sincronizar-desde-contable", response_model=ClienteResponse)
+def sincronizar_cliente_desde_contable(
+    datos: SincronizarClienteContableInput,
+    db: Session = Depends(get_db),
+    _autorizado: None = Depends(_verificar_token_contable),
+) -> ClienteResponse:
+    """Yuda Contable llama a esto justo después de crear un cliente ahí,
+    cuando Marcela elige sincronizarlo de una vez (checkbox en su formulario
+    de "Nuevo cliente"). Sin sesión de usuario: se autoriza con un token
+    compartido entre las dos apps, no con require_roles.
+
+    Idempotente: si el cliente ya existe acá (mismo sigla, por ejemplo porque
+    ya se había importado antes a mano), no lo duplica -solo confirma que
+    existe."""
+    sigla = datos.sigla.strip().upper()
+    admin = db.query(User).filter(User.rol == RolUsuario.admin, User.activo).order_by(User.created_at.asc()).first()
+    if admin is None:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "No hay una cuenta admin activa para asignar el cliente")
+
+    existente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
+    if existente:
+        return _cliente_response(existente, admin, _roles_por_usuario(db, [existente]))
+
+    cliente = _crear_cliente_desde_contable(db, admin, sigla, datos.nombre, datos.telefono, datos.pais)
+    return _cliente_response(cliente, admin, _roles_por_usuario(db, [cliente]))
 
 
 @router.post("/clientes/importar-contable", response_model=ImportarContableResultado)
