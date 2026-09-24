@@ -436,7 +436,7 @@ function Dashboard() {
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={volverAlInicio}
+                onClick={volverAlOrigen}
                 className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold"
                 style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
               >
@@ -583,7 +583,7 @@ function Dashboard() {
               ) : (
                 <button
                   type="button"
-                  onClick={volverAlInicio}
+                  onClick={volverAlOrigen}
                   className="flex items-center justify-center gap-2 font-semibold text-white"
                   style={{ minHeight: 48, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-success)' }}
                 >
