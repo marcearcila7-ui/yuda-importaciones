@@ -164,7 +164,12 @@ function Clientes() {
       return
     }
     setEligiendoTipoNueva(false)
-    navigate('/dashboard')
+    // Se manda el cliente de origen (para poder volver a su ficha si se
+    // cancela o se elimina la cotización) y su sesion_id (para que Dashboard
+    // no la borre al entrar: a Marcela, si llega sin sesion_id, le limpia el
+    // escritorio por si quedó una cotización vieja abierta de antes).
+    const nuevaSesion = usePackingStore.getState().sesionActual
+    navigate('/dashboard', { state: { sesion_id: nuevaSesion?.id, clienteOrigenId: cliente.id } })
   }
 
   // Borrar una cotización del cliente. Si ya se la habían enviado, también deja

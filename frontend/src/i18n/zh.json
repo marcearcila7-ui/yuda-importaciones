@@ -93,6 +93,7 @@
     "opcionProductosAyuda": "市场上的任何常规产品。",
     "opcionBolsos": "包包",
     "opcionBolsosAyuda": "需要更多信息（尺寸、包装、五金、背带、店铺最低起订量）和细节照片。",
+    "cotizandoTipo": "您正在报价：{{tipo}}",
     "avisoQueCotizar": "请先选择您要报价的内容。",
     "paraQuien": "这份报价是给谁的？",
     "elegirCliente": "选择客户",

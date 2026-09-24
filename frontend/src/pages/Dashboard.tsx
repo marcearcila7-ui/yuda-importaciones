@@ -129,6 +129,16 @@ function Dashboard() {
     volverAlInicio,
   } = usePackingStore()
   const [metricas, setMetricas] = useState<MetricasDashboard | null>(null)
+  // Si se llegó acá desde el atajo "+ Nueva cotización" de la ficha de un
+  // cliente, se recuerda para poder volver ahí (no a la pantalla principal
+  // del cotizador) al cancelar o eliminar esta cotización.
+  const [clienteOrigenId] = useState<string | null>(
+    () => (location.state as { clienteOrigenId?: string } | null)?.clienteOrigenId ?? null,
+  )
+  const volverAlOrigen = () => {
+    volverAlInicio()
+    if (clienteOrigenId) navigate(`/clientes/${clienteOrigenId}`)
+  }
   // Pantalla del asistente de cotización en la que está parada la vendedora.
   // Cada paso es una pantalla propia: se avanza y se vuelve, nunca se ve todo junto.
   const [pasoVista, setPasoVista] = useState(1)
@@ -278,7 +288,7 @@ function Dashboard() {
     try {
       await eliminarSesion(sesionActual.id)
       toast.success(t('dashboard.cotizacionEliminada'))
-      volverAlInicio()
+      volverAlOrigen()
       await cargarSesiones()
     } catch (err) {
       const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
@@ -309,6 +319,21 @@ function Dashboard() {
           ) : undefined
         }
       />
+
+      {/* Bolsos pide datos y fotos extra que productos varios no pide: sin
+          este aviso, con las dos pantallas tan parecidas, no quedaba claro
+          de un vistazo en cuál de las dos se estaba trabajando. */}
+      {sesionActual && (
+        <p
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold"
+          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+        >
+          {sesionActual.tipo_cotizacion === 'bolsos' ? <ShoppingBag size={16} /> : <Package size={16} />}
+          {t('dashboard.cotizandoTipo', {
+            tipo: t(sesionActual.tipo_cotizacion === 'bolsos' ? 'dashboard.opcionBolsos' : 'dashboard.opcionProductos'),
+          })}
+        </p>
+      )}
 
       {/* Las cifras del mes, en una sola tira de texto en vez de seis tarjetas */}
       {esAdmin && metricas && (
@@ -575,7 +600,7 @@ function Dashboard() {
       {sesionActual && confirmadoParaSesion !== sesionActual.id && (
         <AdvertenciaFotos
           onConfirmar={() => confirmarFotosParaSesion(sesionActual.id)}
-          onCancelar={volverAlInicio}
+          onCancelar={volverAlOrigen}
         />
       )}
     </div>

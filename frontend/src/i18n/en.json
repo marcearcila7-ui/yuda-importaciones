@@ -93,6 +93,7 @@
     "opcionProductosAyuda": "Any regular product from the market.",
     "opcionBolsos": "Bags",
     "opcionBolsosAyuda": "Asks for more data (size, packaging, hardware, strap, store minimums) and detail photos.",
+    "cotizandoTipo": "You're quoting: {{tipo}}",
     "avisoQueCotizar": "First choose what you're quoting.",
     "paraQuien": "Who is this quotation for?",
     "elegirCliente": "Choose the client",

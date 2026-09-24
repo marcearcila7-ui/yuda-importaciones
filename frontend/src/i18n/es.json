@@ -93,6 +93,7 @@
     "opcionProductosAyuda": "Cualquier producto general del mercado.",
     "opcionBolsos": "Bolsos",
     "opcionBolsosAyuda": "Pide más datos (tamaño, empaque, herrajes, riata, mínimos de la tienda) y fotos de detalle.",
+    "cotizandoTipo": "Estás cotizando: {{tipo}}",
     "avisoQueCotizar": "Primero elige qué vas a cotizar.",
     "paraQuien": "¿Para quién es esta cotización?",
     "elegirCliente": "Elige el cliente",
