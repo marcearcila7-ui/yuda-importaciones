@@ -151,7 +151,7 @@ ETIQUETAS_COLUMNA = {
 }
 
 ANCHOS_COLUMNA = {
-    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 78, "referencia": 13, "codigo": 12,
+    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 30, "referencia": 13, "codigo": 12,
     "desc_es": 30, "desc_en": 30, "desc_zh": 24, "material": 13, "uso": 16,
     "cajas": 7, "uds_caja": 9, "unidad": 7, "cant_total": 11,
     "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
@@ -416,34 +416,26 @@ def generar_cotizacion_excel(
             celda.border = borde_fino
             if n % 2 == 0:
                 celda.fill = fill_alt
-        # Alta lo justo para una sola fila de fotos, todas del mismo tamaño
-        # (antes hacía falta más alto porque las fotos extra iban apiladas
-        # debajo de la principal, chiquitas; ahora van todas en fila, al lado).
-        ws.row_dimensions[fila].height = 85
-
-        # Foto principal: la final (limpia) si existe; si no, la de datos.
+        # Cuadrícula de 2 columnas (no una sola fila larga): puestas todas en
+        # fila, la columna "Foto" se volvía tan ancha que apretaba a todas
+        # las demás columnas de la tabla. En cuadrícula la columna se queda
+        # angosta y lo que crece es el alto de la fila, que no molesta a nadie.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        if foto_doc:
-            buf = _descargar_imagen(foto_doc)
-            if buf is not None:
-                try:
-                    _anclar_imagen(ws, buf, col_foto_idx0, fila - 1, x_off_px=6, y_off_px=4, lado_px=LADO_FOTO_CLIENTE)
-                except Exception:
-                    pass
-
-        # Fotos extra (más ángulos que pidió el cliente, o detalle del bolso):
-        # AL LADO de la principal, no debajo -y del mismo tamaño que ella, para
-        # que se vea el detalle igual de bien y para que quede claro que sí
-        # respeta el recorte a mano si se hizo uno (fotos_extra_final).
         urls_extra = _fotos_extra_ordenadas(item)[:4]
-        for i, url_extra in enumerate(urls_extra):
-            buf_extra = _descargar_imagen(url_extra)
-            if buf_extra is None:
+        urls_fotos_fila = ([foto_doc] if foto_doc else []) + urls_extra
+        filas_foto = max(1, -(-len(urls_fotos_fila) // 2))  # redondeo hacia arriba
+        ws.row_dimensions[fila].height = filas_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE) * 0.75 + 4
+
+        for i, url_foto in enumerate(urls_fotos_fila):
+            buf_foto = _descargar_imagen(url_foto)
+            if buf_foto is None:
                 continue
+            col_foto, fila_foto = i % 2, i // 2
             try:
                 _anclar_imagen(
-                    ws, buf_extra, col_foto_idx0, fila - 1,
-                    x_off_px=6 + (i + 1) * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE), y_off_px=4,
+                    ws, buf_foto, col_foto_idx0, fila - 1,
+                    x_off_px=6 + col_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE),
+                    y_off_px=4 + fila_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE),
                     lado_px=LADO_FOTO_CLIENTE,
                 )
             except Exception:
@@ -643,8 +635,12 @@ def generar_cotizacion_pdf(
      de detalle salían diminutas (20px) y con object-fit: cover, que las
      recortaba otra vez para llenar ese cuadrito -encima de cualquier
      recorte a mano que ya se les hubiera hecho. */
-  td.foto {{ width: 440px; }}
-  td.foto .fotos-fila {{ display: flex; justify-content: center; align-items: center; gap: 4px; }}
+  /* Cuadrícula de 2 columnas, no una sola fila larga: puestas todas en fila,
+     la columna se volvía tan ancha que apretaba a las demás columnas de la
+     tabla. En cuadrícula la columna se queda angosta y crece el alto de la
+     fila en su lugar, que no molesta a nadie. */
+  td.foto {{ width: 190px; }}
+  td.foto .fotos-fila {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; justify-items: center; }}
   td.foto .fotos-fila img {{ max-width: 80px; max-height: 80px; object-fit: contain; display: block; }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
   .resumen {{ background: #EEF0FD; color: #4B52E8; font-weight: bold; text-align: center;
