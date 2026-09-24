@@ -624,7 +624,11 @@ def generar_cotizacion_pdf(
   table {{ width: 100%; border-collapse: collapse; }}
   th {{ background: #4B52E8; color: #fff; padding: 4px; font-size: 8px; }}
   td {{ border: 1px solid #E5E7EB; padding: 3px; text-align: center; }}
-  td.desc {{ text-align: left; }}
+  /* Sin un mínimo, con tantas columnas (más aún en bolsos) el navegador les
+     daba el mismo espacio que a una columna corta como "CBM", y el texto
+     quedaba partido en una palabra por línea. Las columnas numéricas cortas
+     sí pueden achicarse para compensar, un número no se lee peor angosto. */
+  td.desc {{ text-align: left; min-width: 140px; }}
   .logo {{ text-align: center; padding: 6px 0; }}
   .logo img {{ height: 34px; }}
   .aviso {{ border: 1px solid #C00000; color: #C00000; font-weight: bold; font-size: 8px;
