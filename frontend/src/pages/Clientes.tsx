@@ -643,6 +643,22 @@ ${t('clientes.email')}: ${c.email}`
         {/* Pestaña "Info": quién es y qué se puede hacer con él */}
         {tabCliente === 'info' && (
         <div className="card flex flex-col gap-4">
+          {/* Datos básicos del cliente: antes esta pestaña no mostraba nada
+              acá (solo lo de abajo, gran parte de eso exclusivo de admin), y
+              para una vendedora se veía completamente vacía. */}
+          <dl className="grid gap-2 border-b border-gray-100 pb-3 text-sm sm:grid-cols-[130px_1fr]">
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.email')}</dt>
+            <dd className="break-all" style={{ color: 'var(--yuda-accent)' }}>{c.email}</dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.telefono')}</dt>
+            <dd style={{ color: 'var(--yuda-accent)' }}>{c.telefono || '—'}</dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.pais')}</dt>
+            <dd style={{ color: 'var(--yuda-accent)' }}>{c.pais || '—'}</dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.empresa')}</dt>
+            <dd style={{ color: 'var(--yuda-accent)' }}>{c.empresa || '—'}</dd>
+            <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.nit')}</dt>
+            <dd style={{ color: 'var(--yuda-accent)' }}>{c.nit || '—'}</dd>
+          </dl>
+
           {esAdmin && (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
