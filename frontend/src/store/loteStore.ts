@@ -414,7 +414,22 @@ export const useLoteStore = create<LoteState>((set, get) => {
         ),
       })),
 
-    quitar: (id) => set((s) => ({ resultados: s.resultados.filter((r) => r.id !== id) })),
+    quitar: (id) => {
+      const nuevos = get().resultados.filter((r) => r.id !== id)
+      if (nuevos.length === 0) {
+        // Se borró el último resultado de la tanda: si se deja el lote (ya
+        // vacío) colgado en el servidor, "retomar" lo vuelve a traer al
+        // recargar la página y los productos "eliminados" reaparecen. Y sin
+        // volver a "idle", la pantalla se quedaba sin ninguna acción posible
+        // -ni el botón de elegir fotos, ni la lista de revisión (esa exige
+        // al menos 1 resultado)-, como si adjuntar fotos ya no fuera posible.
+        const loteId = get().loteId
+        if (loteId) borrarLote(loteId).catch(() => {})
+        set((s) => ({ ...ESTADO_INICIAL, sesionId: s.sesionId }))
+        return
+      }
+      set({ resultados: nuevos })
+    },
 
     finalizar: async () => {
       detenerPoll()
