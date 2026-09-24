@@ -812,7 +812,7 @@
   },
   "seguimiento": {
     "estados": {
-      "cotizacion_enviada": "Quotation sent",
+      "cotizacion_enviada": "Quotation received",
       "pedido_confirmado": "Order confirmed",
       "proveedor_recibio": "Supplier received the order",
       "en_bodega": "Goods in warehouse (ready to ship)",

@@ -815,7 +815,7 @@
   },
   "seguimiento": {
     "estados": {
-      "cotizacion_enviada": "报价已发送",
+      "cotizacion_enviada": "报价已收到",
       "pedido_confirmado": "订单已确认",
       "proveedor_recibio": "供应商已收到订单",
       "en_bodega": "货物已入仓（准备发货）",

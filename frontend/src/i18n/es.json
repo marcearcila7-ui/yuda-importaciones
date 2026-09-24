@@ -812,7 +812,7 @@
   },
   "seguimiento": {
     "estados": {
-      "cotizacion_enviada": "Cotización enviada",
+      "cotizacion_enviada": "Cotización recibida",
       "pedido_confirmado": "Pedido confirmado",
       "proveedor_recibio": "Proveedor recibió el pedido",
       "en_bodega": "Mercancía en bodega (lista para envío)",
