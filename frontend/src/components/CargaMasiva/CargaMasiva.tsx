@@ -362,6 +362,28 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         ? (procesadas / totalProc) * 100
         : 0
 
+  // Con pocas fotos (sobre todo 1 sola) el progreso real solo tiene dos
+  // valores posibles, 0% y 100%: la barra se veía quieta todo el tiempo que
+  // tarda la IA en leer el cartel y después saltaba de golpe, como si se
+  // hubiera colgado. Esto la hace avanzar sola hacia un tope (95%) mientras
+  // espera, sin prometer un tiempo que no se puede calcular; en cuanto el
+  // dato real avanza más que la simulación, se usa el real.
+  const [pctVisual, setPctVisual] = useState(0)
+  useEffect(() => {
+    setPctVisual(0)
+  }, [fase])
+  useEffect(() => {
+    if (!enProgreso) return
+    const id = setInterval(() => {
+      setPctVisual((v) => {
+        if (pct > v) return pct
+        if (v >= 95) return v
+        return v + (95 - v) * 0.08
+      })
+    }, 200)
+    return () => clearInterval(id)
+  }, [enProgreso, pct])
+
   // Cuando ya se agregaron TODOS los productos de una tanda, el lote se cierra y
   // esta pantalla vuelve a quedar vacía (correcto: ya no hay nada pendiente que
   // revisar acá). Pero para la vendedora, volver a ver el botón de "Seleccionar
@@ -525,13 +547,19 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
               <CheckCircle2 size={14} /> {t('lote.fotosSubidasListo', { n: totalSubir })}
             </p>
           )}
-          <p className="mb-2 text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
-            {fase === 'subiendo'
-              ? t('lote.subiendo', { hechas: subidas, total: totalSubir })
-              : t('lote.procesando', { hechas: procesadas, total: totalProc })}
+          <p className="mb-2 flex items-center justify-between text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
+            <span>
+              {fase === 'subiendo'
+                ? t('lote.subiendo', { hechas: subidas, total: totalSubir })
+                : t('lote.procesando', { hechas: procesadas, total: totalProc })}
+            </span>
+            <span style={{ color: 'var(--yuda-primary)' }}>{Math.round(pctVisual)}%</span>
           </p>
           <div className="h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
-            <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: 'var(--yuda-primary)' }} />
+            <div
+              className="h-full"
+              style={{ width: `${pctVisual}%`, backgroundColor: 'var(--yuda-primary)', transition: 'width 220ms linear' }}
+            />
           </div>
           {fase === 'procesando' && (
             <p className="mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
