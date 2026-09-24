@@ -582,20 +582,6 @@ def generar_cotizacion_pdf(
         tot_gw += gw_total
 
     headers_html = "".join(f"<th>{etiquetas[c]}</th>" for c in columnas_activas)
-    # Con table-layout: fixed el ancho de cada columna lo definen estos <col>,
-    # no lo que quepa en cada celda: así el total SIEMPRE da el 100% de la
-    # página (nunca se pasa del margen), aunque haya muchas columnas -bolsos
-    # tiene bastantes más que productos varios. Antes, con ancho automático,
-    # sumar el mínimo de la foto + las 3 descripciones + el resto de columnas
-    # se pasaba del margen derecho.
-    def _ancho_col(clave: str) -> str:
-        if clave == "foto":
-            return "190px"
-        if clave in ("desc_es", "desc_en", "desc_zh"):
-            return "140px"
-        return "55px"
-
-    colgroup_html = "".join(f'<col style="width:{_ancho_col(c)}">' for c in columnas_activas)
 
     logo = _logo_bytes()
     logo_html = (
@@ -623,11 +609,12 @@ def generar_cotizacion_pdf(
 
     html = f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
-  /* A4, no A3: casi ningún cliente tiene una impresora que cargue A3, así que
-     el sistema de impresión reescalaba la página entera para que entrara en
-     la hoja de verdad, y el resultado salía chico y descuadrado. A4 es lo que
-     casi cualquier impresora tiene puesto por defecto. */
-  @page {{ size: A4 landscape; margin: 1cm; }}
+  /* Vuelve a A3: en A4, una cotización de bolsos con todas las columnas
+     activadas no entraba -las últimas (precios, totales, tamaño, empaque,
+     etc.) quedaban directamente fuera de la página, no solo apretadas. Eso
+     es perder datos del documento, mucho peor que el problema original de
+     A3 (que un cliente sin esa impresora la reescala sola al imprimir). */
+  @page {{ size: A3 landscape; margin: 1cm; }}
   * {{ font-family: Arial, "Noto Sans CJK SC", sans-serif; }}
   body {{ color: #0D0D0D; font-size: 8px; }}
   .empresa {{ background: #1E3A5F; color: #fff; padding: 12px; text-align: center; }}
@@ -635,16 +622,25 @@ def generar_cotizacion_pdf(
   .empresa p {{ margin: 2px 0 0; font-size: 10px; }}
   .datos {{ margin: 10px 0; font-size: 10px; }}
   .datos div {{ margin: 2px 0; }}
-  /* fixed, no auto: con ancho automático, sumar el mínimo de la foto + las 3
-     descripciones + el resto de columnas (bolsos tiene bastantes) superaba el
-     100% de la página y la tabla entera se corría hacia la derecha, pasándose
-     del margen (mientras el encabezado sí lo respetaba). Con fixed, el ancho
-     de cada columna lo define el <colgroup> de abajo y el total SIEMPRE
-     ocupa el 100% real de la página, nunca más. */
-  table {{ width: 100%; border-collapse: collapse; table-layout: fixed; }}
-  th {{ background: #4B52E8; color: #fff; padding: 4px; font-size: 8px; overflow: hidden; }}
-  td {{ border: 1px solid #E5E7EB; padding: 3px; text-align: center; overflow: hidden; word-wrap: break-word; }}
-  td.desc {{ text-align: left; }}
+  /* table-layout: fixed se probó para esto y resultó peor: si el ancho de
+     las columnas suma más que la página, weasyprint no las reescala, las
+     CORTA -columnas enteras (precios, totales, tamaño, etc.) desaparecían
+     del documento en cotizaciones con muchas columnas (bolsos). Se vuelve a
+     ancho automático: la tabla puede pasarse un poco del margen derecho en
+     casos extremos, pero nunca pierde datos, que es peor. */
+  table {{ width: 100%; border-collapse: collapse; }}
+  th {{ background: #4B52E8; color: #fff; padding: 4px; font-size: 8px; }}
+  /* overflow-wrap: sin esto, una sola palabra larga (una marca, "desmontable",
+     etc.) le pone un piso de ancho a toda su columna -tenía que caber esa
+     palabra entera en una sola línea. Sumado en ~30 columnas, eso solo ya
+     superaba el ancho de la página. Dejar que corte la palabra si hace falta
+     es la diferencia entre que quepan todas las columnas o no. */
+  td {{ border: 1px solid #E5E7EB; padding: 3px; text-align: center; overflow-wrap: break-word; }}
+  /* Sin un mínimo, con tantas columnas (más aún en bolsos) el navegador les
+     daba el mismo espacio que a una columna corta como "CBM", y el texto
+     quedaba partido en una palabra por línea. Las columnas numéricas cortas
+     sí pueden achicarse para compensar, un número no se lee peor angosto. */
+  td.desc {{ text-align: left; min-width: 80px; }}
   .logo {{ text-align: center; padding: 6px 0; }}
   .logo img {{ height: 34px; }}
   .aviso {{ border: 1px solid #C00000; color: #C00000; font-weight: bold; font-size: 8px;
@@ -664,10 +660,10 @@ def generar_cotizacion_pdf(
      las columnas siguientes (Referencia, Código), en vez de forzar el ancho
      de la celda. inline-block con ancho fijo por foto es más simple y
      confiable -se acomodan solas de a 2 por fila, como el texto. */
-  td.foto {{ width: 190px; overflow: hidden; }}
-  td.foto .fotos-fila {{ width: 172px; }}
+  td.foto {{ width: 150px; overflow: hidden; }}
+  td.foto .fotos-fila {{ width: 138px; }}
   td.foto .fotos-fila img {{
-    width: 80px; height: 80px; object-fit: contain; display: inline-block;
+    width: 65px; height: 65px; object-fit: contain; display: inline-block;
     vertical-align: top; margin: 2px;
   }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
@@ -689,7 +685,6 @@ def generar_cotizacion_pdf(
   </div>
   <div class="resumen">{lab['resumen'].format(n=len(items), cajas=int(tot_cajas), usd=round(tot_usd, 2), gw=round(tot_gw, 2), cbm=round(tot_cbm, 6))}</div>
   <table>
-    <colgroup>{colgroup_html}</colgroup>
     <thead><tr>{headers_html}</tr></thead>
     <tbody>
       {''.join(filas_html)}
