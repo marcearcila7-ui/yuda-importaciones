@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -206,6 +206,19 @@ function PortalDetalle() {
   // nada al servidor: solo pone la cantidad en 0, pero acá sirve para mostrar
   // la tarjeta "quitado" en vez del editor de cantidad).
   const [quitados, setQuitados] = useState<Set<string>>(new Set())
+  // Total en vivo según las cajas que el cliente va pidiendo: detalle.total_usd
+  // es el total de la cotización ORIGINAL (con las cantidades que se cotizaron),
+  // y no cambiaba si el cliente ajustaba cuántas cajas quería de cada producto
+  // o quitaba alguno -"Total estimado" se quedaba fijo aunque el pedido real
+  // ya fuera otro.
+  const totalEnVivo = useMemo(() => {
+    if (!detalle) return 0
+    return detalle.items.reduce((acc, it) => {
+      if (quitados.has(it.item_id)) return acc
+      const cajas = Number(cantidades[it.item_id] || 0)
+      return acc + cajas * it.qty_por_ctn * it.price_usd
+    }, 0)
+  }, [detalle, cantidades, quitados])
   const [notas, setNotas] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
@@ -381,7 +394,7 @@ function PortalDetalle() {
             <h1 style={{ fontWeight: 700, fontSize: 24, color: 'var(--yuda-accent)' }}>{detalle.numero}</h1>
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.productos', { n: detalle.items.length })} · {t('portal.totalEstimado')}: US${' '}
-              {detalle.total_usd.toLocaleString('es-ES')}
+              {totalEnVivo.toLocaleString('es-ES')}
             </p>
           </div>
 
@@ -620,7 +633,7 @@ function PortalDetalle() {
 
             <div className="mt-3 flex justify-end border-t border-gray-100 pt-3">
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
-                {t('portal.totalEstimado')}: US$ {detalle.total_usd.toLocaleString('es-ES')}
+                {t('portal.totalEstimado')}: US$ {totalEnVivo.toLocaleString('es-ES')}
               </p>
             </div>
 

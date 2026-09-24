@@ -363,6 +363,7 @@
   "detalle": {
     "volver": "Volver al historial",
     "titulo": "Detalle de la cotización",
+    "tiendas": "Tiendas",
     "tipoCambio": "Tipo de cambio",
     "cargando": "Cargando…",
     "noEncontrada": "No se encontró la cotización",

@@ -214,7 +214,7 @@ function CotizacionDetalle() {
             <MetricCard titulo={t('historial.items')} valor={items.length} icono={<Package size={20} />} color="var(--yuda-primary)" />
             <MetricCard titulo={t('historial.totalRmb')} valor={`¥ ${fmt(totales.totalRmb)}`} icono={<Coins size={20} />} color="var(--yuda-warning)" />
             <MetricCard titulo={t('historial.totalUsd')} valor={`$ ${fmt(totales.totalUsd)}`} icono={<DollarSign size={20} />} color="var(--yuda-success)" />
-            <MetricCard titulo={t('historial.proveedores')} valor={totales.proveedores} icono={<Store size={20} />} color="var(--yuda-accent)" />
+            <MetricCard titulo={t('detalle.tiendas')} valor={totales.proveedores} icono={<Store size={20} />} color="var(--yuda-accent)" />
           </div>
 
           {/* 3 pestañas: qué hacer con el pedido (proveedores/bodega) / la
