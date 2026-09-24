@@ -13,6 +13,7 @@ from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado
 from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido
+from app.models.user import User
 from app.models.sesion import (
     PEDIDO_CONFIRMADO,
     PEDIDO_POR_CONFIRMAR,
@@ -216,6 +217,14 @@ def mis_cotizaciones(
         .all()
     )
 
+    # Una sola consulta para todas las vendedoras dueñas de estas sesiones,
+    # en vez de una por fila.
+    ids_vendedoras = {s.user_id for s in sesiones}
+    nombres_vendedoras = {
+        u.id: u.nombre
+        for u in db.query(User).filter(User.id.in_(ids_vendedoras)).all()
+    } if ids_vendedoras else {}
+
     resumenes: list[PortalCotizacionResumen] = []
     for s in sesiones:
         items = db.query(Item).filter(Item.sesion_id == s.id).all()
@@ -231,6 +240,7 @@ def mis_cotizaciones(
                 total_usd=round(total_usd, 2),
                 estado=seg.estado if seg else ESTADO_INICIAL,
                 actualizado=seg.updated_at if seg else None,
+                vendedora_nombre=nombres_vendedoras.get(s.user_id),
             )
         )
     return resumenes

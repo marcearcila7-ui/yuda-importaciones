@@ -110,6 +110,11 @@ function PortalCotizaciones() {
                   <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
                     {fmtFecha(c.fecha)} · {t('portal.productos', { n: c.total_items })} · US$ {c.total_usd.toLocaleString('es-ES')}
                   </p>
+                  {c.vendedora_nombre && (
+                    <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {t('portal.atendidaPor', { nombre: c.vendedora_nombre })}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex flex-shrink-0 items-center gap-2">

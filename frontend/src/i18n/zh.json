@@ -851,6 +851,7 @@
     "bl": "提单"
   },
   "portal": {
+    "atendidaPor": "负责人：{{nombre}}",
     "cambioClaveObligatorio": "必须修改密码",
     "pongaSuClave": "设置您自己的密码",
     "pongaSuClaveAyuda": "出于安全考虑，在查看账户之前，您需要把系统分配的密码改成您自己的密码。",

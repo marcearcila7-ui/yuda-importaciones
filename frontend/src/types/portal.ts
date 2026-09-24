@@ -33,6 +33,7 @@ export interface CotizacionResumen {
   total_usd: number
   estado: string
   actualizado: string | null
+  vendedora_nombre: string | null
 }
 
 export interface PortalInspeccionItem {

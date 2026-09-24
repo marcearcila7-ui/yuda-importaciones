@@ -848,6 +848,7 @@
     "bl": "BL"
   },
   "portal": {
+    "atendidaPor": "Atendida por {{nombre}}",
     "cambioClaveObligatorio": "Cambio de clave obligatorio",
     "pongaSuClave": "Pon tu propia contraseña",
     "pongaSuClaveAyuda": "Por seguridad, antes de ver tu cuenta necesitas cambiar la contraseña que te dieron por la que tú quieras.",

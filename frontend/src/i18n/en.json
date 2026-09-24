@@ -848,6 +848,7 @@
     "bl": "BL"
   },
   "portal": {
+    "atendidaPor": "Handled by {{nombre}}",
     "cambioClaveObligatorio": "Password change required",
     "pongaSuClave": "Set your own password",
     "pongaSuClaveAyuda": "For security, you need to change the password you were given for one of your own before you can see your account.",

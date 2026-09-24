@@ -16,6 +16,10 @@ class PortalCotizacionResumen(BaseModel):
     total_usd: float
     estado: str
     actualizado: datetime | None = None
+    # Vendedora que gestiona esta cotización: el cliente ve varias a la vez y
+    # no siempre es la misma persona, así que necesita saber a quién le
+    # corresponde escribirle por cada una.
+    vendedora_nombre: str | None = None
 
 
 class PortalInspeccionItem(BaseModel):
