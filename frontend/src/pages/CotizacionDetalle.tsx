@@ -43,9 +43,31 @@ function CotizacionDetalle() {
   const [cargando, setCargando] = useState(true)
   const [idioma, setIdioma] = useState<string>(['es', 'en', 'zh'].includes(i18n.language) ? i18n.language : 'es')
   const [generando, setGenerando] = useState<'pdf' | 'excel' | null>(null)
+  // Generar el documento (con fotos incrustadas) tarda y no hay forma de medir
+  // el avance real desde el navegador (una sola respuesta del servidor). Este
+  // porcentaje avanza solo hacia un tope, igual que en la carga masiva: no
+  // promete un tiempo exacto, pero deja claro que sigue en marcha.
+  const [pct, setPct] = useState(0)
+  useEffect(() => {
+    setPct(0)
+  }, [generando])
+  useEffect(() => {
+    if (!generando) return
+    const iv = setInterval(() => setPct((v) => (v >= 95 ? v : v + (95 - v) * 0.08)), 200)
+    return () => clearInterval(iv)
+  }, [generando])
   const [contenedores, setContenedores] = useState<Contenedor[]>([])
   const [contenedorId, setContenedorId] = useState<string>('')
   const [generandoFactura, setGenerandoFactura] = useState<'pdf' | 'excel' | null>(null)
+  const [pctFactura, setPctFactura] = useState(0)
+  useEffect(() => {
+    setPctFactura(0)
+  }, [generandoFactura])
+  useEffect(() => {
+    if (!generandoFactura) return
+    const iv = setInterval(() => setPctFactura((v) => (v >= 95 ? v : v + (95 - v) * 0.08)), 200)
+    return () => clearInterval(iv)
+  }, [generandoFactura])
   // De (FROM) y Para (TO) editables de la factura. Para se precarga con el cliente.
   const [facturaDe, setFacturaDe] = useState<string>('')
   const [facturaPara, setFacturaPara] = useState<string>('')
@@ -326,7 +348,7 @@ function CotizacionDetalle() {
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
                   style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
                 >
-                  <FileText size={18} /> {generando === 'pdf' ? t('detalle.generando') : t('detalle.descargarPdf')}
+                  <FileText size={18} /> {generando === 'pdf' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.descargarPdf')}
                 </button>
                 <button
                   type="button"
@@ -335,7 +357,7 @@ function CotizacionDetalle() {
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
                   style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16, padding: '0 20px' }}
                 >
-                  <FileSpreadsheet size={18} /> {generando === 'excel' ? t('detalle.generando') : t('detalle.descargarExcel')}
+                  <FileSpreadsheet size={18} /> {generando === 'excel' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.descargarExcel')}
                 </button>
               </div>
             </section>
@@ -400,7 +422,7 @@ function CotizacionDetalle() {
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
                   style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
                 >
-                  <FileText size={18} /> {generandoFactura === 'pdf' ? t('detalle.generando') : t('detalle.facturaPdf')}
+                  <FileText size={18} /> {generandoFactura === 'pdf' ? `${t('detalle.generando')} ${Math.round(pctFactura)}%` : t('detalle.facturaPdf')}
                 </button>
                 <button
                   type="button"
@@ -409,7 +431,7 @@ function CotizacionDetalle() {
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-60"
                   style={{ backgroundColor: 'var(--yuda-success)', fontSize: 16, padding: '0 20px' }}
                 >
-                  <FileSpreadsheet size={18} /> {generandoFactura === 'excel' ? t('detalle.generando') : t('detalle.facturaExcel')}
+                  <FileSpreadsheet size={18} /> {generandoFactura === 'excel' ? `${t('detalle.generando')} ${Math.round(pctFactura)}%` : t('detalle.facturaExcel')}
                 </button>
               </div>
             </section>
