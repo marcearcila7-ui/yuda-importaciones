@@ -4,7 +4,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, RefreshCw, Search, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Eye, EyeOff, FileText, KeyRound, Package, Plus, RefreshCw, Search, ShoppingBag, Trash2, UserPlus, UserRound, Users, Wallet, X } from 'lucide-react'
+import { usePackingStore } from '../store/packingStore'
+import { getConfiguracion } from '../api/admin'
 import {
   actualizarCliente,
   buscarContable,
@@ -67,10 +69,15 @@ function Clientes() {
   // Lo contable (estado de cuenta) es exclusivo de Marcela y contabilidad; la
   // vendedora no debe ver saldos ni movimientos de dinero de sus clientes.
   const puedeVerCuenta = rolUsuario === 'admin' || rolUsuario === 'contadora'
+  const crearSesion = usePackingStore((s) => s.crearSesion)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [errorClientes, setErrorClientes] = useState(false)
   const [copiadoLink, setCopiadoLink] = useState(false)
+  // Atajo "+ Nueva cotización" desde la ficha del cliente: se salta elegir
+  // cliente (ya estamos en el suyo), solo falta decidir qué se va a cotizar.
+  const [eligiendoTipoNueva, setEligiendoTipoNueva] = useState(false)
+  const [creandoTipoNueva, setCreandoTipoNueva] = useState<'productos' | 'bolsos' | null>(null)
   // Contraseña recién generada por cliente (solo en memoria, para reenviarla)
   const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
   // El portal de clientes vive en un dominio aparte del cotizador
@@ -135,6 +142,29 @@ function Clientes() {
     getCotizacionesCliente(clienteId)
       .then((cots) => setCotizaciones((m) => ({ ...m, [clienteId]: cots })))
       .catch(() => {})
+  }
+
+  // Crea la cotización ya asignada a este cliente (sin el paso de buscarlo en
+  // una lista, porque ya estamos en su ficha) y entra directo a la pantalla
+  // de fotos. Mismo tipo de cambio por defecto que usa el asistente normal.
+  const iniciarNuevaCotizacion = async (cliente: Cliente, tipo: 'productos' | 'bolsos') => {
+    setCreandoTipoNueva(tipo)
+    let tipoCambio = 6.7
+    try {
+      const cfg = await getConfiguracion()
+      tipoCambio = cfg.tipo_cambio_usd
+    } catch {
+      // se usa el valor por defecto de arriba
+    }
+    await crearSesion(cliente.nombre, tipoCambio, cliente.id, tipo)
+    setCreandoTipoNueva(null)
+    const error = usePackingStore.getState().error
+    if (error) {
+      toast.error(error)
+      return
+    }
+    setEligiendoTipoNueva(false)
+    navigate('/dashboard')
   }
 
   // Borrar una cotización del cliente. Si ya se la habían enviado, también deja
@@ -913,9 +943,62 @@ ${t('clientes.email')}: ${c.email}`
         {/* Pestaña "Cotizaciones" */}
         {tabCliente === 'cotizaciones' && (
         <div className="card flex flex-col gap-3">
-          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
-            {t('clientes.cotizacionesTitulo')}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+              {t('clientes.cotizacionesTitulo')}
+            </h2>
+            {!eligiendoTipoNueva && (
+              <button
+                type="button"
+                onClick={() => setEligiendoTipoNueva(true)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-white"
+                style={{ backgroundColor: 'var(--yuda-primary)' }}
+              >
+                <Plus size={16} /> {t('dashboard.nuevaCotizacion')}
+              </button>
+            )}
+          </div>
+
+          {/* Atajo: ya estamos en la ficha del cliente, así que lo único que
+              falta decidir es qué se va a cotizar (cambia qué pide el OCR). */}
+          {eligiendoTipoNueva && (
+            <div className="flex flex-col gap-2 rounded-lg p-3" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                {t('dashboard.queCotizar')}
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => iniciarNuevaCotizacion(c, 'productos')}
+                  disabled={creandoTipoNueva !== null}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-primary)' }}
+                >
+                  <Package size={16} />
+                  {creandoTipoNueva === 'productos' ? t('dashboard.creando') : t('dashboard.opcionProductos')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => iniciarNuevaCotizacion(c, 'bolsos')}
+                  disabled={creandoTipoNueva !== null}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: 'var(--yuda-primary)' }}
+                >
+                  <ShoppingBag size={16} />
+                  {creandoTipoNueva === 'bolsos' ? t('dashboard.creando') : t('dashboard.opcionBolsos')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEligiendoTipoNueva(false)}
+                  disabled={creandoTipoNueva !== null}
+                  className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
+                  style={{ color: 'var(--yuda-text-secondary)' }}
+                >
+                  {t('common.cancelar')}
+                </button>
+              </div>
+            </div>
+          )}
 
           {cots === undefined ? (
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('equipo.cargando')}</p>
