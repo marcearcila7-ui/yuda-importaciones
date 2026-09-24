@@ -1016,7 +1016,9 @@ ${t('clientes.email')}: ${c.email}`
             </div>
           )}
 
-          {cots === undefined ? (
+          {/* Mientras se elige qué cotizar para la nueva, la lista de abajo
+              solo estorba: no hace falta volver a mostrarla acá. */}
+          {!eligiendoTipoNueva && (cots === undefined ? (
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('equipo.cargando')}</p>
           ) : cots.length === 0 ? (
             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.sinCotizaciones')}</p>
@@ -1103,7 +1105,7 @@ ${t('clientes.email')}: ${c.email}`
                   })}
               </div>
             </>
-          )}
+          ))}
         </div>
         )}
       </div>
