@@ -19,6 +19,13 @@ from app.models.sesion import Sesion
 
 logger = logging.getLogger(__name__)
 
+# Foto principal y fotos de detalle van al MISMO tamaño: antes las de detalle
+# salían minúsculas (22px) y era imposible distinguir nada en ellas, dando a
+# entender que un recorte ya hecho no servía de nada. El cliente y la agencia
+# de carga necesitan poder ver el detalle tan bien como la foto principal.
+LADO_FOTO_CLIENTE = 95
+GAP_FOTO_CLIENTE = 6
+
 # Datos de contacto de YUDA (hardcodeados en el documento)
 CONTACTO = {
     "dir_china": "Room 0909-0911, Building A, Futian Building, No.1121, Chouzhou North Road, Yiwu City, China. Zip: 322023",
@@ -144,7 +151,7 @@ ETIQUETAS_COLUMNA = {
 }
 
 ANCHOS_COLUMNA = {
-    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 22, "referencia": 13, "codigo": 12,
+    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 78, "referencia": 13, "codigo": 12,
     "desc_es": 30, "desc_en": 30, "desc_zh": 24, "material": 13, "uso": 16,
     "cajas": 7, "uds_caja": 9, "unidad": 7, "cant_total": 11,
     "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
@@ -409,10 +416,10 @@ def generar_cotizacion_excel(
             celda.border = borde_fino
             if n % 2 == 0:
                 celda.fill = fill_alt
-        # Fila más alta que antes (90 -> 130): deja espacio para la foto
-        # principal arriba y una fila de fotos extra (más ángulos) debajo,
-        # todo dentro de la misma columna "Foto", no en columnas nuevas.
-        ws.row_dimensions[fila].height = 130
+        # Alta lo justo para una sola fila de fotos, todas del mismo tamaño
+        # (antes hacía falta más alto porque las fotos extra iban apiladas
+        # debajo de la principal, chiquitas; ahora van todas en fila, al lado).
+        ws.row_dimensions[fila].height = 85
 
         # Foto principal: la final (limpia) si existe; si no, la de datos.
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
@@ -420,12 +427,14 @@ def generar_cotizacion_excel(
             buf = _descargar_imagen(foto_doc)
             if buf is not None:
                 try:
-                    _anclar_imagen(ws, buf, col_foto_idx0, fila - 1, x_off_px=8, y_off_px=4, lado_px=95)
+                    _anclar_imagen(ws, buf, col_foto_idx0, fila - 1, x_off_px=6, y_off_px=4, lado_px=LADO_FOTO_CLIENTE)
                 except Exception:
                     pass
 
-        # Fotos extra (más ángulos que pidió el cliente): en miniatura, en
-        # fila, debajo de la foto principal -misma columna, no al final.
+        # Fotos extra (más ángulos que pidió el cliente, o detalle del bolso):
+        # AL LADO de la principal, no debajo -y del mismo tamaño que ella, para
+        # que se vea el detalle igual de bien y para que quede claro que sí
+        # respeta el recorte a mano si se hizo uno (fotos_extra_final).
         urls_extra = _fotos_extra_ordenadas(item)[:4]
         for i, url_extra in enumerate(urls_extra):
             buf_extra = _descargar_imagen(url_extra)
@@ -434,7 +443,8 @@ def generar_cotizacion_excel(
             try:
                 _anclar_imagen(
                     ws, buf_extra, col_foto_idx0, fila - 1,
-                    x_off_px=6 + i * 26, y_off_px=102, lado_px=22,
+                    x_off_px=6 + (i + 1) * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE), y_off_px=4,
+                    lado_px=LADO_FOTO_CLIENTE,
                 )
             except Exception:
                 pass
@@ -523,13 +533,13 @@ def generar_cotizacion_pdf(
         calc = _calcular(item, tipo_cambio)
         gw_total = round((item.gw or 0) * (item.ctns or 0), 2)
         foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        foto_principal = f'<img class="principal" src="{foto_doc}" />' if foto_doc else ""
-        # Fotos extra (más ángulos que pidió el cliente): miniaturas debajo de
-        # la principal, en la MISMA celda de la columna "Foto" -no columnas
-        # nuevas al final.
+        foto_principal = f'<img src="{foto_doc}" />' if foto_doc else ""
+        # Fotos extra (más ángulos que pidió el cliente, o detalle del bolso):
+        # AL LADO de la principal y del mismo tamaño -no minúsculas debajo-,
+        # en la MISMA celda de la columna "Foto" (no columnas nuevas al final).
         urls_extra = _fotos_extra_ordenadas(item)[:4]
         extra_html = "".join(f'<img src="{u}" />' for u in urls_extra)
-        foto = foto_principal + (f'<div class="extra">{extra_html}</div>' if extra_html else "")
+        foto = f'<div class="fotos-fila">{foto_principal}{extra_html}</div>'
         alt = ' class="alt"' if n % 2 == 0 else ""
         celdas_por_clave = {
             "numero": f"<td>{n}</td>",
@@ -607,7 +617,11 @@ def generar_cotizacion_pdf(
 
     html = f"""<!doctype html>
 <html><head><meta charset="utf-8"><style>
-  @page {{ size: A3 landscape; margin: 1cm; }}
+  /* A4, no A3: casi ningún cliente tiene una impresora que cargue A3, así que
+     el sistema de impresión reescalaba la página entera para que entrara en
+     la hoja de verdad, y el resultado salía chico y descuadrado. A4 es lo que
+     casi cualquier impresora tiene puesto por defecto. */
+  @page {{ size: A4 landscape; margin: 1cm; }}
   * {{ font-family: Arial, "Noto Sans CJK SC", sans-serif; }}
   body {{ color: #0D0D0D; font-size: 8px; }}
   .empresa {{ background: #1E3A5F; color: #fff; padding: 12px; text-align: center; }}
@@ -625,10 +639,13 @@ def generar_cotizacion_pdf(
             padding: 6px 8px; margin: 8px 0; line-height: 1.35; }}
   .aviso p {{ margin: 0 0 3px; }}
   tr.alt td {{ background: #F5F5F0; }}
-  td.foto {{ width: 100px; }}
-  td.foto img.principal {{ max-width: 80px; max-height: 80px; display: block; margin: 0 auto; }}
-  td.foto .extra {{ display: flex; justify-content: center; gap: 2px; margin-top: 2px; }}
-  td.foto .extra img {{ max-width: 20px; max-height: 20px; object-fit: cover; }}
+  /* La principal y las de detalle van en fila, del mismo tamaño: antes las
+     de detalle salían diminutas (20px) y con object-fit: cover, que las
+     recortaba otra vez para llenar ese cuadrito -encima de cualquier
+     recorte a mano que ya se les hubiera hecho. */
+  td.foto {{ width: 440px; }}
+  td.foto .fotos-fila {{ display: flex; justify-content: center; align-items: center; gap: 4px; }}
+  td.foto .fotos-fila img {{ max-width: 80px; max-height: 80px; object-fit: contain; display: block; }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
   .resumen {{ background: #EEF0FD; color: #4B52E8; font-weight: bold; text-align: center;
              padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 11px; }}

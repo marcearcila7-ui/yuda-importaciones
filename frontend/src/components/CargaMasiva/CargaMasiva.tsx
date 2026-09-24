@@ -132,9 +132,12 @@ function TileFotoDetalle({
       onClick={onRecortar}
       title={etiqueta}
       className="relative flex-shrink-0 overflow-hidden rounded-lg border"
-      style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)' }}
+      style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)', backgroundColor: '#111' }}
     >
-      <img src={url} alt={etiqueta} className="h-full w-full object-cover" />
+      {/* object-contain, no cover: se ve la foto COMPLETA. Con cover se
+          recortaba para llenar el cuadrado y daba la sensación de que
+          faltaba parte de la foto, aunque estuviera entera. */}
+      <img src={url} alt={etiqueta} className="h-full w-full object-contain" />
       {/* Banda con texto (no solo un ícono): que se note, sin tener que
           adivinar, que la foto se puede tocar para recortarla/girarla. */}
       <span
@@ -327,6 +330,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     setOcupadoId(id)
     try {
       await reemplazarUno(id, file)
+      // Abre de una vez el editor de recorte con la foto nueva: no tiene
+      // sentido hacerla esperar a un segundo toque para poder ajustarla.
+      setRecorteId(id)
     } catch {
       toast.error(t('lote.errorReanalizar'))
     } finally {
@@ -349,6 +355,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     setSubiendoExtra(`${pedido.id}-${pedido.tipo}`)
     try {
       await subirFotoExtraUno(pedido.id, pedido.tipo, file)
+      // Abre de una vez el editor de recorte con la foto recién subida: no
+      // tiene sentido hacerla esperar a un segundo toque para poder ajustarla.
+      setRecorteExtra({ id: pedido.id, tipo: pedido.tipo })
     } catch {
       toast.error(t('lote.errorReanalizar'))
     } finally {
@@ -373,13 +382,15 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
   // Reemplazar la foto desde el editor de recorte: es una foto distinta, así
   // que se reanaliza con IA (mismo camino que "Reemplazar foto" de más abajo).
+  // El editor se queda abierto (no se cierra) mostrando ya la foto nueva: el
+  // motivo de reemplazarla desde acá es justo poder ajustarla de una vez,
+  // sin tener que volver a tocarla para abrir el editor otra vez.
   const reemplazarDesdeRecorte = async (file: File) => {
     if (!recorteId) return
     setGuardandoRecorte(true)
     try {
       await reemplazarUno(recorteId, file)
       toast.success(t('recorte.reemplazada'))
-      setRecorteId(null)
     } catch {
       toast.error(t('recorte.errorReemplazar'))
     } finally {
@@ -401,13 +412,14 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     }
   }
 
+  // Igual que reemplazarDesdeRecorte: el editor se queda abierto con la foto
+  // nueva, lista para ajustar.
   const reemplazarExtraDesdeRecorte = async (file: File) => {
     if (!recorteExtra) return
     setGuardandoRecorteExtra(true)
     try {
       await subirFotoExtraUno(recorteExtra.id, recorteExtra.tipo, file)
       toast.success(t('recorte.reemplazada'))
-      setRecorteExtra(null)
     } catch {
       toast.error(t('recorte.errorReemplazar'))
     } finally {
@@ -800,10 +812,13 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                     type="button"
                     onClick={() => setRecorteId(r.id)}
                     className="relative flex-shrink-0 overflow-hidden rounded-lg border"
-                    style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)' }}
+                    style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)', backgroundColor: '#111' }}
                     title={t('recorte.tocaAjustar')}
                   >
-                    <img src={r.datos.foto_recorte_url || r.foto_url} alt="" className="h-full w-full object-cover" />
+                    {/* object-contain, no cover: se ve la foto COMPLETA. Con cover se
+                        recortaba para llenar el cuadrado y daba la sensación de que
+                        faltaba parte de la foto, aunque estuviera entera. */}
+                    <img src={r.datos.foto_recorte_url || r.foto_url} alt="" className="h-full w-full object-contain" />
                     {/* Banda con texto (no solo un ícono): que se note, sin tener que
                         adivinar, que la foto se puede tocar para recortarla/girarla. */}
                     <span
@@ -1039,6 +1054,10 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
           ajusta acá mismo, antes de agregarlo como producto. */}
       {recorteId && resultados.find((r) => r.id === recorteId)?.foto_url && (
         <RecorteFoto
+          // key = la URL de la foto: si se reemplaza sin cerrar el editor, se
+          // vuelve a montar de cero (recuadro y giro en blanco) en vez de
+          // arrastrar el recorte a medio dibujar de la foto ANTERIOR.
+          key={resultados.find((r) => r.id === recorteId)!.foto_url}
           fotoUrl={resultados.find((r) => r.id === recorteId)!.foto_url}
           recorteActual={resultados.find((r) => r.id === recorteId)?.datos.foto_recorte_url}
           guardando={guardandoRecorte}
@@ -1049,6 +1068,7 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
       )}
       {recorteExtra && resultados.find((r) => r.id === recorteExtra.id)?.datos.fotos_extra?.[recorteExtra.tipo] && (
         <RecorteFoto
+          key={resultados.find((r) => r.id === recorteExtra.id)!.datos.fotos_extra![recorteExtra.tipo]}
           fotoUrl={resultados.find((r) => r.id === recorteExtra.id)!.datos.fotos_extra![recorteExtra.tipo]}
           recorteActual={resultados.find((r) => r.id === recorteExtra.id)?.datos.fotos_extra_final?.[recorteExtra.tipo]}
           guardando={guardandoRecorteExtra}

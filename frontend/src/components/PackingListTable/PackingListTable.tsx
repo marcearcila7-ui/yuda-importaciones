@@ -164,9 +164,13 @@ function CeldaEditable({
         setEditando(true)
       }}
       style={fondo}
+      // El contorno punteado y el fondo tenue quedan SIEMPRE puestos, no solo
+      // al pasar el mouse: si solo aparecían en hover, una celda sin tocar se
+      // veía igual que una de solo lectura y no quedaba claro que se podía
+      // editar (más aún en pantallas táctiles, que no tienen hover).
       className={`min-h-[28px] cursor-pointer rounded px-1 py-1 transition-colors hover:bg-[var(--yuda-primary-soft)] ${
         guardando ? 'opacity-50' : ''
-      } ${meta.ctns ? 'border border-blue-300' : 'border-b border-dashed border-gray-300'}`}
+      } ${meta.ctns ? 'border border-blue-300' : 'border border-dashed border-gray-300 bg-gray-50'}`}
       title={t('packing.tocaEditar')}
     >
       {guardando ? '…' : valorActual == null || valorActual === '' ? '—' : String(valorActual)}
@@ -648,31 +652,9 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
       </div>
 
       {/* Vista escritorio: tabla completa */}
-      <div className="hidden items-center gap-2 sm:flex">
-        <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {t('packing.deslizaParaVerMas')}
-        </p>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => desplazar(-300)}
-            aria-label={t('packing.verColumnasAnteriores')}
-            className="flex items-center justify-center rounded-lg border border-gray-200"
-            style={{ width: 32, height: 32, color: 'var(--yuda-primary)' }}
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => desplazar(300)}
-            aria-label={t('packing.verColumnasSiguientes')}
-            className="flex items-center justify-center rounded-lg border border-gray-200"
-            style={{ width: 32, height: 32, color: 'var(--yuda-primary)' }}
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+      <p className="hidden text-xs sm:block" style={{ color: 'var(--yuda-text-secondary)' }}>
+        {t('packing.deslizaParaVerMas')}
+      </p>
       <div ref={scrollRef} className="hidden w-full overflow-x-auto rounded border border-gray-200 sm:block">
       <table className="border-collapse text-sm">
         <thead>
@@ -736,6 +718,30 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
           </tr>
         </tfoot>
       </table>
+      </div>
+
+      {/* Flechas para deslizar la tabla: abajo a la derecha (no arriba, donde se
+          perdían de vista) y bien vistosas -con color sólido, no un contorno
+          fino- para que se note de un vistazo que hay más columnas al lado. */}
+      <div className="hidden justify-end gap-2 sm:flex">
+        <button
+          type="button"
+          onClick={() => desplazar(-300)}
+          aria-label={t('packing.verColumnasAnteriores')}
+          className="flex items-center justify-center rounded-full text-white shadow-md"
+          style={{ width: 44, height: 44, backgroundColor: 'var(--yuda-primary)' }}
+        >
+          <ChevronLeft size={22} />
+        </button>
+        <button
+          type="button"
+          onClick={() => desplazar(300)}
+          aria-label={t('packing.verColumnasSiguientes')}
+          className="flex items-center justify-center rounded-full text-white shadow-md"
+          style={{ width: 44, height: 44, backgroundColor: 'var(--yuda-primary)' }}
+        >
+          <ChevronRight size={22} />
+        </button>
       </div>
 
       {itemRecorte?.foto_url && (

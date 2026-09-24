@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
@@ -54,6 +54,22 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
   const inicial = ['es', 'en', 'zh'].includes(i18n.language) ? i18n.language : 'es'
   const [idioma, setIdioma] = useState(inicial)
   const [generando, setGenerando] = useState<'excel' | 'pdf' | null>(null)
+  // Generar el documento (con las fotos incrustadas) puede tardar varios
+  // segundos y no hay forma de saber el avance real desde el navegador (es
+  // una sola respuesta del servidor, no algo que se pueda medir por partes).
+  // Este porcentaje avanza solo hacia un tope, igual que en la carga masiva:
+  // no promete un tiempo exacto, pero deja claro que sigue en marcha.
+  const [pct, setPct] = useState(0)
+  useEffect(() => {
+    setPct(0)
+  }, [generando])
+  useEffect(() => {
+    if (!generando) return
+    const id = setInterval(() => {
+      setPct((v) => (v >= 95 ? v : v + (95 - v) * 0.08))
+    }, 200)
+    return () => clearInterval(id)
+  }, [generando])
   const [error, setError] = useState<string | null>(null)
   const [confirmado, setConfirmado] = useState(false)
   // Qué columnas va a traer el documento. Todas marcadas por defecto (incluidas
@@ -245,7 +261,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           style={{ ...btnDescarga, backgroundColor: 'var(--yuda-success)', opacity: bloqueado ? 0.6 : 1 }}
         >
           {generando === 'excel' ? (
-            t('cotizacion.generando')
+            `${t('cotizacion.generando')} ${Math.round(pct)}%`
           ) : (
             <>
               <FileSpreadsheet size={18} /> {t('cotizacion.descargarExcel')}
@@ -261,7 +277,7 @@ function ExportarCotizacion({ sesion_id, nombre_cliente }: ExportarCotizacionPro
           style={{ ...btnDescarga, backgroundColor: 'var(--yuda-primary)', opacity: bloqueado ? 0.6 : 1 }}
         >
           {generando === 'pdf' ? (
-            t('cotizacion.generando')
+            `${t('cotizacion.generando')} ${Math.round(pct)}%`
           ) : (
             <>
               <FileText size={18} /> {t('cotizacion.descargarPDF')}

@@ -73,7 +73,14 @@ function Clientes() {
   const [copiadoLink, setCopiadoLink] = useState(false)
   // Contraseña recién generada por cliente (solo en memoria, para reenviarla)
   const [nuevasPass, setNuevasPass] = useState<Record<string, string>>({})
-  const portalUrl = `${window.location.origin}/portal/login`
+  // El portal de clientes vive en un dominio aparte del cotizador
+  // (usuarios.yudaimportaciones.com, ver DestinoPorDefecto en App.tsx): con
+  // window.location.origin acá se armaba mal (cotizador.yudaimportaciones.com/
+  // portal/login), un link que ya no existe. En desarrollo local sigue siendo
+  // el mismo origin, porque ahí no hay dos dominios separados.
+  const portalUrl = import.meta.env.PROD
+    ? 'https://usuarios.yudaimportaciones.com/portal/login'
+    : `${window.location.origin}/portal/login`
 
   // Un solo cliente abierto a la vez, en su propia pantalla -y ahora con su
   // propia URL ("/clientes/:clienteId"), no solo un estado en memoria. Sin
