@@ -720,13 +720,13 @@
       "acceso": "客户门户",
       "cotizaciones": "报价单"
     },
-    "siglaAyuda": "该客户在财务应用中使用的代码。不会带来余额或资金变动信息。",
+    "siglaAyuda": "用于标记该客户箱子的代码。在财务应用中创建客户时设置，此处无法修改。",
     "gestionarPedido": "管理订单",
     "contableTodoImportado": "您已导入了财务应用中的所有客户。当那边创建新客户时，会显示在这里。",
     "etapa": {
       "todas": "全部",
       "borrador": "草稿",
-      "con_cliente": "客户处理中",
+      "con_cliente": "已发送给客户",
       "listas_bodega": "可发往仓库",
       "en_camino": "运输中",
       "entregadas": "已交付"

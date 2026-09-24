@@ -266,25 +266,6 @@ function Clientes() {
     }
   }
 
-  const [editandoSigla, setEditandoSigla] = useState(false)
-  const [siglaInput, setSiglaInput] = useState('')
-  const [guardandoSigla, setGuardandoSigla] = useState(false)
-
-  const guardarSigla = async (c: Cliente) => {
-    setGuardandoSigla(true)
-    try {
-      await actualizarCliente(c.id, { sigla: siglaInput.trim() })
-      toast.success(t('clientes.siglaGuardada'))
-      setEditandoSigla(false)
-      cargar()
-    } catch (err) {
-      const detalle = axios.isAxiosError(err) ? (err.response?.data?.detail as string | undefined) : undefined
-      toast.error(detalle || t('clientes.errorSigla'))
-    } finally {
-      setGuardandoSigla(false)
-    }
-  }
-
   // Importar clientes de Yuda Contable (Fase 2): trae hacia acá los que ya
   // existen en la app de contabilidad y todavía no están en el cotizador.
   const [mostrarImportar, setMostrarImportar] = useState(false)
@@ -719,63 +700,28 @@ ${t('clientes.email')}: ${c.email}`
             </div>
           )}
 
-          {esAdmin && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
-              <span className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
-                {t('clientes.siglaLabel')}
-              </span>
-              {editandoSigla ? (
-                <>
-                  <input
-                    value={siglaInput}
-                    onChange={(e) => setSiglaInput(e.target.value)}
-                    placeholder={t('clientes.siglaPlaceholder')}
-                    autoFocus
-                    className="min-h-[38px] w-32 rounded-lg border border-gray-200 px-2 text-sm uppercase"
-                    style={{ fontSize: 15 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => guardarSigla(c)}
-                    disabled={guardandoSigla}
-                    className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
-                    style={{ backgroundColor: 'var(--yuda-primary)' }}
-                  >
-                    {t('common.guardar')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditandoSigla(false)}
-                    className="text-sm"
-                    style={{ color: 'var(--yuda-text-secondary)' }}
-                  >
-                    {t('common.cancelar')}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSiglaInput(c.sigla ?? '')
-                    setEditandoSigla(true)
-                  }}
-                  className="rounded-full px-3 py-1 text-sm font-semibold"
-                  style={
-                    c.sigla
-                      ? { backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
-                      : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
-                  }
-                >
-                  {c.sigla || t('clientes.siglaSinAsignar')}
-                </button>
-              )}
-            </div>
-          )}
-          {esAdmin && (
-            <p className="-mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('clientes.siglaAyuda')}
-            </p>
-          )}
+          {/* Solo lectura a propósito: la sigla la controla Marcela desde Yuda
+              Contable al crear el cliente ahí (así se marcan sus cajas de
+              verdad). Se muestra a cualquier rol -no solo admin- porque la
+              vendedora también necesita saber cómo llega marcada la caja. */}
+          <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+            <span className="text-sm font-medium" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('clientes.siglaLabel')}
+            </span>
+            <span
+              className="rounded-full px-3 py-1 text-sm font-semibold"
+              style={
+                c.sigla
+                  ? { backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }
+                  : { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
+              }
+            >
+              {c.sigla || t('clientes.siglaSinAsignar')}
+            </span>
+          </div>
+          <p className="-mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {t('clientes.siglaAyuda')}
+          </p>
 
           <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3">
             <button

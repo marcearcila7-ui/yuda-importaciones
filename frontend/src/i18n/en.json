@@ -717,13 +717,13 @@
       "acceso": "Portal",
       "cotizaciones": "Quotations"
     },
-    "siglaAyuda": "The code this client uses in the accounting app. It never brings balances or money movements over here.",
+    "siglaAyuda": "The code used to mark this client's boxes. It's set when the client is created in the accounting app; it can't be changed from here.",
     "gestionarPedido": "Manage order",
     "contableTodoImportado": "You've already imported every client from Yuda Contable. When a new one is created there, it'll show up here.",
     "etapa": {
       "todas": "All",
       "borrador": "Draft",
-      "con_cliente": "With client",
+      "con_cliente": "Sent to client",
       "listas_bodega": "Ready for warehouse",
       "en_camino": "On the way",
       "entregadas": "Delivered"
