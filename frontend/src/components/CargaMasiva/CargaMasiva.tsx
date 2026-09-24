@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { CheckCircle2, ChevronDown, ChevronUp, Image as ImageIcon, Images, Maximize2, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Crop, Image as ImageIcon, Images, Plus, RefreshCw, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
@@ -10,10 +10,17 @@ import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
+import RecorteFoto from '../RecorteFoto/RecorteFoto'
 import type { OCRResultado, TipoFotoExtra } from '../../types/ocr'
 import type { ItemCreate } from '../../types/packing'
 
 const MAX_LOTE = 100
+
+// Lado de la foto principal y de las de detalle (bolso y "más fotos"): la
+// misma medida para las tres, ni tan chica que no se vea nada ni tan grande
+// como quedaban antes al estirarse con el ancho de la pantalla (una grilla
+// sin tope de tamaño en un monitor ancho las volvía gigantes).
+const LADO_FOTO = 148
 
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
@@ -85,6 +92,61 @@ function chipConfianza(c: OCRResultado['confianza'], t: (k: string) => string) {
   return { style: { backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }, texto: t('ocr.confianzaBaja') }
 }
 
+// Una foto de detalle (interior/herrajes/riata/exterior del bolso, o una
+// genérica extra1/2/3): sin subir todavía, es un botón para elegirla; ya
+// subida, se puede tocar para recortarla/girarla (mismo editor que la foto
+// principal), en vez de solo poder reemplazarla entera.
+function TileFotoDetalle({
+  url,
+  etiqueta,
+  ocupado,
+  onSubir,
+  onRecortar,
+}: {
+  url?: string | null
+  etiqueta: string
+  ocupado: boolean
+  onSubir: () => void
+  onRecortar: () => void
+}) {
+  const { t } = useTranslation()
+  if (!url) {
+    return (
+      <button
+        type="button"
+        onClick={onSubir}
+        disabled={ocupado}
+        className="relative flex flex-shrink-0 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-center disabled:opacity-60"
+        style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
+      >
+        <Upload size={18} style={{ color: 'var(--yuda-primary)' }} />
+        <span className="px-1 text-xs font-medium leading-tight" style={{ color: 'var(--yuda-primary)' }}>
+          {etiqueta}
+        </span>
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={onRecortar}
+      title={etiqueta}
+      className="relative flex-shrink-0 overflow-hidden rounded-lg border"
+      style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)' }}
+    >
+      <img src={url} alt={etiqueta} className="h-full w-full object-cover" />
+      {/* Banda con texto (no solo un ícono): que se note, sin tener que
+          adivinar, que la foto se puede tocar para recortarla/girarla. */}
+      <span
+        className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 py-1 text-[11px] font-semibold leading-tight text-white"
+        style={{ backgroundColor: 'rgba(17, 24, 39, 0.72)' }}
+      >
+        <Crop size={11} /> {t('recorte.tocaAjustar')}
+      </span>
+    </button>
+  )
+}
+
 // El bloque de carga es alto: cuando termina el análisis o se agregan los
 // productos, se vacía de golpe y la página se acorta. El navegador conserva la
 // posición del scroll, que entonces cae al final y obliga a subir a mano. Por eso
@@ -125,6 +187,8 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     reanalizarUno,
     reemplazarUno,
     subirFotoExtraUno,
+    recortarUno,
+    recortarFotoExtraUno,
     actualizarDato,
     quitar,
     finalizar,
@@ -135,9 +199,15 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
   const [agregando, setAgregando] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
-  // Foto ampliada (lightbox) y tarjeta ocupada (reanálisis/reemplazo en curso)
-  const [zoom, setZoom] = useState<string | null>(null)
+  // Tarjeta ocupada (reanálisis/reemplazo en curso)
   const [ocupadoId, setOcupadoId] = useState<string | null>(null)
+  // Resultado cuya foto principal se está recortando/girando a mano ahora mismo.
+  const [recorteId, setRecorteId] = useState<string | null>(null)
+  const [guardandoRecorte, setGuardandoRecorte] = useState(false)
+  // Foto de detalle (bolso o genérica) que se está recortando: además del
+  // resultado, hace falta saber CUÁL de las 4 (o de las 3 genéricas).
+  const [recorteExtra, setRecorteExtra] = useState<{ id: string; tipo: TipoFotoExtra } | null>(null)
+  const [guardandoRecorteExtra, setGuardandoRecorteExtra] = useState(false)
   const [reemplazarId, setReemplazarId] = useState<string | null>(null)
   // Fotos con el detalle completo desplegado (para revisar/editar todos los datos).
   // Fotos que el navegador no pudo dibujar (las HEIC del iPhone, sobre todo)
@@ -286,6 +356,65 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
     }
   }
 
+  // Guarda el recorte/giro a mano de la foto principal de un resultado.
+  const aplicarRecorte = async (recuadro: number[] | null, giro = 0) => {
+    if (!recorteId) return
+    setGuardandoRecorte(true)
+    try {
+      await recortarUno(recorteId, recuadro, giro)
+      toast.success(t('recorte.guardado'))
+      setRecorteId(null)
+    } catch {
+      toast.error(t('recorte.error'))
+    } finally {
+      setGuardandoRecorte(false)
+    }
+  }
+
+  // Reemplazar la foto desde el editor de recorte: es una foto distinta, así
+  // que se reanaliza con IA (mismo camino que "Reemplazar foto" de más abajo).
+  const reemplazarDesdeRecorte = async (file: File) => {
+    if (!recorteId) return
+    setGuardandoRecorte(true)
+    try {
+      await reemplazarUno(recorteId, file)
+      toast.success(t('recorte.reemplazada'))
+      setRecorteId(null)
+    } catch {
+      toast.error(t('recorte.errorReemplazar'))
+    } finally {
+      setGuardandoRecorte(false)
+    }
+  }
+
+  const aplicarRecorteExtra = async (recuadro: number[] | null, giro = 0) => {
+    if (!recorteExtra) return
+    setGuardandoRecorteExtra(true)
+    try {
+      await recortarFotoExtraUno(recorteExtra.id, recorteExtra.tipo, recuadro, giro)
+      toast.success(t('recorte.guardado'))
+      setRecorteExtra(null)
+    } catch {
+      toast.error(t('recorte.error'))
+    } finally {
+      setGuardandoRecorteExtra(false)
+    }
+  }
+
+  const reemplazarExtraDesdeRecorte = async (file: File) => {
+    if (!recorteExtra) return
+    setGuardandoRecorteExtra(true)
+    try {
+      await subirFotoExtraUno(recorteExtra.id, recorteExtra.tipo, file)
+      toast.success(t('recorte.reemplazada'))
+      setRecorteExtra(null)
+    } catch {
+      toast.error(t('recorte.errorReemplazar'))
+    } finally {
+      setGuardandoRecorteExtra(false)
+    }
+  }
+
   // Solo los productos con foto legible y datos completos se pueden agregar.
   const legibles = resultados.filter((r) => evaluarLegibilidad(r.datos).ok)
   const noLegibles = resultados.length - legibles.length
@@ -325,6 +454,9 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         // capturaban acá pero se perdían al agregar el producto si la
         // cotización no era de bolsos.
         fotos_extra: d.fotos_extra ?? undefined,
+        // Recortes a mano ya hechos en este paso: sin esto se perdían al pasar
+        // de resultado de OCR a ítem real de la cotización.
+        fotos_extra_final: d.fotos_extra_final ?? undefined,
         ...(esBolsos && {
           tamano: d.tamano ?? undefined,
           empaque: d.empaque ?? undefined,
@@ -659,23 +791,30 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 className="flex flex-col gap-3 rounded-xl border p-3"
                 style={{ borderColor: legibilidad.ok ? 'var(--yuda-border)' : '#FCA5A5' }}
               >
-              {/* Fila: foto grande (ampliable) + confianza + quitar */}
+              {/* Fila: foto grande (toca para recortar/girar) + confianza + quitar.
+                  Se muestra el recorte a mano si ya se hizo uno; si no, la foto
+                  entera tal como la subió la vendedora. */}
               <div className="flex items-start gap-3">
                 {r.foto_url ? (
                   <button
                     type="button"
-                    onClick={() => setZoom(r.foto_url)}
-                    className="relative flex-shrink-0 overflow-hidden rounded-lg"
-                    style={{ width: 104, height: 104 }}
-                    aria-label={t('lote.ampliar')}
+                    onClick={() => setRecorteId(r.id)}
+                    className="relative flex-shrink-0 overflow-hidden rounded-lg border"
+                    style={{ width: LADO_FOTO, height: LADO_FOTO, borderColor: 'var(--yuda-border)' }}
+                    title={t('recorte.tocaAjustar')}
                   >
-                    <img src={r.foto_url} alt="" className="h-full w-full object-cover" />
-                    <span className="absolute bottom-1 right-1 flex h-6 w-6 items-center justify-center rounded-full text-white" style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
-                      <Maximize2 size={13} />
+                    <img src={r.datos.foto_recorte_url || r.foto_url} alt="" className="h-full w-full object-cover" />
+                    {/* Banda con texto (no solo un ícono): que se note, sin tener que
+                        adivinar, que la foto se puede tocar para recortarla/girarla. */}
+                    <span
+                      className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 py-1.5 text-xs font-semibold text-white"
+                      style={{ backgroundColor: 'rgba(17, 24, 39, 0.72)' }}
+                    >
+                      <Crop size={13} /> {t('recorte.tocaAjustar')}
                     </span>
                   </button>
                 ) : (
-                  <div style={{ width: 104, height: 104 }} className="flex-shrink-0 rounded-lg bg-gray-100" />
+                  <div style={{ width: LADO_FOTO, height: LADO_FOTO }} className="flex-shrink-0 rounded-lg bg-gray-100" />
                 )}
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -743,30 +882,20 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                   <span className="text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>
                     {t('packing.fotosExtraTitulo')}
                   </span>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(['interior', 'herrajes', 'riata', 'exterior'] as const).map((tipo) => {
-                      const url = r.datos.fotos_extra?.[tipo]
+                      // La que sale en los documentos: el recorte a mano si existe.
+                      const url = r.datos.fotos_extra_final?.[tipo] || r.datos.fotos_extra?.[tipo]
                       const ocupadoExtra = subiendoExtra === `${r.id}-${tipo}`
                       return (
-                        <button
+                        <TileFotoDetalle
                           key={tipo}
-                          type="button"
-                          onClick={() => pedirFotoExtra(r.id, tipo)}
-                          disabled={ocupadoExtra}
-                          className="relative flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed text-center disabled:opacity-60"
-                          style={{ borderColor: url ? 'var(--yuda-success)' : 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
-                        >
-                          {url ? (
-                            <img src={url} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <>
-                              <Upload size={16} style={{ color: 'var(--yuda-primary)' }} />
-                              <span className="px-1 text-[10px] font-medium leading-tight" style={{ color: 'var(--yuda-primary)' }}>
-                                {ocupadoExtra ? t('lote.analizando') : t(`packing.foto${tipo.charAt(0).toUpperCase()}${tipo.slice(1)}`)}
-                              </span>
-                            </>
-                          )}
-                        </button>
+                          url={url}
+                          etiqueta={ocupadoExtra ? t('lote.analizando') : t(`packing.foto${tipo.charAt(0).toUpperCase()}${tipo.slice(1)}`)}
+                          ocupado={ocupadoExtra}
+                          onSubir={() => pedirFotoExtra(r.id, tipo)}
+                          onRecortar={() => setRecorteExtra({ id: r.id, tipo })}
+                        />
                       )
                     })}
                   </div>
@@ -787,30 +916,19 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                   {t('packing.masFotosAyuda')}
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-wrap gap-2">
                   {(['extra1', 'extra2', 'extra3'] as const).map((tipo, i) => {
-                    const url = r.datos.fotos_extra?.[tipo]
+                    const url = r.datos.fotos_extra_final?.[tipo] || r.datos.fotos_extra?.[tipo]
                     const ocupadoExtra = subiendoExtra === `${r.id}-${tipo}`
                     return (
-                      <button
+                      <TileFotoDetalle
                         key={tipo}
-                        type="button"
-                        onClick={() => pedirFotoExtra(r.id, tipo)}
-                        disabled={ocupadoExtra}
-                        className="relative flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed text-center disabled:opacity-60"
-                        style={{ borderColor: url ? 'var(--yuda-success)' : 'var(--yuda-primary)', backgroundColor: 'var(--yuda-white)' }}
-                      >
-                        {url ? (
-                          <img src={url} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <>
-                            <Upload size={16} style={{ color: 'var(--yuda-primary)' }} />
-                            <span className="px-1 text-[10px] font-medium leading-tight" style={{ color: 'var(--yuda-primary)' }}>
-                              {ocupadoExtra ? t('lote.analizando') : t('packing.masFotosSlot', { n: i + 2 })}
-                            </span>
-                          </>
-                        )}
-                      </button>
+                        url={url}
+                        etiqueta={ocupadoExtra ? t('lote.analizando') : t('packing.masFotosSlot', { n: i + 2 })}
+                        ocupado={ocupadoExtra}
+                        onSubir={() => pedirFotoExtra(r.id, tipo)}
+                        onRecortar={() => setRecorteExtra({ id: r.id, tipo })}
+                      />
                     )
                   })}
                 </div>
@@ -917,25 +1035,27 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
         className="hidden"
       />
 
-      {/* Lightbox: foto ampliada al tocar */}
-      {zoom && (
-        <div
-          onClick={() => setZoom(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0,0,0,0.8)' }}
-          role="dialog"
-        >
-          <img src={zoom} alt="" style={{ maxWidth: '100%', maxHeight: '100%' }} className="rounded-lg" />
-          <button
-            type="button"
-            onClick={() => setZoom(null)}
-            aria-label={t('lote.cerrar')}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-white"
-            style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
-          >
-            <X size={20} />
-          </button>
-        </div>
+      {/* Recortar/girar la foto principal de un resultado: se ve grande y se
+          ajusta acá mismo, antes de agregarlo como producto. */}
+      {recorteId && resultados.find((r) => r.id === recorteId)?.foto_url && (
+        <RecorteFoto
+          fotoUrl={resultados.find((r) => r.id === recorteId)!.foto_url}
+          recorteActual={resultados.find((r) => r.id === recorteId)?.datos.foto_recorte_url}
+          guardando={guardandoRecorte}
+          onGuardar={aplicarRecorte}
+          onReemplazar={reemplazarDesdeRecorte}
+          onCerrar={() => setRecorteId(null)}
+        />
+      )}
+      {recorteExtra && resultados.find((r) => r.id === recorteExtra.id)?.datos.fotos_extra?.[recorteExtra.tipo] && (
+        <RecorteFoto
+          fotoUrl={resultados.find((r) => r.id === recorteExtra.id)!.datos.fotos_extra![recorteExtra.tipo]}
+          recorteActual={resultados.find((r) => r.id === recorteExtra.id)?.datos.fotos_extra_final?.[recorteExtra.tipo]}
+          guardando={guardandoRecorteExtra}
+          onGuardar={aplicarRecorteExtra}
+          onReemplazar={reemplazarExtraDesdeRecorte}
+          onCerrar={() => setRecorteExtra(null)}
+        />
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
@@ -12,8 +13,10 @@ from app.models.lote import LoteItem, LoteOCR
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.lote import LoteActivo, LoteCreado, LoteEstado, LoteItemInfo
+from app.schemas.packing import RecorteRequest
 from app.services.lote_service import ocr_de_bytes, ocr_de_url, procesar_lote
 from app.services.imagen_service import convertir_a_jpeg
+from app.services.recorte_service import recortar_producto, recuadro_valido
 from app.services.storage_service import subir_foto
 
 router = APIRouter(tags=["lotes"])
@@ -203,9 +206,15 @@ async def reanalizar_item(
     lote = _obtener_lote(db, lote_id, usuario)
     item = _obtener_item(db, lote_id, item_id)
     fotos_extra = (item.datos or {}).get("fotos_extra")
+    # Los recortes a mano de las fotos de detalle (interior/herrajes/riata/
+    # exterior) no dependen de la foto principal: si no se conservan acá, un
+    # simple reintento de IA los borraba en silencio.
+    fotos_extra_final = (item.datos or {}).get("fotos_extra_final")
     datos, estado = await ocr_de_url(item.foto_url, _tipo_cotizacion(db, lote))
     if fotos_extra and datos is not None:
         datos["fotos_extra"] = fotos_extra
+    if fotos_extra_final and datos is not None:
+        datos["fotos_extra_final"] = fotos_extra_final
     item.datos = datos
     item.estado = estado
     db.commit()
@@ -263,9 +272,12 @@ async def reemplazar_item(
     )
 
     fotos_extra = (item.datos or {}).get("fotos_extra")
+    fotos_extra_final = (item.datos or {}).get("fotos_extra_final")
     datos, estado = await ocr_de_bytes(imagen_bytes, tipo_real, _tipo_cotizacion(db, lote))
     if fotos_extra and datos is not None:
         datos["fotos_extra"] = fotos_extra
+    if fotos_extra_final and datos is not None:
+        datos["fotos_extra_final"] = fotos_extra_final
     item.foto_url = foto_url
     item.datos = datos
     item.estado = estado
@@ -330,9 +342,157 @@ async def subir_foto_extra(
     fotos_extra = dict(datos.get("fotos_extra") or {})
     fotos_extra[tipo] = foto_url
     datos["fotos_extra"] = fotos_extra
+    # Si ya había un recorte a mano de esta foto, quedaría apuntando a un
+    # encuadre de la foto VIEJA: se descarta, igual que al reemplazar en el
+    # packing list (ver reemplazar_foto_extra en packing.py).
+    fotos_extra_final = dict(datos.get("fotos_extra_final") or {})
+    fotos_extra_final.pop(tipo, None)
+    datos["fotos_extra_final"] = fotos_extra_final
     item.datos = datos
     db.commit()
     return {"tipo": tipo, "foto_url": foto_url}
+
+
+@router.post("/lotes/{lote_id}/items/{item_id}/recorte", response_model=LoteItemInfo)
+async def guardar_recorte_lote(
+    lote_id: str,
+    item_id: str,
+    datos: RecorteRequest,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> LoteItem:
+    """Recorta/gira a mano la foto principal de un resultado de carga masiva,
+    antes de agregarlo como ítem real de la cotización.
+
+    Mismo mecanismo que el recorte del packing list (ver guardar_recorte en
+    packing.py), pero sobre un `LoteItem`: el resultado se guarda en
+    `datos.foto_recorte_url`, que es lo que ya usa CargaMasiva.tsx al agregar
+    el producto (`foto_final_url = datos.foto_recorte_url`).
+    """
+    _obtener_lote(db, lote_id, usuario)
+    item = _obtener_item(db, lote_id, item_id)
+
+    giro = datos.giro if datos.giro in (90, 180, 270) else 0
+    item_datos = dict(item.datos or {})
+
+    # Sin recuadro y sin giro: se descarta el recorte y vuelve la foto entera.
+    if datos.recuadro is None and giro == 0:
+        item_datos["foto_recorte_url"] = None
+        item.datos = item_datos
+        db.commit()
+        db.refresh(item)
+        return item
+
+    recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
+    if datos.recuadro is not None and recuadro is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El recorte no es válido")
+    # Girar sin recortar trabaja sobre lo que hoy se vería en los documentos;
+    # recortar de nuevo siempre parte de la foto original, para no encimar recortes.
+    origen_url = item.foto_url if recuadro is not None else (item_datos.get("foto_recorte_url") or item.foto_url)
+
+    try:
+        async with httpx.AsyncClient() as cli:
+            resp = await cli.get(origen_url, timeout=20)
+        if resp.status_code != 200:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+        original = resp.content
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+
+    # afinar=False: este recuadro lo dibujó la vendedora a mano, ya es exacto.
+    recorte = recortar_producto(original, recuadro, giro, afinar=False)
+    if recorte is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
+
+    nombre_archivo = f"{uuid.uuid4()}.jpg"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(recorte, nombre_archivo, "image/jpeg")
+    )
+
+    item_datos["foto_recorte_url"] = url
+    item.datos = item_datos
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.post(
+    "/lotes/{lote_id}/items/{item_id}/fotos-extra/{tipo}/recorte",
+    response_model=LoteItemInfo,
+)
+async def guardar_recorte_foto_extra_lote(
+    lote_id: str,
+    item_id: str,
+    tipo: str,
+    datos: RecorteRequest,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> LoteItem:
+    """Recorta/gira a mano una foto de detalle (interior/herrajes/riata/exterior,
+    o una genérica extra1/2/3) de un resultado de carga masiva.
+
+    Mismo mecanismo que el de la foto principal, pero siempre parte de
+    `datos.fotos_extra[tipo]` (la foto ORIGINAL tal como se subió, nunca se
+    sobreescribe) y guarda el resultado en `datos.fotos_extra_final[tipo]`.
+    """
+    _obtener_lote(db, lote_id, usuario)
+    item = _obtener_item(db, lote_id, item_id)
+    if tipo not in TIPOS_FOTO_EXTRA:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Tipo de foto inválido")
+
+    item_datos = dict(item.datos or {})
+    original_url = (item_datos.get("fotos_extra") or {}).get(tipo)
+    if not original_url:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El producto no tiene esa foto de detalle")
+
+    giro = datos.giro if datos.giro in (90, 180, 270) else 0
+
+    # Sin recuadro y sin giro: se descarta el ajuste y vuelve la foto original.
+    if datos.recuadro is None and giro == 0:
+        fotos_extra_final = dict(item_datos.get("fotos_extra_final") or {})
+        fotos_extra_final.pop(tipo, None)
+        item_datos["fotos_extra_final"] = fotos_extra_final
+        item.datos = item_datos
+        db.commit()
+        db.refresh(item)
+        return item
+
+    recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
+    if datos.recuadro is not None and recuadro is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El recorte no es válido")
+
+    try:
+        async with httpx.AsyncClient() as cli:
+            resp = await cli.get(original_url, timeout=20)
+        if resp.status_code != 200:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+        original = resp.content
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo leer la foto original")
+
+    # afinar=False: la dibujó la vendedora a mano, ya es exacta.
+    recorte = recortar_producto(original, recuadro, giro, afinar=False)
+    if recorte is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No se pudo recortar la foto")
+
+    nombre_archivo = f"{uuid.uuid4()}.jpg"
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(
+        None, lambda: subir_foto(recorte, nombre_archivo, "image/jpeg")
+    )
+
+    fotos_extra_final = dict(item_datos.get("fotos_extra_final") or {})
+    fotos_extra_final[tipo] = url
+    item_datos["fotos_extra_final"] = fotos_extra_final
+    item.datos = item_datos
+    db.commit()
+    db.refresh(item)
+    return item
 
 
 @router.get("/lotes/{lote_id}", response_model=LoteEstado)

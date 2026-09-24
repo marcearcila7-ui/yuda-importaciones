@@ -8,6 +8,8 @@ import {
   loteActivo,
   procesarLoteApi,
   reanalizarItemLote,
+  recortarFotoExtraLote,
+  recortarItemLote,
   reemplazarItemLote,
   reprocesarLote,
   subirFotoExtra,
@@ -35,7 +37,7 @@ function datosVacios(): OCRResultado {
     recuadro_cartel: null, recuadro_producto: null, foto_recorte_url: null,
     cantidad_minima_tienda: null, notas: null,
     tamano: null, empaque: null, etiqueta: null, herrajes: null, riata: null,
-    minimo_cajas_tienda: null, minimo_piezas_caja_tienda: null, fotos_extra: null,
+    minimo_cajas_tienda: null, minimo_piezas_caja_tienda: null, fotos_extra: null, fotos_extra_final: null,
     confianza: 'baja', legible: false, motivo_ilegible: 'no_procesada',
   }
 }
@@ -86,6 +88,13 @@ interface LoteState {
     id: string,
     tipo: TipoFotoExtra,
     file: File,
+  ) => Promise<void>
+  recortarUno: (id: string, recuadro: number[] | null, giro?: number) => Promise<void>
+  recortarFotoExtraUno: (
+    id: string,
+    tipo: TipoFotoExtra,
+    recuadro: number[] | null,
+    giro?: number,
   ) => Promise<void>
   actualizarDato: (id: string, campo: keyof OCRResultado, valor: string | number | null) => void
   quitar: (id: string) => void
@@ -399,9 +408,48 @@ export const useLoteStore = create<LoteState>((set, get) => {
       const comprimido = await comprimirFotoDetalle(file)
       const { foto_url } = await subirFotoExtra(loteId, id, tipo, comprimido)
       set((s) => ({
+        resultados: s.resultados.map((r) => {
+          if (r.id !== id) return r
+          // Si ya había un recorte a mano de esta foto, quedaría apuntando al
+          // encuadre de la foto VIEJA: se descarta (igual que hace el backend).
+          const fotosExtraFinal = { ...r.datos.fotos_extra_final }
+          delete fotosExtraFinal[tipo]
+          return {
+            ...r,
+            datos: {
+              ...r.datos,
+              fotos_extra: { ...r.datos.fotos_extra, [tipo]: foto_url },
+              fotos_extra_final: fotosExtraFinal,
+            },
+          }
+        }),
+      }))
+    },
+
+    // Recorta/gira a mano la foto principal de un resultado, antes de agregarlo.
+    recortarUno: async (id, recuadro, giro = 0) => {
+      const loteId = get().loteId
+      if (!loteId) return
+      const info = await recortarItemLote(loteId, id, recuadro, giro)
+      set((s) => ({
+        resultados: s.resultados.map((r) =>
+          r.id === id && info.datos
+            ? { ...r, datos: { ...r.datos, foto_recorte_url: info.datos.foto_recorte_url ?? null } }
+            : r,
+        ),
+      }))
+    },
+
+    // Recorta/gira a mano una foto de detalle (interior/herrajes/riata/exterior,
+    // o una genérica extra1/2/3).
+    recortarFotoExtraUno: async (id, tipo, recuadro, giro = 0) => {
+      const loteId = get().loteId
+      if (!loteId) return
+      const info = await recortarFotoExtraLote(loteId, id, tipo, recuadro, giro)
+      set((s) => ({
         resultados: s.resultados.map((r) =>
           r.id === id
-            ? { ...r, datos: { ...r.datos, fotos_extra: { ...r.datos.fotos_extra, [tipo]: foto_url } } }
+            ? { ...r, datos: { ...r.datos, fotos_extra_final: info.datos?.fotos_extra_final ?? null } }
             : r,
         ),
       }))

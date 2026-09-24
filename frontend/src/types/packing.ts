@@ -38,6 +38,10 @@ export interface ItemCreate {
   minimo_piezas_caja_tienda?: number | null
   // Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
   fotos_extra?: Record<string, string> | null
+  // Recortes a mano de las de arriba, hechos ya durante la carga masiva (antes
+  // de agregar el producto): sin esto se perdían al pasar de resultado de OCR
+  // a ítem real de la cotización.
+  fotos_extra_final?: Record<string, string> | null
   // Si viene de un resultado de carga masiva: marca ese resultado como ya
   // agregado para que no se ofrezca ni se duplique si se retoma el lote.
   lote_item_id?: string
@@ -47,9 +51,6 @@ export interface ItemResponse extends ItemCreate {
   id: string
   sesion_id: string
   foto_url?: string
-  // Recorte/giro a mano de fotos_extra, por tipo: {"interior": url, ...}.
-  // Si un tipo no está acá, se usa fotos_extra[tipo] tal cual (sin recortar).
-  fotos_extra_final?: Record<string, string> | null
   // Referencia de catálogo que ve el cliente (la asigna el sistema)
   referencia?: string | null
   cantidad_solicitada?: number | null

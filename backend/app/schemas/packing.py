@@ -45,6 +45,10 @@ class ItemCreate(BaseModel):
     minimo_piezas_caja_tienda: Optional[int] = None
     # Fotos de detalle del bolso: {"interior": url, "herrajes": url, ...}
     fotos_extra: Optional[dict] = None
+    # Recortes a mano de las de arriba, hechos ya durante la carga masiva (antes
+    # de agregar el producto): sin esto se perdían al pasar de resultado de OCR
+    # a ítem real de la cotización, y había que volver a recortarlas.
+    fotos_extra_final: Optional[dict] = None
     # Si este ítem viene de un resultado de carga masiva (OCR), su lote_item_id:
     # marca ese resultado como ya agregado para que no vuelva a aparecer si se
     # retoma el lote (recarga del navegador, caída del servidor a mitad de revisión).

@@ -40,6 +40,9 @@ export interface OCRResultado {
   minimo_piezas_caja_tienda?: number | null
   // Fotos de detalle del bolso subidas aparte (interior/herrajes/riata/exterior).
   fotos_extra?: Record<string, string> | null
+  // Recorte/giro a mano de las de arriba, por tipo: {"interior": url, ...}.
+  // Si un tipo no está acá, se usa fotos_extra[tipo] tal cual (sin recortar).
+  fotos_extra_final?: Record<string, string> | null
   notas: string | null
   confianza: 'alta' | 'media' | 'baja'
   // Calidad de la foto evaluada por el modelo. Puede faltar en ítems viejos.

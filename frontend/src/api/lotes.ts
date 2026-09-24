@@ -79,6 +79,40 @@ export async function subirFotoExtra(
   return data
 }
 
+// Recorta/gira a mano la foto principal de un resultado de carga masiva,
+// antes de agregarlo como ítem real. `recuadro` es [x0,y0,x1,y1] en fracciones
+// de 0 a 1; en null se vuelve a la foto completa (o solo se aplica el giro).
+export async function recortarItemLote(
+  lote_id: string,
+  item_id: string,
+  recuadro: number[] | null,
+  giro = 0,
+): Promise<LoteItemInfo> {
+  const { data } = await apiClient.post<LoteItemInfo>(
+    `/lotes/${lote_id}/items/${item_id}/recorte`,
+    { recuadro, giro },
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
+// Igual, para una foto de detalle (interior/herrajes/riata/exterior, o una
+// genérica extra1/2/3). Siempre parte de la foto original de ese tipo.
+export async function recortarFotoExtraLote(
+  lote_id: string,
+  item_id: string,
+  tipo: TipoFotoExtra,
+  recuadro: number[] | null,
+  giro = 0,
+): Promise<LoteItemInfo> {
+  const { data } = await apiClient.post<LoteItemInfo>(
+    `/lotes/${lote_id}/items/${item_id}/fotos-extra/${tipo}/recorte`,
+    { recuadro, giro },
+    { timeout: TIMEOUT_SUBIDA },
+  )
+  return data
+}
+
 export async function estadoLote(lote_id: string): Promise<LoteEstadoResp> {
   const { data } = await apiClient.get(`/lotes/${lote_id}`)
   return data as LoteEstadoResp
