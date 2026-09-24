@@ -582,6 +582,20 @@ def generar_cotizacion_pdf(
         tot_gw += gw_total
 
     headers_html = "".join(f"<th>{etiquetas[c]}</th>" for c in columnas_activas)
+    # Con table-layout: fixed el ancho de cada columna lo definen estos <col>,
+    # no lo que quepa en cada celda: así el total SIEMPRE da el 100% de la
+    # página (nunca se pasa del margen), aunque haya muchas columnas -bolsos
+    # tiene bastantes más que productos varios. Antes, con ancho automático,
+    # sumar el mínimo de la foto + las 3 descripciones + el resto de columnas
+    # se pasaba del margen derecho.
+    def _ancho_col(clave: str) -> str:
+        if clave == "foto":
+            return "190px"
+        if clave in ("desc_es", "desc_en", "desc_zh"):
+            return "140px"
+        return "55px"
+
+    colgroup_html = "".join(f'<col style="width:{_ancho_col(c)}">' for c in columnas_activas)
 
     logo = _logo_bytes()
     logo_html = (
@@ -621,14 +635,16 @@ def generar_cotizacion_pdf(
   .empresa p {{ margin: 2px 0 0; font-size: 10px; }}
   .datos {{ margin: 10px 0; font-size: 10px; }}
   .datos div {{ margin: 2px 0; }}
-  table {{ width: 100%; border-collapse: collapse; }}
-  th {{ background: #4B52E8; color: #fff; padding: 4px; font-size: 8px; }}
-  td {{ border: 1px solid #E5E7EB; padding: 3px; text-align: center; }}
-  /* Sin un mínimo, con tantas columnas (más aún en bolsos) el navegador les
-     daba el mismo espacio que a una columna corta como "CBM", y el texto
-     quedaba partido en una palabra por línea. Las columnas numéricas cortas
-     sí pueden achicarse para compensar, un número no se lee peor angosto. */
-  td.desc {{ text-align: left; min-width: 140px; }}
+  /* fixed, no auto: con ancho automático, sumar el mínimo de la foto + las 3
+     descripciones + el resto de columnas (bolsos tiene bastantes) superaba el
+     100% de la página y la tabla entera se corría hacia la derecha, pasándose
+     del margen (mientras el encabezado sí lo respetaba). Con fixed, el ancho
+     de cada columna lo define el <colgroup> de abajo y el total SIEMPRE
+     ocupa el 100% real de la página, nunca más. */
+  table {{ width: 100%; border-collapse: collapse; table-layout: fixed; }}
+  th {{ background: #4B52E8; color: #fff; padding: 4px; font-size: 8px; overflow: hidden; }}
+  td {{ border: 1px solid #E5E7EB; padding: 3px; text-align: center; overflow: hidden; word-wrap: break-word; }}
+  td.desc {{ text-align: left; }}
   .logo {{ text-align: center; padding: 6px 0; }}
   .logo img {{ height: 34px; }}
   .aviso {{ border: 1px solid #C00000; color: #C00000; font-weight: bold; font-size: 8px;
@@ -643,9 +659,17 @@ def generar_cotizacion_pdf(
      la columna se volvía tan ancha que apretaba a las demás columnas de la
      tabla. En cuadrícula la columna se queda angosta y crece el alto de la
      fila en su lugar, que no molesta a nadie. */
-  td.foto {{ width: 190px; }}
-  td.foto .fotos-fila {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; justify-items: center; }}
-  td.foto .fotos-fila img {{ max-width: 80px; max-height: 80px; object-fit: contain; display: block; }}
+  /* overflow: hidden como red de seguridad: CSS grid dentro de una celda de
+     tabla se pasaba de ancho en algunos casos y las fotos quedaban ENCIMA de
+     las columnas siguientes (Referencia, Código), en vez de forzar el ancho
+     de la celda. inline-block con ancho fijo por foto es más simple y
+     confiable -se acomodan solas de a 2 por fila, como el texto. */
+  td.foto {{ width: 190px; overflow: hidden; }}
+  td.foto .fotos-fila {{ width: 172px; }}
+  td.foto .fotos-fila img {{
+    width: 80px; height: 80px; object-fit: contain; display: inline-block;
+    vertical-align: top; margin: 2px;
+  }}
   tr.totales td {{ background: #0D0D0D; color: #fff; font-weight: bold; }}
   .resumen {{ background: #EEF0FD; color: #4B52E8; font-weight: bold; text-align: center;
              padding: 8px; border-radius: 8px; margin: 8px 0; font-size: 11px; }}
@@ -665,6 +689,7 @@ def generar_cotizacion_pdf(
   </div>
   <div class="resumen">{lab['resumen'].format(n=len(items), cajas=int(tot_cajas), usd=round(tot_usd, 2), gw=round(tot_gw, 2), cbm=round(tot_cbm, 6))}</div>
   <table>
+    <colgroup>{colgroup_html}</colgroup>
     <thead><tr>{headers_html}</tr></thead>
     <tbody>
       {''.join(filas_html)}
