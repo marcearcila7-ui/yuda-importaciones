@@ -553,10 +553,15 @@ def generar_cotizacion_excel(
     ws.print_area = f"A1:{ultima_col}{fila_final}"
     ws.print_options.horizontalCentered = True
     ws.print_title_cols = f"A:{get_column_letter(min(6, ncols))}"
-    # Márgenes al mínimo (~1cm = 0.4in): sin esto Excel usa sus márgenes por
-    # defecto (~1.8cm), que sobre una hoja ya apretada de columnas es espacio
-    # desperdiciado. Sin encabezado/pie de página: no se usan.
-    ws.page_margins = PageMargins(left=0.4, right=0.4, top=0.4, bottom=0.4, header=0, footer=0)
+    # Márgenes al mínimo real que deja imprimir una impresora normal (0.5cm):
+    # sin esto Excel usa sus márgenes por defecto (~1.8cm), que sobre una hoja
+    # ya apretada de columnas es espacio desperdiciado. Sin encabezado/pie de
+    # página: no se usan, no hace falta dejarles espacio.
+    margen_medio_cm = 0.5 / 2.54
+    ws.page_margins = PageMargins(
+        left=margen_medio_cm, right=margen_medio_cm, top=margen_medio_cm, bottom=margen_medio_cm,
+        header=0, footer=0,
+    )
 
     buffer = BytesIO()
     wb.save(buffer)
