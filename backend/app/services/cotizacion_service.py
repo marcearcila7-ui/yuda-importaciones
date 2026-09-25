@@ -11,6 +11,7 @@ from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.page import PageMargins
 from openpyxl.utils.units import pixels_to_EMU
 from app.services.imagen_service import CALIDAD_JPEG
 from app.services.pdf_service import render_pdf
@@ -150,15 +151,20 @@ ETIQUETAS_COLUMNA = {
     },
 }
 
+
+# Las columnas de solo números (cantidades, precios, medidas) no necesitan
+# tanto ancho como el texto: un número siempre es corto y no se "lee mal" si
+# la columna queda justa. Achicarlas es lo que le deja espacio real a las
+# columnas de texto (descripciones, empaque, etc.), que sí lo necesitan.
 ANCHOS_COLUMNA = {
-    "numero": 5, "fecha_recibo": 13, "shipping_mark": 13, "foto": 30, "referencia": 13, "codigo": 12,
+    "numero": 4, "fecha_recibo": 11, "shipping_mark": 9, "foto": 30, "referencia": 11, "codigo": 10,
     "desc_es": 30, "desc_en": 30, "desc_zh": 24, "material": 13, "uso": 16,
-    "cajas": 7, "uds_caja": 9, "unidad": 7, "cant_total": 11,
-    "precio_rmb": 10, "total_rmb": 11, "precio_usd": 10, "total_usd": 11,
-    "largo": 8, "ancho": 8, "alto": 8, "cbm": 8, "t_cbm": 9,
-    "peso": 8, "peso_total": 11, "mqt": 11, "marca": 14,
-    "tamano": 12, "empaque": 15, "etiqueta": 15, "herrajes": 12, "riata": 15,
-    "minimo_cajas_tienda": 14, "minimo_piezas_caja_tienda": 14,
+    "cajas": 5, "uds_caja": 6, "unidad": 5, "cant_total": 8,
+    "precio_rmb": 8, "total_rmb": 9, "precio_usd": 8, "total_usd": 9,
+    "largo": 6, "ancho": 6, "alto": 6, "cbm": 7, "t_cbm": 7,
+    "peso": 6, "peso_total": 8, "mqt": 7, "marca": 12,
+    "tamano": 11, "empaque": 15, "etiqueta": 15, "herrajes": 12, "riata": 15,
+    "minimo_cajas_tienda": 9, "minimo_piezas_caja_tienda": 9,
 }
 
 
@@ -349,6 +355,28 @@ def generar_cotizacion_excel(
     ncols = len(columnas_activas)
     ultima_col = get_column_letter(ncols)
 
+    # Una celda fusionada A1:ultima_col con color de fondo, cuando el
+    # documento imprime en más de 1 hoja de ancho, queda con la caja mal
+    # calculada en la hoja 1 (se ve un margen absurdo a la derecha) -esto
+    # solo les pasa a las celdas fusionadas, no a las individuales. Para las
+    # filas con color de fondo (empresa, resumen), se fusiona el texto solo
+    # hasta donde cabe la primera hoja, y el resto de columnas se pintan del
+    # mismo color SIN fusionar: en pantalla se ve una banda continua, y al
+    # imprimir cada celda respeta la página que le toca.
+    ANCHO_UTIL_UNA_HOJA = 150  # unidades de ancho de Excel (~27.7cm útiles a 1cm de margen, A4 horizontal)
+    acumulado = 0
+    col_banner_idx = ncols
+    for i, clave in enumerate(columnas_activas, start=1):
+        acumulado += ANCHOS_COLUMNA[clave]
+        if acumulado > ANCHO_UTIL_UNA_HOJA:
+            col_banner_idx = max(1, i - 1)
+            break
+    col_banner = get_column_letter(col_banner_idx)
+
+    def _fila_banner(fila_banner: int, fill: PatternFill) -> None:
+        for col in range(col_banner_idx + 1, ncols + 1):
+            ws.cell(row=fila_banner, column=col).fill = fill
+
     # Logo de YUDA, sobre fondo blanco: el lockup tiene el texto en negro y no se
     # lee sobre el azul del encabezado.
     ws.merge_cells(f"A1:{ultima_col}1")
@@ -365,16 +393,18 @@ def generar_cotizacion_excel(
             ws["A1"] = lab["empresa"]
 
     # Encabezado de empresa
-    ws.merge_cells(f"A2:{ultima_col}2")
+    ws.merge_cells(f"A2:{col_banner}2")
     ws["A2"] = lab["empresa"]
     ws["A2"].fill = fill_empresa
     ws["A2"].font = font_empresa
     ws["A2"].alignment = centro
-    ws.merge_cells(f"A3:{ultima_col}3")
+    _fila_banner(2, fill_empresa)
+    ws.merge_cells(f"A3:{col_banner}3")
     ws["A3"] = CONTACTO["razon"]
     ws["A3"].fill = fill_empresa
     ws["A3"].font = Font(color="FFFFFF")
     ws["A3"].alignment = centro
+    _fila_banner(3, fill_empresa)
 
     # Aviso de la agencia de carga: sin estos datos no cargan la mercancía
     for i, linea in enumerate(AVISO_AGENCIA):
@@ -391,13 +421,18 @@ def generar_cotizacion_excel(
     ws["A8"] = f"{lab['emision']}: {fecha.strftime('%Y-%m-%d')}"
     ws["A9"] = f"{lab['cliente']}: {sesion.nombre_cliente}"
 
-    # Headers de columnas
+    # Headers de columnas. Con columnas angostas (números), el título es más
+    # largo que el ancho de la columna ("Fecha de recibo", "Cantidad total"):
+    # sin wrap_text, ese texto se sale de la celda y se monta sobre el
+    # encabezado de al lado, ilegible. Envuelto en 2 líneas cabe siempre.
     fila_head = 12
+    alineacion_head = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[fila_head].height = 30
     for idx, clave in enumerate(columnas_activas, start=1):
         celda = ws.cell(row=fila_head, column=idx, value=etiquetas[clave])
         celda.fill = fill_head
         celda.font = font_head
-        celda.alignment = centro
+        celda.alignment = alineacion_head
         celda.border = borde_fino
 
     # Columna de la foto: se resuelve una vez (siempre está en columnas_activas).
@@ -463,7 +498,8 @@ def generar_cotizacion_excel(
             ws.cell(row=fila, column=idx, value=totales_por_clave[clave])
 
     # Recuadro de resumen amigable, arriba de la tabla
-    ws.merge_cells(f"A11:{ultima_col}11")
+    fill_resumen = PatternFill(start_color="EEF0FD", end_color="EEF0FD", fill_type="solid")
+    ws.merge_cells(f"A11:{col_banner}11")
     ws["A11"] = lab["resumen"].format(
         n=len(items),
         cajas=int(tot_cajas),
@@ -471,10 +507,11 @@ def generar_cotizacion_excel(
         gw=round(tot_gw, 2),
         cbm=round(tot_cbm, 6),
     )
-    ws["A11"].fill = PatternFill(start_color="EEF0FD", end_color="EEF0FD", fill_type="solid")
+    ws["A11"].fill = fill_resumen
     ws["A11"].font = Font(bold=True, color="4B52E8", size=11)
     ws["A11"].alignment = centro
     ws.row_dimensions[11].height = 24
+    _fila_banner(11, fill_resumen)
     for col in range(1, ncols + 1):
         c = ws.cell(row=fila, column=col)
         c.fill = fill_tot
@@ -516,6 +553,10 @@ def generar_cotizacion_excel(
     ws.print_area = f"A1:{ultima_col}{fila_final}"
     ws.print_options.horizontalCentered = True
     ws.print_title_cols = f"A:{get_column_letter(min(6, ncols))}"
+    # Márgenes al mínimo (~1cm = 0.4in): sin esto Excel usa sus márgenes por
+    # defecto (~1.8cm), que sobre una hoja ya apretada de columnas es espacio
+    # desperdiciado. Sin encabezado/pie de página: no se usan.
+    ws.page_margins = PageMargins(left=0.4, right=0.4, top=0.4, bottom=0.4, header=0, footer=0)
 
     buffer = BytesIO()
     wb.save(buffer)
