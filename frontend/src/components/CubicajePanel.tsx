@@ -126,67 +126,72 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
             ? t('cubicaje.chatCon', { nombre: detalle.bodega_asignado_a_nombre })
             : t('cubicaje.chatSinAsignar')}
         </p>
+        {/* El hilo como una conversación real: los mensajes de la vendedora
+            (este lado) van a la derecha, los de bodega a la izquierda -como
+            cualquier chat, no una lista de tarjetas iguales. */}
         {detalle.mensajes.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('cubicaje.sinMensajes')}</p>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {detalle.mensajes.map((m) => {
               const info = detalleMensaje(m)
               const esRespuesta = m.tipo === 'respuesta'
               return (
-                <div
-                  key={m.id}
-                  className="rounded-lg border p-3 text-sm"
-                  style={{
-                    borderColor: 'var(--yuda-border)',
-                    backgroundColor: esRespuesta ? 'var(--yuda-primary-soft)' : 'var(--yuda-bg)',
-                  }}
-                >
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                <div key={m.id} className={`flex ${esRespuesta ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm sm:max-w-[70%]"
+                    style={{
+                      backgroundColor: esRespuesta ? 'var(--yuda-primary)' : '#F3F4F6',
+                      color: esRespuesta ? 'white' : 'var(--yuda-text)',
+                      borderBottomRightRadius: esRespuesta ? 4 : undefined,
+                      borderBottomLeftRadius: esRespuesta ? undefined : 4,
+                    }}
+                  >
+                    <p className="text-xs font-semibold" style={{ opacity: 0.8 }}>
                       {m.autor_nombre || '—'}
-                      {m.tipo === 'reporte' && (
-                        <span className="ml-2 text-xs font-normal" style={{ color: 'var(--yuda-text-secondary)' }}>
-                          {t('cubicaje.tipoReporte')}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex-shrink-0 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {fmtFecha(m.created_at)}
-                    </span>
-                  </div>
-                  {info && (
-                    <p className="mb-1 flex items-center gap-1 font-medium" style={{ color: 'var(--yuda-text)' }}>
-                      {m.resultado === 'ajustado' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />} {info}
                     </p>
-                  )}
-                  {m.mensaje && <p style={{ color: 'var(--yuda-text)' }}>{m.mensaje}</p>}
+                    {info && (
+                      <p className="mt-0.5 flex items-center gap-1 font-medium">
+                        {m.resultado === 'ajustado' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />} {info}
+                      </p>
+                    )}
+                    {m.mensaje && <p className="mt-0.5">{m.mensaje}</p>}
+                    <p className="mt-1 text-right text-xs" style={{ opacity: 0.7 }}>
+                      {fmtFecha(m.created_at)}
+                    </p>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
 
-        <label className="mt-4 flex flex-col gap-1 text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {t('cubicaje.responderLabel')}
+        <div className="mt-4 flex items-end gap-2">
           <textarea
             value={respuesta}
             onChange={(e) => setRespuesta(e.target.value)}
-            rows={2}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                enviarRespuesta()
+              }
+            }}
+            rows={1}
             placeholder={t('cubicaje.responderPlaceholder')}
-            className="rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none"
+            className="flex-1 resize-none rounded-full border border-gray-200 px-4 py-2.5 focus:border-[var(--yuda-primary)] focus:outline-none"
             style={{ fontSize: 15 }}
           />
-        </label>
-        <button
-          type="button"
-          onClick={enviarRespuesta}
-          disabled={enviando || !respuesta.trim()}
-          className="mt-2 flex min-h-[44px] items-center justify-center gap-2 self-start rounded-lg px-4 font-semibold text-white disabled:opacity-60"
-          style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
-        >
-          <Send size={16} /> {enviando ? t('common.subiendo') : t('cubicaje.responderBoton')}
-        </button>
+          <button
+            type="button"
+            onClick={enviarRespuesta}
+            disabled={enviando || !respuesta.trim()}
+            aria-label={t('cubicaje.responderBoton')}
+            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-white disabled:opacity-60"
+            style={{ backgroundColor: 'var(--yuda-primary)' }}
+          >
+            <Send size={18} />
+          </button>
+        </div>
       </div>
     </div>
   )
