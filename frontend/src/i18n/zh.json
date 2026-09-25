@@ -1207,6 +1207,8 @@
     },
     "cbmActual": "已计算 {{cbm}} 立方米(集装箱:{{min}}-{{max}} 立方米)",
     "hiloTitulo": "报告与对话",
+    "chatCon": "与 {{nombre}} 聊天",
+    "chatSinAsignar": "仓库还没有人接手这个订单。",
     "sinMensajes": "此订单还没有体积报告。",
     "tipoReporte": "(仓库报告)",
     "detalleSobra": "{{n}} 箱「{{referencia}}」装不下集装箱。",

@@ -24,4 +24,8 @@ export interface CubicajeMensaje {
 export interface CubicajeDetalle {
   resumen: CubicajeResumen
   mensajes: CubicajeMensaje[]
+  // Con quién es la conversación, del lado del cotizador: la persona de
+  // bodega que tiene asignado el pedido (null si nadie lo ha tomado).
+  vendedora_nombre: string | null
+  bodega_asignado_a_nombre: string | null
 }

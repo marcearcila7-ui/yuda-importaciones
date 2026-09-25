@@ -1204,6 +1204,8 @@
     },
     "cbmActual": "{{cbm}} m³ calculados (contenedor: {{min}}-{{max}} m³)",
     "hiloTitulo": "Reportes y conversación",
+    "chatCon": "Chat con {{nombre}}",
+    "chatSinAsignar": "Todavía nadie de bodega ha tomado este pedido.",
     "sinMensajes": "Todavía no hay reportes de cubicaje para este pedido.",
     "tipoReporte": "(reporte de bodega)",
     "detalleSobra": "Sobraron {{n}} caja(s) de «{{referencia}}», no cupieron en el contenedor.",

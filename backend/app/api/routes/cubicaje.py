@@ -99,7 +99,21 @@ def obtener_cubicaje(
     autor_ids = {m.autor_id for m in filas}
     autores = {u.id: u for u in db.query(User).filter(User.id.in_(autor_ids)).all()} if autor_ids else {}
 
-    return CubicajeDetalle(resumen=resumen, mensajes=[_mensaje_response(m, autores) for m in filas])
+    # Quién está del otro lado de la conversación para cada app.
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    vendedora = db.query(User).filter(User.id == sesion.user_id).first()
+    asignado = (
+        db.query(User).filter(User.id == seg.bodega_asignado_a_id).first()
+        if seg and seg.bodega_asignado_a_id
+        else None
+    )
+
+    return CubicajeDetalle(
+        resumen=resumen,
+        mensajes=[_mensaje_response(m, autores) for m in filas],
+        vendedora_nombre=vendedora.nombre if vendedora else None,
+        bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+    )
 
 
 @router.post("/bodega/pedidos/{sesion_id}/cubicaje/reporte", response_model=CubicajeMensajeResponse)

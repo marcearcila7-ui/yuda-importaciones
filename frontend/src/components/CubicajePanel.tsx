@@ -116,9 +116,16 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
       </div>
 
       <div className="card">
-        <h2 className="mb-3" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+        <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
           {t('cubicaje.hiloTitulo')}
         </h2>
+        {/* Con quién es la conversación: antes no se sabía si el pedido ya
+            tenía a alguien de bodega trabajándolo o seguía sin asignar. */}
+        <p className="mb-3 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+          {detalle.bodega_asignado_a_nombre
+            ? t('cubicaje.chatCon', { nombre: detalle.bodega_asignado_a_nombre })
+            : t('cubicaje.chatSinAsignar')}
+        </p>
         {detalle.mensajes.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('cubicaje.sinMensajes')}</p>
         ) : (

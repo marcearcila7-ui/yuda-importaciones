@@ -1204,6 +1204,8 @@
     },
     "cbmActual": "{{cbm}} m³ calculated (container: {{min}}-{{max}} m³)",
     "hiloTitulo": "Reports and conversation",
+    "chatCon": "Chat with {{nombre}}",
+    "chatSinAsignar": "No one in the warehouse has taken this order yet.",
     "sinMensajes": "No cubic-volume reports for this order yet.",
     "tipoReporte": "(warehouse report)",
     "detalleSobra": "{{n}} box(es) of «{{referencia}}» did not fit in the container.",

@@ -34,10 +34,17 @@ class CubicajeMensajeResponse(BaseModel):
 class CubicajeDetalle(BaseModel):
     """Lo que consumen ambas apps (bodega y cotizador): el cálculo en vivo más
     todo el hilo, en una sola llamada -así el polling rápido no necesita dos
-    pedidos separados."""
+    pedidos separados.
+
+    vendedora_nombre y bodega_asignado_a_nombre son quién está del otro
+    lado de la conversación para cada app: bodega ve con qué vendedora
+    está chateando, y la vendedora ve quién de bodega tiene el pedido
+    (o que todavía no se lo ha asignado nadie)."""
 
     resumen: CubicajeResumen
     mensajes: list[CubicajeMensajeResponse]
+    vendedora_nombre: str | None = None
+    bodega_asignado_a_nombre: str | None = None
 
 
 class CubicajeReporteInput(BaseModel):
