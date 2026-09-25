@@ -1,10 +1,12 @@
 import asyncio
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, require_roles
+from app.api.routes.bodega import _ItemInspeccionado, _items_inspeccionados
 from app.core.archivo_valida import detectar_tipo_documento, es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
@@ -20,6 +22,9 @@ from app.schemas.cubicaje import (
     CubicajeReporteInput,
     CubicajeRespuestaInput,
     CubicajeResumen,
+    SobranteListaGenerada,
+    SobranteListaItem,
+    SobranteListaPreview,
 )
 from app.services.cubicaje_service import (
     LIMITE_MAX_CBM,
@@ -28,8 +33,10 @@ from app.services.cubicaje_service import (
     calcular_cbm_pedido,
     determinar_resultado,
 )
+from app.services.excel_service import generar_packing_list_excel
 from app.services.notificacion_service import avisar_cubicaje_a_bodega, avisar_cubicaje_a_vendedora
-from app.services.storage_service import subir_documento, subir_foto, subir_video
+from app.services.pdf_service import generar_packing_list_pdf
+from app.services.storage_service import subir_documento, subir_excel, subir_foto, subir_pdf, subir_video
 
 # Mismos tipos que "Adjuntos de esta etapa" en Seguimiento, más video: bodega y
 # la vendedora pueden mandarse fotos y videos de evidencia, no solo documentos.
@@ -76,6 +83,111 @@ def _sesion_o_404(db: Session, sesion_id: str, usuario: User) -> Sesion:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
     exigir_acceso_sesion(db, sesion, usuario)
     return sesion
+
+
+def _referencias_sobrante(db: Session, sesion_id: str) -> dict[str, int]:
+    """Cuántas cajas quedaron sobrando por referencia, acumulado de todos los
+    reportes "sobra" que bodega ha mandado para este pedido. Si reportó la
+    misma referencia más de una vez (para corregirla), manda la más
+    reciente -no se suman entre sí."""
+    filas = (
+        db.query(CubicajeMensaje)
+        .filter(
+            CubicajeMensaje.sesion_id == sesion_id,
+            CubicajeMensaje.tipo == TIPO_REPORTE,
+            CubicajeMensaje.resultado == RESULTADO_SOBRA,
+            CubicajeMensaje.referencia.isnot(None),
+        )
+        .order_by(CubicajeMensaje.created_at.asc())
+        .all()
+    )
+    mapa: dict[str, int] = {}
+    for f in filas:
+        if f.referencia and f.cajas_afectadas:
+            mapa[f.referencia] = f.cajas_afectadas
+    return mapa
+
+
+class _ItemSobrante:
+    """El mismo producto que bodega ya validó (fotos, descripción, precio,
+    medidas), pero con "cajas" reemplazado por la cantidad que sobró -no la
+    cantidad total confirmada. Es la única diferencia con el documento
+    normal de la cotización corregida."""
+
+    def __init__(self, base: object, cajas_sobrante: int) -> None:
+        self._base = base
+        self._cajas_sobrante = cajas_sobrante
+
+    def __getattr__(self, nombre: str):
+        if nombre == "ctns":
+            return self._cajas_sobrante
+        return getattr(self._base, nombre)
+
+
+def _items_sobrante(db: Session, sesion: Sesion) -> list[_ItemSobrante]:
+    mapa = _referencias_sobrante(db, sesion.id)
+    if not mapa:
+        return []
+    # Sin las filas de "caja extra" (_ItemCajaExtra): la lista sobrante es un
+    # número agregado por referencia, no un desglose de cajas irregulares.
+    base_items = [i for i in _items_inspeccionados(db, sesion.id) if isinstance(i, _ItemInspeccionado)]
+    return [_ItemSobrante(i, mapa[i.referencia]) for i in base_items if i.referencia in mapa]
+
+
+@router.get("/sesiones/{sesion_id}/cubicaje/sobrante", response_model=SobranteListaPreview)
+def obtener_sobrante_preview(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> SobranteListaPreview:
+    """Para que bodega confirme ANTES de generar el documento: qué
+    referencias y cuántas cajas va a incluir la lista sobrante."""
+    sesion = _sesion_o_404(db, sesion_id, usuario)
+    items = _items_sobrante(db, sesion)
+    return SobranteListaPreview(
+        items=[
+            SobranteListaItem(
+                referencia=i.referencia or "",
+                descripcion=i.descripcion_es or i.descripcion_en or "—",
+                cajas=i._cajas_sobrante,
+            )
+            for i in items
+        ]
+    )
+
+
+@router.post("/sesiones/{sesion_id}/cubicaje/sobrante/generar", response_model=SobranteListaGenerada)
+def generar_lista_sobrante(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> SobranteListaGenerada:
+    """Genera el Excel y el PDF de la lista sobrante (mismo formato que la
+    cotización corregida de bodega, filtrado a las referencias sobrantes con
+    su cantidad real) y los sube al storage. No los manda todavía al chat:
+    eso es una nota aparte con estos dos adjuntos, para reusar el mismo
+    mecanismo de fotos/videos/archivos."""
+    sesion = _sesion_o_404(db, sesion_id, usuario)
+    items = _items_sobrante(db, sesion)
+    if not items:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Todavía no se ha reportado ninguna referencia sobrante para este pedido"
+        )
+
+    excel_bytes = generar_packing_list_excel(items, sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion)
+    pdf_bytes = generar_packing_list_pdf(items, sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion)
+
+    fecha = datetime.now().strftime("%Y%m%d")
+    base = f"cubicaje/{sesion_id}-sobrante-{uuid.uuid4().hex[:8]}"
+    nombre_excel = f"{fecha}_{sesion.nombre_cliente}_ListaSobrante.xlsx"
+    nombre_pdf = f"{fecha}_{sesion.nombre_cliente}_ListaSobrante.pdf"
+    excel_url = subir_excel(excel_bytes, f"{base}.xlsx")
+    pdf_url = subir_pdf(pdf_bytes, f"{base}.pdf")
+
+    return SobranteListaGenerada(
+        excel=AdjuntoCubicaje(url=excel_url, nombre=nombre_excel, tipo="excel"),
+        pdf=AdjuntoCubicaje(url=pdf_url, nombre=nombre_pdf, tipo="pdf"),
+    )
 
 
 @router.post("/sesiones/{sesion_id}/cubicaje/adjunto", response_model=AdjuntoCubicaje)

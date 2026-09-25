@@ -82,3 +82,26 @@ class CubicajeNotaInput(BaseModel):
 class CubicajeRespuestaInput(BaseModel):
     mensaje: str = ""
     adjuntos: list[AdjuntoCubicaje] | None = None
+
+
+class SobranteListaItem(BaseModel):
+    """Una fila de lo que va a salir en la lista sobrante: la referencia, su
+    descripción (para que bodega la reconozca) y la cantidad de cajas que se
+    reportó como sobrante (la más reciente, si se corrigió más de una vez)."""
+
+    referencia: str
+    descripcion: str
+    cajas: int
+
+
+class SobranteListaPreview(BaseModel):
+    """Lo que bodega ve para confirmar ANTES de generar el documento: qué
+    referencias entrarían y con qué cantidad."""
+
+    items: list[SobranteListaItem]
+
+
+class SobranteListaGenerada(BaseModel):
+    excel: AdjuntoCubicaje
+    pdf: AdjuntoCubicaje
+
