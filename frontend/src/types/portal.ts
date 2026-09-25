@@ -62,6 +62,7 @@ export interface PortalItem {
   t_cbm: number
   cantidad_solicitada: number | null
   inspeccion_bodega: PortalInspeccionItem | null
+  cliente_observacion: string | null
 }
 
 export interface PortalPedidoGeneradoResumen {

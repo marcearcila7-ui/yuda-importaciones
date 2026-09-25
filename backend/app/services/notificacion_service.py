@@ -283,15 +283,28 @@ def avisar_pedido_confirmado(
 
 
 def avisar_despacho_aprobado(
-    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None
+    db: Session,
+    sesion_id: str,
+    numero: str,
+    cliente: str,
+    vendedor_id: str | None,
+    bodega_asignado_id: str | None = None,
+    resumen_observaciones: str | None = None,
 ) -> None:
-    """Avisa a la vendedora dueña y a Marcela que el cliente aprobó, desde su
-    portal, el despacho que bodega dejó listo: ya se puede mandar el
-    contenedor por barco. Evita duplicar si ya hay un aviso sin leer de esta
-    cotización para ese destinatario."""
+    """Avisa a la vendedora dueña, a Marcela y a quien de bodega tenga
+    asignado este pedido que el cliente aprobó, desde su portal, el despacho
+    que bodega dejó listo: ya se puede mandar el contenedor por barco. Evita
+    duplicar si ya hay un aviso sin leer de esta cotización para ese
+    destinatario."""
     destinatarios = {vendedor_id} if vendedor_id else set()
+    if bodega_asignado_id:
+        destinatarios.add(bodega_asignado_id)
     for admin in db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all():
         destinatarios.add(admin.id)
+
+    cuerpo = f"{cliente} aprobó el despacho de la cotización {numero}. Ya se puede mandar por barco."
+    if resumen_observaciones:
+        cuerpo += f" Observaciones del cliente: {resumen_observaciones}"
 
     for usuario_id in destinatarios:
         ya_existe = (
@@ -306,14 +319,7 @@ def avisar_despacho_aprobado(
         )
         if ya_existe:
             continue
-        _crear(
-            db,
-            usuario_id,
-            sesion_id,
-            TIPO_DESPACHO_APROBADO,
-            "Cliente aprobó el despacho",
-            f"{cliente} aprobó el despacho de la cotización {numero}. Ya se puede mandar por barco.",
-        )
+        _crear(db, usuario_id, sesion_id, TIPO_DESPACHO_APROBADO, "Cliente aprobó el despacho", cuerpo)
 
 
 def avisar_orden_actualizada_bodega(

@@ -66,6 +66,10 @@ class Item(Base):
     # proveedor. Null hasta que el cliente envíe su pedido.
     cantidad_solicitada: Mapped[int | None] = mapped_column(Integer, nullable=True)
     orden: Mapped[int] = mapped_column(Integer, default=0)
+    # Observación que el cliente deja sobre la inspección de ESTE producto al
+    # aprobar el despacho desde su portal (aparte del mensaje general de
+    # bodega). Null si no dejó ninguna.
+    cliente_observacion: Mapped[str | None] = mapped_column(String, nullable=True)
 
     # El OCR ya lee "colores" desde siempre, pero nunca se guardaba: se agregaba
     # a la revisión y se perdía al agregar el producto. Se guarda para toda

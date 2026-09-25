@@ -76,6 +76,9 @@ function VisorEvidencia({
   const { t } = useTranslation()
   const media = mediaDeItem(item)
   const [indice, setIndice] = useState(indiceInicial)
+  // Zoom simple sobre la foto (no aplica a video): un toque la amplía, otro
+  // la vuelve a su tamaño. Se resetea al cambiar de foto.
+  const [zoom, setZoom] = useState(false)
   const actual = media[indice]
   const insp = item.inspeccion_bodega
 
@@ -89,6 +92,10 @@ function VisorEvidencia({
     return () => document.removeEventListener('keydown', onKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media.length])
+
+  useEffect(() => {
+    setZoom(false)
+  }, [indice])
 
   if (!actual || !insp) return null
 
@@ -122,9 +129,22 @@ function VisorEvidencia({
           </button>
         )}
 
-        <div className="flex max-h-full max-w-full flex-1 items-center justify-center">
+        <div className="flex max-h-full max-w-full flex-1 items-center justify-center overflow-auto">
           {actual.tipo === 'foto' ? (
-            <img src={actual.url} alt="" className="max-h-[70vh] max-w-full rounded-lg object-contain" />
+            <img
+              src={actual.url}
+              alt=""
+              onClick={(e) => {
+                e.stopPropagation()
+                setZoom((z) => !z)
+              }}
+              className="rounded-lg object-contain transition-transform"
+              style={
+                zoom
+                  ? { maxHeight: 'none', maxWidth: 'none', width: 'auto', height: 'auto', transform: 'scale(2)', cursor: 'zoom-out' }
+                  : { maxHeight: '70vh', maxWidth: '100%', cursor: 'zoom-in' }
+              }
+            />
           ) : (
             <video src={actual.url} controls autoPlay className="max-h-[70vh] max-w-full rounded-lg" />
           )}
@@ -228,6 +248,13 @@ function PortalDetalle() {
   // Visor de evidencia (fotos/video) de un producto: qué item y en qué índice
   // de su galería se abrió.
   const [visor, setVisor] = useState<{ itemId: string; indice: number } | null>(null)
+  // Aprobación del despacho producto por producto: qué productos ya marcó el
+  // cliente y qué observación dejó en cada uno (opcional). La aprobación
+  // sigue siendo de todo el pedido junto -no se manda hasta marcar el 100%-,
+  // pero cada observación va aparte para que bodega sepa a cuál producto se
+  // refiere.
+  const [aprobadosItems, setAprobadosItems] = useState<Set<string>>(new Set())
+  const [observacionesItems, setObservacionesItems] = useState<Record<string, string>>({})
 
   const cargar = useCallback(() => {
     if (!sesionId) return
@@ -325,9 +352,14 @@ function PortalDetalle() {
 
   const aprobarDespacho = async () => {
     if (!sesionId || !detalle) return
+    const itemsConInspeccion = detalle.items.filter((i) => i.inspeccion_bodega)
+    if (itemsConInspeccion.some((i) => !aprobadosItems.has(i.item_id))) return
     setAprobando(true)
     try {
-      await aprobarDespachoPortal(sesionId)
+      const observaciones = itemsConInspeccion
+        .map((i) => ({ item_id: i.item_id, texto: (observacionesItems[i.item_id] ?? '').trim() }))
+        .filter((o) => o.texto.length > 0)
+      await aprobarDespachoPortal(sesionId, observaciones)
       setDetalle({
         ...detalle,
         seguimiento: { ...detalle.seguimiento, cliente_aprobo_despacho_at: new Date().toISOString() },
@@ -340,6 +372,15 @@ function PortalDetalle() {
     } finally {
       setAprobando(false)
     }
+  }
+
+  const alternarAprobadoItem = (itemId: string) => {
+    setAprobadosItems((prev) => {
+      const copia = new Set(prev)
+      if (copia.has(itemId)) copia.delete(itemId)
+      else copia.add(itemId)
+      return copia
+    })
   }
 
   // Pedir confirmación explícita antes de reabrir un pedido ya confirmado.
@@ -719,6 +760,11 @@ function PortalDetalle() {
                     minute: '2-digit',
                   })
                 : null
+              const itemsConInspeccion = detalle.items.filter((i) => i.inspeccion_bodega)
+              const todosSeleccionados =
+                itemsConInspeccion.length > 0 && itemsConInspeccion.every((i) => aprobadosItems.has(i.item_id))
+              const seleccionarTodos = () =>
+                setAprobadosItems(todosSeleccionados ? new Set() : new Set(itemsConInspeccion.map((i) => i.item_id)))
 
               return (
                 <div
@@ -765,10 +811,103 @@ function PortalDetalle() {
                           <AlertTriangle size={14} /> {t('portal.plazoVencido')}
                         </p>
                       )}
+
+                      {!vencido && itemsConInspeccion.length > 0 && (
+                        <>
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-xs font-semibold" style={{ color: 'var(--yuda-text-secondary)' }}>
+                              {t('portal.aprobarProgreso', { n: aprobadosItems.size, total: itemsConInspeccion.length })}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={seleccionarTodos}
+                              className="text-xs font-semibold"
+                              style={{ color: 'var(--yuda-primary)' }}
+                            >
+                              {todosSeleccionados ? t('portal.deseleccionarTodos') : t('portal.seleccionarTodos')}
+                            </button>
+                          </div>
+                          <div className="mb-3 flex flex-col gap-3">
+                            {itemsConInspeccion.map((item) => {
+                              const media = mediaDeItem(item)
+                              const marcado = aprobadosItems.has(item.item_id)
+                              return (
+                                <div
+                                  key={item.item_id}
+                                  className="rounded-lg border bg-white p-3"
+                                  style={{ borderColor: marcado ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
+                                >
+                                  <label className="flex items-start gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={marcado}
+                                      onChange={() => alternarAprobadoItem(item.item_id)}
+                                      className="mt-1 flex-shrink-0"
+                                      style={{ width: 18, height: 18 }}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      {item.referencia && (
+                                        <p className="text-xs font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                                          {item.referencia}
+                                        </p>
+                                      )}
+                                      <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                                        {descripcion(item, i18n.language) || '—'}
+                                      </p>
+                                    </div>
+                                  </label>
+                                  {media.length > 0 && (
+                                    <div className="mb-2 mt-2 flex flex-wrap gap-2">
+                                      {media.map((m, i) =>
+                                        m.tipo === 'foto' ? (
+                                          <button
+                                            key={m.url}
+                                            type="button"
+                                            onClick={() => setVisor({ itemId: item.item_id, indice: i })}
+                                          >
+                                            <img
+                                              src={m.url}
+                                              alt=""
+                                              style={{ width: 56, height: 56 }}
+                                              className="rounded-lg object-cover"
+                                            />
+                                          </button>
+                                        ) : (
+                                          <button
+                                            key={m.url}
+                                            type="button"
+                                            onClick={() => setVisor({ itemId: item.item_id, indice: i })}
+                                            style={{ width: 56, height: 56, backgroundColor: 'var(--yuda-bg)' }}
+                                            className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                                            aria-label={t('portal.inspeccionVerVideo')}
+                                          >
+                                            <PlayCircle size={22} color="var(--yuda-primary)" />
+                                          </button>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
+                                  <textarea
+                                    value={observacionesItems[item.item_id] ?? ''}
+                                    onChange={(e) =>
+                                      setObservacionesItems((o) => ({ ...o, [item.item_id]: e.target.value }))
+                                    }
+                                    placeholder={t('portal.observacionPlaceholder')}
+                                    rows={2}
+                                    className="w-full resize-y rounded-lg border px-2 py-1.5 text-sm focus:border-[var(--yuda-primary)] focus:outline-none"
+                                    style={{ borderColor: 'var(--yuda-border)' }}
+                                  />
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
+
                       <button
                         type="button"
                         onClick={aprobarDespacho}
-                        disabled={aprobando || vencido}
+                        disabled={aprobando || vencido || !todosSeleccionados}
                         className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-50"
                         style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
                       >

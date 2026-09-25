@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from app.schemas.seguimiento import SeguimientoResponse
 
 
+
 class PortalCotizacionResumen(BaseModel):
     """Fila del listado de cotizaciones del cliente"""
 
@@ -63,6 +64,25 @@ class PortalItem(BaseModel):
     # Evidencia y correcciones de bodega (ver PortalInspeccionItem). None hasta
     # que el pedido llegue a bodega.
     inspeccion_bodega: PortalInspeccionItem | None = None
+    # Observación que el cliente dejó sobre este producto al aprobar el
+    # despacho (ver AprobarDespachoInput). None si no dejó ninguna.
+    cliente_observacion: str | None = None
+
+
+class AprobarDespachoObservacion(BaseModel):
+    """Observación del cliente sobre la inspección de un producto puntual,
+    aparte de la aprobación en sí (que sigue siendo de todo el pedido junto)."""
+
+    item_id: str
+    texto: str
+
+
+class AprobarDespachoInput(BaseModel):
+    """El cliente aprueba el despacho revisando producto por producto (o con
+    "seleccionar todos"): observaciones es opcional y solo trae los productos
+    donde de verdad dejó un comentario."""
+
+    observaciones: list[AprobarDespachoObservacion] = []
 
 
 class PortalPedidoGeneradoResumen(BaseModel):

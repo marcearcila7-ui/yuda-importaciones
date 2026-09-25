@@ -12,7 +12,7 @@ from app.models.cliente import Cliente
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado
-from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido
+from app.models.seguimiento import ESTADO_INICIAL, ESTADOS_ENVIO, SeguimientoPedido, registrar_aviso
 from app.models.user import User
 from app.models.sesion import (
     PEDIDO_CONFIRMADO,
@@ -36,6 +36,7 @@ from app.services.notificacion_service import (
     avisar_pedido_confirmado,
 )
 from app.schemas.portal import (
+    AprobarDespachoInput,
     PortalCotizacionDetalle,
     PortalCotizacionResumen,
     PortalInspeccionItem,
@@ -313,6 +314,7 @@ def detalle_cotizacion(
                 t_cbm=calc["t_cbm"],
                 cantidad_solicitada=i.cantidad_solicitada,
                 inspeccion_bodega=inspeccion_bodega,
+                cliente_observacion=i.cliente_observacion,
             )
         )
 
@@ -354,13 +356,18 @@ def detalle_cotizacion(
 @router.post("/cotizaciones/{sesion_id}/aprobar-despacho")
 def aprobar_despacho(
     sesion_id: str,
+    datos: AprobarDespachoInput,
     cliente: Cliente = Depends(get_current_cliente),
     db: Session = Depends(get_db),
 ) -> dict:
-    """El cliente aprueba, desde su portal, que Marcela despache su pedido, una
-    vez bodega lo recibió e inspeccionó ("en_bodega"). Solo se puede aprobar
-    dentro del plazo que bodega dejó al marcarlo; pasado ese plazo el despacho
-    sigue igual, pero el cliente ya no puede aprobar ni objetar nada."""
+    """El cliente aprueba, desde su portal, que Marcela despache su pedido,
+    revisando producto por producto (o con "seleccionar todos"), una vez
+    bodega lo recibió e inspeccionó ("en_bodega"). La aprobación sigue siendo
+    de todo el pedido junto -no hay despacho parcial-, pero puede dejar una
+    observación por producto sobre lo que encontró en la inspección. Solo se
+    puede aprobar dentro del plazo que bodega dejó al marcarlo; pasado ese
+    plazo el despacho sigue igual, pero el cliente ya no puede aprobar ni
+    objetar nada."""
     sesion = _sesion_del_cliente(db, sesion_id, cliente)
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None or seg.estado != "en_bodega":
@@ -376,8 +383,33 @@ def aprobar_despacho(
             "El plazo para aprobar este despacho ya venció",
         )
 
+    items = {i.id: i for i in db.query(Item).filter(Item.sesion_id == sesion_id).all()}
+    resumen_partes: list[str] = []
+    for obs in datos.observaciones:
+        texto = obs.texto.strip()
+        item = items.get(obs.item_id)
+        if item is None:
+            continue
+        item.cliente_observacion = texto or None
+        if texto:
+            resumen_partes.append(f"{item.referencia or item.descripcion_es or item.id}: {texto}")
+    resumen_observaciones = " · ".join(resumen_partes) if resumen_partes else None
+
     seg.cliente_aprobo_despacho_at = datetime.now(timezone.utc)
-    avisar_despacho_aprobado(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id)
+    registrar_aviso(
+        seg,
+        "cliente_aprobo_despacho",
+        f"{sesion.nombre_cliente} aprobó el despacho." + (f" Observaciones: {resumen_observaciones}" if resumen_observaciones else ""),
+    )
+    avisar_despacho_aprobado(
+        db,
+        sesion_id,
+        _numero(sesion),
+        sesion.nombre_cliente,
+        sesion.user_id,
+        bodega_asignado_id=seg.bodega_asignado_a_id,
+        resumen_observaciones=resumen_observaciones,
+    )
     db.commit()
     return {"detail": "Despacho aprobado"}
 
