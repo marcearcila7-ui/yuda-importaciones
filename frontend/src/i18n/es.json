@@ -4,6 +4,7 @@
     "volver": "Volver",
     "guardar": "Guardar",
     "cancelar": "Cancelar",
+    "quitar": "Quitar",
     "subiendo": "Subiendo…",
     "sinAccesoTitulo": "No tienes acceso a esta sección",
     "sinAccesoAyuda": "Tu cuenta no tiene permiso para ver esta página. Si crees que es un error, avísale a Marcela."
@@ -1214,6 +1215,8 @@
     "responderBoton": "Enviar respuesta",
     "respuestaEnviada": "Respuesta enviada",
     "errorResponder": "No se pudo enviar la respuesta",
+    "adjuntarBoton": "Adjuntar foto, video o archivo",
+    "errorAdjunto": "No se pudo subir el archivo",
     "cbmAjustadoDetalle": "bodega ajustó a {{ajustado}} m³ (el sistema había calculado {{calculado}} m³)"
   }
 }

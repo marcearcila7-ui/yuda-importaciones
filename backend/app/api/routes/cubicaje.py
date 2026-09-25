@@ -1,13 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import asyncio
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, require_roles
+from app.core.archivo_valida import detectar_tipo_documento, es_video_valido
+from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cubicaje import TIPO_NOTA, TIPO_REPORTE, TIPO_RESPUESTA, CubicajeMensaje
 from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.cubicaje import (
+    AdjuntoCubicaje,
     CubicajeDetalle,
     CubicajeMensajeResponse,
     CubicajeNotaInput,
@@ -23,6 +29,38 @@ from app.services.cubicaje_service import (
     determinar_resultado,
 )
 from app.services.notificacion_service import avisar_cubicaje_a_bodega, avisar_cubicaje_a_vendedora
+from app.services.storage_service import subir_documento, subir_foto, subir_video
+
+# Mismos tipos que "Adjuntos de esta etapa" en Seguimiento, más video: bodega y
+# la vendedora pueden mandarse fotos y videos de evidencia, no solo documentos.
+_ADJ_EXT = {
+    ".pdf": ("pdf", "application/pdf"),
+    ".jpg": ("imagen", "image/jpeg"),
+    ".jpeg": ("imagen", "image/jpeg"),
+    ".png": ("imagen", "image/png"),
+    ".webp": ("imagen", "image/webp"),
+    ".csv": ("csv", "text/csv"),
+    ".xls": ("excel", "application/vnd.ms-excel"),
+    ".xlsx": ("excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    ".mp4": ("video", "video/mp4"),
+    ".mov": ("video", "video/quicktime"),
+    ".webm": ("video", "video/webm"),
+}
+_ADJ_CONTENT_TYPE = {
+    "application/pdf": ("pdf", ".pdf"),
+    "image/jpeg": ("imagen", ".jpg"),
+    "image/png": ("imagen", ".png"),
+    "image/webp": ("imagen", ".webp"),
+    "text/csv": ("csv", ".csv"),
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ("excel", ".xlsx"),
+    "video/mp4": ("video", ".mp4"),
+    "video/quicktime": ("video", ".mov"),
+    "video/webm": ("video", ".webm"),
+}
+_ADJ_NO_SOPORTADO = (
+    "Solo se permiten fotos (JPG, PNG, WEBP), videos (MP4, MOV, WEBM), PDF, CSV o Excel"
+)
+_ADJ_MAX_BYTES = 100 * 1024 * 1024
 
 # Se monta en main.py bajo /api/v1
 router = APIRouter(tags=["cubicaje"])
@@ -38,6 +76,63 @@ def _sesion_o_404(db: Session, sesion_id: str, usuario: User) -> Sesion:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
     exigir_acceso_sesion(db, sesion, usuario)
     return sesion
+
+
+@router.post("/sesiones/{sesion_id}/cubicaje/adjunto", response_model=AdjuntoCubicaje)
+async def subir_adjunto_cubicaje(
+    sesion_id: str,
+    archivo: UploadFile,
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Sube una foto, video o documento para adjuntarlo a un mensaje del hilo
+    de cubicaje (nota o respuesta). Devuelve {url, nombre, tipo}: el
+    front arma el mensaje con eso, no se guarda nada acá todavía."""
+    _sesion_o_404(db, sesion_id, usuario)
+
+    nombre_original = archivo.filename or ""
+    punto = nombre_original.rfind(".")
+    extension = nombre_original[punto:].lower() if punto != -1 else ""
+
+    if extension in _ADJ_EXT:
+        tipo, content_type = _ADJ_EXT[extension]
+    elif archivo.content_type in _ADJ_CONTENT_TYPE:
+        tipo, extension = _ADJ_CONTENT_TYPE[archivo.content_type]
+        content_type = archivo.content_type
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+
+    contenido = await archivo.read()
+    if len(contenido) > _ADJ_MAX_BYTES:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 100MB")
+
+    # Valida el contenido REAL (magic bytes), no solo el content-type/extensión
+    # declarados por el cliente (falsificables).
+    if tipo == "imagen" and detectar_tipo_imagen(contenido) is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo in ("pdf", "excel") and detectar_tipo_documento(contenido) is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo == "video" and not es_video_valido(contenido):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo == "csv" and b"\x00" in contenido[:4096]:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+
+    nombre_archivo = f"cubicaje/{sesion_id}-{uuid.uuid4().hex[:8]}{extension}"
+    loop = asyncio.get_event_loop()
+    try:
+        if tipo == "imagen":
+            url = await loop.run_in_executor(None, lambda: subir_foto(contenido, nombre_archivo, content_type))
+        elif tipo == "video":
+            url = await loop.run_in_executor(None, lambda: subir_video(contenido, nombre_archivo, content_type))
+        else:
+            url = await loop.run_in_executor(None, lambda: subir_documento(contenido, nombre_archivo, content_type))
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "No se pudo guardar el archivo: el almacenamiento no está disponible. Intenta de nuevo en unos minutos.",
+        ) from exc
+
+    return {"url": url, "nombre": archivo.filename, "tipo": tipo}
 
 
 def _resumen_texto(
@@ -66,6 +161,7 @@ def _mensaje_response(m: CubicajeMensaje, autores: dict[str, User]) -> CubicajeM
         referencia=m.referencia,
         cajas_afectadas=m.cajas_afectadas,
         espacio_restante_cbm=m.espacio_restante_cbm,
+        adjuntos=m.adjuntos,
         created_at=m.created_at,
     )
 
@@ -193,12 +289,16 @@ def agregar_nota_cubicaje(
     agregarla, no solo quien tiene el pedido asignado."""
     sesion = _sesion_o_404(db, sesion_id, usuario)
     texto = datos.mensaje.strip()
-    if not texto:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe algo para la nota")
+    adjuntos = [a.model_dump() for a in datos.adjuntos] if datos.adjuntos else None
+    if not texto and not adjuntos:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe algo o adjunta un archivo para la nota")
 
-    mensaje = CubicajeMensaje(sesion_id=sesion_id, tipo=TIPO_NOTA, autor_id=usuario.id, mensaje=texto)
+    mensaje = CubicajeMensaje(
+        sesion_id=sesion_id, tipo=TIPO_NOTA, autor_id=usuario.id, mensaje=texto or None, adjuntos=adjuntos,
+    )
     db.add(mensaje)
-    avisar_cubicaje_a_vendedora(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, texto)
+    resumen_aviso = texto or "Envió un archivo adjunto"
+    avisar_cubicaje_a_vendedora(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, resumen_aviso)
     db.commit()
     db.refresh(mensaje)
 
@@ -217,16 +317,20 @@ def responder_cubicaje(
     lo tiene asignado)."""
     sesion = _sesion_o_404(db, sesion_id, usuario)
     texto = datos.mensaje.strip()
-    if not texto:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe algo para responder")
+    adjuntos = [a.model_dump() for a in datos.adjuntos] if datos.adjuntos else None
+    if not texto and not adjuntos:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Escribe algo o adjunta un archivo para responder")
 
-    mensaje = CubicajeMensaje(sesion_id=sesion_id, tipo=TIPO_RESPUESTA, autor_id=usuario.id, mensaje=texto)
+    mensaje = CubicajeMensaje(
+        sesion_id=sesion_id, tipo=TIPO_RESPUESTA, autor_id=usuario.id, mensaje=texto or None, adjuntos=adjuntos,
+    )
     db.add(mensaje)
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    resumen_aviso = texto or "Envió un archivo adjunto"
     avisar_cubicaje_a_bodega(
         db, sesion_id, _numero(sesion), sesion.nombre_cliente,
-        seg.bodega_asignado_a_id if seg else None, texto,
+        seg.bodega_asignado_a_id if seg else None, resumen_aviso,
     )
     db.commit()
     db.refresh(mensaje)

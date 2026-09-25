@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -55,3 +55,7 @@ class CubicajeMensaje(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Fotos, videos o archivos adjuntos al mensaje (ej. la lista sobrante que
+    # genera el sistema). [{ "url": ..., "nombre": ..., "tipo": "imagen" |
+    # "video" | "pdf" | "excel" | "csv" }]
+    adjuntos: Mapped[list | None] = mapped_column(JSON, nullable=True)

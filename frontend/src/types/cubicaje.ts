@@ -6,6 +6,12 @@ export interface CubicajeResumen {
   referencias: string[]
 }
 
+export interface CubicajeAdjunto {
+  url: string
+  nombre?: string | null
+  tipo?: 'imagen' | 'video' | 'pdf' | 'excel' | 'csv' | null
+}
+
 export interface CubicajeMensaje {
   id: string
   tipo: 'reporte' | 'nota' | 'respuesta'
@@ -18,6 +24,7 @@ export interface CubicajeMensaje {
   referencia: string | null
   cajas_afectadas: number | null
   espacio_restante_cbm: number | null
+  adjuntos: CubicajeAdjunto[] | null
   created_at: string
 }
 

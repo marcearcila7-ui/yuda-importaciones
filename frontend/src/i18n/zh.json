@@ -4,6 +4,7 @@
     "volver": "返回",
     "guardar": "保存",
     "cancelar": "取消",
+    "quitar": "移除",
     "subiendo": "上传中…",
     "sinAccesoTitulo": "你没有权限访问此页面",
     "sinAccesoAyuda": "你的账号没有权限查看此页面。如果你认为这是错误，请告诉 Marcela。"
@@ -1217,6 +1218,8 @@
     "responderBoton": "发送回复",
     "respuestaEnviada": "回复已发送",
     "errorResponder": "无法发送回复",
+    "adjuntarBoton": "添加照片、视频或文件",
+    "errorAdjunto": "无法上传文件",
     "cbmAjustadoDetalle": "仓库调整为 {{ajustado}} 立方米(系统计算为 {{calculado}} 立方米)"
   }
 }

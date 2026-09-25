@@ -3,6 +3,15 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
+class AdjuntoCubicaje(BaseModel):
+    """Foto, video o archivo adjunto a un mensaje del hilo (ej. la lista
+    sobrante que genera el sistema)."""
+
+    url: str
+    nombre: str | None = None
+    tipo: str | None = None  # "imagen" | "video" | "pdf" | "excel" | "csv"
+
+
 class CubicajeResumen(BaseModel):
     """Estado actual del cubicaje calculado en vivo (con las correcciones de
     bodega si las hay), para mostrarlo mientras se llena el reporte."""
@@ -28,6 +37,7 @@ class CubicajeMensajeResponse(BaseModel):
     referencia: str | None = None
     cajas_afectadas: int | None = None
     espacio_restante_cbm: float | None = None
+    adjuntos: list[AdjuntoCubicaje] | None = None
     created_at: datetime
 
 
@@ -65,8 +75,10 @@ class CubicajeReporteInput(BaseModel):
 
 
 class CubicajeNotaInput(BaseModel):
-    mensaje: str
+    mensaje: str = ""
+    adjuntos: list[AdjuntoCubicaje] | None = None
 
 
 class CubicajeRespuestaInput(BaseModel):
-    mensaje: str
+    mensaje: str = ""
+    adjuntos: list[AdjuntoCubicaje] | None = None

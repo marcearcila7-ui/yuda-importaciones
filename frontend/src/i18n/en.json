@@ -4,6 +4,7 @@
     "volver": "Back",
     "guardar": "Save",
     "cancelar": "Cancel",
+    "quitar": "Remove",
     "subiendo": "Uploading…",
     "sinAccesoTitulo": "You don't have access to this section",
     "sinAccesoAyuda": "Your account doesn't have permission to view this page. If you think this is a mistake, let Marcela know."
@@ -1214,6 +1215,8 @@
     "responderBoton": "Send reply",
     "respuestaEnviada": "Reply sent",
     "errorResponder": "Could not send the reply",
+    "adjuntarBoton": "Attach photo, video or file",
+    "errorAdjunto": "Could not upload the file",
     "cbmAjustadoDetalle": "warehouse adjusted to {{ajustado}} m³ (the system had calculated {{calculado}} m³)"
   }
 }
