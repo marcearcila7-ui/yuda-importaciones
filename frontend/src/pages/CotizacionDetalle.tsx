@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Receipt, Ship, Store } from 'lucide-react'
+import { ArrowLeft, Building2, Coins, DollarSign, FileSpreadsheet, FileText, Mail, Package, Pencil, Phone, Printer, Receipt, Ship, Store } from 'lucide-react'
 import CubicajePanel from '../components/CubicajePanel'
 import GestionPedidoCliente from '../components/GestionPedidoCliente'
 import MetricCard from '../components/MetricCard'
@@ -359,7 +359,17 @@ function CotizacionDetalle() {
                 >
                   <FileSpreadsheet size={18} /> {generando === 'excel' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.descargarExcel')}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => descargar('excel')}
+                  disabled={generando !== null}
+                  className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border font-semibold disabled:opacity-60"
+                  style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
+                >
+                  <Printer size={18} /> {generando === 'excel' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.imprimir')}
+                </button>
               </div>
+              <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.imprimirAyuda')}</p>
             </section>
           )}
 

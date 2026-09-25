@@ -380,6 +380,8 @@
     "idioma": "Idioma",
     "descargarPdf": "PDF",
     "descargarExcel": "Excel",
+    "imprimir": "Imprimir",
+    "imprimirAyuda": "¿Vas a imprimir en papel? Usa el botón Imprimir: descarga el Excel, que se ve mucho mejor impreso que el PDF.",
     "generando": "Generando…",
     "errorDescargar": "No se pudo generar el archivo",
     "editarPanel": "Editar en el panel",

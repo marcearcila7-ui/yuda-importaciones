@@ -380,6 +380,8 @@
     "idioma": "Language",
     "descargarPdf": "PDF",
     "descargarExcel": "Excel",
+    "imprimir": "Print",
+    "imprimirAyuda": "Printing on paper? Use the Print button: it downloads the Excel, which prints much better than the PDF.",
     "generando": "Generating…",
     "errorDescargar": "Could not generate the file",
     "editarPanel": "Edit in dashboard",

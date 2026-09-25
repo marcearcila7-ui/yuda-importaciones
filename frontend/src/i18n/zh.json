@@ -383,6 +383,8 @@
     "idioma": "语言",
     "descargarPdf": "PDF",
     "descargarExcel": "Excel",
+    "imprimir": "打印",
+    "imprimirAyuda": "需要打印纸质版吗？点击\"打印\"按钮：会下载 Excel 文件，打印效果比 PDF 好很多。",
     "generando": "生成中…",
     "errorDescargar": "无法生成文件",
     "editarPanel": "在面板中编辑",
