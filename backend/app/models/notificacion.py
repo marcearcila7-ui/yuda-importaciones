@@ -27,10 +27,6 @@ TIPO_ALERTA_PAGO_TIENDA = "alerta_pago_tienda"
 # Bodega guardó correcciones de inspección sobre la cotización del cliente
 # (cantidades reales, medidas, fotos/video de evidencia).
 TIPO_INSPECCION_BODEGA_ACTUALIZADA = "inspeccion_bodega_actualizada"
-# Bodega le avisa a la vendedora, a propósito (botón aparte de "Enviar al
-# cliente"), que ya le mandó al cliente lo que inspeccionó -para que la
-# vendedora sepa revisarlo sin depender de que Marcela se lo cuente.
-TIPO_BODEGA_ENVIO_A_VENDEDORA = "bodega_envio_a_vendedora"
 # Bodega mandó un reporte o nota de cubicaje sobre un pedido: aviso para la
 # vendedora dueña.
 TIPO_CUBICAJE_BODEGA = "cubicaje_bodega"

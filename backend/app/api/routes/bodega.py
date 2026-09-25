@@ -37,7 +37,6 @@ from app.services.excel_service import generar_csv_pedido, generar_formato_pedid
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
 from app.services.inspeccion_service import _MAPEO_CAMPOS, construir_inspeccion_sesion, guardar_inspeccion
 from app.services.notificacion_service import (
-    avisar_bodega_envio_a_vendedora,
     avisar_inspeccion_actualizada,
     avisar_orden_actualizada_bodega,
 )
@@ -667,25 +666,6 @@ def actualizar_telefono_cliente(
     cliente.telefono = telefono
     db.commit()
     return {"telefono": cliente.telefono}
-
-
-@router.post("/pedidos/{sesion_id}/notificar-vendedora")
-def notificar_vendedora(
-    sesion_id: str,
-    usuario: User = Depends(require_roles("admin", "bodega")),
-    db: Session = Depends(get_db),
-) -> dict:
-    """Bodega avisa, a propósito, a la vendedora dueña que ya le mandó al
-    cliente la inspección (fotos + datos) para su aprobación. Es una acción
-    aparte de "Enviar al cliente": el envío al cliente ya pasa solo al marcar
-    "en bodega"; esto es para asegurarse de que la vendedora se entera."""
-    sesion = _sesion_o_404(db, sesion_id)
-    registrar_actividad_bodega(
-        db, sesion_id, usuario.id, "notificado_vendedora", "Avisó a la vendedora del envío al cliente"
-    )
-    avisar_bodega_envio_a_vendedora(db, sesion_id, _numero(sesion), sesion.nombre_cliente, sesion.user_id)
-    db.commit()
-    return {"detail": "Vendedora notificada"}
 
 
 @router.get("/pedidos/{sesion_id}/cotizacion", response_model=InspeccionSesionResponse)

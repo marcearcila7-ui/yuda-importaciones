@@ -19,7 +19,6 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 // dejar a quien la lee adivinando dónde mirar.
 const TAB_POR_TIPO: Record<string, string> = {
   cubicaje_bodega: 'cubicaje',
-  bodega_envio_a_vendedora: 'seguimiento',
   despacho_aprobado: 'seguimiento',
   envio_vendedora: 'seguimiento',
   listo_para_envio: 'seguimiento',

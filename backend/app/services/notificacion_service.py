@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 
 from app.models.notificacion import (
     TIPO_AVISO_CLIENTE_FALLIDO,
-    TIPO_BODEGA_ENVIO_A_VENDEDORA,
     TIPO_CUBICAJE_BODEGA,
     TIPO_CUBICAJE_VENDEDORA,
     TIPO_DESPACHO_APROBADO,
@@ -192,32 +191,6 @@ def avisar_envio_a_vendedora(
     if ya_existe:
         return
     _crear(db, vend.id, sesion_id, TIPO_ENVIO_VENDEDORA, titulo, cuerpo.format(numero=numero, cliente=cliente))
-
-
-def avisar_bodega_envio_a_vendedora(
-    db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None
-) -> None:
-    """Bodega, a propósito (botón aparte de "Enviar al cliente"), le avisa a la
-    vendedora dueña que ya le mandó al cliente la inspección para su
-    aprobación -para que la revise sin depender de que Marcela se lo cuente.
-    No evita duplicar por tipo+sesión: bodega puede querer volver a avisar si
-    corrigió algo después del primer envío."""
-    if not vendedor_id:
-        return
-    vend = db.query(User).filter(User.id == vendedor_id).first()
-    if vend is None or vend.rol != RolUsuario.vendedora or not vend.activo:
-        return
-
-    _crear(
-        db,
-        vend.id,
-        sesion_id,
-        TIPO_BODEGA_ENVIO_A_VENDEDORA,
-        "Bodega le envió la inspección a tu cliente",
-        f"Bodega le mandó a {cliente} (cotización {numero}) las fotos y datos de la "
-        "inspección para que apruebe el despacho. Revisa el seguimiento de la cotización "
-        "para ver exactamente lo mismo que le llegó al cliente.",
-    )
 
 
 def avisar_cubicaje_a_vendedora(
