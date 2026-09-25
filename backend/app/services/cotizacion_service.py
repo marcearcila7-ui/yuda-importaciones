@@ -501,16 +501,21 @@ def generar_cotizacion_excel(
     for idx, clave in enumerate(columnas_activas, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = ANCHOS_COLUMNA[clave]
 
-    # Configuración de impresión: horizontal y todas las columnas en el ancho
-    # de una sola hoja (fitToHeight=0 deja que las filas caigan a más hojas
-    # si hay muchos productos, pero nunca corta columnas a los lados).
+    # Configuración de impresión: horizontal, en 2 hojas de ancho (fitToWidth=1
+    # cabía todo pero con ~30 columnas de bolsos el texto quedaba ilegible: hay
+    # que elegir entre legible-en-2-hojas o diminuto-en-1-hoja, y "no se puede
+    # leer" es peor que "hay que pegar 2 hojas"). fitToHeight=0 deja que las
+    # filas caigan a más hojas hacia abajo si hay muchos productos, pero nunca
+    # corta columnas a los lados. Numero/Fecha/Marca/Foto/Referencia/Código se
+    # repiten en cada hoja de ancho para poder identificar la fila.
     fila_final = fila_contacto + len(contacto_lineas) - 1
     ws.page_setup.orientation = "landscape"
-    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToWidth = 2
     ws.page_setup.fitToHeight = 0
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.print_area = f"A1:{ultima_col}{fila_final}"
     ws.print_options.horizontalCentered = True
+    ws.print_title_cols = f"A:{get_column_letter(min(6, ncols))}"
 
     buffer = BytesIO()
     wb.save(buffer)
