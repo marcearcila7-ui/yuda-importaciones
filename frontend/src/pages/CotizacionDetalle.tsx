@@ -24,6 +24,22 @@ const IDIOMAS = [
   { code: 'zh', label: '中文' },
 ]
 
+// Nombre de archivo: sigla del cliente (o su nombre si aún no tiene sigla) +
+// fecha de descarga en AAMMDD, para que la vendedora identifique el archivo
+// sin tener que abrirlo.
+function fechaArchivo(): string {
+  const d = new Date()
+  const aa = String(d.getFullYear()).slice(-2)
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${aa}${mm}${dd}`
+}
+
+function nombreArchivo(sigla: string | null | undefined, nombreCliente: string | undefined, sufijo: string, ext: string): string {
+  const base = sigla?.trim() || nombreCliente?.trim() || 'Cotizacion'
+  return `${base}_${fechaArchivo()}${sufijo ? `_${sufijo}` : ''}.${ext}`
+}
+
 
 // Vista de solo lectura de una cotización para la contadora y el admin (desde el
 // historial). Muestra los productos, los totales, la ficha del cliente y el
@@ -128,26 +144,20 @@ function CotizacionDetalle() {
 
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-  // Descarga el PDF/Excel de la cotización (Safari: abrir la pestaña dentro del toque).
+  // Descarga el PDF/Excel de la cotización, siempre con nombre (sigla + fecha).
   // `boton` es solo para saber qué botón mostrar como "Generando…" (el de Imprimir
   // también descarga el Excel, pero no debe activar el botón "Excel").
   const descargar = async (tipo: 'pdf' | 'excel', boton: 'pdf' | 'excel' | 'imprimir' = tipo) => {
     setGenerando(boton)
-    const ventana = window.open('', '_blank')
     try {
       const blob = tipo === 'pdf' ? await exportarCotizacionPDF(id, idioma) : await exportarCotizacionExcel(id, idioma)
       const url = URL.createObjectURL(blob)
-      if (ventana) {
-        ventana.location.href = url
-      } else {
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `Cotizacion_${sesion?.nombre_cliente ?? ''}_${idioma}.${tipo === 'pdf' ? 'pdf' : 'xlsx'}`
-        a.click()
-      }
+      const a = document.createElement('a')
+      a.href = url
+      a.download = nombreArchivo(cliente?.sigla, sesion?.nombre_cliente, '', tipo === 'pdf' ? 'pdf' : 'xlsx')
+      a.click()
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch {
-      ventana?.close()
       toast.error(t('detalle.errorDescargar'))
     } finally {
       setGenerando(null)
@@ -158,25 +168,19 @@ function CotizacionDetalle() {
   // define la TRM; sin contenedor se usa el tipo de cambio de la cotización.
   const generarFactura = async (tipo: 'pdf' | 'excel') => {
     setGenerandoFactura(tipo)
-    const ventana = window.open('', '_blank')
     try {
       const cid = contenedorId || null
       const opciones = { contenedor_id: cid, de: facturaDe.trim() || null, para: facturaPara.trim() || null }
       const blob = tipo === 'pdf' ? await exportarFacturaPDF(id, opciones) : await exportarFacturaExcel(id, opciones)
       const url = URL.createObjectURL(blob)
-      if (ventana) {
-        ventana.location.href = url
-      } else {
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `Factura_${sesion?.nombre_cliente ?? ''}.${tipo === 'pdf' ? 'pdf' : 'xlsx'}`
-        a.click()
-      }
+      const a = document.createElement('a')
+      a.href = url
+      a.download = nombreArchivo(cliente?.sigla, sesion?.nombre_cliente, 'Factura', tipo === 'pdf' ? 'pdf' : 'xlsx')
+      a.click()
       setTimeout(() => URL.revokeObjectURL(url), 60000)
       // La sesión queda vinculada al contenedor elegido: reflejarlo en el estado.
       if (cid) setSesion((prev) => (prev ? { ...prev, contenedor_id: cid } : prev))
     } catch {
-      ventana?.close()
       toast.error(t('detalle.errorFactura'))
     } finally {
       setGenerandoFactura(null)
