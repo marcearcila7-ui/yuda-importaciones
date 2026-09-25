@@ -727,6 +727,7 @@
       "borrador": "Draft",
       "con_cliente": "Sent to client",
       "listas_bodega": "Ready for warehouse",
+      "en_bodega": "Sent to warehouse / review",
       "en_camino": "On the way",
       "entregadas": "Delivered"
     },

@@ -727,6 +727,7 @@
       "borrador": "Borrador",
       "con_cliente": "Enviadas al cliente",
       "listas_bodega": "Listas para bodega",
+      "en_bodega": "Enviado a bodega / revisión",
       "en_camino": "En camino",
       "entregadas": "Entregadas"
     },

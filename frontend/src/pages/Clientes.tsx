@@ -37,16 +37,68 @@ const numeroCot = (s: Sesion) =>
 // un vistazo qué le falta a cada una en vez de leer 3 campos sueltos
 // (enviada_cliente, pedido_estado, estado_envio) y adivinar qué significan
 // juntos.
-type EtapaCot = 'borrador' | 'con_cliente' | 'listas_bodega' | 'en_camino' | 'entregadas'
+type EtapaCot = 'borrador' | 'con_cliente' | 'listas_bodega' | 'en_bodega' | 'en_camino' | 'entregadas'
 
-const ETAPAS_EN_CAMINO = ['proveedor_recibio', 'en_bodega', 'en_transito', 'en_destino']
+// "proveedor_recibio"/"en_bodega" NO están en camino todavía: la mercancía
+// sigue en China, con el proveedor o en la bodega de YUDA siendo revisada.
+// Solo "en_transito"/"en_destino" es que ya salió de verdad hacia el cliente.
+const ETAPAS_EN_BODEGA = ['proveedor_recibio', 'en_bodega']
+const ETAPAS_EN_CAMINO = ['en_transito', 'en_destino']
 
 function etapaDeCotizacion(s: Sesion): EtapaCot {
   if (!s.enviada_cliente) return 'borrador'
   if (s.estado_envio === 'entregado') return 'entregadas'
   if (s.estado_envio && ETAPAS_EN_CAMINO.includes(s.estado_envio)) return 'en_camino'
+  if (s.estado_envio && ETAPAS_EN_BODEGA.includes(s.estado_envio)) return 'en_bodega'
   if (s.pedido_estado === 'confirmado') return 'listas_bodega'
   return 'con_cliente'
+}
+
+// Orden real del pipeline, para poder dibujarlo como una secuencia (no solo
+// una etiqueta suelta) y para saber qué etapas ya se "pasaron".
+const ETAPAS_ORDEN: EtapaCot[] = ['borrador', 'con_cliente', 'listas_bodega', 'en_bodega', 'en_camino', 'entregadas']
+
+// Un color propio por etapa -antes "con_cliente", "en_camino" y "entregadas"
+// compartían el mismo verde, y no se distinguían de un vistazo.
+const COLOR_ETAPA: Record<EtapaCot, { bg: string; fg: string }> = {
+  borrador: { bg: '#F3F4F6', fg: 'var(--yuda-text-secondary)' },
+  con_cliente: { bg: 'var(--yuda-primary-soft)', fg: 'var(--yuda-primary)' },
+  listas_bodega: { bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)' },
+  en_bodega: { bg: 'var(--yuda-primary)', fg: 'var(--yuda-white)' },
+  en_camino: { bg: 'var(--yuda-primary-dark)', fg: 'var(--yuda-white)' },
+  entregadas: { bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success)' },
+}
+
+// Pipeline visual: un punto por etapa, unidos por una línea. Las que ya se
+// pasaron quedan llenas, la actual se ve más grande con su propio color, y
+// las que faltan quedan vacías -de un vistazo se ve dónde va la cotización,
+// no solo el nombre suelto de la etapa.
+function PipelineEtapa({ etapa }: { etapa: EtapaCot }) {
+  const idx = ETAPAS_ORDEN.indexOf(etapa)
+  return (
+    <span className="inline-flex items-center" aria-hidden="true">
+      {ETAPAS_ORDEN.map((et, i) => (
+        <span key={et} className="inline-flex items-center">
+          <span
+            className="flex-shrink-0 rounded-full"
+            style={
+              i === idx
+                ? { width: 9, height: 9, backgroundColor: COLOR_ETAPA[et].fg === 'var(--yuda-white)' ? 'var(--yuda-primary)' : COLOR_ETAPA[et].fg }
+                : i < idx
+                  ? { width: 6, height: 6, backgroundColor: 'var(--yuda-primary)' }
+                  : { width: 6, height: 6, border: '1.5px solid var(--yuda-border)' }
+            }
+          />
+          {i < ETAPAS_ORDEN.length - 1 && (
+            <span
+              className="flex-shrink-0"
+              style={{ width: 8, height: 2, backgroundColor: i < idx ? 'var(--yuda-primary)' : 'var(--yuda-border)' }}
+            />
+          )}
+        </span>
+      ))}
+    </span>
+  )
 }
 
 // Genera una contraseña temporal legible (sin caracteres ambiguos) para reenviar
@@ -978,7 +1030,7 @@ ${t('clientes.email')}: ${c.email}`
               {/* Por etapa: de un vistazo, sin abrir cada una para saber qué
                   le falta. El número en cada chip es cuántas hay ahí. */}
               <div className="flex flex-wrap gap-2">
-                {(['todas', 'borrador', 'con_cliente', 'listas_bodega', 'en_camino', 'entregadas'] as const).map((et) => {
+                {(['todas', 'borrador', 'con_cliente', 'listas_bodega', 'en_bodega', 'en_camino', 'entregadas'] as const).map((et) => {
                   const cuantas = et === 'todas' ? cots.length : cots.filter((s) => etapaDeCotizacion(s) === et).length
                   if (et !== 'todas' && cuantas === 0) return null
                   const activo = subTabCot === et
@@ -1022,15 +1074,10 @@ ${t('clientes.email')}: ${c.email}`
                           <div className="min-w-0">
                             <p className="flex flex-wrap items-center gap-2">
                               <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>{numeroCot(s)}</span>
+                              <PipelineEtapa etapa={etapa} />
                               <span
                                 className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                style={
-                                  etapa === 'listas_bodega'
-                                    ? { backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }
-                                    : etapa === 'borrador'
-                                      ? { backgroundColor: '#F3F4F6', color: 'var(--yuda-text-secondary)' }
-                                      : { backgroundColor: 'var(--yuda-success-soft)', color: 'var(--yuda-success)' }
-                                }
+                                style={{ backgroundColor: COLOR_ETAPA[etapa].bg, color: COLOR_ETAPA[etapa].fg }}
                               >
                                 {t(`clientes.etapa.${etapa}`)}
                               </span>

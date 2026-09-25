@@ -730,6 +730,7 @@
       "borrador": "草稿",
       "con_cliente": "已发送给客户",
       "listas_bodega": "可发往仓库",
+      "en_bodega": "已发到仓库 / 核验中",
       "en_camino": "运输中",
       "entregadas": "已交付"
     },
