@@ -58,6 +58,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
   const [blPdfUrl, setBlPdfUrl] = useState('')
   const [monto, setMonto] = useState('')
   const [hitos, setHitos] = useState<Record<string, Hito>>({})
+  const [avisos, setAvisos] = useState<{ tipo: string; detalle: string; ts: string }[]>([])
   const [clienteAprobo, setClienteAprobo] = useState<string | null>(null)
   const [plazoAprobacion, setPlazoAprobacion] = useState<string | null>(null)
   const [trabajando, setTrabajando] = useState(false)
@@ -78,6 +79,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     setBlPdfUrl(s.bl_pdf_url ?? '')
     setMonto(s.monto_venta != null ? String(s.monto_venta) : '')
     setHitos(s.hitos ?? {})
+    setAvisos(s.avisos ?? [])
     setClienteAprobo(s.cliente_aprobo_despacho_at ?? null)
     setPlazoAprobacion(s.aprobacion_limite_at ?? null)
   }
@@ -206,43 +208,77 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
     }
   }
 
+  // Historial unificado: las etapas (hitos) y los avisos automáticos que no
+  // son un cambio de etapa (ej. fecha tentativa de una tienda), ordenados
+  // todos por su fecha y hora real -así la vendedora ve en un solo lugar,
+  // en el orden en que de verdad pasaron, tanto lo que ella hizo como lo
+  // que salió solo.
+  type EntradaHistorial =
+    | { tipo: 'hito'; key: string; ts: string; cuando: string | null; nota: string | null; adjuntos: Adjunto[] }
+    | { tipo: 'aviso'; key: string; ts: string; detalle: string }
+
+  const entradasHistorial: EntradaHistorial[] = [
+    ...ESTADOS_ENVIO.filter((k) => tieneContenido(hitos[k])).map((k): EntradaHistorial => {
+      const h = hitos[k]
+      return {
+        tipo: 'hito',
+        key: k,
+        ts: h?.ts || '',
+        cuando: fmtFechaHora(h?.ts) ?? h?.fecha ?? null,
+        nota: h?.nota ?? null,
+        adjuntos: h?.adjuntos ?? [],
+      }
+    }),
+    ...avisos.map((a, i): EntradaHistorial => ({ tipo: 'aviso', key: `aviso-${i}`, ts: a.ts, detalle: a.detalle })),
+  ].sort((a, b) => a.ts.localeCompare(b.ts))
+
   return (
     <div className="flex flex-col gap-4">
       {/* Historial del pedido: se conserva SIEMPRE. Marcela lo ve por cada cliente. */}
-      {ESTADOS_ENVIO.some((k) => tieneContenido(hitos[k])) && (
+      {entradasHistorial.length > 0 && (
         <div className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>
           <p className="mb-3 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
             {t('envio.historialTitulo')}
           </p>
           <ol className="flex flex-col gap-3">
-            {ESTADOS_ENVIO.filter((k) => tieneContenido(hitos[k])).map((k) => {
-              const h = hitos[k]
-              const cuando = fmtFechaHora(h?.ts) ?? h?.fecha ?? null
-              return (
-                <li key={k} className="flex gap-3">
-                  <span className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-success)' }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
-                      {t(`seguimiento.estados.${k}`)}
-                    </p>
-                    {cuando && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{cuando}</p>}
-                    {h?.nota && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{h.nota}</p>}
-                    {h?.adjuntos?.map((a, i) => (
-                      <a
-                        key={`${a.url}-${i}`}
-                        href={a.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-1 flex items-center gap-1 text-xs"
-                        style={{ color: 'var(--yuda-primary)' }}
-                      >
-                        <IconoAdjunto tipo={a.tipo} size={13} /> {a.nombre || t('envio.archivo')}
-                      </a>
-                    ))}
-                  </div>
-                </li>
-              )
-            })}
+            {entradasHistorial.map((entrada) => (
+              <li key={entrada.key} className="flex gap-3">
+                <span
+                  className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: entrada.tipo === 'aviso' ? 'var(--yuda-primary)' : 'var(--yuda-success)' }}
+                />
+                <div className="min-w-0 flex-1">
+                  {entrada.tipo === 'hito' ? (
+                    <>
+                      <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                        {t(`seguimiento.estados.${entrada.key}`)}
+                      </p>
+                      {entrada.cuando && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{entrada.cuando}</p>}
+                      {entrada.nota && <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{entrada.nota}</p>}
+                      {entrada.adjuntos.map((a, i) => (
+                        <a
+                          key={`${a.url}-${i}`}
+                          href={a.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 flex items-center gap-1 text-xs"
+                          style={{ color: 'var(--yuda-primary)' }}
+                        >
+                          <IconoAdjunto tipo={a.tipo} size={13} /> {a.nombre || t('envio.archivo')}
+                        </a>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium" style={{ color: 'var(--yuda-primary)' }}>
+                        {entrada.detalle}
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{fmtFechaHora(entrada.ts)}</p>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
           </ol>
         </div>
       )}

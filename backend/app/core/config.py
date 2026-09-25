@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     LUCIDBOT_FLOW_APROBAR_DESPACHO: str = ""
     # Mismo mecanismo que el de arriba, para los otros dos avisos automáticos
     # al cliente (fuera de la ventana de 24h necesitan su propia plantilla).
+    LUCIDBOT_FLOW_COTIZACION_ENVIADA: str = ""
     LUCIDBOT_FLOW_PEDIDO_ENVIADO: str = ""
     LUCIDBOT_FLOW_FECHA_TENTATIVA: str = ""
     LUCIDBOT_FLOW_DESPACHADO: str = ""

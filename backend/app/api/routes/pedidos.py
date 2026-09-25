@@ -20,7 +20,7 @@ from app.models.cliente_vendedora import ClienteVendedora
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
-from app.models.seguimiento import ESTADOS_ENVIO, ESTADOS_VENDEDORA, SeguimientoPedido
+from app.models.seguimiento import ESTADOS_ENVIO, ESTADOS_VENDEDORA, SeguimientoPedido, registrar_aviso
 from app.models.sesion import Sesion
 from app.models.user import RolUsuario, User
 from app.schemas.bodega import ActividadBodegaResponse, PedidoBodegaSeguimientoResumen
@@ -483,9 +483,21 @@ def actualizar_fecha_tentativa(
         cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
         if cliente is not None:
             numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
-            avisar_cliente_fecha_tentativa(
-                db, cliente, sesion.id, numero, formatear_fecha_legible(datos.fecha.isoformat()), pedido.supplier
-            )
+            fecha_legible = formatear_fecha_legible(datos.fecha.isoformat())
+            avisar_cliente_fecha_tentativa(db, cliente, sesion.id, numero, fecha_legible, pedido.supplier)
+
+            # No es un cambio de etapa (fecha-tentativa no es uno de los 7
+            # estados fijos de "hitos"), pero la vendedora igual necesita
+            # verlo en el historial de Seguimiento: si no, este aviso sale
+            # solo y ella nunca se entera de que salió.
+            seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion.id).first()
+            if seg is not None:
+                registrar_aviso(
+                    seg,
+                    "fecha_tentativa",
+                    f"Se avisó al cliente la fecha estimada de {pedido.supplier.replace('_', ' · ')}: {fecha_legible}",
+                )
+                db.commit()
 
     return pedido
 

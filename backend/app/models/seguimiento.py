@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import JSON, Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -69,6 +69,12 @@ class SeguimientoPedido(Base):
     )
     # { estado_key: { "fecha": "YYYY-MM-DD", "nota": "..." } }
     hitos: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Avisos automáticos al cliente que NO son un cambio de etapa (ej. la
+    # fecha tentativa de una tienda puntual): a diferencia de `hitos`, esta
+    # columna solo se anexa, nunca se reconstruye desde cero, para que la
+    # vendedora vea en el historial cada notificación real que salió sola.
+    # [{ "tipo": "...", "detalle": "...", "ts": "2026-09-25T..." }]
+    avisos: Mapped[list | None] = mapped_column(JSON, nullable=True)
     # El cliente aprueba, desde su portal, el despacho una vez bodega recibió e
     # inspeccionó la mercancía ("en_bodega"). Sin esta aprobación (o sin que
     # venza el plazo de abajo) Marcela no puede pasar el pedido a "en_transito".
@@ -99,3 +105,11 @@ class SeguimientoPedido(Base):
     # hace rato) sin borrar nada del sistema: solo deja de aparecer en sus 4
     # pestañas, para que la lista no se llene de trabajo ya resuelto.
     bodega_archivado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+def registrar_aviso(seg: SeguimientoPedido, tipo: str, detalle: str) -> None:
+    """Anota en `avisos` que un aviso automático salió, con su fecha y hora
+    reales. Se reasigna una lista nueva (no se muta la existente) para que
+    SQLAlchemy detecte el cambio en una columna JSON."""
+    ahora = datetime.now(timezone.utc).isoformat()
+    seg.avisos = [*(seg.avisos or []), {"tipo": tipo, "detalle": detalle, "ts": ahora}]

@@ -306,6 +306,45 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
         _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
 
 
+def avisar_cliente_cotizacion_enviada(db: Session, cliente: Cliente, sesion_id: str, numero: str) -> None:
+    """Aviso simple: la vendedora acaba de enviarle una cotización nueva. Es
+    lo primero que recibe el cliente, antes de que confirme nada. Correo y
+    WhatsApp, cada uno best-effort."""
+    link = _link_portal(sesion_id)
+
+    try:
+        _enviar_correo_brevo(
+            cliente,
+            f"Tienes una nueva cotización ({numero})",
+            f"""<p>Hola {cliente.nombre},</p>
+<p>Te enviamos una nueva cotización, <strong>{numero}</strong>. Puedes revisarla, pedir cambios
+o confirmarla desde tu portal.</p>
+<p><a href="{link}">Ver mi cotización</a></p>
+<p>YUDA Importaciones</p>""",
+        )
+    except Exception as exc:
+        logger.exception("No se pudo enviar el correo de 'cotización enviada' a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
+
+    try:
+        texto_libre = (
+            f"Hola {cliente.nombre}, te enviamos una nueva cotización ({numero}). "
+            f"Puedes revisarla, pedir cambios o confirmarla desde tu portal.\n\nVerla: {link}"
+        )
+        _enviar_whatsapp_lucidbot(
+            cliente,
+            flow_id=settings.LUCIDBOT_FLOW_COTIZACION_ENVIADA,
+            campos_flow={
+                settings.LUCIDBOT_CF_NUMERO_PEDIDO: numero,
+                settings.LUCIDBOT_CF_LINK: link,
+            },
+            texto_libre=texto_libre,
+        )
+    except Exception as exc:
+        logger.exception("No se pudo enviar el WhatsApp de 'cotización enviada' a %s", cliente.email)
+        _avisar_fallo(db, sesion_id, cliente, numero, "WhatsApp", exc)
+
+
 def avisar_cliente_pedido_en_proveedor(db: Session, cliente: Cliente, sesion_id: str, numero: str) -> None:
     """Aviso simple: el pedido ya se mandó a comprar a los proveedores. Es el
     primer aviso externo que recibe el cliente después de confirmar sus

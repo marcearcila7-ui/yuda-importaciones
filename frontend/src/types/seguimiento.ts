@@ -81,6 +81,10 @@ export interface Seguimiento {
   monto_venta?: number | null
   despachado_at?: string | null
   hitos?: Record<string, Hito> | null
+  // Avisos automáticos al cliente que no son un cambio de etapa (ej. la
+  // fecha tentativa de una tienda puntual): se anexan solos, con fecha y
+  // hora reales, para que la vendedora vea en el historial que salieron.
+  avisos?: { tipo: string; detalle: string; ts: string }[] | null
   // Aprobación del cliente para despachar (paso "en_bodega") y el plazo que
   // bodega le dio para hacerlo; pasado ese plazo, el despacho sigue igual.
   cliente_aprobo_despacho_at?: string | null

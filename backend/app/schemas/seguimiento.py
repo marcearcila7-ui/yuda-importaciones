@@ -70,6 +70,7 @@ class SeguimientoResponse(BaseModel):
     monto_venta: float | None = None
     despachado_at: datetime | None = None
     hitos: dict | None = None
+    avisos: list | None = None
     cliente_aprobo_despacho_at: datetime | None = None
     aprobacion_limite_at: datetime | None = None
     updated_at: datetime | None = None

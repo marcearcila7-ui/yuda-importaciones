@@ -77,6 +77,7 @@ from app.services.notificacion_service import (
 )
 from app.services.aviso_cliente_service import (
     avisar_cliente_aprobar_despacho,
+    avisar_cliente_cotizacion_enviada,
     avisar_cliente_despachado,
     avisar_cliente_en_destino,
     avisar_cliente_entregado,
@@ -998,6 +999,7 @@ def enviar_a_cliente(
     sesion.fecha_envio_cliente = datetime.now()
 
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    es_nuevo = seg is None
     if seg is None:
         ahora = datetime.now(timezone.utc)
         seg = SeguimientoPedido(
@@ -1015,6 +1017,16 @@ def enviar_a_cliente(
 
     db.commit()
     db.refresh(seg)
+
+    # Avisa al cliente por correo/WhatsApp que tiene una cotización nueva
+    # (solo la primera vez que se crea el seguimiento, no en reenvíos de la
+    # misma cotización al mismo cliente): antes esto era una acción muda,
+    # nadie le avisaba al cliente que revisara el portal.
+    if es_nuevo and sesion.cliente_id:
+        cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+        if cliente is not None:
+            numero = f"YUDA-{sesion.fecha:%Y%m%d}-{sesion.id[:6].upper()}"
+            avisar_cliente_cotizacion_enviada(db, cliente, sesion_id, numero)
     return seg
 
 
