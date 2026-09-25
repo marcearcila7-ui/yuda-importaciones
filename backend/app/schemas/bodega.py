@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel
 
+from app.schemas.cubicaje import SobranteListaItem
 from app.schemas.pedidos import PedidoGeneradoResponse
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
@@ -27,6 +28,9 @@ class BodegaPedidoResumen(BaseModel):
     # Quién de bodega lo tiene asignado (None = sin asignar, lo ven todos).
     bodega_asignado_a_id: str | None = None
     bodega_asignado_a_nombre: str | None = None
+    # Solo se llena en la vista "listas_sobrantes": qué referencias y cuántas
+    # cajas quedaron sobrando en este pedido.
+    sobrante_items: list[SobranteListaItem] | None = None
 
 
 class UsuarioBodegaBasico(BaseModel):
@@ -79,10 +83,12 @@ class BodegaPedidoDetalle(BaseModel):
     cliente_nombre: str | None = None
     cliente_email: str | None = None
     cliente_telefono: str | None = None
-    # Lo que Yuda Contable tiene registrado para este cliente (por "sigla"),
-    # como referencia/sugerencia -no reemplaza cliente_telefono sin que
-    # alguien lo confirme. None si no hay sigla, no hay conexión configurada,
-    # o Yuda Contable no tiene nada para esa sigla.
+    # El WhatsApp del cliente se hereda de Yuda Contable (por "sigla"): ni
+    # bodega ni la vendedora lo editan acá, solo lo ven. Si hace falta
+    # corregirlo, se edita en la ficha del cliente en Yuda Contable y este
+    # valor se actualiza solo (ver /contacto-cliente para el polling en vivo).
+    # None si no hay sigla, no hay conexión configurada, o Yuda Contable no
+    # tiene nada para esa sigla.
     cliente_whatsapp_contable: str | None = None
     # Vendedora dueña de la cotización en el cotizador.
     vendedora_nombre: str | None = None
@@ -92,8 +98,11 @@ class BodegaPedidoDetalle(BaseModel):
     actividad: list[ActividadBodegaResponse] = []
 
 
-class ActualizarTelefonoInput(BaseModel):
-    telefono: str
+class ContactoClienteResponse(BaseModel):
+    """Para el polling en vivo de la pestaña Notificaciones: el WhatsApp que
+    Yuda Contable tiene registrado ahora mismo para este cliente."""
+
+    whatsapp: str | None = None
 
 
 class OrdenGeneradaItem(BaseModel):

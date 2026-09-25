@@ -10,6 +10,7 @@ from app.core.archivo_valida import es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cubicaje import RESULTADO_SOBRA, TIPO_REPORTE, CubicajeMensaje
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
@@ -19,15 +20,16 @@ from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.user import RolUsuario, User
 from app.schemas.bodega import (
     ActividadBodegaResponse,
-    ActualizarTelefonoInput,
     AsignarPedidoInput,
     BodegaPedidoDetalle,
     BodegaPedidoResumen,
+    ContactoClienteResponse,
     GuardarOrdenRealInput,
     OrdenGenerada,
     OrdenGeneradaItem,
     UsuarioBodegaBasico,
 )
+from app.schemas.cubicaje import SobranteListaItem
 from app.schemas.inspeccion import GuardarInspeccionInput, InspeccionSesionResponse
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
@@ -149,13 +151,15 @@ def listar_pedidos_bodega(
     usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
 ) -> list[BodegaPedidoResumen]:
-    """Cola de bodega, en 4 vistas que reflejan el flujo real de un pedido:
+    """Cola de bodega, en 5 vistas que reflejan el flujo real de un pedido:
     "sin_asignar" (nadie lo tomó todavía, lo ven todos), "asignados" (ya
     alguien lo tomó, se ve a quién), "pendiente_cliente" (bodega ya lo revisó
-    y lo marcó listo, pero el cliente todavía no aprueba el despacho) y
-    "completados" (el cliente ya aprobó, o el despacho ya avanzó a tránsito).
-    Un pedido archivado (ver /archivar) no aparece en ninguna."""
-    if vista not in ("sin_asignar", "asignados", "pendiente_cliente", "completados"):
+    y lo marcó listo, pero el cliente todavía no aprueba el despacho),
+    "completados" (el cliente ya aprobó, o el despacho ya avanzó a tránsito) y
+    "listas_sobrantes" (tiene al menos una referencia reportada como sobrante,
+    sin importar en qué etapa esté). Un pedido archivado (ver /archivar) no
+    aparece en ninguna."""
+    if vista not in ("sin_asignar", "asignados", "pendiente_cliente", "completados", "listas_sobrantes"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Vista inválida")
 
     # OJO: no filtrar por Sesion.pedido_confirmado_at. Ese campo se borra si el
@@ -176,6 +180,17 @@ def listar_pedidos_bodega(
             SeguimientoPedido.estado == "en_bodega",
             SeguimientoPedido.cliente_aprobo_despacho_at.is_(None),
         )
+    elif vista == "listas_sobrantes":
+        sesiones_con_sobrante = (
+            db.query(CubicajeMensaje.sesion_id)
+            .filter(
+                CubicajeMensaje.tipo == TIPO_REPORTE,
+                CubicajeMensaje.resultado == RESULTADO_SOBRA,
+                CubicajeMensaje.referencia.isnot(None),
+            )
+            .distinct()
+        )
+        query = query.filter(Sesion.id.in_(sesiones_con_sobrante))
     else:  # completados
         query = query.filter(
             (SeguimientoPedido.cliente_aprobo_despacho_at.isnot(None))
@@ -212,6 +227,7 @@ def listar_pedidos_bodega(
                 vendedora_nombre=vendedora.nombre if vendedora else None,
                 bodega_asignado_a_id=seg.bodega_asignado_a_id,
                 bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+                sobrante_items=_sobrante_items_resumen(db, sesion.id) if vista == "listas_sobrantes" else None,
             )
         )
     return resultado
@@ -638,34 +654,26 @@ def guardar_orden_real(
     )
 
 
-@router.patch("/pedidos/{sesion_id}/cliente-telefono")
-def actualizar_telefono_cliente(
+@router.get("/pedidos/{sesion_id}/contacto-cliente", response_model=ContactoClienteResponse)
+def obtener_contacto_cliente(
     sesion_id: str,
-    datos: ActualizarTelefonoInput,
     usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
-) -> dict:
-    """Bodega confirma o corrige el teléfono de WhatsApp del cliente antes de
-    marcar la mercancía como recibida, para que el aviso de aprobación le
-    llegue al número correcto."""
+) -> ContactoClienteResponse:
+    """El WhatsApp del cliente se hereda de Yuda Contable -ni bodega ni la
+    vendedora lo editan, solo lo ven (si hace falta corregirlo, se edita en
+    Yuda Contable). Este endpoint es liviano a propósito, para hacerle
+    polling desde la pestaña Notificaciones y que un cambio en Yuda Contable
+    se refleje ahí sin recargar la página."""
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
-    if not sesion.cliente_id:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Esta cotización no está vinculada a un cliente del portal"
-        )
-    cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
-    if cliente is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
-
-    telefono = datos.telefono.strip()
-    if not telefono:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "El teléfono no puede quedar vacío")
-
-    cliente.telefono = telefono
-    db.commit()
-    return {"telefono": cliente.telefono}
+    cliente = (
+        db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first() if sesion.cliente_id else None
+    )
+    contacto = buscar_contacto_por_sigla(cliente.sigla) if cliente else None
+    whatsapp = (contacto or {}).get("whatsapp") or (contacto or {}).get("telefono")
+    return ContactoClienteResponse(whatsapp=whatsapp)
 
 
 @router.get("/pedidos/{sesion_id}/cotizacion", response_model=InspeccionSesionResponse)
@@ -773,6 +781,38 @@ def _items_inspeccionados(db: Session, sesion_id: str) -> list:
         if insp and insp.cajas_extra:
             filas.extend(_ItemCajaExtra(base, caja) for caja in insp.cajas_extra)
     return filas
+
+
+def _sobrante_items_resumen(db: Session, sesion_id: str) -> list[SobranteListaItem]:
+    """Para la vista "listas_sobrantes": referencia, descripción y cajas de lo
+    que quedó sobrando en este pedido (la más reciente por referencia, si se
+    corrigió más de una vez)."""
+    filas = (
+        db.query(CubicajeMensaje)
+        .filter(
+            CubicajeMensaje.sesion_id == sesion_id,
+            CubicajeMensaje.tipo == TIPO_REPORTE,
+            CubicajeMensaje.resultado == RESULTADO_SOBRA,
+            CubicajeMensaje.referencia.isnot(None),
+        )
+        .order_by(CubicajeMensaje.created_at.asc())
+        .all()
+    )
+    mapa: dict[str, int] = {}
+    for f in filas:
+        if f.referencia and f.cajas_afectadas:
+            mapa[f.referencia] = f.cajas_afectadas
+    if not mapa:
+        return []
+    descripciones = {
+        i.referencia: i.descripcion_es
+        for i in _items_inspeccionados(db, sesion_id)
+        if isinstance(i, _ItemInspeccionado) and i.referencia in mapa
+    }
+    return [
+        SobranteListaItem(referencia=ref, descripcion=descripciones.get(ref) or ref, cajas=cajas)
+        for ref, cajas in mapa.items()
+    ]
 
 
 @router.get("/pedidos/{sesion_id}/cotizacion/exportar-excel")
