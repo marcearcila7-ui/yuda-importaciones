@@ -341,8 +341,6 @@ def generar_cotizacion_excel(
     ws = wb.active
     ws.title = "Cotización"
 
-    fill_empresa = PatternFill(start_color="1E3A5F", end_color="1E3A5F", fill_type="solid")
-    font_empresa = Font(color="FFFFFF", bold=True, size=14)
     fill_head = PatternFill(start_color="4B52E8", end_color="4B52E8", fill_type="solid")
     font_head = Font(color="FFFFFF", bold=True)
     fill_alt = PatternFill(start_color="F5F5F0", end_color="F5F5F0", fill_type="solid")
@@ -380,31 +378,25 @@ def generar_cotizacion_excel(
     # Logo de YUDA, sobre fondo blanco: el lockup tiene el texto en negro y no se
     # lee sobre el azul del encabezado.
     ws.merge_cells(f"A1:{ultima_col}1")
-    ws.row_dimensions[1].height = 42
+    ws.row_dimensions[1].height = 58
     logo = _logo_bytes()
     if logo is not None:
         try:
             img_logo = XLImage(BytesIO(logo))
-            escala = 46 / img_logo.height
+            escala = 64 / img_logo.height
             img_logo.width = round(img_logo.width * escala)
-            img_logo.height = 46
+            img_logo.height = 64
             ws.add_image(img_logo, "A1")
         except Exception:
             ws["A1"] = lab["empresa"]
 
-    # Encabezado de empresa
-    ws.merge_cells(f"A2:{col_banner}2")
-    ws["A2"] = lab["empresa"]
-    ws["A2"].fill = fill_empresa
-    ws["A2"].font = font_empresa
-    ws["A2"].alignment = centro
-    _fila_banner(2, fill_empresa)
-    ws.merge_cells(f"A3:{col_banner}3")
-    ws["A3"] = CONTACTO["razon"]
-    ws["A3"].fill = fill_empresa
-    ws["A3"].font = Font(color="FFFFFF")
-    ws["A3"].alignment = centro
-    _fila_banner(3, fill_empresa)
+    # Ya no va la banda azul oscuro de "YUDA IMPORTACIONES" (filas 2 y 3):
+    # ocupaba espacio y, al imprimir en 2 hojas, el texto salía cortado a la
+    # mitad en la segunda ("YUDA IMPORTACIO..."). El logo de la fila 1 ya
+    # identifica la empresa; estas filas quedan ocultas para recuperar el
+    # espacio en vez de renumerar todo lo que sigue.
+    ws.row_dimensions[2].height = 0
+    ws.row_dimensions[3].height = 0
 
     # Aviso de la agencia de carga: sin estos datos no cargan la mercancía
     for i, linea in enumerate(AVISO_AGENCIA):
@@ -704,7 +696,7 @@ def generar_cotizacion_pdf(
      sí pueden achicarse para compensar, un número no se lee peor angosto. */
   td.desc {{ text-align: left; min-width: 80px; }}
   .logo {{ text-align: center; padding: 6px 0; }}
-  .logo img {{ height: 34px; }}
+  .logo img {{ height: 50px; }}
   .aviso {{ border: 1px solid #C00000; color: #C00000; font-weight: bold; font-size: 8px;
             padding: 6px 8px; margin: 8px 0; line-height: 1.35; }}
   .aviso p {{ margin: 0 0 3px; }}
