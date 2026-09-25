@@ -42,7 +42,7 @@ function CotizacionDetalle() {
   const [seguimiento, setSeguimiento] = useState<Seguimiento | null>(null)
   const [cargando, setCargando] = useState(true)
   const [idioma, setIdioma] = useState<string>(['es', 'en', 'zh'].includes(i18n.language) ? i18n.language : 'es')
-  const [generando, setGenerando] = useState<'pdf' | 'excel' | null>(null)
+  const [generando, setGenerando] = useState<'pdf' | 'excel' | 'imprimir' | null>(null)
   // Generar el documento (con fotos incrustadas) tarda y no hay forma de medir
   // el avance real desde el navegador (una sola respuesta del servidor). Este
   // porcentaje avanza solo hacia un tope, igual que en la carga masiva: no
@@ -129,8 +129,10 @@ function CotizacionDetalle() {
   const fmt = (n: number) => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   // Descarga el PDF/Excel de la cotización (Safari: abrir la pestaña dentro del toque).
-  const descargar = async (tipo: 'pdf' | 'excel') => {
-    setGenerando(tipo)
+  // `boton` es solo para saber qué botón mostrar como "Generando…" (el de Imprimir
+  // también descarga el Excel, pero no debe activar el botón "Excel").
+  const descargar = async (tipo: 'pdf' | 'excel', boton: 'pdf' | 'excel' | 'imprimir' = tipo) => {
+    setGenerando(boton)
     const ventana = window.open('', '_blank')
     try {
       const blob = tipo === 'pdf' ? await exportarCotizacionPDF(id, idioma) : await exportarCotizacionExcel(id, idioma)
@@ -361,12 +363,12 @@ function CotizacionDetalle() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => descargar('excel')}
+                  onClick={() => descargar('excel', 'imprimir')}
                   disabled={generando !== null}
                   className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border font-semibold disabled:opacity-60"
                   style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)', fontSize: 16, padding: '0 20px' }}
                 >
-                  <Printer size={18} /> {generando === 'excel' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.imprimir')}
+                  <Printer size={18} /> {generando === 'imprimir' ? `${t('detalle.generando')} ${Math.round(pct)}%` : t('detalle.imprimir')}
                 </button>
               </div>
               <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('detalle.imprimirAyuda')}</p>
