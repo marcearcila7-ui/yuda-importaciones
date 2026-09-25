@@ -501,6 +501,17 @@ def generar_cotizacion_excel(
     for idx, clave in enumerate(columnas_activas, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = ANCHOS_COLUMNA[clave]
 
+    # Configuración de impresión: horizontal y todas las columnas en el ancho
+    # de una sola hoja (fitToHeight=0 deja que las filas caigan a más hojas
+    # si hay muchos productos, pero nunca corta columnas a los lados).
+    fila_final = fila_contacto + len(contacto_lineas) - 1
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_area = f"A1:{ultima_col}{fila_final}"
+    ws.print_options.horizontalCentered = True
+
     buffer = BytesIO()
     wb.save(buffer)
     return buffer.getvalue()
