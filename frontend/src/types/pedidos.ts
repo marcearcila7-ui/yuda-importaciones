@@ -25,6 +25,10 @@ export interface PedidoGenerado {
   fecha_generacion: string
   // Fecha aproximada que dio ESTE proveedor (no toda la cotización).
   fecha_tentativa_entrega?: string | null
+  // Para que Marcela (super admin) vea quién hizo cada paso, no solo que
+  // "ya se hizo". None en pedidos de antes de este cambio.
+  generado_por_nombre?: string | null
+  revisado_por_nombre?: string | null
 }
 
 export interface ActividadBodega {

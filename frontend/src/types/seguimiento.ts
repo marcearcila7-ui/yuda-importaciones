@@ -90,6 +90,9 @@ export interface Seguimiento {
   cliente_aprobo_despacho_at?: string | null
   aprobacion_limite_at?: string | null
   updated_at?: string | null
+  // Para que Marcela (super admin) vea quién avisó a bodega, no solo que
+  // "ya se hizo". None si nunca se avisó o es de antes de este cambio.
+  enviado_a_bodega_por_nombre?: string | null
 }
 
 export interface SeguimientoUpdate {

@@ -41,6 +41,7 @@ from app.models.seguimiento import (
 )
 from app.models.item import Item
 from app.models.pedido import PedidoGenerado
+from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.sesion import PEDIDO_POR_CONFIRMAR, Sesion
 from app.models.user import RolUsuario, User
 from app.data.contable_clientes import CONTABLE_CLIENTES
@@ -173,6 +174,26 @@ def _sesion_autorizada(db: Session, sesion_id: str, usuario: User) -> Sesion:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
     exigir_acceso_sesion(db, sesion, usuario)
     return sesion
+
+
+def _seguimiento_response(db: Session, seg: SeguimientoPedido) -> SeguimientoResponse:
+    """Arma la respuesta de Seguimiento con quién avisó a bodega resuelto
+    (última actividad tipo "enviado" de esta sesión): Marcela (super admin)
+    necesita ver quién de su equipo hizo ese paso, no solo que "ya se hizo"."""
+    actividad = (
+        db.query(PedidoBodegaActividad)
+        .filter(PedidoBodegaActividad.sesion_id == seg.sesion_id, PedidoBodegaActividad.tipo == "enviado")
+        .order_by(PedidoBodegaActividad.created_at.desc())
+        .first()
+    )
+    usuario_envio = (
+        db.query(User).filter(User.id == actividad.usuario_id).first()
+        if actividad and actividad.usuario_id
+        else None
+    )
+    return SeguimientoResponse.model_validate(seg).model_copy(
+        update={"enviado_a_bodega_por_nombre": usuario_envio.nombre if usuario_envio else None}
+    )
 
 
 # ──────────────── CLIENTES (CRUD) ────────────────
@@ -1067,13 +1088,13 @@ def obtener_seguimiento(
     sesion_id: str,
     usuario: User = Depends(require_roles("admin", "vendedora", "contadora", "bodega")),
     db: Session = Depends(get_db),
-) -> SeguimientoPedido:
+) -> SeguimientoResponse:
     """Seguimiento de una cotización (staff)"""
     _sesion_autorizada(db, sesion_id, usuario)
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Esta cotización aún no se envió al cliente")
-    return seg
+    return _seguimiento_response(db, seg)
 
 
 @router.put("/sesiones/{sesion_id}/seguimiento", response_model=SeguimientoResponse)
@@ -1082,7 +1103,7 @@ def actualizar_seguimiento(
     datos: SeguimientoUpdate,
     usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
     db: Session = Depends(get_db),
-) -> SeguimientoPedido:
+) -> SeguimientoResponse:
     """Crea o actualiza el seguimiento del envío de una cotización.
 
     La vendedora gestiona las etapas hasta que el proveedor recibe el pedido.
@@ -1313,7 +1334,7 @@ def actualizar_seguimiento(
         if nuevo_entregado:
             avisar_cliente_entregado(db, cliente_envio, sesion_id, numero)
 
-    return seg
+    return _seguimiento_response(db, seg)
 
 
 @router.post("/sesiones/{sesion_id}/seguimiento/bl-pdf")

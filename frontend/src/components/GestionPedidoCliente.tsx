@@ -7,6 +7,7 @@ import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
 import { enfocarNumero } from '../lib/dom'
 import { confirmar } from '../store/confirmStore'
+import { useAuthStore } from '../store/authStore'
 import {
   actualizarFechaTentativa,
   enviarABodegaGuiado,
@@ -59,6 +60,10 @@ function Paso({ n, titulo, bloqueado, children }: { n: number; titulo: string; b
 // para confirmar, y —una vez confirmado— generar el pedido al proveedor.
 function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActualizar?: () => void }) {
   const { t, i18n } = useTranslation()
+  // Trazabilidad de "quién hizo qué" (generó la orden, la inspeccionó,
+  // avisó a bodega): solo Marcela como super admin la necesita -la
+  // vendedora ya sabe que fue ella misma quien hizo cada paso.
+  const esAdmin = useAuthStore((s) => s.usuario?.rol) === 'admin'
   const [items, setItems] = useState<ItemResponse[]>([])
   const [cantidades, setCantidades] = useState<Record<string, string>>({})
   const [estado, setEstado] = useState<string | null>(sesion.pedido_estado ?? null)
@@ -207,7 +212,17 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     setReemplazandoArchivo((s) => ({ ...s, [pg.id]: true }))
     try {
       const actualizado = await reemplazarArchivoPedidoGenerado(pg.id, archivo)
-      setPedidosGenerados((lista) => lista.map((p) => (p.id === pg.id ? actualizado : p)))
+      setPedidosGenerados((lista) =>
+        lista.map((p) =>
+          p.id === pg.id
+            ? // revisado_por_nombre no se recalcula en esta respuesta puntual
+              // (requiere mirar todos los items de la sesión): se conserva,
+              // salvo que el backend haya limpiado la revisión (bodega tiene
+              // que volver a contarla, ese dato ya no aplica).
+              { ...actualizado, revisado_por_nombre: actualizado.revisado_en_bodega_at ? p.revisado_por_nombre : null }
+            : p,
+        ),
+      )
       toast.success(
         pg.revisado_en_bodega_at ? t('gestionPedido.archivoReemplazadoAvisado') : t('gestionPedido.archivoReemplazado'),
       )
@@ -227,7 +242,11 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     setGuardandoFecha((s) => ({ ...s, [pg.id]: true }))
     try {
       const actualizado = await actualizarFechaTentativa(pg.id, fecha)
-      setPedidosGenerados((lista) => lista.map((p) => (p.id === pg.id ? actualizado : p)))
+      // revisado_por_nombre no se recalcula en esta respuesta puntual: se
+      // conserva, esta acción no cambia nada de la revisión de bodega.
+      setPedidosGenerados((lista) =>
+        lista.map((p) => (p.id === pg.id ? { ...actualizado, revisado_por_nombre: p.revisado_por_nombre } : p)),
+      )
       setEditandoFecha((s) => ({ ...s, [pg.id]: false }))
       toast.success(t('gestionPedido.fechaTentativaGuardada'))
     } catch {
@@ -443,6 +462,17 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                       )}
                     </span>
                   </div>
+
+                  {/* Trazabilidad de "quién hizo qué": solo Marcela (super
+                      admin) la necesita, para ubicar qué vendedora/persona
+                      de bodega atendió cada paso sin tener que preguntar. */}
+                  {esAdmin && (pg.generado_por_nombre || pg.revisado_por_nombre) && (
+                    <p className="pl-5 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                      {pg.generado_por_nombre && t('gestionPedido.generadoPor', { nombre: pg.generado_por_nombre })}
+                      {pg.generado_por_nombre && pg.revisado_por_nombre && ' · '}
+                      {pg.revisado_por_nombre && t('gestionPedido.revisadoPor', { nombre: pg.revisado_por_nombre })}
+                    </p>
+                  )}
 
                   {/* Vista previa de esta orden puntual: cada producto con
                       su foto de cotización al lado de la evidencia real que
@@ -666,9 +696,16 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 </div>
               )
             ) : (
-              <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
-                <Warehouse size={16} /> {t('gestionPedido.yaEnviadoABodega')}
-              </p>
+              <div className="flex flex-col gap-0.5">
+                <p className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
+                  <Warehouse size={16} /> {t('gestionPedido.yaEnviadoABodega')}
+                </p>
+                {esAdmin && seguimiento.enviado_a_bodega_por_nombre && (
+                  <p className="pl-6 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('gestionPedido.avisadoPor', { nombre: seguimiento.enviado_a_bodega_por_nombre })}
+                  </p>
+                )}
+              </div>
             )}
           </Paso>
         )}

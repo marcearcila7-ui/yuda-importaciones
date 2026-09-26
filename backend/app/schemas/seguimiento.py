@@ -80,5 +80,8 @@ class SeguimientoResponse(BaseModel):
     updated_at: datetime | None = None
     bodega_asignado_a_id: str | None = None
     bodega_asignado_en: datetime | None = None
+    # Para que Marcela (super admin) vea quién avisó a bodega, no solo que
+    # "ya se hizo". None si nunca se avisó o es de antes de este cambio.
+    enviado_a_bodega_por_nombre: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
