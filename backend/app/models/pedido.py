@@ -20,6 +20,10 @@ class PedidoGenerado(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     sesion_id: Mapped[str] = mapped_column(String, ForeignKey("sesiones.id"), nullable=False)
     supplier: Mapped[str] = mapped_column(String, nullable=False)
+    # Quién le dio "Generar pedido a la tienda" (vendedora o Marcela): Marcela,
+    # como super admin, necesita poder ver de un vistazo quién hizo cada paso
+    # operativo de un cliente, no solo que "ya se hizo".
+    generado_por_id: Mapped[str | None] = mapped_column(String, ForeignKey("users.id"), nullable=True)
     # Lo que se pidió (se genera al confirmar el cliente).
     archivo_xlsx_url: Mapped[str] = mapped_column(String, nullable=False)
     archivo_pdf_url: Mapped[str | None] = mapped_column(String, nullable=True)

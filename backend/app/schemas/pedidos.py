@@ -35,6 +35,10 @@ class PedidoGeneradoResponse(BaseModel):
     revisado_en_bodega_at: datetime | None = None
     fecha_generacion: datetime
     fecha_tentativa_entrega: date | None = None
+    # Para que Marcela (super admin) vea de un vistazo quién hizo cada paso,
+    # no solo que "ya se hizo". None si el pedido es de antes de este cambio.
+    generado_por_nombre: str | None = None
+    revisado_por_nombre: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

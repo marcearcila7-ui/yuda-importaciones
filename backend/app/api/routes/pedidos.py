@@ -19,6 +19,7 @@ from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteVendedora
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.item import Item
+from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.seguimiento import ESTADOS_ENVIO, ESTADOS_VENDEDORA, SeguimientoPedido, registrar_aviso
 from app.models.sesion import Sesion
@@ -74,6 +75,34 @@ def _obtener_sesion(db: Session, sesion_id: str, usuario: User) -> Sesion:
 def _sanitizar(texto: str) -> str:
     """Reemplaza espacios y caracteres especiales por guión bajo para el nombre de archivo"""
     return re.sub(r"[^A-Za-z0-9]+", "_", texto).strip("_")
+
+
+def _pedido_generado_response(
+    db: Session, p: PedidoGenerado, revisado_por_nombre: str | None = None
+) -> PedidoGeneradoResponse:
+    """Arma la respuesta de un PedidoGenerado con generado_por_nombre resuelto.
+    revisado_por_nombre se calcula aparte (requiere mirar TODOS los items de
+    la sesión, no solo este pedido) -se pasa ya calculado cuando se tiene
+    a mano (ver listar_pedidos), o queda None en actualizaciones puntuales
+    (reemplazar archivo, fecha tentativa): el frontend conserva el valor que
+    ya tenía en esos casos en vez de perderlo."""
+    generador = db.query(User).filter(User.id == p.generado_por_id).first() if p.generado_por_id else None
+    return PedidoGeneradoResponse(
+        id=p.id,
+        sesion_id=p.sesion_id,
+        supplier=p.supplier,
+        archivo_xlsx_url=p.archivo_xlsx_url,
+        archivo_pdf_url=p.archivo_pdf_url,
+        archivo_csv_url=p.archivo_csv_url,
+        archivo_real_xlsx_url=p.archivo_real_xlsx_url,
+        archivo_real_pdf_url=p.archivo_real_pdf_url,
+        archivo_real_csv_url=p.archivo_real_csv_url,
+        revisado_en_bodega_at=p.revisado_en_bodega_at,
+        fecha_generacion=p.fecha_generacion,
+        fecha_tentativa_entrega=p.fecha_tentativa_entrega,
+        generado_por_nombre=generador.nombre if generador else None,
+        revisado_por_nombre=revisado_por_nombre,
+    )
 
 
 class _ItemCajasCliente:
@@ -307,6 +336,7 @@ def generar_pedidos(
             registro.archivo_real_csv_url = None
             registro.revisado_en_bodega_at = None
             registro.fecha_generacion = datetime.now()
+            registro.generado_por_id = usuario.id
             db.query(PedidoGeneradoItem).filter(
                 PedidoGeneradoItem.pedido_generado_id == registro.id
             ).delete()
@@ -317,6 +347,7 @@ def generar_pedidos(
                 archivo_xlsx_url=url_descarga,
                 archivo_pdf_url=url_pdf,
                 archivo_csv_url=url_csv,
+                generado_por_id=usuario.id,
             )
             db.add(registro)
             db.flush()  # asigna registro.id para las líneas de abajo
@@ -443,15 +474,73 @@ def listar_pedidos(
     sesion_id: str,
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> list[PedidoGenerado]:
-    """Lista los pedidos generados de la sesión (más recientes primero)"""
+) -> list[PedidoGeneradoResponse]:
+    """Lista los pedidos generados de la sesión (más recientes primero), con
+    quién generó cada uno y quién fue el último en corregir algo de esa
+    tienda al inspeccionar -Marcela (super admin) necesita ver esto de un
+    vistazo, no solo que "ya se hizo"."""
     _obtener_sesion(db, sesion_id, usuario)
-    return (
+    pedidos = (
         db.query(PedidoGenerado)
         .filter(PedidoGenerado.sesion_id == sesion_id)
         .order_by(PedidoGenerado.fecha_generacion.desc())
         .all()
     )
+    if not pedidos:
+        return []
+
+    items = db.query(Item).filter(Item.sesion_id == sesion_id).all()
+    item_ids = [i.id for i in items]
+    inspecciones = (
+        {
+            i.item_id: i
+            for i in db.query(ItemInspeccionBodega)
+            .filter(ItemInspeccionBodega.item_id.in_(item_ids), ItemInspeccionBodega.actualizado_por_id.isnot(None))
+            .all()
+        }
+        if item_ids
+        else {}
+    )
+    # Última persona (por fecha) que corrigió algo de CADA tienda, misma clave
+    # que arma PedidoGenerado.supplier (ver agrupar_items_por_supplier).
+    revisor_id_por_clave: dict[str, str] = {}
+    fecha_por_clave: dict[str, datetime] = {}
+    for item in items:
+        insp = inspecciones.get(item.id)
+        if insp is None or not insp.actualizado_por_id or not insp.actualizado_en:
+            continue
+        clave = f"{item.supplier_nombre or 'Sin_Proveedor'}_{item.supplier_numero or 'SN'}"
+        if clave not in fecha_por_clave or insp.actualizado_en > fecha_por_clave[clave]:
+            fecha_por_clave[clave] = insp.actualizado_en
+            revisor_id_por_clave[clave] = insp.actualizado_por_id
+
+    usuario_ids = {p.generado_por_id for p in pedidos if p.generado_por_id} | set(revisor_id_por_clave.values())
+    usuarios = {u.id: u for u in db.query(User).filter(User.id.in_(usuario_ids)).all()} if usuario_ids else {}
+
+    resultado = []
+    for p in pedidos:
+        generador = usuarios.get(p.generado_por_id) if p.generado_por_id else None
+        revisor_id = revisor_id_por_clave.get(p.supplier)
+        revisor = usuarios.get(revisor_id) if revisor_id else None
+        resultado.append(
+            PedidoGeneradoResponse(
+                id=p.id,
+                sesion_id=p.sesion_id,
+                supplier=p.supplier,
+                archivo_xlsx_url=p.archivo_xlsx_url,
+                archivo_pdf_url=p.archivo_pdf_url,
+                archivo_csv_url=p.archivo_csv_url,
+                archivo_real_xlsx_url=p.archivo_real_xlsx_url,
+                archivo_real_pdf_url=p.archivo_real_pdf_url,
+                archivo_real_csv_url=p.archivo_real_csv_url,
+                revisado_en_bodega_at=p.revisado_en_bodega_at,
+                fecha_generacion=p.fecha_generacion,
+                fecha_tentativa_entrega=p.fecha_tentativa_entrega,
+                generado_por_nombre=generador.nombre if generador else None,
+                revisado_por_nombre=revisor.nombre if revisor else None,
+            )
+        )
+    return resultado
 
 
 @router.patch("/{pedido_generado_id}/fecha-tentativa", response_model=PedidoGeneradoResponse)
@@ -460,7 +549,7 @@ def actualizar_fecha_tentativa(
     datos: FechaTentativaInput,
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> PedidoGenerado:
+) -> PedidoGeneradoResponse:
     """La vendedora carga o corrige la fecha aproximada que dio ESTE
     proveedor (no toda la cotización: cada proveedor tiene la suya). Si
     cambió de verdad, se le avisa al cliente por correo y WhatsApp,
@@ -499,7 +588,7 @@ def actualizar_fecha_tentativa(
                 )
                 db.commit()
 
-    return pedido
+    return _pedido_generado_response(db, pedido)
 
 
 @router.get("/{sesion_id}/descargar-zip")
@@ -570,7 +659,7 @@ async def reemplazar_archivo_pedido_generado(
     archivo: UploadFile,
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> PedidoGenerado:
+) -> PedidoGeneradoResponse:
     """Si el Excel/PDF/CSV que generó el sistema para un proveedor necesita un
     ajuste a mano, la vendedora sube acá la versión corregida y reemplaza la
     que bodega va a ver. No cambia nada de los datos internos del pedido, solo
@@ -624,7 +713,7 @@ async def reemplazar_archivo_pedido_generado(
         )
         db.commit()
 
-    return pedido
+    return _pedido_generado_response(db, pedido)
 
 
 @router.post("/{sesion_id}/enviar-a-bodega")
