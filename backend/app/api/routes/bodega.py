@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, require_roles
+from app.api.routes.pedidos import _sanitizar
 from app.core.archivo_valida import es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
@@ -500,7 +501,12 @@ def _completar_orden(
         supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
     )
 
-    ruta = f"{sesion.id}/{fecha_hoy:%Y%m%d}_{orden.supplier}_Real"
+    # orden.supplier puede traer "código / nombre de la tienda" tal como lo
+    # escribió la vendedora: sin sanear, el "/" hace que Supabase Storage lo
+    # interprete como una carpeta y rechace la ruta ("Invalid key"), lo que
+    # dejaba la orden sin poder marcarse como revisada -en silencio, porque
+    # este guardado automático nunca interrumpe el guardado de la cotización.
+    ruta = f"{sesion.id}/{fecha_hoy:%Y%m%d}_{_sanitizar(orden.supplier)}_Real"
     orden.archivo_real_xlsx_url = subir_excel(excel_bytes, f"{ruta}.xlsx")
     orden.archivo_real_pdf_url = subir_pdf(pdf_bytes, f"{ruta}.pdf")
     orden.archivo_real_csv_url = subir_csv(csv_bytes, f"{ruta}.csv")
