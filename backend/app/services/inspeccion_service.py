@@ -58,6 +58,7 @@ def _item_response(item: Item, insp: ItemInspeccionBodega | None, actualizado_po
         foto_url=item.foto_url,
         foto_final_url=item.foto_final_url,
         supplier_nombre=item.supplier_nombre,
+        supplier_numero=item.supplier_numero,
         **campos,
         referencia_coincide=insp.referencia_coincide if insp else None,
         cajas_extra=(insp.cajas_extra if insp and insp.cajas_extra else []),

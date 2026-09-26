@@ -414,7 +414,9 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 // decir a cuál orden pertenecía cada uno.
                 const itemsDeEstaOrden =
                   previewAbierto && previewInspeccion
-                    ? previewInspeccion.items.filter((it) => it.supplier_nombre === pg.supplier)
+                    ? previewInspeccion.items.filter(
+                        (it) => `${it.supplier_nombre || 'Sin_Proveedor'}_${it.supplier_numero || 'SN'}` === pg.supplier,
+                      )
                     : []
                 return (
               <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>

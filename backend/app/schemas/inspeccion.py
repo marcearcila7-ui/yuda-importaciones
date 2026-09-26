@@ -29,9 +29,12 @@ class InspeccionItemResponse(BaseModel):
     item_id: str
     foto_url: str | None = None
     foto_final_url: str | None = None
-    # Tienda/proveedor de este producto: para agrupar por orden (cada orden
-    # a proveedor es un PedidoGenerado.supplier, el mismo valor).
+    # Tienda/proveedor de este producto: PedidoGenerado.supplier se arma como
+    # f"{supplier_nombre}_{supplier_numero}" (ver agrupar_items_por_supplier),
+    # así que hacen falta los dos para reconstruir esa misma clave y agrupar
+    # los productos bajo la orden a la que pertenecen.
     supplier_nombre: str | None = None
+    supplier_numero: str | None = None
 
     referencia: CampoInspeccion
     codigo: CampoInspeccion
