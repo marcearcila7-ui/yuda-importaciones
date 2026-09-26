@@ -14,6 +14,19 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# OJO: un float único en httpx (ej. timeout=8) NO es un presupuesto total de
+# 8s -aplica ese mismo valor por separado a connect/read/write/pool, así que
+# en el peor caso una sola llamada puede tardar hasta 4x eso antes de fallar.
+# Yuda Contable se llama por su dominio público (no red interna de Railway),
+# así que una conexión lenta ahí se sentía como "a veces da error, a la
+# tercera carga": el portal del cliente (llamada síncrona, en vivo) se
+# quedaba esperando decenas de segundos. Con presupuestos explícitos y
+# cortos, en el peor caso falla rápido y sigue sin este dato (ya está
+# diseñado para degradarse), en vez de dejar colgada la página del cliente.
+_TIMEOUT_RAPIDO = httpx.Timeout(connect=3.0, read=5.0, write=3.0, pool=3.0)
+_TIMEOUT_LISTAR = httpx.Timeout(connect=3.0, read=10.0, write=3.0, pool=3.0)
+_TIMEOUT_PDF = httpx.Timeout(connect=3.0, read=15.0, write=3.0, pool=3.0)
+
 
 def buscar_contacto_por_sigla(sigla: str | None) -> dict | None:
     """{"telefono": ..., "whatsapp": ...} del cliente con esa sigla en Yuda
@@ -30,7 +43,7 @@ def buscar_contacto_por_sigla(sigla: str | None) -> dict | None:
                 "apikey": settings.CONTABLE_SUPABASE_SERVICE_KEY,
                 "Authorization": f"Bearer {settings.CONTABLE_SUPABASE_SERVICE_KEY}",
             },
-            timeout=8,
+            timeout=_TIMEOUT_RAPIDO,
         )
         if resp.status_code != 200:
             return None
@@ -72,7 +85,7 @@ def buscar_clientes_contable(termino: str) -> list[dict] | None:
     if not url or not termino.strip():
         return None
     try:
-        resp = httpx.get(url, params={"q": termino.strip()}, headers=_headers_internos(), timeout=8)
+        resp = httpx.get(url, params={"q": termino.strip()}, headers=_headers_internos(), timeout=_TIMEOUT_RAPIDO)
         if resp.status_code != 200:
             return None
         return resp.json().get("clientes", [])
@@ -89,7 +102,7 @@ def listar_todos_clientes_contable() -> list[dict] | None:
     if not url:
         return None
     try:
-        resp = httpx.get(url, headers=_headers_internos(), timeout=15)
+        resp = httpx.get(url, headers=_headers_internos(), timeout=_TIMEOUT_LISTAR)
         if resp.status_code != 200:
             return None
         return resp.json().get("clientes", [])
@@ -101,18 +114,28 @@ def listar_todos_clientes_contable() -> list[dict] | None:
 def obtener_estado_cuenta_contable(sigla: str) -> dict | None:
     """Estado de cuenta real de Yuda Contable (saldo, pedidos, abonos) para
     el cliente con esa sigla. None si no está configurado, no se encuentra,
-    o falla la conexión."""
+    o falla la conexión.
+
+    Esto lo espera EN VIVO la página del portal del cliente (GET /portal/cuenta),
+    así que una falla transitoria de red hacia el dominio público de Yuda
+    Contable no debe obligar al cliente a recargar la página a mano: se
+    reintenta una vez, sin dejarlo esperando más de lo que ya esperaba con
+    los timeouts cortos de arriba."""
     url = _url_interna("estado-cuenta")
     if not url:
         return None
-    try:
-        resp = httpx.get(url, params={"cliente": sigla}, headers=_headers_internos(), timeout=8)
-        if resp.status_code != 200:
+    for intento in range(2):
+        try:
+            resp = httpx.get(url, params={"cliente": sigla}, headers=_headers_internos(), timeout=_TIMEOUT_RAPIDO)
+            if resp.status_code != 200:
+                return None
+            return resp.json()
+        except Exception:
+            if intento == 0:
+                continue
+            logger.exception("No se pudo traer el estado de cuenta de Yuda Contable (sigla=%s)", sigla)
             return None
-        return resp.json()
-    except Exception:
-        logger.exception("No se pudo traer el estado de cuenta de Yuda Contable (sigla=%s)", sigla)
-        return None
+    return None
 
 
 def obtener_pdf_estado_cuenta_contable(sigla: str) -> bytes | None:
@@ -123,7 +146,7 @@ def obtener_pdf_estado_cuenta_contable(sigla: str) -> bytes | None:
         return None
     try:
         resp = httpx.get(
-            url, params={"cliente": sigla, "formato": "pdf"}, headers=_headers_internos(), timeout=20
+            url, params={"cliente": sigla, "formato": "pdf"}, headers=_headers_internos(), timeout=_TIMEOUT_PDF
         )
         if resp.status_code != 200 or resp.headers.get("content-type") != "application/pdf":
             return None
