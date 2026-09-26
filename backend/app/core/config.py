@@ -60,7 +60,6 @@ class Settings(BaseSettings):
     LUCIDBOT_CF_NUMERO_PEDIDO: str = "yuda_numero_pedido"
     LUCIDBOT_CF_PLAZO: str = "yuda_plazo_aprobacion"
     LUCIDBOT_CF_LINK: str = "yuda_link_portal"
-    LUCIDBOT_CF_NOTA: str = "yuda_nota_bodega"
     LUCIDBOT_CF_FECHA_TENTATIVA: str = "yuda_fecha_tentativa"
     LUCIDBOT_CF_NAVIERA: str = "yuda_naviera"
     LUCIDBOT_CF_TRACKING: str = "yuda_tracking"

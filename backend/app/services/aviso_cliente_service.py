@@ -253,8 +253,11 @@ def avisar_cliente_aprobar_despacho(
 
     `novedades` es la nota que bodega escribió al confirmar (el mismo texto
     que ya ve el cliente en el seguimiento del portal): si la dejó, se incluye
-    en ambos avisos para que el cliente vea de una vez algo puntual (una caja
-    faltante, etc.) sin tener que entrar al portal primero.
+    en el correo, que sí es texto libre. NO se manda por WhatsApp: ese canal
+    solo dispara plantillas ya aprobadas por Meta (fuera de la ventana de 24h
+    desde el último mensaje del cliente, cualquier otra cosa se bloquea), así
+    que no hay forma de garantizar que una nota escrita a mano por bodega o
+    por Marcela le llegue de verdad al cliente por ese canal.
     """
     # Enlace mágico (no el link plano): a esta altura el cliente puede no
     # tener sesión abierta en el portal ni recordar su contraseña, y este es
@@ -282,11 +285,13 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
         _avisar_fallo(db, sesion_id, cliente, numero, "correo", exc)
 
     try:
-        nota_wsp = f"\n\nNota de bodega: {nota}" if nota else ""
+        # Sin la nota: por WhatsApp solo va contenido fijo (plantilla aprobada,
+        # o este mismo texto en el modo de respaldo dentro de la ventana de
+        # 24h) -nunca algo que alguien escribió a mano en el momento.
         texto_libre = (
             f"Hola {cliente.nombre}, bodega recibió e inspeccionó tu pedido {numero} y "
             f"está listo para despacharse. Ya puedes ver en tu portal las fotos que tomamos "
-            f"al revisarlo.{nota_wsp}\n\nTienes hasta {plazo_legible} para "
+            f"al revisarlo.\n\nTienes hasta {plazo_legible} para "
             f"aprobar el despacho: {link}\nSi no respondes antes de ese plazo, el despacho "
             "continúa de todas formas."
         )
@@ -297,7 +302,6 @@ Si no respondes antes de ese plazo, el despacho continúa de todas formas.</p>
                 settings.LUCIDBOT_CF_NUMERO_PEDIDO: numero,
                 settings.LUCIDBOT_CF_PLAZO: plazo_legible,
                 settings.LUCIDBOT_CF_LINK: link,
-                settings.LUCIDBOT_CF_NOTA: nota,
             },
             texto_libre=texto_libre,
         )
