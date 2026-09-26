@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Crop, Plus } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { guardarRecorte, guardarRecorteFotoExtra, reemplazarFotoExtra, reemplazarFotoItem } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
+import { enfocarNumero } from '../../lib/dom'
 import type { ItemResponse } from '../../types/packing'
 
 interface PackingListTableProps {
@@ -144,6 +145,7 @@ function CeldaEditable({
         type={esTexto ? 'text' : 'number'}
         value={valor}
         onChange={(e) => setValor(e.target.value)}
+        onFocus={esTexto ? undefined : enfocarNumero}
         onBlur={guardar}
         onKeyDown={(e) => {
           if (e.key === 'Enter') guardar()
@@ -336,6 +338,7 @@ function CampoMovil({
         type={tipo === 'text' ? 'text' : 'number'}
         value={valor}
         onChange={(e) => setValor(e.target.value)}
+        onFocus={tipo === 'text' ? undefined : enfocarNumero}
         onBlur={guardar}
         style={{ ...inputStyle, opacity: guardando ? 0.5 : 1 }}
         className="rounded-lg border border-gray-200 px-2 py-2 text-sm focus:border-[var(--yuda-primary)] focus:outline-none"
