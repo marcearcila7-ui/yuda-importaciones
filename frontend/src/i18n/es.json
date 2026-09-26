@@ -1220,6 +1220,8 @@
     "cbmActual": "{{cbm}} m³ calculados (contenedor: {{min}}-{{max}} m³)",
     "hiloTitulo": "Reportes y conversación",
     "colapsar": "Ocultar la conversación",
+    "sonidoEncender": "Activar sonido de mensajes nuevos",
+    "sonidoApagar": "Silenciar mensajes nuevos",
     "expandir": "Mostrar la conversación",
     "chatCon": "Chat con {{nombre}}",
     "chatSinAsignar": "Todavía nadie de bodega ha tomado este pedido.",

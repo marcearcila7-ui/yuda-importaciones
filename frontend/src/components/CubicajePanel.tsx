@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { AlertTriangle, Box, CheckCircle2, ChevronDown, ChevronUp, FileText, Paperclip, PackageCheck, Send, X } from 'lucide-react'
-import { getCubicaje, responderCubicaje, subirAdjuntoCubicaje } from '../api/cubicaje'
+import { AlertTriangle, Box, CheckCircle2, ChevronDown, ChevronUp, FileText, Paperclip, PackageCheck, Send, Volume2, VolumeX, X } from 'lucide-react'
+import { getCubicaje, marcarCubicajeVisto, responderCubicaje, subirAdjuntoCubicaje } from '../api/cubicaje'
 import type { CubicajeAdjunto, CubicajeDetalle, CubicajeMensaje } from '../types/cubicaje'
+import { guardarSonidoActivado, reproducirSonidoNotificacion, sonidoActivado } from '../lib/sonidoNotificacion'
+import { useAuthStore } from '../store/authStore'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
 
@@ -48,6 +50,7 @@ function AdjuntoMensaje({ adjunto, claro }: { adjunto: CubicajeAdjunto; claro: b
 // polling rápido para que un reporte nuevo llegue casi al instante.
 function CubicajePanel({ sesionId }: { sesionId: string }) {
   const { t, i18n } = useTranslation()
+  const usuario = useAuthStore((s) => s.usuario)
   const [detalle, setDetalle] = useState<CubicajeDetalle | null>(null)
   const [respuesta, setRespuesta] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -57,6 +60,16 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
   // Con las fotos de evidencia, el hilo puede ocupar mucho espacio: se puede
   // replegar sin perder el control de cubicaje de arriba, que sigue visible.
   const [colapsado, setColapsado] = useState(false)
+  const [sonidoOn, setSonidoOn] = useState(sonidoActivado)
+  // Alto fijo con scroll propio: antes, al crecer la conversación, para ver
+  // lo último había que desplazar TODA la página -acá se desplaza solo el
+  // chat, como cualquier app de mensajería.
+  const listaMensajesRef = useRef<HTMLDivElement>(null)
+  // Cuántos mensajes había la última vez que se revisó, para (a) saber si
+  // hay que sonar por uno nuevo que no sea mío y (b) no sonar en la primera
+  // carga de la pantalla (ahí no hay nada "nuevo", es solo el historial).
+  const ultimoIdVistoRef = useRef<string | null>(null)
+  const primeraCargaRef = useRef(true)
 
   const cargar = useCallback(() => {
     getCubicaje(sesionId).then(setDetalle).catch(() => {})
@@ -64,9 +77,19 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
 
   useEffect(() => {
     cargar()
-    const id = setInterval(cargar, 8000)
+    const id = setInterval(() => {
+      cargar()
+      // Heartbeat de "lo estoy viendo": solo si la pestaña está realmente
+      // visible, para que sí llegue el push cuando el chat quedó abierto de
+      // fondo sin que nadie lo esté mirando.
+      if (document.visibilityState === 'visible') marcarCubicajeVisto(sesionId).catch(() => {})
+    }, 8000)
+    if (document.visibilityState === 'visible') marcarCubicajeVisto(sesionId).catch(() => {})
     const onVisible = () => {
-      if (document.visibilityState === 'visible') cargar()
+      if (document.visibilityState === 'visible') {
+        cargar()
+        marcarCubicajeVisto(sesionId).catch(() => {})
+      }
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)
@@ -75,7 +98,31 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', onVisible)
     }
-  }, [cargar])
+  }, [cargar, sesionId])
+
+  // Autoscroll al último mensaje + sonido cuando llega uno nuevo que no es
+  // mío (si yo lo mandé, ya sé que está ahí, no hace falta avisarme).
+  useEffect(() => {
+    if (!detalle) return
+    const mensajes = detalle.mensajes
+    if (mensajes.length === 0) return
+    const ultimo = mensajes[mensajes.length - 1]
+    const esNuevo = ultimo.id !== ultimoIdVistoRef.current
+    if (esNuevo && !primeraCargaRef.current && ultimo.autor_id !== usuario?.id && sonidoOn) {
+      reproducirSonidoNotificacion()
+    }
+    ultimoIdVistoRef.current = ultimo.id
+    primeraCargaRef.current = false
+    const contenedor = listaMensajesRef.current
+    if (contenedor) contenedor.scrollTop = contenedor.scrollHeight
+  }, [detalle, usuario?.id, sonidoOn])
+
+  const alternarSonido = () => {
+    setSonidoOn((v) => {
+      guardarSonidoActivado(!v)
+      return !v
+    })
+  }
 
   const enviarRespuesta = async () => {
     const texto = respuesta.trim()
@@ -176,21 +223,33 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
       </div>
 
       <div className="card">
-        <button
-          type="button"
-          onClick={() => setColapsado((v) => !v)}
-          className="mb-1 flex w-full items-center justify-between gap-2 text-left"
-          aria-label={colapsado ? t('cubicaje.expandir') : t('cubicaje.colapsar')}
-        >
-          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
-            {t('cubicaje.hiloTitulo')}
-          </h2>
-          {colapsado ? (
-            <ChevronDown size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
-          ) : (
-            <ChevronUp size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
-          )}
-        </button>
+        <div className="mb-1 flex w-full items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setColapsado((v) => !v)}
+            className="flex flex-1 items-center gap-2 text-left"
+            aria-label={colapsado ? t('cubicaje.expandir') : t('cubicaje.colapsar')}
+          >
+            <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+              {t('cubicaje.hiloTitulo')}
+            </h2>
+            {colapsado ? (
+              <ChevronDown size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
+            ) : (
+              <ChevronUp size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={alternarSonido}
+            aria-label={sonidoOn ? t('cubicaje.sonidoApagar') : t('cubicaje.sonidoEncender')}
+            title={sonidoOn ? t('cubicaje.sonidoApagar') : t('cubicaje.sonidoEncender')}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full"
+            style={{ color: sonidoOn ? 'var(--yuda-primary)' : 'var(--yuda-text-secondary)' }}
+          >
+            {sonidoOn ? <Volume2 size={17} /> : <VolumeX size={17} />}
+          </button>
+        </div>
         {/* Con quién es la conversación: antes no se sabía si el pedido ya
             tenía a alguien de bodega trabajándolo o seguía sin asignar. */}
         <p className="mb-3 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -206,7 +265,7 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
         {detalle.mensajes.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{t('cubicaje.sinMensajes')}</p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div ref={listaMensajesRef} className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 420 }}>
             {detalle.mensajes.map((m) => {
               const info = detalleMensaje(m)
               const esRespuesta = m.tipo === 'respuesta'

@@ -61,3 +61,19 @@ class CubicajeMensaje(Base):
     # genera el sistema). [{ "url": ..., "nombre": ..., "tipo": "imagen" |
     # "video" | "pdf" | "excel" | "csv" }]
     adjuntos: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+
+class CubicajeVisto(Base):
+    """Última vez que un usuario tuvo el chat de cubicaje de una sesión
+    abierto y en foco (heartbeat del frontend, ver POST .../cubicaje/visto).
+    Sirve solo para no mandarle push a alguien que ya está viendo la
+    conversación en vivo -la notificación en la campanita se crea igual,
+    esto no reemplaza eso."""
+
+    __tablename__ = "cubicaje_vistos"
+
+    sesion_id: Mapped[str] = mapped_column(String, ForeignKey("sesiones.id"), primary_key=True)
+    usuario_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), primary_key=True)
+    visto_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

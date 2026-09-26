@@ -19,6 +19,13 @@ export async function responderCubicaje(
   await apiClient.post(`/sesiones/${sesionId}/cubicaje/responder`, { mensaje, adjuntos })
 }
 
+// Heartbeat: mientras alguien tiene este chat abierto y en foco, esto se
+// llama cada pocos segundos (ver useEfecto de "visto" en CubicajePanel) para
+// que el backend no le mande push por algo que ya está viendo en vivo.
+export async function marcarCubicajeVisto(sesionId: string): Promise<void> {
+  await apiClient.post(`/sesiones/${sesionId}/cubicaje/visto`)
+}
+
 // Sube una foto, video o archivo para adjuntarlo a un mensaje del hilo de
 // cubicaje. Devuelve {url, nombre, tipo}: el mensaje se manda aparte, con
 // esto ya incluido en su lista de adjuntos.

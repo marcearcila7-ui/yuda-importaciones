@@ -1,6 +1,6 @@
 import asyncio
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
@@ -10,7 +10,7 @@ from app.api.routes.bodega import _ItemInspeccionado, _items_inspeccionados
 from app.core.archivo_valida import detectar_tipo_documento, es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
-from app.models.cubicaje import TIPO_NOTA, TIPO_REPORTE, TIPO_RESPUESTA, CubicajeMensaje
+from app.models.cubicaje import TIPO_NOTA, TIPO_REPORTE, TIPO_RESPUESTA, CubicajeMensaje, CubicajeVisto
 from app.models.seguimiento import SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.user import User
@@ -322,6 +322,29 @@ def obtener_cubicaje(
         vendedora_nombre=vendedora.nombre if vendedora else None,
         bodega_asignado_a_nombre=asignado.nombre if asignado else None,
     )
+
+
+@router.post("/sesiones/{sesion_id}/cubicaje/visto", status_code=status.HTTP_204_NO_CONTENT)
+def marcar_cubicaje_visto(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
+    db: Session = Depends(get_db),
+) -> None:
+    """Heartbeat del frontend: mientras alguien tiene este chat abierto Y en
+    foco (ver useCubicajeVisto), esto se llama cada pocos segundos. Sirve
+    solo para que no se le mande push a quien ya está viendo la conversación
+    en vivo -la notificación en la campanita se crea siempre, sin importar
+    esto."""
+    visto = (
+        db.query(CubicajeVisto)
+        .filter(CubicajeVisto.sesion_id == sesion_id, CubicajeVisto.usuario_id == usuario.id)
+        .first()
+    )
+    if visto is None:
+        db.add(CubicajeVisto(sesion_id=sesion_id, usuario_id=usuario.id))
+    else:
+        visto.visto_en = datetime.now(timezone.utc)
+    db.commit()
 
 
 @router.post("/bodega/pedidos/{sesion_id}/cubicaje/reporte", response_model=CubicajeMensajeResponse)

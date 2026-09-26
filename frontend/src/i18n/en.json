@@ -1220,6 +1220,8 @@
     "cbmActual": "{{cbm}} m³ calculated (container: {{min}}-{{max}} m³)",
     "hiloTitulo": "Reports and conversation",
     "colapsar": "Hide the conversation",
+    "sonidoEncender": "Turn on new message sound",
+    "sonidoApagar": "Mute new messages",
     "expandir": "Show the conversation",
     "chatCon": "Chat with {{nombre}}",
     "chatSinAsignar": "No one in the warehouse has taken this order yet.",

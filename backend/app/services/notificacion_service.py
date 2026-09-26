@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 
+from app.models.cubicaje import CubicajeVisto
 from app.models.notificacion import (
     TIPO_AVISO_CLIENTE_FALLIDO,
     TIPO_CUBICAJE_BODEGA,
@@ -26,11 +29,17 @@ def _crear(
     titulo: str,
     mensaje: str,
     ref_id: str | None = None,
+    push: bool = True,
 ) -> None:
     """Crea el aviso en la campanita y, de paso, intenta mandarlo como
     notificación push al navegador (si el usuario está suscrito). El push es
     mejor esfuerzo: si falla o no hay suscripción, el aviso en la campanita
-    queda de todas formas."""
+    queda de todas formas.
+
+    push=False cuando ya se sabe que el destinatario está viendo esto en
+    vivo en pantalla (ver _esta_viendo_cubicaje): la campanita igual se
+    crea, pero no tiene sentido mandarle un push por algo que ya está
+    mirando."""
     db.add(
         Notificacion(
             usuario_id=usuario_id,
@@ -41,7 +50,28 @@ def _crear(
             mensaje=mensaje,
         )
     )
-    enviar_push(db, usuario_id, titulo, mensaje, sesion_id)
+    if push:
+        enviar_push(db, usuario_id, titulo, mensaje, sesion_id)
+
+
+# Cada cuánto manda el heartbeat el frontend (ver POST .../cubicaje/visto):
+# con margen sobre eso, para no tratar como "se fue" a alguien cuyo heartbeat
+# solo se demoró un poco en llegar.
+_VISTO_VIGENCIA = timedelta(seconds=20)
+
+
+def _esta_viendo_cubicaje(db: Session, usuario_id: str, sesion_id: str) -> bool:
+    """True si este usuario tiene el chat de cubicaje de esta sesión abierto
+    y en foco ahora mismo (heartbeat reciente)."""
+    visto = (
+        db.query(CubicajeVisto)
+        .filter(CubicajeVisto.sesion_id == sesion_id, CubicajeVisto.usuario_id == usuario_id)
+        .first()
+    )
+    if visto is None:
+        return False
+    visto_en = visto.visto_en if visto.visto_en.tzinfo else visto.visto_en.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - visto_en < _VISTO_VIGENCIA
 
 
 def avisar_fallo_aviso_cliente(
@@ -212,6 +242,7 @@ def avisar_cubicaje_a_vendedora(
             TIPO_CUBICAJE_BODEGA,
             "Reporte de cubicaje",
             f"Bodega actualizó el cubicaje de {cliente} (cotización {numero}): {resumen}",
+            push=not _esta_viendo_cubicaje(db, usuario_id, sesion_id),
         )
 
 
@@ -245,6 +276,7 @@ def avisar_cubicaje_a_bodega(
             TIPO_CUBICAJE_VENDEDORA,
             "Respuesta de la vendedora en cubicaje",
             f"{cliente} (cotización {numero}): {mensaje}",
+            push=not _esta_viendo_cubicaje(db, usuario_id, sesion_id),
         )
 
 
