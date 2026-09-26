@@ -70,6 +70,17 @@ h1, h2, h3, h4 {
   background: transparent;
 }
 
+/* Casillas numéricas libres, sin las flechitas de subir/bajar del navegador:
+   con teclado numérico en el celular no sirven de nada y solo estorban. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 @layer components {
   .card {
     background-color: var(--yuda-card);

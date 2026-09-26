@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Camera, Sparkles } from 'lucide-react'
 import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
+import { enfocarNumero } from '../../lib/dom'
 import { CAMPOS_OBLIGATORIOS, evaluarLegibilidad } from '../../lib/legibilidad'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
@@ -268,6 +269,7 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   type="number"
                   value={(form[clave] as number | null) ?? ''}
                   onChange={(e) => actualizarNumero(clave, e.target.value)}
+                  onFocus={enfocarNumero}
                   style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />

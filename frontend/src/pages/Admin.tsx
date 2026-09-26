@@ -14,6 +14,7 @@ import {
   resetPassword,
 } from '../api/admin'
 import { confirmar } from '../store/confirmStore'
+import { enfocarNumero } from '../lib/dom'
 import type { ConfiguracionResponse, UsuarioAdmin } from '../types/admin'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -345,6 +346,7 @@ function Admin() {
                 step="0.01"
                 value={nuevoTC}
                 onChange={(e) => setNuevoTC(e.target.value)}
+                onFocus={enfocarNumero}
                 style={inputStyle}
                 className={`w-40 ${inputClase}`}
               />

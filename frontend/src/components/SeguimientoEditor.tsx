@@ -20,6 +20,7 @@ import {
   subirAdjuntoSeguimiento,
   subirBlPdf,
 } from '../api/clientes'
+import { enfocarNumero } from '../lib/dom'
 import { useAuthStore } from '../store/authStore'
 import { ADJUNTO_ACCEPT, ESTADOS_ENVIO, ESTADOS_VENDEDORA, NAVIERAS } from '../types/seguimiento'
 import type { Adjunto, Hito, Seguimiento } from '../types/seguimiento'
@@ -509,6 +510,7 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
                 inputMode="decimal"
                 value={monto}
                 onChange={(e) => setMonto(e.target.value)}
+                onFocus={enfocarNumero}
                 placeholder="0.00"
                 style={inputStyle}
                 className={inputClase}

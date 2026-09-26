@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { AlertTriangle, Coins, Pencil, Plus, Store, Trash2, Wallet } from 'lucide-react'
 import MetricCard from '../components/MetricCard'
+import { enfocarNumero } from '../lib/dom'
 import { confirmar } from '../store/confirmStore'
 import {
   actualizarPedidoTienda,
@@ -360,7 +361,14 @@ function Campo({ label, value, onChange, type = 'text', hint }: {
   return (
     <label className="flex flex-col gap-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
       {label}
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="rounded-lg border px-2 py-1.5 text-sm" style={{ borderColor: 'var(--yuda-border)' }} />
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={type === 'number' ? enfocarNumero : undefined}
+        className="rounded-lg border px-2 py-1.5 text-sm"
+        style={{ borderColor: 'var(--yuda-border)' }}
+      />
       {hint ? <span style={{ fontSize: 10 }}>{hint}</span> : null}
     </label>
   )

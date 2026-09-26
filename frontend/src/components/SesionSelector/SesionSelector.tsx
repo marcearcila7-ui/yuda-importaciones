@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Check, FileText, Package, ShoppingBag, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useAuthStore } from '../../store/authStore'
+import { enfocarNumero } from '../../lib/dom'
 import { getClientes } from '../../api/clientes'
 import { getConfiguracion } from '../../api/admin'
 import SelectorCliente from '../SelectorCliente/SelectorCliente'
@@ -304,6 +305,7 @@ function SesionSelector() {
                 step="0.01"
                 value={tipoCambio}
                 onChange={(e) => setTipoCambio(e.target.value)}
+                onFocus={enfocarNumero}
                 style={inputStyle}
                 className={`${inputClase} min-h-[48px] w-full`}
               />

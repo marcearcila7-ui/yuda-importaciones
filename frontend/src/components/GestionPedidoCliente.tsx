@@ -5,6 +5,7 @@ import axios from 'axios'
 import { CheckCircle2, Clock, FileSpreadsheet, FileText, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
+import { enfocarNumero } from '../lib/dom'
 import { confirmar } from '../store/confirmStore'
 import {
   actualizarFechaTentativa,
@@ -248,6 +249,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                       inputMode="numeric"
                       value={cantidades[it.id] ?? ''}
                       onChange={(e) => setCantidades((c) => ({ ...c, [it.id]: e.target.value }))}
+                      onFocus={enfocarNumero}
                       className="w-20 rounded-lg border border-gray-200 px-2 py-1 text-right focus:border-[var(--yuda-primary)] focus:outline-none"
                       style={{ fontSize: 16 }}
                     />

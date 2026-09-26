@@ -32,6 +32,7 @@ import {
   getCotizacionDetalle,
 } from '../../api/portal'
 import { confirmar as pedirConfirmacion } from '../../store/confirmStore'
+import { enfocarNumero } from '../../lib/dom'
 import type { CotizacionDetalle, PortalItem } from '../../types/portal'
 
 const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' }
@@ -582,6 +583,7 @@ function PortalDetalle() {
                           inputMode="numeric"
                           value={cantidades[item.item_id] ?? ''}
                           onChange={(e) => setCantidades((c) => ({ ...c, [item.item_id]: e.target.value }))}
+                          onFocus={enfocarNumero}
                           disabled={bloqueado}
                           className="min-h-[44px] w-24 rounded-lg border border-gray-200 px-3 py-2 focus:border-[var(--yuda-primary)] focus:outline-none disabled:bg-gray-100 disabled:text-gray-500"
                           style={{ fontSize: 16 }}
