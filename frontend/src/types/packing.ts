@@ -86,4 +86,9 @@ export interface Sesion {
   // Etapa real del envío (ESTADOS_ENVIO backend), null si aún no tiene
   // seguimiento (todavía no llegó a "cotización enviada").
   estado_envio?: string | null
+  // Con estado_envio === 'en_bodega' a secas no se distingue "bodega la está
+  // revisando" de "bodega ya se la envió al cliente a aprobar": estos dos
+  // campos son los que permiten esa distinción.
+  cliente_aprobo_despacho_at?: string | null
+  aprobacion_limite_at?: string | null
 }

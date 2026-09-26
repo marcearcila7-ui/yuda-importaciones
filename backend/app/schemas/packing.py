@@ -165,6 +165,11 @@ class SesionResponse(BaseModel):
     # Etapa real del envío (ESTADOS_ENVIO), para que la vendedora pueda
     # clasificar sus cotizaciones sin adivinar por otros campos sueltos.
     estado_envio: str | None = None
+    # Con estado_envio == "en_bodega" a secas no se distinguía "bodega la está
+    # revisando" de "bodega ya se la envió al cliente para que apruebe": estos
+    # dos campos son los que permiten esa distinción en la vendedora.
+    cliente_aprobo_despacho_at: datetime | None = None
+    aprobacion_limite_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

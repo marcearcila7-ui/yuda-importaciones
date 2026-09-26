@@ -37,7 +37,14 @@ const numeroCot = (s: Sesion) =>
 // un vistazo qué le falta a cada una en vez de leer 3 campos sueltos
 // (enviada_cliente, pedido_estado, estado_envio) y adivinar qué significan
 // juntos.
-type EtapaCot = 'borrador' | 'con_cliente' | 'listas_bodega' | 'en_bodega' | 'en_camino' | 'entregadas'
+type EtapaCot =
+  | 'borrador'
+  | 'con_cliente'
+  | 'listas_bodega'
+  | 'en_bodega'
+  | 'pendiente_aprobacion_cliente'
+  | 'en_camino'
+  | 'entregadas'
 
 // "proveedor_recibio"/"en_bodega" NO están en camino todavía: la mercancía
 // sigue en China, con el proveedor o en la bodega de YUDA siendo revisada.
@@ -49,6 +56,11 @@ function etapaDeCotizacion(s: Sesion): EtapaCot {
   if (!s.enviada_cliente) return 'borrador'
   if (s.estado_envio === 'entregado') return 'entregadas'
   if (s.estado_envio && ETAPAS_EN_CAMINO.includes(s.estado_envio)) return 'en_camino'
+  // "en_bodega" ya no es un solo estado: bodega lo pone al mismo tiempo que
+  // le envía la revisión al cliente para que apruebe el despacho. Mientras
+  // no haya aprobado (ni se haya vencido el plazo), es una etapa aparte y
+  // accionable, no la misma "en bodega / revisión" genérica de siempre.
+  if (s.estado_envio === 'en_bodega' && !s.cliente_aprobo_despacho_at) return 'pendiente_aprobacion_cliente'
   if (s.estado_envio && ETAPAS_EN_BODEGA.includes(s.estado_envio)) return 'en_bodega'
   if (s.pedido_estado === 'confirmado') return 'listas_bodega'
   return 'con_cliente'
@@ -56,7 +68,15 @@ function etapaDeCotizacion(s: Sesion): EtapaCot {
 
 // Orden real del pipeline, para poder dibujarlo como una secuencia (no solo
 // una etiqueta suelta) y para saber qué etapas ya se "pasaron".
-const ETAPAS_ORDEN: EtapaCot[] = ['borrador', 'con_cliente', 'listas_bodega', 'en_bodega', 'en_camino', 'entregadas']
+const ETAPAS_ORDEN: EtapaCot[] = [
+  'borrador',
+  'con_cliente',
+  'listas_bodega',
+  'en_bodega',
+  'pendiente_aprobacion_cliente',
+  'en_camino',
+  'entregadas',
+]
 
 // Un color propio por etapa -antes "con_cliente", "en_camino" y "entregadas"
 // compartían el mismo verde, y no se distinguían de un vistazo.
@@ -65,6 +85,7 @@ const COLOR_ETAPA: Record<EtapaCot, { bg: string; fg: string }> = {
   con_cliente: { bg: 'var(--yuda-primary-soft)', fg: 'var(--yuda-primary)' },
   listas_bodega: { bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)' },
   en_bodega: { bg: 'var(--yuda-primary)', fg: 'var(--yuda-white)' },
+  pendiente_aprobacion_cliente: { bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)' },
   en_camino: { bg: 'var(--yuda-primary-dark)', fg: 'var(--yuda-white)' },
   entregadas: { bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success)' },
 }
@@ -1048,7 +1069,18 @@ ${t('clientes.email')}: ${c.email}`
               {/* Por etapa: de un vistazo, sin abrir cada una para saber qué
                   le falta. El número en cada chip es cuántas hay ahí. */}
               <div className="flex flex-wrap gap-2">
-                {(['todas', 'borrador', 'con_cliente', 'listas_bodega', 'en_bodega', 'en_camino', 'entregadas'] as const).map((et) => {
+                {(
+                  [
+                    'todas',
+                    'borrador',
+                    'con_cliente',
+                    'listas_bodega',
+                    'en_bodega',
+                    'pendiente_aprobacion_cliente',
+                    'en_camino',
+                    'entregadas',
+                  ] as const
+                ).map((et) => {
                   const cuantas = et === 'todas' ? cots.length : cots.filter((s) => etapaDeCotizacion(s) === et).length
                   if (et !== 'todas' && cuantas === 0) return null
                   const activo = subTabCot === et
@@ -1101,6 +1133,13 @@ ${t('clientes.email')}: ${c.email}`
                               </span>
                             </p>
                             <p className="text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>{s.fecha}</p>
+                            {etapa === 'pendiente_aprobacion_cliente' && s.aprobacion_limite_at && (
+                              <p className="text-xs font-medium" style={{ color: 'var(--yuda-warning-dark)' }}>
+                                {t('clientes.plazoAprobacionHasta', {
+                                  fecha: new Date(s.aprobacion_limite_at).toLocaleString(),
+                                })}
+                              </p>
+                            )}
                           </div>
                           <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
                         </button>

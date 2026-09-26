@@ -286,16 +286,22 @@ def cotizaciones_del_cliente(
         .all()
     )
     sesion_ids = [s.id for s in sesiones]
-    estados = (
+    seguimientos = (
         {
-            seg.sesion_id: seg.estado
+            seg.sesion_id: seg
             for seg in db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id.in_(sesion_ids)).all()
         }
         if sesion_ids
         else {}
     )
     return [
-        SesionResponse.model_validate(s).model_copy(update={"estado_envio": estados.get(s.id)})
+        SesionResponse.model_validate(s).model_copy(
+            update={
+                "estado_envio": seguimientos[s.id].estado if s.id in seguimientos else None,
+                "cliente_aprobo_despacho_at": seguimientos[s.id].cliente_aprobo_despacho_at if s.id in seguimientos else None,
+                "aprobacion_limite_at": seguimientos[s.id].aprobacion_limite_at if s.id in seguimientos else None,
+            }
+        )
         for s in sesiones
     ]
 

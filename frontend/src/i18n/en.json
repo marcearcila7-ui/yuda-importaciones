@@ -730,9 +730,11 @@
       "con_cliente": "Sent to client",
       "listas_bodega": "Ready for warehouse",
       "en_bodega": "Sent to warehouse / review",
+      "pendiente_aprobacion_cliente": "Pending client approval",
       "en_camino": "On the way",
       "entregadas": "Delivered"
     },
+    "plazoAprobacionHasta": "The client has until {{fecha}} to approve",
     "verHistorialEnvio": "View shipping history and manual editing",
     "pendientesTitulo": "Imported from Yuda Contable, unassigned ({{n}})",
     "pendientesAyuda": "These came in bulk from the Yuda Contable import. Assign a sales rep to move them into the real client list.",

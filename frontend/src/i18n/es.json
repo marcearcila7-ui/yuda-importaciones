@@ -730,9 +730,11 @@
       "con_cliente": "Enviadas al cliente",
       "listas_bodega": "Listas para bodega",
       "en_bodega": "Enviado a bodega / revisión",
+      "pendiente_aprobacion_cliente": "Pendiente de aprobación del cliente",
       "en_camino": "En camino",
       "entregadas": "Entregadas"
     },
+    "plazoAprobacionHasta": "El cliente tiene hasta {{fecha}} para aprobar",
     "verHistorialEnvio": "Ver historial y edición manual del envío",
     "pendientesTitulo": "Importados de Yuda Contable sin asignar ({{n}})",
     "pendientesAyuda": "Entraron en bloque al importar el listado de Yuda Contable. Asígnales una vendedora para que pasen a la lista de clientes de verdad.",
