@@ -1142,7 +1142,14 @@ def actualizar_seguimiento(
 
     # Campos que cualquiera del equipo autorizado puede actualizar
     seg.estado = datos.estado
-    seg.novedades = datos.novedades
+    # `novedades` es lo que la vendedora/Marcela escribe a mano en su propio
+    # editor de Seguimiento. El mensaje que bodega deja al marcar "en_bodega"
+    # va en `nota_bodega_aprobacion`, aparte: antes compartían la misma
+    # columna y bodega pisaba sin avisar lo que la vendedora veía ahí.
+    if es_bodega:
+        seg.nota_bodega_aprobacion = datos.nota_bodega_aprobacion
+    else:
+        seg.novedades = datos.novedades
     if datos.hitos is not None:
         # Sella cada hito con fecha+hora la primera vez y conserva el sello original
         # después: el historial de etapas (con sus archivos) se preserva SIEMPRE.
@@ -1249,7 +1256,7 @@ def actualizar_seguimiento(
     if nuevo_en_bodega and sesion.cliente_id and seg.aprobacion_limite_at is not None:
         cliente_a_avisar = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
     plazo_a_avisar = seg.aprobacion_limite_at
-    novedades_a_avisar = seg.novedades
+    novedades_a_avisar = seg.nota_bodega_aprobacion
 
     cliente_proveedor = None
     if nuevo_proveedor_recibio and sesion.cliente_id:

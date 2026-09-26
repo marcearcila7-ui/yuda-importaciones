@@ -37,6 +37,9 @@ class SeguimientoUpdate(BaseModel):
     # Bodega lo manda al marcar "en_bodega": horas que tiene el cliente para
     # aprobar el despacho antes de que se envíe de todas formas.
     horas_para_aprobar: int | None = None
+    # Mensaje que bodega le deja al cliente en ese mismo momento. Aparte de
+    # `novedades` a propósito: no debe pisar lo que la vendedora escriba ahí.
+    nota_bodega_aprobacion: str | None = None
 
     @field_validator("estado")
     @classmethod
@@ -61,6 +64,7 @@ class SeguimientoResponse(BaseModel):
 
     estado: str
     novedades: str | None = None
+    nota_bodega_aprobacion: str | None = None
     numero_tracking: str | None = None
     naviera: str | None = None
     url_tracking: str | None = None

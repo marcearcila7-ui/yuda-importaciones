@@ -51,7 +51,17 @@ class SeguimientoPedido(Base):
         String, ForeignKey("sesiones.id"), unique=True, nullable=False
     )
     estado: Mapped[str] = mapped_column(String, default=ESTADO_INICIAL, nullable=False)
+    # Mensaje que la vendedora/Marcela le deja al cliente manualmente en el
+    # editor de Seguimiento (cualquier etapa). Campo aparte de
+    # nota_bodega_aprobacion: antes compartían la misma columna y bodega, al
+    # marcar "en_bodega", pisaba sin querer lo que Marcela veía acá -parecía
+    # que había aparecido de la nada un texto que nadie del equipo interno
+    # reconocía haber escrito.
     novedades: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Mensaje que BODEGA le deja al cliente específicamente al marcar
+    # "en_bodega" (enviar a aprobación del despacho): se le muestra en su
+    # portal y va por correo en ese momento. Independiente de `novedades`.
+    nota_bodega_aprobacion: Mapped[str | None] = mapped_column(Text, nullable=True)
     numero_tracking: Mapped[str | None] = mapped_column(String, nullable=True)
     naviera: Mapped[str | None] = mapped_column(String, nullable=True)
     url_tracking: Mapped[str | None] = mapped_column(String, nullable=True)
