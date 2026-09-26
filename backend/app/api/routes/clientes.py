@@ -120,12 +120,11 @@ def _slug_email(nombre: str, dominio: str, ocupados: set[str]) -> str:
 def _cliente_response(
     cliente: Cliente, usuario: User, roles_por_usuario: dict[str, str] | None = None
 ) -> ClienteResponse:
-    """Convierte el cliente a su forma pública, ocultando la sigla de Yuda
-    Contable si quien pregunta no es admin/contadora: es un dato interno de
-    Marcela para conciliar cuentas, no algo que una vendedora necesite ver."""
+    """Convierte el cliente a su forma pública. La sigla NO se oculta: es solo
+    el código con el que se marcan las cajas (nada financiero), y la
+    vendedora/bodega también lo necesitan para saber cómo llega marcada la
+    caja del cliente."""
     resp = ClienteResponse.model_validate(cliente)
-    if usuario.rol.value not in ("admin", "contadora"):
-        resp.sigla = None
     rol_dueno = (roles_por_usuario or {}).get(cliente.vendedora_id)
     resp.pendiente_asignacion = cliente.origen == ORIGEN_IMPORTADO_CONTABLE and rol_dueno == "admin"
     return resp
