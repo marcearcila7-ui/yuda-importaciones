@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { GenerarPedidosResponse, PedidoBodegaSeguimiento, PedidoGenerado } from '../types/pedidos'
+import type { InspeccionSesion } from '../types/inspeccion'
 
 // Adjunta el token de localStorage en cada request
 apiClient.interceptors.request.use((config) => {
@@ -128,4 +129,12 @@ export async function exportarInspeccionPdf(sesionId: string): Promise<Blob> {
     responseType: 'blob',
   })
   return data as Blob
+}
+
+// Lo mismo que arriba pero en JSON, para verlo en pantalla sin depender de
+// descargar el archivo. Mismo endpoint que usa bodega para inspeccionar
+// (de solo lectura para la vendedora/Marcela).
+export async function getCotizacionInspeccion(sesionId: string): Promise<InspeccionSesion> {
+  const { data } = await apiClient.get<InspeccionSesion>(`/bodega/pedidos/${sesionId}/cotizacion`)
+  return data
 }

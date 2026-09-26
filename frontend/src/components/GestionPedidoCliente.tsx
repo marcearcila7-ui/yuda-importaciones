@@ -2,7 +2,7 @@ import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { CheckCircle2, Clock, FileSpreadsheet, FileText, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Clock, Eye, FileSpreadsheet, FileText, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
 import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
 import { enfocarNumero } from '../lib/dom'
@@ -12,6 +12,7 @@ import {
   enviarABodegaGuiado,
   exportarInspeccionExcel,
   exportarInspeccionPdf,
+  getCotizacionInspeccion,
   getPedidos,
   listarUsuariosBodega,
   reemplazarArchivoPedidoGenerado,
@@ -21,6 +22,7 @@ import GenerarPedidos from './GenerarPedidos/GenerarPedidos'
 import type { ItemResponse, Sesion } from '../types/packing'
 import type { PedidoGenerado } from '../types/pedidos'
 import type { Seguimiento } from '../types/seguimiento'
+import type { InspeccionSesion } from '../types/inspeccion'
 
 // Número de paso: la pantalla mezclaba muchas secciones sin indicar cuál
 // seguía. Con un número al lado de cada bloque, alguien poco técnico puede
@@ -71,6 +73,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const [asignadoAId, setAsignadoAId] = useState('')
   const [reemplazandoArchivo, setReemplazandoArchivo] = useState<Record<string, boolean>>({})
   const [descargandoLoQueLlego, setDescargandoLoQueLlego] = useState<'excel' | 'pdf' | null>(null)
+  // Vista previa de "lo que llegó" en la misma pantalla, sin depender de
+  // descargar el Excel/PDF para revisarlo. Se carga solo al abrirla (no de
+  // entrada), y una vez cargada no se vuelve a pedir al cerrar/abrir.
+  const [previewAbierto, setPreviewAbierto] = useState(false)
+  const [previewInspeccion, setPreviewInspeccion] = useState<InspeccionSesion | null>(null)
+  const [cargandoPreview, setCargandoPreview] = useState(false)
   // Aunque ya esté confirmado, puede haber que corregir algo antes de generar
   // el pedido a la tienda (el cliente se equivocó, o hay que ajustar algo de
   // último momento). Sin esto, una vez confirmado quedaba de solo lectura.
@@ -160,6 +168,24 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       toast.error(t('gestionPedido.errorDescargarLoQueLlego'))
     } finally {
       setDescargandoLoQueLlego(null)
+    }
+  }
+
+  // No puede depender del archivo para revisar: se abre/cierra en la misma
+  // pantalla, y solo pide los datos la primera vez que se abre.
+  const alternarPreview = async () => {
+    const abriendo = !previewAbierto
+    setPreviewAbierto(abriendo)
+    if (abriendo && !previewInspeccion) {
+      setCargandoPreview(true)
+      try {
+        setPreviewInspeccion(await getCotizacionInspeccion(sesion.id))
+      } catch {
+        toast.error(t('gestionPedido.errorPreview'))
+        setPreviewAbierto(false)
+      } finally {
+        setCargandoPreview(false)
+      }
     }
   }
 
@@ -363,6 +389,67 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                   >
                     <FileText size={14} /> {descargandoLoQueLlego === 'pdf' ? t('common.subiendo') : 'PDF'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={alternarPreview}
+                    disabled={cargandoPreview}
+                    className="flex items-center gap-1 text-sm font-medium disabled:opacity-60"
+                    style={{ color: 'var(--yuda-primary)' }}
+                  >
+                    <Eye size={14} />{' '}
+                    {cargandoPreview
+                      ? t('common.cargando')
+                      : previewAbierto
+                        ? t('gestionPedido.ocultarPreview')
+                        : t('gestionPedido.verAqui')}
+                    {previewAbierto ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
+              )}
+
+              {previewAbierto && previewInspeccion && (
+                <div className="flex flex-col gap-3 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
+                  {previewInspeccion.items.map((it) => {
+                    const valor = (c: { original: string | number | null; corregido: string | number | null }) =>
+                      c.corregido ?? c.original
+                    const referencia = valor(it.referencia)
+                    const descripcion = valor(it.descripcion_es) ?? valor(it.descripcion_en)
+                    const cajasCotizadas = it.cajas.original
+                    const cajasReales = valor(it.cajas)
+                    const udsCaja = valor(it.uds_caja)
+                    return (
+                      <div key={it.item_id} className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                            {referencia ? `${referencia} · ` : ''}{descripcion || '—'}
+                          </p>
+                          <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                            {t('gestionPedido.previewCajas', { cajas: cajasReales ?? '—', uds: udsCaja ?? '—' })}
+                            {cajasReales != null && cajasCotizadas != null && cajasReales !== cajasCotizadas && (
+                              <> · {t('gestionPedido.previewCotizado', { cajas: cajasCotizadas })}</>
+                            )}
+                          </span>
+                        </div>
+                        {it.cajas_extra.length > 0 && (
+                          <p className="text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
+                            {t('gestionPedido.previewCajasExtra', { n: it.cajas_extra.length })}
+                          </p>
+                        )}
+                        {(it.fotos.length > 0 || it.video_url) && (
+                          <div className="flex flex-wrap gap-2">
+                            {it.fotos.map((url) => (
+                              <a key={url} href={url} target="_blank" rel="noreferrer">
+                                <img src={url} alt="" style={{ width: 72, height: 72 }} className="rounded-lg object-cover" />
+                              </a>
+                            ))}
+                            {it.video_url && (
+                              <video src={it.video_url} controls style={{ width: 72, height: 72 }} className="rounded-lg object-cover" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 

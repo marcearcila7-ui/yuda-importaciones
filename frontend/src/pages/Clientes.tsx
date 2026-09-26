@@ -43,6 +43,7 @@ type EtapaCot =
   | 'listas_bodega'
   | 'en_bodega'
   | 'pendiente_aprobacion_cliente'
+  | 'aprobado_despacho'
   | 'en_camino'
   | 'entregadas'
 
@@ -59,8 +60,12 @@ function etapaDeCotizacion(s: Sesion): EtapaCot {
   // "en_bodega" ya no es un solo estado: bodega lo pone al mismo tiempo que
   // le envía la revisión al cliente para que apruebe el despacho. Mientras
   // no haya aprobado (ni se haya vencido el plazo), es una etapa aparte y
-  // accionable, no la misma "en bodega / revisión" genérica de siempre.
-  if (s.estado_envio === 'en_bodega' && !s.cliente_aprobo_despacho_at) return 'pendiente_aprobacion_cliente'
+  // accionable; una vez aprobó, ya está inspeccionado y completado de este
+  // lado -solo falta que Marcela lo despache-, no debe verse otra vez como
+  // la misma "en bodega / revisión" genérica de cuando apenas llegó.
+  if (s.estado_envio === 'en_bodega') {
+    return s.cliente_aprobo_despacho_at ? 'aprobado_despacho' : 'pendiente_aprobacion_cliente'
+  }
   if (s.estado_envio && ETAPAS_EN_BODEGA.includes(s.estado_envio)) return 'en_bodega'
   if (s.pedido_estado === 'confirmado') return 'listas_bodega'
   return 'con_cliente'
@@ -74,6 +79,7 @@ const ETAPAS_ORDEN: EtapaCot[] = [
   'listas_bodega',
   'en_bodega',
   'pendiente_aprobacion_cliente',
+  'aprobado_despacho',
   'en_camino',
   'entregadas',
 ]
@@ -86,6 +92,7 @@ const COLOR_ETAPA: Record<EtapaCot, { bg: string; fg: string }> = {
   listas_bodega: { bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)' },
   en_bodega: { bg: 'var(--yuda-primary)', fg: 'var(--yuda-white)' },
   pendiente_aprobacion_cliente: { bg: 'var(--yuda-warning-soft)', fg: 'var(--yuda-warning-dark)' },
+  aprobado_despacho: { bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success-dark)' },
   en_camino: { bg: 'var(--yuda-primary-dark)', fg: 'var(--yuda-white)' },
   entregadas: { bg: 'var(--yuda-success-soft)', fg: 'var(--yuda-success)' },
 }
@@ -1077,6 +1084,7 @@ ${t('clientes.email')}: ${c.email}`
                     'listas_bodega',
                     'en_bodega',
                     'pendiente_aprobacion_cliente',
+                    'aprobado_despacho',
                     'en_camino',
                     'entregadas',
                   ] as const

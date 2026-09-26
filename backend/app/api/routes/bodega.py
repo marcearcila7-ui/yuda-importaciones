@@ -685,13 +685,16 @@ def obtener_contacto_cliente(
 @router.get("/pedidos/{sesion_id}/cotizacion", response_model=InspeccionSesionResponse)
 def obtener_cotizacion_inspeccion(
     sesion_id: str,
-    usuario: User = Depends(require_roles("admin", "bodega")),
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
     db: Session = Depends(get_db),
 ) -> InspeccionSesionResponse:
-    """Cotización del cliente para que bodega la inspeccione: cada campo trae
+    """Cotización del cliente con lo que bodega inspeccionó: cada campo trae
     el valor original (el que cargó la vendedora) y el corregido por bodega,
-    si acaso."""
+    si acaso. Bodega la usa para inspeccionar; la vendedora/Marcela para ver
+    "lo que llegó" sin depender del Excel/PDF (de solo lectura para ellas,
+    guardar sigue siendo exclusivo de bodega)."""
     sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
     return construir_inspeccion_sesion(db, sesion)
 
 

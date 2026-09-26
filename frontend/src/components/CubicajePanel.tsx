@@ -146,7 +146,11 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
   const colores = COLOR_RESULTADO[detalle.resumen.resultado] ?? COLOR_RESULTADO.ajustado
 
   return (
-    <div className="flex flex-col gap-4">
+    // Ancho máximo fijo a propósito: sin esto, en una pantalla ancha el
+    // chat se estira hasta ocupar todo el espacio disponible, con líneas de
+    // texto y burbujas larguísimas -mucho más difícil de leer que un ancho
+    // de chat normal, y no se sentía "contenido" como en Yuda Logistic.
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <div className="card">
         <h2 className="mb-1 flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
           <Box size={18} /> {t('cubicaje.titulo')}
