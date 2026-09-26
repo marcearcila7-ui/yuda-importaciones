@@ -102,6 +102,16 @@ function CotizacionDetalle() {
   const [recargarTick, setRecargarTick] = useState(0)
   const recargar = () => setRecargarTick((n) => n + 1)
 
+  // Si ya se estaba viendo OTRA cotización y se hace clic en un aviso de
+  // esta, React Router solo cambia el parámetro :id de la misma ruta -el
+  // componente no se vuelve a montar, así que el useState de arriba (que
+  // solo lee location.state UNA vez) nunca se entera del tab nuevo y se
+  // queda en el que ya estaba. Esto sí reacciona a cada navegación real.
+  useEffect(() => {
+    const t = (location.state as { tab?: string } | null)?.tab
+    if (t) setTab(t as 'gestion' | 'cotizacion' | 'seguimiento' | 'cubicaje')
+  }, [id, location.state])
+
   useEffect(() => {
     let activo = true
     const cargar = async () => {
