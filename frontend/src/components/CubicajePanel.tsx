@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
-import { AlertTriangle, Box, CheckCircle2, FileText, Paperclip, PackageCheck, Send, X } from 'lucide-react'
+import { AlertTriangle, Box, CheckCircle2, ChevronDown, ChevronUp, FileText, Paperclip, PackageCheck, Send, X } from 'lucide-react'
 import { getCubicaje, responderCubicaje, subirAdjuntoCubicaje } from '../api/cubicaje'
 import type { CubicajeAdjunto, CubicajeDetalle, CubicajeMensaje } from '../types/cubicaje'
 
@@ -54,6 +54,9 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
   const [adjuntosPendientes, setAdjuntosPendientes] = useState<CubicajeAdjunto[]>([])
   const [subiendoAdjunto, setSubiendoAdjunto] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Con las fotos de evidencia, el hilo puede ocupar mucho espacio: se puede
+  // replegar sin perder el control de cubicaje de arriba, que sigue visible.
+  const [colapsado, setColapsado] = useState(false)
 
   const cargar = useCallback(() => {
     getCubicaje(sesionId).then(setDetalle).catch(() => {})
@@ -169,9 +172,21 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
       </div>
 
       <div className="card">
-        <h2 className="mb-1" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
-          {t('cubicaje.hiloTitulo')}
-        </h2>
+        <button
+          type="button"
+          onClick={() => setColapsado((v) => !v)}
+          className="mb-1 flex w-full items-center justify-between gap-2 text-left"
+          aria-label={colapsado ? t('cubicaje.expandir') : t('cubicaje.colapsar')}
+        >
+          <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
+            {t('cubicaje.hiloTitulo')}
+          </h2>
+          {colapsado ? (
+            <ChevronDown size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
+          ) : (
+            <ChevronUp size={18} style={{ color: 'var(--yuda-text-secondary)' }} />
+          )}
+        </button>
         {/* Con quién es la conversación: antes no se sabía si el pedido ya
             tenía a alguien de bodega trabajándolo o seguía sin asignar. */}
         <p className="mb-3 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
@@ -179,6 +194,8 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
             ? t('cubicaje.chatCon', { nombre: detalle.bodega_asignado_a_nombre })
             : t('cubicaje.chatSinAsignar')}
         </p>
+        {!colapsado && (
+        <>
         {/* El hilo como una conversación real: los mensajes de la vendedora
             (este lado) van a la derecha, los de bodega a la izquierda -como
             cualquier chat, no una lista de tarjetas iguales. */}
@@ -298,6 +315,8 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
             <Send size={18} />
           </button>
         </div>
+        </>
+        )}
       </div>
     </div>
   )
