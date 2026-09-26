@@ -69,6 +69,10 @@ class ItemInspeccionBodega(Base):
     # con medidas/peso distintos): se suman a ctns/qty_por_ctn de arriba, no
     # los reemplazan. Lista de {ctns, qty_por_ctn, largo_cm, ancho_cm, alto_cm, gw}.
     cajas_extra: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # Bodega confirma a propósito que no hay cajas fuera de lo uniforme que
+    # reportar: una lista vacía en cajas_extra no alcanza para distinguir eso
+    # de "todavía no lo revisó".
+    sin_cajas_extra: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     actualizado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     actualizado_por_id: Mapped[str | None] = mapped_column(

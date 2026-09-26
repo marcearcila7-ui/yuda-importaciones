@@ -57,6 +57,11 @@ class InspeccionItemResponse(BaseModel):
 
     referencia_coincide: bool | None = None
     cajas_extra: list[CajaExtra] = []
+    # Bodega confirma a propósito que no hay cajas fuera de lo uniforme que
+    # reportar (no es lo mismo que "todavía no lo revisó"): sin este campo
+    # aparte, una lista vacía no distingue "nada que reportar" de "nunca lo
+    # miró".
+    sin_cajas_extra: bool = False
     fotos: list[str] = []
     video_url: str | None = None
     actualizado_en: datetime | None = None
@@ -103,6 +108,7 @@ class InspeccionItemInput(BaseModel):
     minimo_piezas_caja_tienda: int | None = None
     referencia_coincide: bool | None = None
     cajas_extra: list[CajaExtra] | None = None
+    sin_cajas_extra: bool = False
 
 
 class GuardarInspeccionInput(BaseModel):

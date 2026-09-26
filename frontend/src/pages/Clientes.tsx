@@ -833,7 +833,25 @@ ${t('clientes.email')}: ${c.email}`
             <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.password')}</dt>
             <dd>
               {nuevasPass[c.id] ? (
-                <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
+                <span className="inline-flex items-center gap-2">
+                  <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(nuevasPass[c.id])
+                        toast.success(t('clientes.copiado'))
+                      } catch {
+                        toast.error(t('clientes.errorCopiar'))
+                      }
+                    }}
+                    title={t('clientes.copiarSoloPassword')}
+                    className="inline-flex items-center justify-center rounded"
+                    style={{ width: 24, height: 24, color: 'var(--yuda-primary)' }}
+                  >
+                    <Copy size={14} />
+                  </button>
+                </span>
               ) : (
                 <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
               )}

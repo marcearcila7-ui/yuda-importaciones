@@ -60,6 +60,7 @@ def _item_response(item: Item, insp: ItemInspeccionBodega | None, actualizado_po
         **campos,
         referencia_coincide=insp.referencia_coincide if insp else None,
         cajas_extra=(insp.cajas_extra if insp and insp.cajas_extra else []),
+        sin_cajas_extra=insp.sin_cajas_extra if insp else False,
         fotos=(insp.fotos if insp and insp.fotos else []),
         video_url=insp.video_url if insp else None,
         actualizado_en=insp.actualizado_en if insp else None,
@@ -135,6 +136,7 @@ def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInpu
         insp.cajas_extra = (
             [c.model_dump() for c in entrada.cajas_extra] if entrada.cajas_extra else None
         )
+        insp.sin_cajas_extra = entrada.sin_cajas_extra
         insp.actualizado_en = ahora
         insp.actualizado_por_id = usuario.id
 

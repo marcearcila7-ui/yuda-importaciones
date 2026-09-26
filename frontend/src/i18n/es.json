@@ -617,6 +617,7 @@
     "pais": "País",
     "telefono": "Teléfono",
     "password": "Contraseña",
+    "copiarSoloPassword": "Copiar solo la contraseña",
     "cerrar": "Cerrar",
     "portalLink": "Link del portal",
     "copiar": "Copiar datos",

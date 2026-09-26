@@ -620,6 +620,7 @@
     "pais": "国家",
     "telefono": "电话",
     "password": "密码",
+    "copiarSoloPassword": "仅复制密码",
     "cerrar": "关闭",
     "portalLink": "门户链接",
     "copiar": "复制信息",
