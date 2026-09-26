@@ -9,6 +9,9 @@ from app.database import Base
 
 # Tipos de aviso para el equipo.
 TIPO_LISTO_PARA_ENVIO = "listo_para_envio"
+# El pedido se acaba de despachar (pasó a "en tránsito"): aviso para Marcela
+# de que en ~20 días debería tener el BL para cargarlo.
+TIPO_PENDIENTE_BL = "pendiente_bl"
 # El cliente envió, desde su portal, las cajas que desea + notas de su cotización.
 TIPO_PEDIDO_CLIENTE = "pedido_cliente"
 # Marcela actualizó el envío (despachado / entregado): aviso para la vendedora dueña.

@@ -22,6 +22,7 @@ const TAB_POR_TIPO: Record<string, string> = {
   despacho_aprobado: 'seguimiento',
   envio_vendedora: 'seguimiento',
   listo_para_envio: 'seguimiento',
+  pendiente_bl: 'seguimiento',
   inspeccion_bodega_actualizada: 'gestion',
   orden_actualizada_bodega: 'gestion',
   pedido_regenerado_tras_revision: 'gestion',

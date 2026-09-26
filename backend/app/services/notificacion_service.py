@@ -15,6 +15,7 @@ from app.models.notificacion import (
     TIPO_PEDIDO_CLIENTE,
     TIPO_PEDIDO_CONFIRMADO,
     TIPO_PEDIDO_REGENERADO_TRAS_REVISION,
+    TIPO_PENDIENTE_BL,
     Notificacion,
 )
 from app.models.user import RolUsuario, User
@@ -109,9 +110,14 @@ def _nombre_vendedora(db: Session, vendedor_id: str | None) -> str | None:
 def avisar_listo_para_envio(
     db: Session, sesion_id: str, numero: str, cliente: str, vendedor_id: str | None = None
 ) -> None:
-    """Crea un aviso para cada admin (Marcela): la cotización está lista para que
-    cargue la naviera y el BL. Incluye la vendedora dueña. Evita duplicar si ya hay
-    un aviso sin leer de esta cotización para ese admin.
+    """Crea un aviso para cada admin (Marcela): la cotización está lista para
+    despachar (cargar la naviera). Incluye la vendedora dueña. Evita duplicar
+    si ya hay un aviso sin leer de esta cotización para ese admin.
+
+    OJO: acá NO se menciona el BL a propósito -ese número solo existe unos 20
+    días después de que la mercancía se despacha (en_transito), mucho más
+    adelante que este momento (mercancía recién llegando a bodega). Ver
+    avisar_pendiente_bl más abajo para ese aviso, en el momento correcto.
     """
     vendedora = _nombre_vendedora(db, vendedor_id)
     quien = f" (vendedora: {vendedora})" if vendedora else ""
@@ -136,7 +142,40 @@ def avisar_listo_para_envio(
             TIPO_LISTO_PARA_ENVIO,
             "Cotización lista para envío",
             f"La cotización {numero} de {cliente}{quien} está en bodega. "
-            "Es momento de cargar la naviera y el BL.",
+            "Es momento de cargar la naviera.",
+        )
+
+
+def avisar_pendiente_bl(db: Session, sesion_id: str, numero: str, cliente: str) -> None:
+    """Crea un aviso para cada admin (Marcela) apenas el pedido se despacha
+    (pasa a "en_transito"): el BL es un dato que solo existe unos 20 días
+    después de despachar, así que este aviso es "ya salió, en unos 20 días
+    deberías tener el BL para cargarlo" -no una urgencia inmediata, un
+    recordatorio de que este pedido va a necesitar esa carga más adelante.
+    Evita duplicar si ya hay un aviso sin leer de esta cotización para ese admin.
+    """
+    admins = db.query(User).filter(User.rol == RolUsuario.admin, User.activo).all()
+    for admin in admins:
+        ya_existe = (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.usuario_id == admin.id,
+                Notificacion.sesion_id == sesion_id,
+                Notificacion.tipo == TIPO_PENDIENTE_BL,
+                Notificacion.leida.is_(False),
+            )
+            .first()
+        )
+        if ya_existe:
+            continue
+        _crear(
+            db,
+            admin.id,
+            sesion_id,
+            TIPO_PENDIENTE_BL,
+            "Pedido despachado: pendiente de BL",
+            f"La cotización {numero} de {cliente} ya se despachó. "
+            "En unos 20 días deberías tener el BL para cargarlo aquí.",
         )
 
 

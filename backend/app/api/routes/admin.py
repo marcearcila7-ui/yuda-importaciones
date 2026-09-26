@@ -670,11 +670,13 @@ def panorama_equipo(
                     .filter(SeguimientoPedido.sesion_id == s.id)
                     .first()
                 )
-                # Pendiente de BL: lista para envío o en tránsito y sin BL cargado.
-                # Es lo que Marcela debe atender.
+                # Pendiente de BL: ya en tránsito (despachado) y sin BL cargado.
+                # "en_bodega" no cuenta: ahí la mercancía ni siquiera se ha
+                # despachado, el BL no existe todavía (tarda ~20 días desde
+                # el despacho) y no tiene sentido pedirlo tan pronto.
                 pendiente_bl = bool(
                     seg
-                    and seg.estado in ("en_bodega", "en_transito")
+                    and seg.estado == "en_transito"
                     and not seg.bl_numero
                 )
                 cotizaciones.append(

@@ -74,6 +74,7 @@ from app.services.cuenta_service import construir_estado_cuenta
 from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
     avisar_listo_para_envio,
+    avisar_pendiente_bl,
 )
 from app.services.aviso_cliente_service import (
     avisar_cliente_aprobar_despacho,
@@ -1236,6 +1237,13 @@ def actualizar_seguimiento(
         avisar_envio_a_vendedora(
             db, sesion_id, numero, sesion.nombre_cliente, sesion.user_id, datos.estado
         )
+
+    # Se acaba de despachar: aparte del aviso de arriba a la vendedora, a
+    # Marcela le toca acordarse de este pedido para cuando llegue el BL
+    # (unos 20 días después) -antes nadie se lo recordaba, solo se enteraba
+    # si entraba a mirar la lista de pendientes a mano.
+    if datos.estado == "en_transito" and estado_anterior != "en_transito":
+        avisar_pendiente_bl(db, sesion_id, numero, sesion.nombre_cliente)
 
     # El pedido se acaba de mandar a comprar a los proveedores: primer aviso
     # externo al cliente, mucho antes de que bodega reciba nada.
