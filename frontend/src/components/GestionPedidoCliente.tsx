@@ -407,54 +407,17 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 </div>
               )}
 
-              {previewAbierto && previewInspeccion && (
-                <div className="flex flex-col gap-3 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
-                  {previewInspeccion.items.map((it) => {
-                    const valor = (c: { original: string | number | null; corregido: string | number | null }) =>
-                      c.corregido ?? c.original
-                    const referencia = valor(it.referencia)
-                    const descripcion = valor(it.descripcion_es) ?? valor(it.descripcion_en)
-                    const cajasCotizadas = it.cajas.original
-                    const cajasReales = valor(it.cajas)
-                    const udsCaja = valor(it.uds_caja)
-                    return (
-                      <div key={it.item_id} className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                            {referencia ? `${referencia} · ` : ''}{descripcion || '—'}
-                          </p>
-                          <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                            {t('gestionPedido.previewCajas', { cajas: cajasReales ?? '—', uds: udsCaja ?? '—' })}
-                            {cajasReales != null && cajasCotizadas != null && cajasReales !== cajasCotizadas && (
-                              <> · {t('gestionPedido.previewCotizado', { cajas: cajasCotizadas })}</>
-                            )}
-                          </span>
-                        </div>
-                        {it.cajas_extra.length > 0 && (
-                          <p className="text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
-                            {t('gestionPedido.previewCajasExtra', { n: it.cajas_extra.length })}
-                          </p>
-                        )}
-                        {(it.fotos.length > 0 || it.video_url) && (
-                          <div className="flex flex-wrap gap-2">
-                            {it.fotos.map((url) => (
-                              <a key={url} href={url} target="_blank" rel="noreferrer">
-                                <img src={url} alt="" style={{ width: 72, height: 72 }} className="rounded-lg object-cover" />
-                              </a>
-                            ))}
-                            {it.video_url && (
-                              <video src={it.video_url} controls style={{ width: 72, height: 72 }} className="rounded-lg object-cover" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {pedidosGenerados.map((pg) => (
-                <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
+              {pedidosGenerados.map((pg) => {
+                // Cada producto pertenece a una tienda (Item.supplier_nombre
+                // == PedidoGenerado.supplier): sin este cruce, la vista
+                // previa mostraba todos los productos sueltos arriba sin
+                // decir a cuál orden pertenecía cada uno.
+                const itemsDeEstaOrden =
+                  previewAbierto && previewInspeccion
+                    ? previewInspeccion.items.filter((it) => it.supplier_nombre === pg.supplier)
+                    : []
+                return (
+              <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
                   <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                     <span className="flex items-center gap-1.5" style={{ color: 'var(--yuda-text)' }}>
                       <FileSpreadsheet size={14} /> {pg.supplier.replace('_', ' · ')}
@@ -478,6 +441,95 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                       )}
                     </span>
                   </div>
+
+                  {/* Vista previa de esta orden puntual: cada producto con
+                      su foto de cotización al lado de la evidencia real que
+                      subió bodega, para comparar sin descargar nada. */}
+                  {itemsDeEstaOrden.length > 0 && (
+                    <div className="flex flex-col gap-3 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
+                      {itemsDeEstaOrden.map((it) => {
+                        const valor = (c: { original: string | number | null; corregido: string | number | null }) =>
+                          c.corregido ?? c.original
+                        const referencia = valor(it.referencia)
+                        const descripcion = valor(it.descripcion_es) ?? valor(it.descripcion_en)
+                        const cajasCotizadas = it.cajas.original
+                        const cajasReales = valor(it.cajas)
+                        const udsCaja = valor(it.uds_caja)
+                        const fotoCotizada = it.foto_url || it.foto_final_url
+                        return (
+                          <div key={it.item_id} className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
+                            <p className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                              {referencia ? `${referencia} · ` : ''}{descripcion || '—'}
+                            </p>
+                            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                              {t('gestionPedido.previewCajas', { cajas: cajasReales ?? '—', uds: udsCaja ?? '—' })}
+                              {cajasReales != null && cajasCotizadas != null && cajasReales !== cajasCotizadas && (
+                                <> · {t('gestionPedido.previewCotizado', { cajas: cajasCotizadas })}</>
+                              )}
+                            </p>
+                            {it.cajas_extra.length > 0 && (
+                              <p className="text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
+                                {t('gestionPedido.previewCajasExtra', { n: it.cajas_extra.length })}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-4">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[11px] font-semibold uppercase" style={{ color: 'var(--yuda-text-secondary)' }}>
+                                  {t('gestionPedido.previewFotoCotizada')}
+                                </span>
+                                {fotoCotizada ? (
+                                  <a href={fotoCotizada} target="_blank" rel="noreferrer">
+                                    <img
+                                      src={fotoCotizada}
+                                      alt=""
+                                      style={{ width: 140, height: 140 }}
+                                      className="rounded-lg border object-cover"
+                                    />
+                                  </a>
+                                ) : (
+                                  <div
+                                    className="flex items-center justify-center rounded-lg border text-xs"
+                                    style={{ width: 140, height: 140, color: 'var(--yuda-text-secondary)' }}
+                                  >
+                                    {t('gestionPedido.previewSinFoto')}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[11px] font-semibold uppercase" style={{ color: 'var(--yuda-text-secondary)' }}>
+                                  {t('gestionPedido.previewFotoEvidencia')}
+                                </span>
+                                {it.fotos.length > 0 || it.video_url ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {it.fotos.map((url) => (
+                                      <a key={url} href={url} target="_blank" rel="noreferrer">
+                                        <img
+                                          src={url}
+                                          alt=""
+                                          style={{ width: 140, height: 140 }}
+                                          className="rounded-lg border object-cover"
+                                        />
+                                      </a>
+                                    ))}
+                                    {it.video_url && (
+                                      <video src={it.video_url} controls style={{ width: 140, height: 140 }} className="rounded-lg border object-cover" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="flex items-center justify-center rounded-lg border text-xs"
+                                    style={{ width: 140, height: 140, color: 'var(--yuda-text-secondary)' }}
+                                  >
+                                    {t('gestionPedido.previewSinFoto')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   {/* Si el archivo que generó el sistema necesita un ajuste a
                       mano, se puede reemplazar por una versión corregida -
@@ -551,7 +603,8 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                     </div>
                   )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </Paso>

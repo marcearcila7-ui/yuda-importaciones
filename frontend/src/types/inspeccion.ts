@@ -20,6 +20,13 @@ export interface CajaExtra {
 
 export interface InspeccionItem {
   item_id: string
+  // Foto con la que se cotizó (la del catálogo/proveedor), para comparar
+  // lado a lado contra `fotos` (la evidencia real que subió bodega).
+  foto_url: string | null
+  foto_final_url: string | null
+  // Tienda/proveedor de este producto: el mismo valor que PedidoGenerado.supplier,
+  // para agrupar los productos bajo la orden a la que pertenecen.
+  supplier_nombre: string | null
   referencia: CampoInspeccion
   descripcion_es: CampoInspeccion
   descripcion_en: CampoInspeccion

@@ -29,6 +29,9 @@ class InspeccionItemResponse(BaseModel):
     item_id: str
     foto_url: str | None = None
     foto_final_url: str | None = None
+    # Tienda/proveedor de este producto: para agrupar por orden (cada orden
+    # a proveedor es un PedidoGenerado.supplier, el mismo valor).
+    supplier_nombre: str | None = None
 
     referencia: CampoInspeccion
     codigo: CampoInspeccion
