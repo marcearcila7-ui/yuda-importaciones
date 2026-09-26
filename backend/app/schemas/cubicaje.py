@@ -26,7 +26,7 @@ class CubicajeResumen(BaseModel):
 class CubicajeMensajeResponse(BaseModel):
     id: str
     tipo: str
-    autor_id: str
+    autor_id: str | None = None
     autor_nombre: str | None = None
     mensaje: str | None = None
     cbm_calculado: float | None = None

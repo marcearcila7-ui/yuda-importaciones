@@ -9,6 +9,7 @@ from app.api.dependencies import get_current_cliente
 from app.core.security import create_access_token, hash_password, verify_password, verify_token
 from app.database import get_db
 from app.models.cliente import Cliente
+from app.models.cubicaje import TIPO_NOTA, CubicajeMensaje
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado
@@ -396,11 +397,50 @@ def aprobar_despacho(
     resumen_observaciones = " · ".join(resumen_partes) if resumen_partes else None
 
     seg.cliente_aprobo_despacho_at = datetime.now(timezone.utc)
-    registrar_aviso(
-        seg,
-        "cliente_aprobo_despacho",
-        f"{sesion.nombre_cliente} aprobó el despacho." + (f" Observaciones: {resumen_observaciones}" if resumen_observaciones else ""),
+    mensaje_aprobacion = f"{sesion.nombre_cliente} aprobó el despacho." + (
+        f" Observaciones: {resumen_observaciones}" if resumen_observaciones else ""
     )
+    registrar_aviso(seg, "cliente_aprobo_despacho", mensaje_aprobacion)
+    # Antes esto solo quedaba en `avisos` (un log interno que nadie ve en
+    # pantalla) y en la campanita: no había ningún rastro en el hilo de
+    # cubicaje, que es donde bodega y la vendedora realmente conversan del
+    # pedido. Autor None porque el cliente no es un User de la app.
+    db.add(CubicajeMensaje(sesion_id=sesion_id, tipo=TIPO_NOTA, autor_id=None, mensaje=mensaje_aprobacion))
+    # Si el hilo todavía no tiene ninguna evidencia adjunta (pedidos enviados
+    # a aprobación antes de que bodega empezara a dejarla al enviar), se deja
+    # ahora, aprovechando que ya se está posteando en el hilo: mejor tarde
+    # que nunca a que la vendedora nunca la vea.
+    ya_tiene_evidencia = (
+        db.query(CubicajeMensaje)
+        .filter(CubicajeMensaje.sesion_id == sesion_id, CubicajeMensaje.adjuntos.isnot(None))
+        .first()
+        is not None
+    )
+    if not ya_tiene_evidencia:
+        inspecciones = {
+            insp.item_id: insp
+            for insp in db.query(ItemInspeccionBodega)
+            .filter(ItemInspeccionBodega.item_id.in_(list(items.keys())))
+            .all()
+        }
+        for item in items.values():
+            insp = inspecciones.get(item.id)
+            if insp is None or (not insp.fotos and not insp.video_url):
+                continue
+            referencia = insp.referencia or item.referencia or item.descripcion_es or item.id
+            descripcion = insp.descripcion_es or item.descripcion_es or item.descripcion_en or ""
+            adjuntos = [{"url": url, "tipo": "imagen"} for url in (insp.fotos or [])]
+            if insp.video_url:
+                adjuntos.append({"url": insp.video_url, "tipo": "video"})
+            db.add(
+                CubicajeMensaje(
+                    sesion_id=sesion_id,
+                    tipo=TIPO_NOTA,
+                    autor_id=None,
+                    mensaje=f"Evidencia de inspección enviada al cliente: {referencia} — {descripcion or '—'}",
+                    adjuntos=adjuntos,
+                )
+            )
     avisar_despacho_aprobado(
         db,
         sesion_id,

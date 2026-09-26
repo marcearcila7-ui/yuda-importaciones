@@ -15,7 +15,9 @@ export interface CubicajeAdjunto {
 export interface CubicajeMensaje {
   id: string
   tipo: 'reporte' | 'nota' | 'respuesta'
-  autor_id: string
+  // null cuando lo generó el sistema en nombre del cliente (ej. al aprobar
+  // el despacho desde su portal): el cliente no es un usuario de la app.
+  autor_id: string | null
   autor_nombre: string | null
   mensaje: string | null
   cbm_calculado: number | null

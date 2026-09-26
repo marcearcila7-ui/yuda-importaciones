@@ -260,12 +260,12 @@ def _resumen_texto(
 
 
 def _mensaje_response(m: CubicajeMensaje, autores: dict[str, User]) -> CubicajeMensajeResponse:
-    autor = autores.get(m.autor_id)
+    autor = autores.get(m.autor_id) if m.autor_id else None
     return CubicajeMensajeResponse(
         id=m.id,
         tipo=m.tipo,
         autor_id=m.autor_id,
-        autor_nombre=autor.nombre if autor else None,
+        autor_nombre=autor.nombre if autor else (None if m.autor_id else "Cliente"),
         mensaje=m.mensaje,
         cbm_calculado=m.cbm_calculado,
         cbm_ajustado=m.cbm_ajustado,

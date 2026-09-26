@@ -33,7 +33,9 @@ class CubicajeMensaje(Base):
         String, ForeignKey("sesiones.id"), nullable=False, index=True
     )
     tipo: Mapped[str] = mapped_column(String, nullable=False)
-    autor_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    # None cuando el mensaje lo genera el sistema en nombre del cliente (ej.
+    # al aprobar el despacho desde su portal): el cliente no es un User.
+    autor_id: Mapped[str | None] = mapped_column(String, ForeignKey("users.id"), nullable=True)
 
     mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)
 

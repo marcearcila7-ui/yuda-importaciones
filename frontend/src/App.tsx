@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import ConfirmDialog from './components/ConfirmDialog'
 import Layout from './components/Layout'
@@ -10,21 +10,26 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import { useAuthStore } from './store/authStore'
 import { usePortalStore } from './store/portalStore'
+import { lazyConReintento } from './lib/lazyConReintento'
 
 // Páginas de admin y del portal: se cargan bajo demanda (code-splitting) para
-// aligerar el bundle inicial de las vendedoras.
-const Admin = lazy(() => import('./pages/Admin'))
-const ClienteColaboracion = lazy(() => import('./pages/ClienteColaboracion'))
-const CotizacionDetalle = lazy(() => import('./pages/CotizacionDetalle'))
-const Historial = lazy(() => import('./pages/Historial'))
-const BodegaSeguimiento = lazy(() => import('./pages/BodegaSeguimiento'))
-const CuentaCliente = lazy(() => import('./pages/CuentaCliente'))
-const PortalCotizaciones = lazy(() => import('./pages/portal/PortalCotizaciones'))
-const PortalCuenta = lazy(() => import('./pages/portal/PortalCuenta'))
-const PortalDetalle = lazy(() => import('./pages/portal/PortalDetalle'))
-const PortalLogin = lazy(() => import('./pages/portal/PortalLogin'))
-const PortalEntrar = lazy(() => import('./pages/portal/PortalEntrar'))
-const PortalCambiarPassword = lazy(() => import('./pages/portal/PortalCambiarPassword'))
+// aligerar el bundle inicial de las vendedoras. lazyConReintento (no
+// lazy() a secas): si el sitio ya se redeployó desde que se abrió esta
+// pestaña, el chunk viejo ya no existe en el servidor y esto recarga la
+// página una vez para traer los nombres de chunk correctos, en vez de dejar
+// la pantalla en blanco (ver el comentario en ese archivo).
+const Admin = lazyConReintento(() => import('./pages/Admin'))
+const ClienteColaboracion = lazyConReintento(() => import('./pages/ClienteColaboracion'))
+const CotizacionDetalle = lazyConReintento(() => import('./pages/CotizacionDetalle'))
+const Historial = lazyConReintento(() => import('./pages/Historial'))
+const BodegaSeguimiento = lazyConReintento(() => import('./pages/BodegaSeguimiento'))
+const CuentaCliente = lazyConReintento(() => import('./pages/CuentaCliente'))
+const PortalCotizaciones = lazyConReintento(() => import('./pages/portal/PortalCotizaciones'))
+const PortalCuenta = lazyConReintento(() => import('./pages/portal/PortalCuenta'))
+const PortalDetalle = lazyConReintento(() => import('./pages/portal/PortalDetalle'))
+const PortalLogin = lazyConReintento(() => import('./pages/portal/PortalLogin'))
+const PortalEntrar = lazyConReintento(() => import('./pages/portal/PortalEntrar'))
+const PortalCambiarPassword = lazyConReintento(() => import('./pages/portal/PortalCambiarPassword'))
 
 function Cargando() {
   return (
