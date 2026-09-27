@@ -12,9 +12,15 @@ interface Props {
   clienteIdInicial: string | null
   enviadaInicial: boolean
   nombreClienteSesion?: string
+  // Sin esto, quien use este componente (el asistente de cotización) se
+  // queda con el valor de cuando se montó: si la vendedora asigna o envía
+  // acá y ese padre usa ese dato para algo (ej. bloquear "Terminar"), seguía
+  // viendo el estado viejo aunque el problema ya estuviera resuelto -parecía
+  // que resolverlo no hubiera servido de nada.
+  onEstadoCambiado?: (estado: { clienteId: string | null; enviada: boolean }) => void
 }
 
-function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial }: Props) {
+function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial, onEstadoCambiado }: Props) {
   const { t } = useTranslation()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [cargandoClientes, setCargandoClientes] = useState(true)
@@ -45,6 +51,13 @@ function ClienteEnvio({ sesionId, clienteIdInicial, enviadaInicial }: Props) {
     setClienteId(clienteIdInicial)
     setEnviada(enviadaInicial)
   }, [clienteIdInicial, enviadaInicial, sesionId])
+
+  // Avisa al padre en cada cambio real (asignar, desvincular, enviar), no
+  // solo al montar: así el que lo use siempre tiene el estado en vivo.
+  useEffect(() => {
+    onEstadoCambiado?.({ clienteId, enviada })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteId, enviada])
 
   const clienteActual = clientes.find((c) => c.id === clienteId) || null
 

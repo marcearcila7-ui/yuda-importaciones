@@ -156,6 +156,7 @@
     "pasoTerminar": "Finish",
     "avisoSinProductosAvanzar": "Add at least one product to continue.",
     "avisoSinPedidoGenerado": "Generate the order to the store before finishing: otherwise this quotation is left without an order, and you'll have to find it again under Clients.",
+    "avisoSinEnviarCliente": "Send the quotation to the client before finishing: otherwise the client never sees it in their portal.",
     "pasoFotos": "Photos",
     "ocultarCotizador": "Hide",
     "queSigueDespues": "Once the client confirms the quantities from their portal, you'll be able to send the order to the warehouse from the client's page (\"Quotations\" tab → \"Ready for warehouse\")."

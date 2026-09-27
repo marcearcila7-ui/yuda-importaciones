@@ -179,6 +179,28 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionActual?.id])
 
+  // Mismo problema, con el envío al cliente por el portal: ClienteEnvio
+  // maneja su propio estado y no le avisaba a nadie más cuando cambiaba. Si
+  // "Terminar" mirara sesionActual.enviada_cliente directo, se quedaría con
+  // el valor de cuando se entró a esta cotización -si la vendedora volvía al
+  // paso 3, la enviaba, y avanzaba de nuevo, el bloqueo seguía ahí como si
+  // no hubiera hecho nada. Se sincroniza al entrar y se actualiza en vivo con
+  // onEstadoCambiado.
+  const [envioCliente, setEnvioCliente] = useState<{ clienteId: string | null; enviada: boolean }>({
+    clienteId: null,
+    enviada: false,
+  })
+  useEffect(() => {
+    if (!sesionActual) return
+    setEnvioCliente({ clienteId: sesionActual.cliente_id ?? null, enviada: sesionActual.enviada_cliente ?? false })
+  }, [sesionActual?.id])
+
+  // "cliente_id" de envioCliente (en vivo), no el de sesionActual (que puede
+  // quedar desactualizado): una cotización libre no tiene a quién enviarle
+  // ni puede generar pedido, así que ninguna de las dos condiciones aplica.
+  const faltaEnviarAlCliente = !!envioCliente.clienteId && !envioCliente.enviada
+  const faltaGenerarPedido = !!envioCliente.clienteId && cantidadPedidosGenerados === 0
+
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
   // El bloque de cliente y envío lo gestionan admin y vendedoras
@@ -523,6 +545,7 @@ function Dashboard() {
                     clienteIdInicial={sesionActual.cliente_id ?? null}
                     enviadaInicial={sesionActual.enviada_cliente ?? false}
                     nombreClienteSesion={sesionActual.nombre_cliente}
+                    onEstadoCambiado={setEnvioCliente}
                   />
                 </SectionCard>
               )}
@@ -597,7 +620,7 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={volverAlOrigen}
-                  disabled={!!sesionActual.cliente_id && cantidadPedidosGenerados === 0}
+                  disabled={faltaEnviarAlCliente || faltaGenerarPedido}
                   className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-40"
                   style={{ minHeight: 48, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-success)' }}
                 >
@@ -605,15 +628,23 @@ function Dashboard() {
                 </button>
               )}
               {/* Solo aplica a cotizaciones con cliente real: una libre no
-                  puede generar pedido (es consultiva), así que no tendría
-                  sentido bloquearle "Terminar" por lo mismo. */}
-              {pasoVista === PASOS_COTIZACION.length &&
-                !!sesionActual.cliente_id &&
-                cantidadPedidosGenerados === 0 && (
-                  <span className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
-                    {t('dashboard.avisoSinPedidoGenerado')}
-                  </span>
-                )}
+                  tiene a quién enviarle ni puede generar pedido (es
+                  consultiva), así que no tendría sentido bloquearle
+                  "Terminar" por ninguna de las dos. */}
+              {pasoVista === PASOS_COTIZACION.length && (
+                <div className="flex flex-col gap-1">
+                  {faltaEnviarAlCliente && (
+                    <span className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+                      {t('dashboard.avisoSinEnviarCliente')}
+                    </span>
+                  )}
+                  {faltaGenerarPedido && (
+                    <span className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+                      {t('dashboard.avisoSinPedidoGenerado')}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </>

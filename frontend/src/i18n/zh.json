@@ -159,6 +159,7 @@
     "pasoTerminar": "完成",
     "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。",
     "avisoSinPedidoGenerado": "完成前请先生成给店铺的订单：否则这个报价会没有订单，以后要去客户里重新找它。",
+    "avisoSinEnviarCliente": "完成前请先把报价发送给客户：否则客户永远不会在他们的门户里看到它。",
     "pasoFotos": "照片",
     "ocultarCotizador": "隐藏",
     "queSigueDespues": "客户在其门户确认数量后，您就可以从客户资料（\"报价单\"标签 → \"可发往仓库\"）中将订单发送至仓库。"

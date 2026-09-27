@@ -156,6 +156,7 @@
     "pasoTerminar": "Terminar",
     "avisoSinProductosAvanzar": "Agrega al menos un producto para continuar.",
     "avisoSinPedidoGenerado": "Genera el pedido a la tienda antes de terminar: si no, esta cotización queda sin pedido y hay que volver a buscarla en Clientes.",
+    "avisoSinEnviarCliente": "Envía la cotización al cliente antes de terminar: si no, el cliente nunca la ve en su portal.",
     "pasoFotos": "Fotos",
     "ocultarCotizador": "Ocultar",
     "queSigueDespues": "Cuando el cliente confirme las cantidades desde su portal, vas a poder enviar el pedido a bodega desde la ficha del cliente (pestaña «Cotizaciones» → «Listas para bodega»)."
