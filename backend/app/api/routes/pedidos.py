@@ -752,24 +752,30 @@ def enviar_a_bodega(
 
     # Reusa la lógica ya existente de cambio de estado (notificaciones al
     # cliente, avisos internos, bitácora) en vez de duplicarla acá.
-    from app.api.routes.clientes import actualizar_seguimiento as _actualizar_seguimiento
-    from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
+    from app.api.routes.clientes import actualizar_seguimiento as _actualizar_seguimiento, _seguimiento_response
+    from app.schemas.seguimiento import SeguimientoUpdate
 
-    resultado = _actualizar_seguimiento(
+    _actualizar_seguimiento(
         sesion_id,
         SeguimientoUpdate(estado="proveedor_recibio", novedades=seg.novedades if seg else None),
         usuario,
         db,
     )
 
+    # _actualizar_seguimiento ya devuelve la respuesta armada (Pydantic, de
+    # solo lectura); para asignar bodega hay que mutar el registro real de
+    # la base de datos, no ese objeto de respuesta.
+    seg_orm = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg_orm is None:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "No se pudo crear el seguimiento del envío")
     if asignado is not None:
-        resultado.bodega_asignado_a_id = asignado.id
-        resultado.bodega_asignado_en = datetime.now(timezone.utc)
-        resultado.bodega_asignado_por_id = usuario.id
+        seg_orm.bodega_asignado_a_id = asignado.id
+        seg_orm.bodega_asignado_en = datetime.now(timezone.utc)
+        seg_orm.bodega_asignado_por_id = usuario.id
         registrar_actividad_bodega(
             db, sesion_id, usuario.id, "asignado", f"Asignado a {asignado.nombre} al enviar a bodega"
         )
         db.commit()
-        db.refresh(resultado)
+        db.refresh(seg_orm)
 
-    return SeguimientoResponse.model_validate(resultado).model_dump()
+    return _seguimiento_response(db, seg_orm).model_dump()
