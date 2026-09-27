@@ -136,6 +136,18 @@ def generar_pedidos(
     # a. La sesión debe existir
     sesion = _obtener_sesion(db, sesion_id, usuario)
 
+    # a.0. Cotización libre (sin cliente asociado): es solo consultiva, no puede
+    # generar pedido a proveedor ni seguir hacia bodega. Si más adelante se le
+    # asigna un cliente real, deja de ser libre y esto ya no aplica.
+    if sesion.cliente_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Esta es una cotización libre (sin cliente asociado): es solo consultiva y no "
+                "se puede generar el pedido a proveedor. Asígnale un cliente primero."
+            ),
+        )
+
     # a.1. Una vez el contenedor ya está en bodega o más adelante, regenerar un
     # pedido borraría en silencio la revisión que bodega ya hizo (o peor, la
     # de un pedido que ya viajó). De "proveedor_recibio" para atrás sigue
@@ -728,6 +740,15 @@ def enviar_a_bodega(
     directo a alguien de bodega en el mismo paso."""
     exigir_roles(usuario, "admin", "vendedora")
     sesion = _obtener_sesion(db, sesion_id, usuario)
+
+    # Defensa adicional (ver generar_pedidos): sin cliente asociado, esta
+    # cotización es solo consultiva y no puede pasar a bodega.
+    if sesion.cliente_id is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Esta es una cotización libre (sin cliente asociado): es solo consultiva y no se "
+            "puede enviar a bodega. Asígnale un cliente primero.",
+        )
 
     if db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).count() == 0:
         raise HTTPException(

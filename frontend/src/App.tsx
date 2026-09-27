@@ -21,6 +21,7 @@ import { lazyConReintento } from './lib/lazyConReintento'
 const Admin = lazyConReintento(() => import('./pages/Admin'))
 const ClienteColaboracion = lazyConReintento(() => import('./pages/ClienteColaboracion'))
 const CotizacionDetalle = lazyConReintento(() => import('./pages/CotizacionDetalle'))
+const CotizacionesLibres = lazyConReintento(() => import('./pages/CotizacionesLibres'))
 const Historial = lazyConReintento(() => import('./pages/Historial'))
 const BodegaSeguimiento = lazyConReintento(() => import('./pages/BodegaSeguimiento'))
 const CuentaCliente = lazyConReintento(() => import('./pages/CuentaCliente'))
@@ -98,6 +99,7 @@ function App() {
           <Route path="/clientes" element={<Layout><Clientes /></Layout>} />
           <Route path="/clientes/:clienteId" element={<Layout><Clientes /></Layout>} />
           <Route path="/bodega-seguimiento" element={<Layout><BodegaSeguimiento /></Layout>} />
+          <Route path="/cotizaciones-libres" element={<Layout><CotizacionesLibres /></Layout>} />
         </Route>
 
         {/* Solo administración */}

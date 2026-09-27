@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, LogOut, Package, Settings, Users, Warehouse } from 'lucide-react'
+import { ClipboardList, FileText, LogOut, Package, Settings, Users, Warehouse } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import NotificacionesBell from './NotificacionesBell'
 
@@ -62,6 +62,7 @@ const LINKS: ItemNav[] = [
   { to: '/dashboard', icono: <Package size={18} />, clave: 'cotizacion', roles: ['admin', 'vendedora'] },
   { to: '/clientes', icono: <Users size={18} />, clave: 'clientes', roles: ['admin', 'vendedora'] },
   { to: '/bodega-seguimiento', icono: <Warehouse size={18} />, clave: 'bodegaSeguimiento', roles: ['admin', 'vendedora'] },
+  { to: '/cotizaciones-libres', icono: <FileText size={18} />, clave: 'cotizacionesLibres', roles: ['admin', 'vendedora'] },
   { to: '/historial', icono: <ClipboardList size={18} />, clave: 'historial', roles: ['admin', 'contadora'] },
   { to: '/admin', icono: <Settings size={18} />, clave: 'administracion', roles: ['admin'] },
 ]

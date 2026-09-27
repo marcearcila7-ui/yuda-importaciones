@@ -19,7 +19,8 @@
     "cerrarSesion": "Cerrar sesión",
     "cuentas": "Cuentas",
     "tiendas": "Tiendas",
-    "bodegaSeguimiento": "Bodega"
+    "bodegaSeguimiento": "Bodega",
+    "cotizacionesLibres": "Cotizaciones libres"
   },
   "ventas": {
     "titulo": "Ventas",
@@ -353,6 +354,20 @@
     "eliminarSeleccionadas": "Eliminar seleccionadas ({{cantidad}})",
     "seleccionarTodo": "Seleccionar todo",
     "seleccionarFila": "Seleccionar la cotización de {{cliente}}"
+  },
+  "cotizacionesLibres": {
+    "titulo": "Cotizaciones libres",
+    "intro": "Cotizaciones sin cliente asociado: son solo consultivas, no se pueden enviar a bodega. Si le asignas un cliente desde el detalle, deja de ser libre.",
+    "fecha": "Fecha",
+    "nombre": "Nombre",
+    "creadaPor": "Creada por",
+    "verDetalle": "Ver detalle",
+    "eliminar": "Eliminar",
+    "confirmarEliminar": "¿Eliminar la cotización libre \"{{nombre}}\"? Esta acción no se puede deshacer.",
+    "eliminada": "Cotización eliminada",
+    "errorEliminar": "No se pudo eliminar la cotización",
+    "sinResultados": "No tienes cotizaciones libres.",
+    "cargando": "Cargando…"
   },
   "pedidoCliente": {
     "titulo": "Pedido del cliente",

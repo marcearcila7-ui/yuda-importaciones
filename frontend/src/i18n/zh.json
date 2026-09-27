@@ -19,7 +19,8 @@
     "cerrarSesion": "退出登录",
     "cuentas": "账户",
     "tiendas": "店铺",
-    "bodegaSeguimiento": "仓库"
+    "bodegaSeguimiento": "仓库",
+    "cotizacionesLibres": "自由报价"
   },
   "ventas": {
     "titulo": "销售",
@@ -356,6 +357,20 @@
     "eliminarSeleccionadas": "删除所选 ({{cantidad}})",
     "seleccionarTodo": "全选",
     "seleccionarFila": "选择 {{cliente}} 的报价"
+  },
+  "cotizacionesLibres": {
+    "titulo": "自由报价",
+    "intro": "没有关联客户的报价：仅供参考，不能发送到仓库。从详情页关联客户后即变为普通报价。",
+    "fecha": "日期",
+    "nombre": "名称",
+    "creadaPor": "创建人",
+    "verDetalle": "查看详情",
+    "eliminar": "删除",
+    "confirmarEliminar": "删除自由报价“{{nombre}}”？此操作无法撤销。",
+    "eliminada": "报价已删除",
+    "errorEliminar": "无法删除报价",
+    "sinResultados": "没有自由报价。",
+    "cargando": "加载中……"
   },
   "pedidoCliente": {
     "titulo": "客户订单",

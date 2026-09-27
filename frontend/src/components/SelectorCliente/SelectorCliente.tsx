@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Search } from 'lucide-react'
+import { Check, Search, X } from 'lucide-react'
 import type { Cliente } from '../../types/cliente'
 
 const inputStyle: CSSProperties = { fontSize: 16 }
@@ -12,21 +12,24 @@ const inputClase =
 // a ojo y aparece el buscador.
 const CLIENTES_PARA_BUSCADOR = 6
 
-// Fila de cliente guardado
+// Fila de cliente guardado. Cuando está seleccionada lleva una X aparte (no un
+// <button> anidado dentro del botón de la fila, HTML no lo permite) para
+// poder desmarcarla: antes, una vez elegida, no había forma de "arrepentirse"
+// sin elegir a otro cliente primero.
 function FilaCliente({
   cliente,
   activo,
   onClick,
+  onQuitar,
 }: {
   cliente: Cliente
   activo: boolean
   onClick: () => void
+  onQuitar?: () => void
 }) {
   const inicial = (cliente.nombre || '?').trim().charAt(0).toUpperCase()
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className="flex w-full items-center gap-3 text-left transition-colors"
       style={{
         minHeight: 56,
@@ -36,30 +39,45 @@ function FilaCliente({
         backgroundColor: activo ? 'var(--yuda-primary-soft)' : 'var(--yuda-white)',
       }}
     >
-      <span
-        className="flex items-center justify-center font-bold"
-        style={{
-          width: 34,
-          height: 34,
-          flexShrink: 0,
-          borderRadius: 999,
-          fontSize: 14,
-          backgroundColor: 'var(--yuda-primary)',
-          color: 'var(--yuda-white)',
-        }}
-      >
-        {inicial}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
-          {cliente.nombre}
+      <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+        <span
+          className="flex items-center justify-center font-bold"
+          style={{
+            width: 34,
+            height: 34,
+            flexShrink: 0,
+            borderRadius: 999,
+            fontSize: 14,
+            backgroundColor: 'var(--yuda-primary)',
+            color: 'var(--yuda-white)',
+          }}
+        >
+          {inicial}
         </span>
-        <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
-          {cliente.empresa ? `${cliente.empresa}, ${cliente.email}` : cliente.email}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate" style={{ fontWeight: 600, fontSize: 15, color: 'var(--yuda-accent)' }}>
+            {cliente.nombre}
+          </span>
+          <span className="block truncate text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+            {cliente.empresa ? `${cliente.empresa}, ${cliente.email}` : cliente.email}
+          </span>
         </span>
-      </span>
-      {activo && <Check size={18} style={{ color: 'var(--yuda-primary)', flexShrink: 0 }} />}
-    </button>
+      </button>
+      {activo &&
+        (onQuitar ? (
+          <button
+            type="button"
+            onClick={onQuitar}
+            aria-label="Quitar selección"
+            className="flex items-center justify-center"
+            style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 999, color: 'var(--yuda-primary)' }}
+          >
+            <X size={18} />
+          </button>
+        ) : (
+          <Check size={18} style={{ color: 'var(--yuda-primary)', flexShrink: 0 }} />
+        ))}
+    </div>
   )
 }
 
@@ -116,6 +134,7 @@ function SelectorCliente({
             cliente={c}
             activo={c.id === valor}
             onClick={() => onElegir(c.id)}
+            onQuitar={() => onElegir('')}
           />
         ))}
         {clientesFiltrados.length === 0 && (

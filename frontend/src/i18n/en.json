@@ -19,7 +19,8 @@
     "cerrarSesion": "Log out",
     "cuentas": "Accounts",
     "tiendas": "Stores",
-    "bodegaSeguimiento": "Warehouse"
+    "bodegaSeguimiento": "Warehouse",
+    "cotizacionesLibres": "Free quotations"
   },
   "ventas": {
     "titulo": "Sales",
@@ -353,6 +354,20 @@
     "eliminarSeleccionadas": "Delete selected ({{cantidad}})",
     "seleccionarTodo": "Select all",
     "seleccionarFila": "Select {{cliente}}'s quotation"
+  },
+  "cotizacionesLibres": {
+    "titulo": "Free quotations",
+    "intro": "Quotations without a linked client: they're consultative only and can't be sent to the warehouse. Linking a client from the detail page turns it into a regular quotation.",
+    "fecha": "Date",
+    "nombre": "Name",
+    "creadaPor": "Created by",
+    "verDetalle": "View detail",
+    "eliminar": "Delete",
+    "confirmarEliminar": "Delete the free quotation \"{{nombre}}\"? This can't be undone.",
+    "eliminada": "Quotation deleted",
+    "errorEliminar": "Couldn't delete the quotation",
+    "sinResultados": "You don't have any free quotations.",
+    "cargando": "Loading…"
   },
   "pedidoCliente": {
     "titulo": "Client's order",
