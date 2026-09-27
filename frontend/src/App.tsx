@@ -57,6 +57,16 @@ function App() {
     initPortal()
   }, [initFromStorage, initPortal])
 
+  // Mismo build sirve cotizador.yudaimportaciones.com y
+  // usuarios.yudaimportaciones.com (ver DestinoPorDefecto arriba): el
+  // <title> de index.html es uno solo, así que en el navegador las dos
+  // pestañas se veían idénticas y no había forma de distinguirlas. Se
+  // ajusta acá según el dominio, una sola vez al cargar.
+  useEffect(() => {
+    const esDominioPortal = window.location.hostname.startsWith('usuarios.')
+    document.title = esDominioPortal ? 'YUDA Portal de Clientes' : 'YUDA Cotizador'
+  }, [])
+
   return (
     <BrowserRouter>
       <ConfirmDialog />
