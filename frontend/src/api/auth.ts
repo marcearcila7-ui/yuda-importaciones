@@ -2,8 +2,16 @@ import apiClient from './client'
 import type { TokenResponse, Usuario } from '../types/auth'
 
 // Inicia sesión y devuelve el token con los datos del usuario
-export async function login(email: string, password: string): Promise<TokenResponse> {
-  const { data } = await apiClient.post<TokenResponse>('/auth/login', { email, password })
+export async function login(
+  email: string,
+  password: string,
+  captchaToken?: string | null,
+): Promise<TokenResponse> {
+  const { data } = await apiClient.post<TokenResponse>('/auth/login', {
+    email,
+    password,
+    captcha_token: captchaToken,
+  })
   return data
 }
 

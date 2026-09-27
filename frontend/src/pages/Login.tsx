@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff } from 'lucide-react'
+import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useAuthStore } from '../store/authStore'
+
+const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY as string | undefined
 
 // font-size 16 evita el zoom automático en iOS
 const inputBase: CSSProperties = { padding: '12px 0', fontSize: 16 }
@@ -33,6 +36,8 @@ function Login() {
   // Escriben con el pulgar y presión de tiempo (en el mercado, frente al
   // cliente): poder ver lo que tipearon evita errores de dedo sin darse cuenta.
   const [verPassword, setVerPassword] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaRef = useRef<HCaptcha>(null)
 
   // La sesión vive en un token guardado, no en qué pantalla se está viendo: si el
   // gesto de "volver" del celular trae de regreso a esta URL con el token todavía
@@ -50,13 +55,16 @@ function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const ok = await login(email, password)
+    const ok = await login(email, password, captchaToken)
     if (ok) {
       // La contadora no crea cotizaciones: su inicio es el historial.
       // replace: true para que el login no quede en el historial como destino de
       // "volver" (ver también el redirect de arriba si igual se llega acá logueada).
       const rol = useAuthStore.getState().usuario?.rol
       navigate(rol === 'contadora' ? '/historial' : '/dashboard', { replace: true })
+    } else {
+      captchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
     }
   }
 
@@ -173,9 +181,20 @@ function Login() {
               {t('login.olvideContrasena')}
             </p>
 
+            {HCAPTCHA_SITE_KEY && (
+              <div className="mt-4 flex justify-center">
+                <HCaptcha
+                  ref={captchaRef}
+                  sitekey={HCAPTCHA_SITE_KEY}
+                  onVerify={setCaptchaToken}
+                  onExpire={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (!!HCAPTCHA_SITE_KEY && !captchaToken)}
               className="mt-8 w-full rounded-lg bg-[var(--yuda-primary)] font-semibold text-white hover:bg-[var(--yuda-primary-dark)] disabled:opacity-60"
               style={{ height: 52, fontSize: 16 }}
             >

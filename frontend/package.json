@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hcaptcha/react-hcaptcha": "^2.2.0",
     "@tanstack/react-table": "^8.20.5",
     "axios": "^1.7.7",
     "heic2any": "^0.0.4",

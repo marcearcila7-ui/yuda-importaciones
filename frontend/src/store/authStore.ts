@@ -9,7 +9,7 @@ interface AuthState {
   token: string | null
   isLoading: boolean
   error: string | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string, captchaToken?: string | null) => Promise<boolean>
   logout: () => void
   initFromStorage: () => void
   clearError: () => void
@@ -21,10 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (email, password) => {
+  login: async (email, password, captchaToken) => {
     set({ isLoading: true, error: null })
     try {
-      const data = await authApi.login(email, password)
+      const data = await authApi.login(email, password, captchaToken)
       // Persiste token y usuario en localStorage
       localStorage.setItem('yuda_token', data.access_token)
       localStorage.setItem('yuda_usuario', JSON.stringify(data.usuario))

@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { usePortalStore } from '../../store/portalStore'
+
+const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY as string | undefined
 
 const inputBase: CSSProperties = { padding: '12px 0', fontSize: 16 }
 const inputClase =
@@ -21,6 +24,8 @@ function PortalLogin() {
   const { login, isLoading, error, token, clearError } = usePortalStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const captchaRef = useRef<HCaptcha>(null)
 
   // Si ya hay sesión de cliente, ir directo al portal
   useEffect(() => {
@@ -30,9 +35,12 @@ function PortalLogin() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     clearError()
-    const ok = await login(email.trim().toLowerCase(), password)
+    const ok = await login(email.trim().toLowerCase(), password, captchaToken)
     if (ok) {
       navigate('/portal')
+    } else {
+      captchaRef.current?.resetCaptcha()
+      setCaptchaToken(null)
     }
   }
 
@@ -128,9 +136,20 @@ function PortalLogin() {
               className={inputClase}
             />
 
+            {HCAPTCHA_SITE_KEY && (
+              <div className="mt-4 flex justify-center">
+                <HCaptcha
+                  ref={captchaRef}
+                  sitekey={HCAPTCHA_SITE_KEY}
+                  onVerify={setCaptchaToken}
+                  onExpire={() => setCaptchaToken(null)}
+                />
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (!!HCAPTCHA_SITE_KEY && !captchaToken)}
               className="mt-8 w-full rounded-lg bg-[var(--yuda-primary)] font-semibold text-white hover:bg-[var(--yuda-primary-dark)] disabled:opacity-60"
               style={{ height: 52, fontSize: 16 }}
             >

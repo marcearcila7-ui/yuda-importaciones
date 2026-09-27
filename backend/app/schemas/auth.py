@@ -6,6 +6,7 @@ class LoginRequest(BaseModel):
 
     email: str
     password: str
+    captcha_token: str | None = None
 
 
 class UsuarioResponse(BaseModel):

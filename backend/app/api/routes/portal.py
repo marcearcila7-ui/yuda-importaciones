@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.captcha import captcha_requerido, verificar_captcha
 from app.core.rate_limit import esta_bloqueado, ip_del_request, limpiar, registrar_fallo
 
 from app.api.dependencies import get_current_cliente
@@ -84,6 +85,12 @@ def login_cliente(
     datos: ClienteLogin, request: Request, db: Session = Depends(get_db)
 ) -> ClienteTokenResponse:
     """Login del portal de clientes"""
+    if captcha_requerido() and not verificar_captcha(datos.captcha_token):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Falta marcar la casilla de verificación antes de continuar.",
+        )
+
     email = datos.email.strip().lower()
     clave_email = f"portal:email:{email}"
     clave_ip = f"portal:ip:{ip_del_request(request)}"

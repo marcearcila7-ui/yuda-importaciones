@@ -9,7 +9,7 @@ interface PortalState {
   token: string | null
   isLoading: boolean
   error: string | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string, captchaToken?: string | null) => Promise<boolean>
   loginConToken: (token: string, cliente: ClientePortal) => void
   // Tras cambiar la contraseña: guarda el token nuevo (el viejo queda
   // invalidado) y marca que ya no debe cambiarla.
@@ -25,10 +25,10 @@ export const usePortalStore = create<PortalState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  login: async (email, password) => {
+  login: async (email, password, captchaToken) => {
     set({ isLoading: true, error: null })
     try {
-      const data = await loginPortal(email, password)
+      const data = await loginPortal(email, password, captchaToken)
       localStorage.setItem('yuda_portal_token', data.access_token)
       localStorage.setItem('yuda_portal_cliente', JSON.stringify(data.cliente))
       set({ cliente: data.cliente, token: data.access_token, isLoading: false })
