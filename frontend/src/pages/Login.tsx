@@ -71,12 +71,14 @@ function Login() {
 
   return (
     <div
-      className="relative flex min-h-screen items-center justify-center overflow-hidden px-6"
+      className="relative flex min-h-screen items-start justify-center overflow-hidden px-4 pb-10 pt-20 sm:items-center sm:px-6 sm:pb-6 sm:pt-6"
       style={{ backgroundColor: 'var(--yuda-bg)' }}
     >
       <div className="tapiz" />
-      {/* Selector de idioma: visible siempre, arriba a la derecha */}
-      <div className="absolute right-4 top-4 z-20 flex gap-1">
+      {/* Selector de idioma: fixed (no absolute) para que quede siempre pegado
+          arriba de la pantalla real, sin importar que la tarjeta sea más alta
+          que el viewport en celular y "empuje" el contenido hacia arriba. */}
+      <div className="fixed right-4 top-4 z-20 flex gap-1">
         {IDIOMAS.map((idi) => {
           const activo = i18n.language === idi.code
           return (
