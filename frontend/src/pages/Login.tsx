@@ -61,7 +61,11 @@ function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-white px-6">
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-6"
+      style={{ backgroundColor: 'var(--yuda-bg)' }}
+    >
+      <div className="tapiz" />
       {/* Selector de idioma: visible siempre, arriba a la derecha */}
       <div className="absolute right-4 top-4 z-20 flex gap-1">
         {IDIOMAS.map((idi) => {
@@ -85,8 +89,17 @@ function Login() {
           )
         })}
       </div>
-      {/* Formulario centrado (todo blanco) */}
-      <div className="w-full" style={{ maxWidth: 380 }}>
+      {/* Formulario centrado, en tarjeta blanca sobre el tapiz */}
+      <div
+        className="relative z-10 w-full"
+        style={{
+          maxWidth: 420,
+          backgroundColor: 'var(--yuda-card)',
+          borderRadius: 20,
+          boxShadow: '0 12px 40px rgba(28,30,51,0.10)',
+          padding: '44px 40px',
+        }}
+      >
           {/* Logo + distintivo del equipo, centrado */}
           <img
             src="/logo-yuda-importaciones.svg"

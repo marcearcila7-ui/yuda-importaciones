@@ -58,6 +58,18 @@ h1, h2, h3, h4 {
   scrollbar-width: thin;
   scrollbar-color: var(--yuda-primary) transparent;
 }
+
+/* Fondo tipo "tapiz" con el icono de marca, usado en las pantallas de login
+   para que se sienta de YUDA sin competir con el formulario (opacidad muy baja). */
+.tapiz {
+  position: absolute;
+  inset: 0;
+  background-image: url('/logo-yuda-icono.svg');
+  background-size: 96px auto;
+  background-repeat: repeat;
+  opacity: 0.05;
+  pointer-events: none;
+}
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
