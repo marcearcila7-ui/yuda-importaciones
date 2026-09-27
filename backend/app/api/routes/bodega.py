@@ -135,11 +135,14 @@ def listar_usuarios_bodega(
     usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
     db: Session = Depends(get_db),
 ) -> list[UsuarioBodegaBasico]:
-    """Admin y bodega activos, para el selector de a quién asignar un pedido
-    (lo usan tanto Yuda Logistic como la vendedora al enviar a bodega)."""
+    """Solo bodega activos, para el selector de a quién asignar un pedido
+    (lo usan tanto Yuda Logistic como la vendedora al enviar a bodega).
+    Marcela (admin) no aparece a propósito: ella es quien audita/revisa
+    desde su cuenta, no una persona operativa de bodega a la que se le
+    asignen pedidos."""
     usuarios = (
         db.query(User)
-        .filter(User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+        .filter(User.rol == RolUsuario.bodega, User.activo)
         .order_by(User.nombre.asc())
         .all()
     )
@@ -254,9 +257,11 @@ def asignar_pedido_bodega(
 
     asignado = None
     if datos.asignado_a_id:
+        # Solo bodega, no admin: Marcela audita/revisa, no es una persona
+        # operativa a la que se le asignen pedidos.
         asignado = (
             db.query(User)
-            .filter(User.id == datos.asignado_a_id, User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+            .filter(User.id == datos.asignado_a_id, User.rol == RolUsuario.bodega, User.activo)
             .first()
         )
         if asignado is None:

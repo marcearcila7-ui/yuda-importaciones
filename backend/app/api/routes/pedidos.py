@@ -742,9 +742,11 @@ def enviar_a_bodega(
 
     asignado = None
     if datos.asignado_a_id:
+        # Solo bodega, no admin: Marcela audita/revisa, no es una persona
+        # operativa a la que se le asignen pedidos.
         asignado = (
             db.query(User)
-            .filter(User.id == datos.asignado_a_id, User.rol.in_([RolUsuario.admin, RolUsuario.bodega]), User.activo)
+            .filter(User.id == datos.asignado_a_id, User.rol == RolUsuario.bodega, User.activo)
             .first()
         )
         if asignado is None:
