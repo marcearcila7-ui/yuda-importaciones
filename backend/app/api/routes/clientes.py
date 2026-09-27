@@ -980,8 +980,13 @@ def vincular_cliente(
         sesion.enviada_cliente = False
         sesion.fecha_envio_cliente = None
     else:
-        _cliente_autorizado(db, datos.cliente_id, usuario)
+        cliente = _cliente_autorizado(db, datos.cliente_id, usuario)
         sesion.cliente_id = datos.cliente_id
+        # Igual que al crear la cotización directo para un cliente: la marca
+        # de embarque se hereda de su sigla en Yuda Contable, nunca se pide a
+        # mano (una cotización libre no tenía cliente todavía, así que no
+        # pudo heredarla al crearse).
+        sesion.shipping_mark = cliente.sigla
 
     db.commit()
     db.refresh(sesion)

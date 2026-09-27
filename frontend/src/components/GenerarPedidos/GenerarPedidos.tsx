@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
-import toast from 'react-hot-toast'
 import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos, getPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
 import Button from '../ui/Button'
-import ShippingMark from '../ShippingMark/ShippingMark'
 import type { GenerarPedidosResponse } from '../../types/pedidos'
 
 interface GenerarPedidosProps {
@@ -78,10 +76,6 @@ function GenerarPedidos({
   }, [sesion_id])
 
   const handleGenerar = async (usarCantidadesCliente = false) => {
-    if (!marcaActual.trim()) {
-      toast.error(t('pedidos.faltaMarca'))
-      return
-    }
     let mensajeConfirm: string
     if (usarCantidadesCliente) {
       mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
@@ -138,19 +132,16 @@ function GenerarPedidos({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      {/* Sin esto el proveedor no tiene cómo separar estas cajas de las de otro
-          pedido en su bodega. Se pide acá mismo, justo antes de generar, para
-          no mandarla a buscarlo en otra pantalla. */}
+      {/* La marca de embarque se hereda sola de la sigla del cliente en Yuda
+          Contable (ver backend: crear_sesion / vincular_cliente); ya no se le
+          pide a la vendedora que la escriba acá. Si falta es porque a este
+          cliente no le han puesto sigla todavía -eso se arregla en Yuda
+          Contable, no en el cotizador. */}
       {!marcaActual.trim() && (
         <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
-          <p className="mb-2 text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
-            {t('pedidos.faltaMarca')}
+          <p className="text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
+            {t('pedidos.faltaSigla')}
           </p>
-          <ShippingMark
-            sesionId={sesion_id}
-            valorInicial={marcaActual}
-            onGuardado={setMarcaActual}
-          />
         </div>
       )}
 

@@ -164,13 +164,18 @@ def generar_pedidos(
         )
 
     # a.2. Sin marca de embarque (iniciales del cliente) el proveedor no tiene
-    # cómo separar estas cajas de las de otro pedido en su bodega. Se exige acá
-    # (no solo en la pantalla) para que no se pueda generar sin ella por ningún
-    # camino.
+    # cómo separar estas cajas de las de otro pedido en su bodega. Se hereda
+    # sola de la sigla del cliente en Yuda Contable (ver crear_sesion y
+    # vincular_cliente): la vendedora nunca la escribe a mano. Si falta, es
+    # porque a ese cliente no le han asignado sigla todavía -eso se arregla en
+    # Yuda Contable, no acá.
     if not (sesion.shipping_mark or "").strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido",
+            detail=(
+                "Este cliente no tiene sigla asignada en Yuda Contable, así que no hay marca de "
+                "embarque para el proveedor. Pide que se la asignen allá antes de generar el pedido."
+            ),
         )
 
     # b. Ítems ordenados por orden

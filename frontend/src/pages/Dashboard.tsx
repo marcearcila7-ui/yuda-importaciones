@@ -13,9 +13,9 @@ import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizac
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricasVendedoras from '../components/MetricasVendedoras'
 import PackingListTable from '../components/PackingListTable/PackingListTable'
-import ShippingMark from '../components/ShippingMark/ShippingMark'
 import SesionSelector from '../components/SesionSelector/SesionSelector'
 import { eliminarSesion } from '../api/packing'
+import { getPedidos } from '../api/pedidos'
 import { confirmar } from '../store/confirmStore'
 import { getMetricas } from '../api/admin'
 import { useAuthStore } from '../store/authStore'
@@ -164,6 +164,20 @@ function Dashboard() {
   // pedidos a proveedores, registros internos) es ruido: no se puede usar todavia
   // y llena la pantalla de botones que no llevan a ninguna parte.
   const hayProductos = items.length > 0
+
+  // Cuántos pedidos a proveedor ya se generaron para esta cotización: sin
+  // esto, "Terminar" cerraba el asistente aunque la vendedora nunca hubiera
+  // generado el pedido (no leía la pantalla), y la cotización quedaba
+  // colgada sin que nadie se enterara -solo se podía retomar entrando a
+  // Clientes y volviendo a abrirla, algo que no era obvio.
+  const [cantidadPedidosGenerados, setCantidadPedidosGenerados] = useState(0)
+  useEffect(() => {
+    if (!sesionActual) return
+    getPedidos(sesionActual.id)
+      .then((lista) => setCantidadPedidosGenerados(lista.length))
+      .catch(() => setCantidadPedidosGenerados(0))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesionActual?.id])
 
   // Las métricas (generales y por vendedora) solo las ve Marcela / admin
   const esAdmin = usuario?.rol === 'admin'
@@ -472,10 +486,6 @@ function Dashboard() {
           {/* PANTALLA 2: la lista de productos ya cargados */}
           {pasoVista === 2 && (
             <SectionCard titulo={t('dashboard.productos')} id="seccion-productos">
-              <ShippingMark
-                sesionId={sesionActual.id}
-                valorInicial={sesionActual.shipping_mark ?? ''}
-              />
               <PackingListTable
                 items={items}
                 tipo_cambio_usd={sesionActual.tipo_cambio_usd}
@@ -530,6 +540,9 @@ function Dashboard() {
                 nombre_cliente={sesionActual.nombre_cliente}
                 permitirCantidadesCliente={sesionActual.pedido_recibido_at != null}
                 shippingMark={sesionActual.shipping_mark}
+                onGenerado={() =>
+                  getPedidos(sesionActual.id).then((lista) => setCantidadPedidosGenerados(lista.length))
+                }
               />
               {/* La vendedora terminaba acá sin saber qué seguía: "enviar a
                   bodega" no aparece todavía porque falta que el cliente
@@ -584,12 +597,23 @@ function Dashboard() {
                 <button
                   type="button"
                   onClick={volverAlOrigen}
-                  className="flex items-center justify-center gap-2 font-semibold text-white"
+                  disabled={!!sesionActual.cliente_id && cantidadPedidosGenerados === 0}
+                  className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-40"
                   style={{ minHeight: 48, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-success)' }}
                 >
                   <Check size={18} /> {t('dashboard.pasoTerminar')}
                 </button>
               )}
+              {/* Solo aplica a cotizaciones con cliente real: una libre no
+                  puede generar pedido (es consultiva), así que no tendría
+                  sentido bloquearle "Terminar" por lo mismo. */}
+              {pasoVista === PASOS_COTIZACION.length &&
+                !!sesionActual.cliente_id &&
+                cantidadPedidosGenerados === 0 && (
+                  <span className="text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+                    {t('dashboard.avisoSinPedidoGenerado')}
+                  </span>
+                )}
             </div>
           </div>
         </>

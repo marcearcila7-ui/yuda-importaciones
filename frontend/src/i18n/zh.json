@@ -158,6 +158,7 @@
     "pasoSiguiente": "下一步",
     "pasoTerminar": "完成",
     "avisoSinProductosAvanzar": "请至少添加一个产品才能继续。",
+    "avisoSinPedidoGenerado": "完成前请先生成给店铺的订单：否则这个报价会没有订单，以后要去客户里重新找它。",
     "pasoFotos": "照片",
     "ocultarCotizador": "隐藏",
     "queSigueDespues": "客户在其门户确认数量后，您就可以从客户资料（\"报价单\"标签 → \"可发往仓库\"）中将订单发送至仓库。"
@@ -306,7 +307,7 @@
     "agregarFoto": "添加照片"
   },
   "pedidos": {
-    "faltaMarca": "生成订单前请填写唛头（客户缩写）：这是店铺用来区分这批货和其他订单的方式。",
+    "faltaSigla": "该客户在 Yuda Contable 中还没有分配代码，所以没有给供应商的唛头。请先在那边分配后再生成订单。",
     "generar": "生成订单",
     "generando": "正在生成订单...",
     "confirmar": "为 {{cliente}} 生成订单？将为每个店铺创建一个Excel文件。",

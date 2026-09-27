@@ -155,6 +155,7 @@
     "pasoSiguiente": "Siguiente",
     "pasoTerminar": "Terminar",
     "avisoSinProductosAvanzar": "Agrega al menos un producto para continuar.",
+    "avisoSinPedidoGenerado": "Genera el pedido a la tienda antes de terminar: si no, esta cotización queda sin pedido y hay que volver a buscarla en Clientes.",
     "pasoFotos": "Fotos",
     "ocultarCotizador": "Ocultar",
     "queSigueDespues": "Cuando el cliente confirme las cantidades desde su portal, vas a poder enviar el pedido a bodega desde la ficha del cliente (pestaña «Cotizaciones» → «Listas para bodega»)."
@@ -303,7 +304,7 @@
     "agregarFoto": "Agregar foto"
   },
   "pedidos": {
-    "faltaMarca": "Escribe la marca de embarque (iniciales del cliente) antes de generar el pedido: es con lo que la tienda separa estas cajas de las de otro pedido.",
+    "faltaSigla": "Este cliente no tiene sigla asignada en Yuda Contable, así que no hay marca de embarque para el proveedor. Pide que se la asignen allá antes de generar el pedido.",
     "generar": "Generar Pedidos",
     "generando": "Generando pedidos...",
     "confirmar": "¿Generar pedidos para {{cliente}}? Se creará un archivo Excel por cada tienda.",

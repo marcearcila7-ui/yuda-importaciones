@@ -208,6 +208,7 @@ def crear_sesion(
 
     nombre = datos.nombre_cliente
     # Si se crea para un cliente del portal, validar y usar su nombre
+    marca_embarque = None
     if datos.cliente_id:
         cliente = db.query(Cliente).filter(Cliente.id == datos.cliente_id).first()
         if cliente is None:
@@ -215,6 +216,10 @@ def crear_sesion(
         if usuario.rol.value == "vendedora" and cliente.vendedora_id != usuario.id:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre este cliente")
         nombre = cliente.nombre
+        # La marca de embarque se hereda de la sigla del cliente en Yuda
+        # Contable: la vendedora nunca la escribe a mano (antes se le pedía
+        # justo antes de generar el pedido, y era un paso más que "no leía").
+        marca_embarque = cliente.sigla
 
     sesion = Sesion(
         nombre_cliente=nombre,
@@ -223,6 +228,7 @@ def crear_sesion(
         tipo_cotizacion=datos.tipo_cotizacion,
         user_id=usuario.id,
         cliente_id=datos.cliente_id,
+        shipping_mark=marca_embarque,
     )
     db.add(sesion)
     db.commit()

@@ -155,6 +155,7 @@
     "pasoSiguiente": "Next",
     "pasoTerminar": "Finish",
     "avisoSinProductosAvanzar": "Add at least one product to continue.",
+    "avisoSinPedidoGenerado": "Generate the order to the store before finishing: otherwise this quotation is left without an order, and you'll have to find it again under Clients.",
     "pasoFotos": "Photos",
     "ocultarCotizador": "Hide",
     "queSigueDespues": "Once the client confirms the quantities from their portal, you'll be able to send the order to the warehouse from the client's page (\"Quotations\" tab → \"Ready for warehouse\")."
@@ -303,7 +304,7 @@
     "agregarFoto": "Add photo"
   },
   "pedidos": {
-    "faltaMarca": "Write the shipping mark (client's initials) before generating the order: it's how the store separates these boxes from another order's.",
+    "faltaSigla": "This client doesn't have a code assigned in Yuda Contable, so there's no shipping mark for the supplier. Ask for it to be assigned there before generating the order.",
     "generar": "Generate Orders",
     "generando": "Generating orders...",
     "confirmar": "Generate orders for {{cliente}}? An Excel file will be created for each store.",
