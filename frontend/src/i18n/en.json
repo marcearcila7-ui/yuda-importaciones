@@ -856,6 +856,7 @@
     "bl": "BL"
   },
   "portal": {
+    "olvideContrasena": "Forgot your password? Contact us and we'll help you reset it.",
     "atendidaPor": "Handled by {{nombre}}",
     "cambioClaveObligatorio": "Password change required",
     "pongaSuClave": "Set your own password",

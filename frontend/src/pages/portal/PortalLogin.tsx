@@ -149,6 +149,10 @@ function PortalLogin() {
               </button>
             </div>
 
+            <p className="mt-2 text-right text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('portal.olvideContrasena')}
+            </p>
+
             {HCAPTCHA_SITE_KEY && (
               <div className="mt-4 flex justify-center">
                 <HCaptcha

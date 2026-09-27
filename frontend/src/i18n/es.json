@@ -856,6 +856,7 @@
     "bl": "BL"
   },
   "portal": {
+    "olvideContrasena": "¿Olvidaste tu contraseña? Escríbenos y te ayudamos a recuperarla.",
     "atendidaPor": "Atendida por {{nombre}}",
     "cambioClaveObligatorio": "Cambio de clave obligatorio",
     "pongaSuClave": "Pon tu propia contraseña",

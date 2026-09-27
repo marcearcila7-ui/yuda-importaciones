@@ -859,6 +859,7 @@
     "bl": "提单"
   },
   "portal": {
+    "olvideContrasena": "忘记密码？请联系我们帮您找回。",
     "atendidaPor": "负责人：{{nombre}}",
     "cambioClaveObligatorio": "必须修改密码",
     "pongaSuClave": "设置您自己的密码",
