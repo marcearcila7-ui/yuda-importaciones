@@ -419,15 +419,19 @@ def bodega_resumen(
         .filter(SeguimientoPedido.estado.in_(ESTADOS_ENVIO[ESTADOS_ENVIO.index("proveedor_recibio"):]))
     )
     if usuario.rol.value == "vendedora":
+        # Estas sesiones siempre tienen cliente (una libre no puede llegar a
+        # bodega, ver generar_pedidos): el acceso depende solo de ser hoy
+        # dueña o colaboradora de ESE cliente activo, no de quién la creó
+        # -si Marcela reasigna el cliente, la vendedora anterior deja de
+        # verlo acá también.
         compartidos = db.query(ClienteVendedora.cliente_id).filter(
             ClienteVendedora.vendedora_id == usuario.id
         )
         clientes_con_acceso = db.query(Cliente.id).filter(
-            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
+            Cliente.activo.is_(True),
+            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos)),
         )
-        query = query.filter(
-            (Sesion.user_id == usuario.id) | (Sesion.cliente_id.in_(clientes_con_acceso))
-        )
+        query = query.filter(Sesion.cliente_id.in_(clientes_con_acceso))
 
     filas = query.order_by(SeguimientoPedido.updated_at.desc()).all()
     if not filas:

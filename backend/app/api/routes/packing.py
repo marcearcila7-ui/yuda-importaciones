@@ -5,7 +5,7 @@ from datetime import datetime
 import httpx
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile, status
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user, vendedora_tiene_acceso_cliente
@@ -162,14 +162,20 @@ def listar_sesiones(
     usuario: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[Sesion]:
-    """Lista sesiones: admin/contadora ven todas; vendedora, las que creó ella
-    más las de cualquier cliente que sea suyo o que Marcela le haya compartido
-    (antes solo veía las que había creado ella misma: una cotización de un
-    cliente compartido, creada por otra vendedora o por Marcela, le daba
-    "No se encontró la cotización" al abrirla)."""
+    """Lista sesiones: admin/contadora ven todas; vendedora, las libres que
+    creó ella más las de cualquier cliente que HOY sea suyo o que Marcela le
+    haya compartido (antes solo veía las que había creado ella misma: una
+    cotización de un cliente compartido, creada por otra vendedora o por
+    Marcela, le daba "No se encontró la cotización" al abrirla).
+
+    Ojo: si el cliente ya no es de esta vendedora (Marcela lo reasignó a
+    otra) o está desactivado, sus cotizaciones ya NO cuentan aunque las haya
+    creado ella misma -mismo criterio que exigir_acceso_sesion, para que la
+    lista y el acceso real a cada cotización nunca queden desalineados."""
     query = db.query(Sesion)
     if usuario.rol.value == "vendedora":
         clientes_propios_o_compartidos = db.query(Cliente.id).filter(
+            Cliente.activo.is_(True),
             or_(
                 Cliente.vendedora_id == usuario.id,
                 Cliente.id.in_(
@@ -177,11 +183,11 @@ def listar_sesiones(
                         ClienteVendedora.vendedora_id == usuario.id
                     )
                 ),
-            )
+            ),
         )
         query = query.filter(
             or_(
-                Sesion.user_id == usuario.id,
+                and_(Sesion.cliente_id.is_(None), Sesion.user_id == usuario.id),
                 Sesion.cliente_id.in_(clientes_propios_o_compartidos),
             )
         )
@@ -232,12 +238,21 @@ def eliminar_sesion(
 ) -> dict:
     """Elimina una cotización con sus ítems, pedidos y seguimiento.
 
-    La vendedora puede borrar las suyas; admin, cualquiera. Si ya estaba enviada,
-    también desaparece del portal del cliente (el portal solo muestra las
-    cotizaciones que existen). Se bloquea si tiene contabilidad registrada.
-    """
+    La vendedora solo puede borrar cotizaciones libres (sin cliente
+    asociado); si tiene un cliente, borrarla es cosa de Marcela -el cliente
+    es quien se desactiva (con todo su historial de respaldo), no se le
+    puede ir borrando cotizaciones sueltas por fuera de eso. Admin puede
+    borrar cualquiera. Si ya estaba enviada, también desaparece del portal
+    del cliente (el portal solo muestra las cotizaciones que existen). Se
+    bloquea si tiene contabilidad registrada."""
     exigir_roles(usuario, "admin", "vendedora")
-    _obtener_sesion(db, sesion_id, usuario)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
+    if usuario.rol.value == "vendedora" and sesion.cliente_id is not None:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Solo puedes borrar cotizaciones libres. Si esta ya no debería existir, pide que "
+            "Marcela desactive al cliente.",
+        )
 
     if tiene_movimientos_sesion(db, sesion_id):
         raise HTTPException(

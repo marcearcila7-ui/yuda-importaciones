@@ -109,20 +109,29 @@ def vendedora_tiene_acceso_cliente(db: Session, cliente_id: str, vendedora_id: s
 
 
 def exigir_acceso_sesion(db: Session, sesion: Sesion, usuario: User) -> None:
-    """Lanza 403 si una vendedora no puede gestionar esta cotización: ni la
-    creó, ni es dueña o colaboradora del cliente al que está vinculada.
+    """Lanza 403 si una vendedora no puede gestionar esta cotización.
 
     Punto único para este chequeo: antes vivía duplicado (con la misma
     lógica, pero sin enterarse de clientes compartidos) en clientes.py,
     pedidos.py, packing.py y lotes.py — una vendedora agregada como
     colaboradora de un cliente podía ver sus cotizaciones, pero cualquier
     acción puntual (seguimiento, packing, OCR, generar pedidos) le daba 403.
+
+    Sin cliente asociado (cotización libre): solo quien la creó. Con
+    cliente: solo quien hoy es dueña o colaboradora de ESE cliente, y el
+    cliente debe seguir activo -no basta con haberla creado una misma.
+    Si Marcela reasigna el cliente a otra vendedora, o lo desactiva, la
+    vendedora anterior pierde el acceso a esa cotización aunque la haya
+    hecho ella: así "desaparece del sistema" de verdad, no a medias.
     """
-    if usuario.rol.value != "vendedora" or sesion.user_id == usuario.id:
+    if usuario.rol.value != "vendedora":
         return
-    if sesion.cliente_id:
+    if sesion.cliente_id is None:
+        if sesion.user_id == usuario.id:
+            return
+    else:
         cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
-        if cliente is not None and (
+        if cliente is not None and cliente.activo and (
             cliente.vendedora_id == usuario.id
             or vendedora_tiene_acceso_cliente(db, sesion.cliente_id, usuario.id)
         ):

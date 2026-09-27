@@ -295,7 +295,18 @@ function Clientes() {
       .catch(() => setEquipo({ vendedoras: [] }))
   }, [esAdmin])
 
+  // Solo Marcela (ver esAdmin en el render). Desactivar pide confirmación
+  // -aunque no borre nada, hace desaparecer al cliente de todo el sistema
+  // para el resto del equipo-; reactivar no, es deshacer eso mismo.
   const toggleActivo = async (c: Cliente) => {
+    if (c.activo) {
+      const ok = await confirmar({
+        mensaje: t('clientes.confirmarEliminar', { nombre: c.nombre }),
+        peligro: true,
+        textoConfirmar: t('clientes.desactivar'),
+      })
+      if (!ok) return
+    }
     try {
       await actualizarCliente(c.id, { activo: !c.activo })
       cargar()
@@ -463,6 +474,9 @@ function Clientes() {
     }
   }
 
+  // Solo Marcela ve este botón (ver esAdmin en el render): "eliminar" ya no
+  // borra nada, desactiva al cliente -desaparece del cotizador y de bodega
+  // para todo el equipo, pero su historial queda intacto como respaldo.
   const eliminar = async (c: Cliente) => {
     const ok = await confirmar({
       mensaje: t('clientes.confirmarEliminar', { nombre: c.nombre }),
@@ -475,21 +489,6 @@ function Clientes() {
       toast.success(t('clientes.eliminado'))
       cargar()
     } catch (err) {
-      const estado = axios.isAxiosError(err) ? err.response?.status : null
-      // 409: tiene cotizaciones enviadas y no se puede eliminar. En vez de dejar
-      // a la vendedora sin salida, le ofrecemos desactivarlo en un clic.
-      if (estado === 409) {
-        if (await confirmar({ mensaje: t('clientes.ofrecerDesactivar', { nombre: c.nombre }), textoConfirmar: t('clientes.desactivar') })) {
-          try {
-            await actualizarCliente(c.id, { activo: false })
-            toast.success(t('clientes.desactivado', { nombre: c.nombre }))
-            cargar()
-          } catch {
-            toast.error(t('clientes.errorActualizar'))
-          }
-        }
-        return
-      }
       const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
       toast.error(typeof detalle === 'string' ? detalle : t('clientes.errorEliminar'))
     }
@@ -822,22 +821,20 @@ ${t('clientes.email')}: ${c.email}`
                 <Wallet size={16} /> {t('cuentas.verCuenta')}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => toggleActivo(c)}
-              className="flex min-h-[42px] items-center rounded-lg border border-gray-200 px-4 text-sm font-semibold"
-              style={{ color: c.activo ? 'var(--yuda-error)' : 'var(--yuda-success)' }}
-            >
-              {c.activo ? t('clientes.desactivar') : t('clientes.activar')}
-            </button>
-            <button
-              type="button"
-              onClick={() => eliminar(c)}
-              className="flex min-h-[42px] items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
-              style={{ borderColor: '#FCA5A5', color: 'var(--yuda-error)' }}
-            >
-              <Trash2 size={16} /> {t('clientes.eliminar')}
-            </button>
+            {esAdmin && (
+              <button
+                type="button"
+                onClick={() => toggleActivo(c)}
+                className="flex min-h-[42px] items-center gap-2 rounded-lg border px-4 text-sm font-semibold"
+                style={
+                  c.activo
+                    ? { borderColor: '#FCA5A5', color: 'var(--yuda-error)' }
+                    : { borderColor: 'var(--yuda-border)', color: 'var(--yuda-success)' }
+                }
+              >
+                <Trash2 size={16} /> {c.activo ? t('clientes.eliminar') : t('clientes.activar')}
+              </button>
+            )}
           </div>
         </div>
         )}
@@ -1151,18 +1148,22 @@ ${t('clientes.email')}: ${c.email}`
                           </div>
                           <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            eliminarCotizacion(s, c.id)
-                          }}
-                          title={t('clientes.eliminarCotizacion')}
-                          className="flex flex-shrink-0 items-center justify-center rounded-lg"
-                          style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {/* Solo Marcela: una cotización de un cliente real no se
+                            borra suelta, eso es cosa de desactivar al cliente. */}
+                        {esAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              eliminarCotizacion(s, c.id)
+                            }}
+                            title={t('clientes.eliminarCotizacion')}
+                            className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                            style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     )
                   })}
@@ -1592,22 +1593,23 @@ ${t('clientes.email')}: ${c.email}`
                   )}
                   <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
                 </button>
-                {/* Borrar directo desde la lista: antes había que entrar a la
-                    ficha del cliente solo para eliminarlo. Reusa `eliminar`,
-                    que ya confirma y ofrece desactivar si tiene cotizaciones. */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    eliminar(c)
-                  }}
-                  aria-label={t('clientes.eliminar')}
-                  title={t('clientes.eliminar')}
-                  className="flex flex-shrink-0 items-center justify-center rounded-lg"
-                  style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
-                >
-                  <Trash2 size={18} />
-                </button>
+                {/* Borrar directo desde la lista: solo Marcela. Ya no borra
+                    nada, desactiva (reusa `eliminar`, que ya confirma). */}
+                {esAdmin && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      eliminar(c)
+                    }}
+                    aria-label={t('clientes.eliminar')}
+                    title={t('clientes.eliminar')}
+                    className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                    style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
             ))}
           </div>

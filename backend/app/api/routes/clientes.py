@@ -19,11 +19,6 @@ from app.core.archivo_valida import detectar_tipo_documento
 from app.core.config import settings
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
-from app.services.borrado_service import (
-    borrar_sesiones,
-    limpiar_storage,
-    tiene_movimientos_cliente,
-)
 from app.models.cliente import ORIGEN_IMPORTADO_CONTABLE, Cliente
 from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.cuenta import MovimientoCuenta, calcular_comision, convertir_abono
@@ -142,14 +137,21 @@ def _roles_por_usuario(db: Session, clientes: list[Cliente]) -> dict[str, str]:
 
 
 def _cliente_autorizado(db: Session, cliente_id: str, usuario: User) -> Cliente:
-    """Devuelve el cliente si el usuario puede gestionarlo; si no, 404/403"""
+    """Devuelve el cliente si el usuario puede gestionarlo; si no, 404/403.
+
+    Un cliente desactivado (solo Marcela puede hacerlo) es invisible para la
+    vendedora en todo sentido, no solo en el listado: si intenta abrirlo
+    directo por URL, también debe darle 403, como si hubiera desaparecido
+    del sistema de verdad."""
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if cliente is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente no encontrado")
-    if (
-        usuario.rol.value == "vendedora"
-        and cliente.vendedora_id != usuario.id
-        and not vendedora_tiene_acceso_cliente(db, cliente_id, usuario.id)
+    if usuario.rol.value == "vendedora" and (
+        not cliente.activo
+        or (
+            cliente.vendedora_id != usuario.id
+            and not vendedora_tiene_acceso_cliente(db, cliente_id, usuario.id)
+        )
     ):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre este cliente")
     return cliente
@@ -210,15 +212,18 @@ def listar_clientes(
     usuario: User = Depends(require_roles("admin", "vendedora", "contadora")),
     db: Session = Depends(get_db),
 ) -> list[ClienteResponse]:
-    """Lista clientes: la vendedora ve los suyos y los que Marcela le comparta;
-    admin y contadora ven todos."""
+    """Lista clientes: la vendedora ve los suyos y los que Marcela le comparta,
+    activos solamente (solo Marcela desactiva un cliente, y cuando lo hace
+    debe desaparecer del todo para el resto del equipo); admin y contadora
+    ven todos, incluidos los desactivados (con el toggle "Ver desactivados")."""
     query = db.query(Cliente)
     if usuario.rol.value == "vendedora":
         compartidos = db.query(ClienteVendedora.cliente_id).filter(
             ClienteVendedora.vendedora_id == usuario.id
         )
         query = query.filter(
-            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos))
+            Cliente.activo.is_(True),
+            (Cliente.vendedora_id == usuario.id) | (Cliente.id.in_(compartidos)),
         )
     clientes = query.order_by(Cliente.created_at.desc()).all()
     roles = _roles_por_usuario(db, clientes)
@@ -345,6 +350,11 @@ def actualizar_cliente(
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Esa vendedora no existe")
     if "sigla" in cambios and usuario.rol.value != "admin":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Solo Marcela puede editar la sigla de Yuda Contable")
+    if "activo" in cambios and usuario.rol.value != "admin":
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Solo Marcela puede desactivar o reactivar un cliente (desde Yuda Contable)",
+        )
     if cambios.get("sigla"):
         sigla = cambios["sigla"].strip().upper()
         cambios["sigla"] = sigla
@@ -761,51 +771,21 @@ def desactivar_clientes_excepto(
     return {"desactivados": len(afectados)}
 
 
-def _eliminar_cliente_cascada(db: Session, cliente: Cliente, forzar: bool) -> None:
-    """Borra el cliente con TODAS sus cotizaciones, pedidos generados y
-    seguimiento. Compartido entre el DELETE de la UI (bloquea si hay
-    contabilidad, salvo que forzar=True) y la sincronización desde Yuda
-    Contable (forzar=True siempre: "eliminar es eliminar", decisión explícita
-    para que ambas apps queden consistentes sin excepción -incluye borrar
-    también los movimientos de cuenta, no solo saltarse el aviso)."""
-    if forzar:
-        db.query(MovimientoCuenta).filter(MovimientoCuenta.cliente_id == cliente.id).delete()
-    elif tiene_movimientos_cliente(db, cliente.id):
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Este cliente tiene abonos o cobros registrados en su cuenta. "
-            "Desactívalo en lugar de eliminarlo, o pide que se eliminen esos "
-            "movimientos primero.",
-        )
-
-    sesion_ids = [
-        sid for (sid,) in db.query(Sesion.id).filter(Sesion.cliente_id == cliente.id)
-    ]
-    archivos = borrar_sesiones(db, sesion_ids)
-    # Limpieza de la Fase 1 (colaboración): sin esto, un cliente compartido con
-    # otra vendedora o con actividad registrada no se puede borrar (viola la FK).
-    db.query(ClienteVendedora).filter(ClienteVendedora.cliente_id == cliente.id).delete()
-    db.query(ClienteActividad).filter(ClienteActividad.cliente_id == cliente.id).delete()
-    db.delete(cliente)
-    db.commit()
-    limpiar_storage(archivos)
-
-
 @router.delete("/clientes/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_cliente(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> None:
-    """Elimina un cliente con TODAS sus cotizaciones (enviadas o no), sus pedidos
-    generados y su seguimiento. Pierde el acceso al portal.
-
-    Se bloquea si tiene abonos o cobros registrados en su cuenta: esa es
-    contabilidad y no se borra sola. En ese caso conviene desactivarlo.
-    """
+    """Solo Marcela. "Eliminar" un cliente ya NO borra nada físicamente: lo
+    desactiva (activo=False), igual que desde Yuda Contable. Así desaparece
+    de las listas activas de cotizador y bodega para todo el mundo, pero
+    nada de su historial (cotizaciones, chats, actividad de bodega) se
+    pierde -sirve como respaldo por si hay que revisarlo o reactivarlo
+    después. El borrado físico de verdad ya no vive detrás de este botón."""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
-    _exigir_dueno_o_admin(cliente, usuario)
-    _eliminar_cliente_cascada(db, cliente, forzar=False)
+    cliente.activo = False
+    db.commit()
 
 
 @router.post("/clientes/eliminar-desde-contable", status_code=status.HTTP_204_NO_CONTENT)
@@ -814,16 +794,16 @@ def eliminar_cliente_desde_contable(
     db: Session = Depends(get_db),
     _autorizado: None = Depends(_verificar_token_contable),
 ) -> None:
-    """Yuda Contable llama a esto al eliminar un cliente allá, para que
-    desaparezca también del cotizador. Se elimina SIEMPRE (sin el bloqueo de
-    "tiene movimientos" que sí aplica al botón manual): decisión explícita
-    para que las dos apps queden consistentes sin excepción. Si no existe acá
-    (nunca se importó), no hace nada -no es un error."""
+    """Yuda Contable llama a esto al eliminar un cliente allá. Igual que el
+    DELETE manual (ver eliminar_cliente): desactiva, no borra nada -el
+    historial queda como respaldo. Si no existe acá (nunca se importó), no
+    hace nada -no es un error."""
     sigla = datos.sigla.strip().upper()
     cliente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
     if cliente is None:
         return
-    _eliminar_cliente_cascada(db, cliente, forzar=True)
+    cliente.activo = False
+    db.commit()
 
 
 @router.post("/clientes/desactivar-desde-contable", status_code=status.HTTP_204_NO_CONTENT)

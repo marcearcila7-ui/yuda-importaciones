@@ -175,7 +175,8 @@ def listar_pedidos_bodega(
         db.query(Sesion, SeguimientoPedido, User)
         .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
         .outerjoin(User, User.id == Sesion.user_id)
-        .filter(SeguimientoPedido.bodega_archivado_en.is_(None))
+        .join(Cliente, Cliente.id == Sesion.cliente_id)
+        .filter(SeguimientoPedido.bodega_archivado_en.is_(None), Cliente.activo.is_(True))
     )
     if vista in ("sin_asignar", "asignados"):
         query = query.filter(SeguimientoPedido.estado == "proveedor_recibio")
