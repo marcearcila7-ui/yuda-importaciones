@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from datetime import date, datetime, timezone
@@ -895,7 +896,11 @@ async def agregar_foto_inspeccion(
     imagen_bytes, tipo_real = await _leer_y_validar_foto_inspeccion(foto)
     extension = TIPOS_PERMITIDOS_FOTO_INSPECCION[tipo_real]
     nombre_archivo = f"inspeccion/{item.id}/{uuid.uuid4().hex}{extension}"
-    url = subir_foto(imagen_bytes, nombre_archivo, tipo_real)
+    # subir_foto es síncrono (storage3): sin el hilo aparte, esta subida
+    # bloqueaba el único proceso de la API completo -nadie más podía usar
+    # nada (chat, notificaciones, otra bodega) mientras durara.
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(None, lambda: subir_foto(imagen_bytes, nombre_archivo, tipo_real))
 
     if insp is None:
         insp = ItemInspeccionBodega(item_id=item.id)
@@ -947,7 +952,11 @@ async def subir_video_inspeccion(
     video_bytes, content_type = await _leer_y_validar_video(video)
     extension = TIPOS_PERMITIDOS_VIDEO[content_type]
     nombre_archivo = f"inspeccion/{item.id}/{uuid.uuid4().hex}{extension}"
-    url = subir_video(video_bytes, nombre_archivo, content_type)
+    # Igual que la foto de arriba: un video pesa más y tarda más en subir, así
+    # que bloqueaba el proceso completo por más tiempo todavía si no se manda
+    # a un hilo aparte.
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(None, lambda: subir_video(video_bytes, nombre_archivo, content_type))
 
     insp = db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).first()
     if insp is None:

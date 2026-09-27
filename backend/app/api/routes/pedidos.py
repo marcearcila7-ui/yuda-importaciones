@@ -1,3 +1,4 @@
+import asyncio
 import io
 import logging
 import multiprocessing
@@ -704,7 +705,10 @@ async def reemplazar_archivo_pedido_generado(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
 
     nombre_archivo = f"pedidos/{pedido.id}/manual_{uuid.uuid4().hex}_{archivo.filename or 'archivo'}"
-    url = subir(contenido, nombre_archivo)
+    # subir_* es síncrono (storage3): sin el hilo aparte, esta subida bloqueaba
+    # el único proceso de la API completo mientras durara.
+    loop = asyncio.get_event_loop()
+    url = await loop.run_in_executor(None, lambda: subir(contenido, nombre_archivo))
     setattr(pedido, campo_url, url)
 
     ya_revisado = pedido.revisado_en_bodega_at is not None
