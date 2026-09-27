@@ -73,7 +73,7 @@
   },
   "login": {
     "bienvenida": "Welcome",
-    "credenciales": "Enter your credentials to continue",
+    "credenciales": "Enter your credentials to log in",
     "email": "Email",
     "contrasena": "Password",
     "verContrasena": "Show password",
@@ -82,7 +82,7 @@
     "ingresando": "Signing in...",
     "error": "Incorrect credentials",
     "tagline": "We connect China with your success",
-    "accesoEquipo": "Team access",
+    "accesoEquipo": "Quotes",
     "sesionVencida": "Your session was closed for security after several hours. Sign in again and carry on where you were; nothing was lost.",
     "olvideContrasena": "Forgot your password? Ask your administrator to change it."
   },

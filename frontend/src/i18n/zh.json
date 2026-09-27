@@ -73,7 +73,7 @@
   },
   "login": {
     "bienvenida": "欢迎",
-    "credenciales": "请输入您的账号信息以继续",
+    "credenciales": "请输入您的账号信息以登录",
     "email": "邮箱",
     "contrasena": "密码",
     "verContrasena": "显示密码",
@@ -82,7 +82,7 @@
     "ingresando": "正在登录...",
     "error": "账号或密码错误",
     "tagline": "连接中国与您的成功",
-    "accesoEquipo": "团队登录",
+    "accesoEquipo": "报价系统",
     "sesionVencida": "出于安全考虑，您的会话在数小时后已关闭。请重新登录并继续，数据不会丢失。",
     "olvideContrasena": "忘记密码？请联系管理员为您重置。"
   },

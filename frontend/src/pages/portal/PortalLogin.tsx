@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { Eye, EyeOff } from 'lucide-react'
 import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { usePortalStore } from '../../store/portalStore'
 
@@ -26,6 +27,7 @@ function PortalLogin() {
   const [password, setPassword] = useState('')
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
+  const [verPassword, setVerPassword] = useState(false)
 
   // Si ya hay sesión de cliente, ir directo al portal
   useEffect(() => {
@@ -97,14 +99,14 @@ function PortalLogin() {
           <div className="text-center">
             <span
               className="inline-block rounded-full px-3 py-1 text-xs font-semibold"
-              style={{ backgroundColor: 'var(--yuda-success-soft)', color: '#047857' }}
+              style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
             >
               {t('portal.accesoPortal')}
             </span>
-            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 26, color: 'var(--yuda-accent)' }}>
-              {t('portal.bienvenida')}
+            <h1 className="mt-4" style={{ fontWeight: 700, fontSize: 28, color: 'var(--yuda-accent)' }}>
+              {t('login.bienvenida')}
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--yuda-text-secondary)', marginTop: 4 }}>{t('portal.credenciales')}</p>
+            <p style={{ fontSize: 14, color: 'var(--yuda-text-secondary)', marginTop: 4 }}>{t('login.credenciales')}</p>
           </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 28 }}>
@@ -125,16 +127,27 @@ function PortalLogin() {
             <label htmlFor="password" style={{ ...labelStyle, marginTop: 20 }}>
               {t('login.contrasena')}
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              style={inputBase}
-              className={inputClase}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={verPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                style={{ ...inputBase, paddingRight: 32 }}
+                className={inputClase}
+              />
+              <button
+                type="button"
+                onClick={() => setVerPassword((v) => !v)}
+                aria-label={t(verPassword ? 'login.ocultarContrasena' : 'login.verContrasena')}
+                className="absolute bottom-2 right-0 flex items-center justify-center"
+                style={{ width: 28, height: 28, color: 'var(--yuda-text-secondary)' }}
+              >
+                {verPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             {HCAPTCHA_SITE_KEY && (
               <div className="mt-4 flex justify-center">

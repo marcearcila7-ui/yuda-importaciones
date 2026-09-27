@@ -72,17 +72,17 @@
     "fueraPeriodo": "En este período no hubo despachos. Hay {{n}} fuera del período: cambia el rango de fechas o elige «Todo» para verlos."
   },
   "login": {
-    "bienvenida": "Bienvenida",
-    "credenciales": "Ingresa tus credenciales para continuar",
-    "email": "Email",
+    "bienvenida": "Bienvenido",
+    "credenciales": "Ingresa tus credenciales para iniciar sesión",
+    "email": "Correo",
     "contrasena": "Contraseña",
     "verContrasena": "Ver contraseña",
     "ocultarContrasena": "Ocultar contraseña",
-    "ingresar": "Ingresar",
+    "ingresar": "Iniciar sesión",
     "ingresando": "Iniciando sesión...",
     "error": "Credenciales incorrectas",
     "tagline": "Conectamos China con tu éxito",
-    "accesoEquipo": "Acceso del equipo",
+    "accesoEquipo": "Cotizador",
     "sesionVencida": "Tu sesión se cerró por seguridad después de varias horas. Vuelve a entrar y sigue donde estabas; no perdiste nada.",
     "olvideContrasena": "¿Olvidaste tu contraseña? Pídesela a tu administradora."
   },
