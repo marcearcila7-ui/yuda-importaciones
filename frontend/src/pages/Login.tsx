@@ -38,6 +38,7 @@ function Login() {
   const [verPassword, setVerPassword] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
+  const [recordarme, setRecordarme] = useState(false)
 
   // La sesión vive en un token guardado, no en qué pantalla se está viendo: si el
   // gesto de "volver" del celular trae de regreso a esta URL con el token todavía
@@ -55,7 +56,7 @@ function Login() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const ok = await login(email, password, captchaToken)
+    const ok = await login(email, password, captchaToken, recordarme)
     if (ok) {
       // La contadora no crea cotizaciones: su inicio es el historial.
       // replace: true para que el login no quede en el historial como destino de
@@ -176,6 +177,19 @@ function Login() {
                 {verPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+
+            <label
+              className="mt-3 flex items-center gap-2 text-sm"
+              style={{ color: 'var(--yuda-text-secondary)' }}
+            >
+              <input
+                type="checkbox"
+                checked={recordarme}
+                onChange={(e) => setRecordarme(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: 'var(--yuda-primary)' }}
+              />
+              {t('login.recordarme')}
+            </label>
 
             <p className="mt-2 text-right text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('login.olvideContrasena')}

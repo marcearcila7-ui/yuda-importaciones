@@ -84,7 +84,8 @@
     "tagline": "Conectamos China con tu éxito",
     "accesoEquipo": "Cotizador",
     "sesionVencida": "Tu sesión se cerró por seguridad después de varias horas. Vuelve a entrar y sigue donde estabas; no perdiste nada.",
-    "olvideContrasena": "¿Olvidaste tu contraseña? Pídesela a tu administradora."
+    "olvideContrasena": "¿Olvidaste tu contraseña? Pídesela a tu administradora.",
+    "recordarme": "Mantener mi sesión iniciada"
   },
   "dashboard": {
     "titulo": "Cotización",

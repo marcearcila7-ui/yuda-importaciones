@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -11,6 +13,10 @@ from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, UsuarioResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# "Mantener la sesión iniciada": en vez de la expiración normal (unas horas),
+# el token dura un mes, para no pedir login seguido en un dispositivo propio.
+_DURACION_RECORDARME = timedelta(days=30)
 
 # Anti fuerza bruta: máximos intentos fallidos por ventana (15 min).
 _VENTANA = 15 * 60
@@ -70,7 +76,8 @@ def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) 
             "rol": user.rol.value,
             "tipo": "staff",
             "tv": user.token_version,
-        }
+        },
+        expires_delta=_DURACION_RECORDARME if datos.recordarme else None,
     )
 
     return TokenResponse(

@@ -6,11 +6,13 @@ export async function login(
   email: string,
   password: string,
   captchaToken?: string | null,
+  recordarme?: boolean,
 ): Promise<TokenResponse> {
   const { data } = await apiClient.post<TokenResponse>('/auth/login', {
     email,
     password,
     captcha_token: captchaToken,
+    recordarme,
   })
   return data
 }

@@ -12,11 +12,13 @@ export async function loginPortal(
   email: string,
   password: string,
   captchaToken?: string | null,
+  recordarme?: boolean,
 ): Promise<PortalTokenResponse> {
   const { data } = await portalClient.post<PortalTokenResponse>('/portal/login', {
     email,
     password,
     captcha_token: captchaToken,
+    recordarme,
   })
   return data
 }

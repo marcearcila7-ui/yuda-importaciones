@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
@@ -8,6 +8,10 @@ from app.core.rate_limit import esta_bloqueado, ip_del_request, limpiar, registr
 
 from app.api.dependencies import get_current_cliente
 from app.core.security import create_access_token, hash_password, verify_password, verify_token
+
+# "Mantener la sesión iniciada": el token dura un mes en vez de la
+# expiración normal de unas horas.
+_DURACION_RECORDARME = timedelta(days=30)
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.cubicaje import TIPO_NOTA, CubicajeMensaje
@@ -110,7 +114,8 @@ def login_cliente(
 
     limpiar(clave_email)
     token = create_access_token(
-        {"sub": cliente.id, "tipo": "cliente", "tv": cliente.token_version}
+        {"sub": cliente.id, "tipo": "cliente", "tv": cliente.token_version},
+        expires_delta=_DURACION_RECORDARME if datos.recordarme else None,
     )
     return ClienteTokenResponse(
         access_token=token,

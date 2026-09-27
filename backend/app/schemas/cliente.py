@@ -61,6 +61,7 @@ class ClienteLogin(BaseModel):
     email: str
     password: str
     captcha_token: str | None = None
+    recordarme: bool = False
 
 
 class ClientePublic(BaseModel):

@@ -84,7 +84,8 @@
     "tagline": "连接中国与您的成功",
     "accesoEquipo": "报价系统",
     "sesionVencida": "出于安全考虑，您的会话在数小时后已关闭。请重新登录并继续，数据不会丢失。",
-    "olvideContrasena": "忘记密码？请联系管理员为您重置。"
+    "olvideContrasena": "忘记密码？请联系管理员为您重置。",
+    "recordarme": "保持登录状态"
   },
   "dashboard": {
     "titulo": "报价",

@@ -28,6 +28,7 @@ function PortalLogin() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const captchaRef = useRef<HCaptcha>(null)
   const [verPassword, setVerPassword] = useState(false)
+  const [recordarme, setRecordarme] = useState(false)
 
   // Si ya hay sesión de cliente, ir directo al portal
   useEffect(() => {
@@ -37,7 +38,7 @@ function PortalLogin() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     clearError()
-    const ok = await login(email.trim().toLowerCase(), password, captchaToken)
+    const ok = await login(email.trim().toLowerCase(), password, captchaToken, recordarme)
     if (ok) {
       navigate('/portal')
     } else {
@@ -148,6 +149,19 @@ function PortalLogin() {
                 {verPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+
+            <label
+              className="mt-3 flex items-center gap-2 text-sm"
+              style={{ color: 'var(--yuda-text-secondary)' }}
+            >
+              <input
+                type="checkbox"
+                checked={recordarme}
+                onChange={(e) => setRecordarme(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: 'var(--yuda-primary)' }}
+              />
+              {t('login.recordarme')}
+            </label>
 
             <p className="mt-2 text-right text-sm" style={{ color: 'var(--yuda-text-secondary)' }}>
               {t('portal.olvideContrasena')}

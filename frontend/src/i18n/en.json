@@ -84,7 +84,8 @@
     "tagline": "We connect China with your success",
     "accesoEquipo": "Quotes",
     "sesionVencida": "Your session was closed for security after several hours. Sign in again and carry on where you were; nothing was lost.",
-    "olvideContrasena": "Forgot your password? Ask your administrator to change it."
+    "olvideContrasena": "Forgot your password? Ask your administrator to change it.",
+    "recordarme": "Keep me signed in"
   },
   "dashboard": {
     "titulo": "Quotation",
