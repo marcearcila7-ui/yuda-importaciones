@@ -8,13 +8,30 @@ server {
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
     gzip_min_length 1000;
 
+    # Cabeceras de seguridad. Nginx no hereda add_header de un bloque padre en
+    # un location que ya trae el suyo (Cache-Control abajo), por eso se
+    # repiten en los dos location{} en vez de ponerse solo una vez acá arriba.
+    #
+    # style-src permite 'unsafe-inline': la app usa style={{...}} en línea por
+    # todos lados (no solo Tailwind). Sacarlo rompería la UI entera -pasó
+    # exactamente eso en Yuda Contable la primera vez que se puso un CSP
+    # estricto ahí sin darse cuenta de este detalle.
+
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     }
 
     location / {
         try_files $uri $uri/ /index.html;
         add_header Cache-Control "no-cache";
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://hcaptcha.com https://*.hcaptcha.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://nskohpqceoysfcziyyhh.supabase.co; connect-src 'self' https://backend-production-e59b.up.railway.app https://hcaptcha.com https://*.hcaptcha.com; frame-src https://hcaptcha.com https://*.hcaptcha.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'" always;
     }
 }

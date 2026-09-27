@@ -43,8 +43,12 @@ class Cliente(Base):
     # Marcela a mano; nunca se trae saldo ni movimientos de esa app.
     sigla: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
-    # Vendedora dueña del cliente
-    vendedora_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    # Vendedora dueña del cliente. Con índice: cada listado y cada chequeo de
+    # permisos de una vendedora filtra por esta columna (listar_clientes,
+    # listar_sesiones, bodega_resumen, _cliente_autorizado...); sin índice,
+    # eso es un recorrido completo de la tabla en cada request a medida que
+    # crece la cantidad de clientes.
+    vendedora_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False, index=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     origen: Mapped[str] = mapped_column(
         String, default=ORIGEN_MANUAL, server_default=ORIGEN_MANUAL, nullable=False
