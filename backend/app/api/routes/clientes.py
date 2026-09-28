@@ -683,7 +683,15 @@ def sincronizar_cliente_desde_contable(
     datos de contacto (nombre, teléfono, país, whatsapp, correo) con lo que
     Contable tenga ahora. Antes esto era un no-op puro -si Marcela corregía
     el WhatsApp o el correo de un cliente ya sincronizado, ese cambio nunca
-    llegaba acá y los avisos automáticos le seguían llegando al dato viejo."""
+    llegaba acá y los avisos automáticos le seguían llegando al dato viejo.
+
+    También lo reactiva si estaba desactivado acá: Yuda Contable es la fuente
+    de verdad de qué clientes existen, así que si vuelve a avisar de él (por
+    ejemplo, alguien lo crea de nuevo ahí con la misma sigla de uno que se
+    había desactivado en el cotizador) es porque para ellos SÍ existe. Sin
+    esto, la sigla quedaba "ocupada" por el registro viejo inactivo y el
+    cliente nunca volvía a aparecer en el cotizador, aunque los datos de
+    contacto sí se actualizaran en silencio."""
     sigla = datos.sigla.strip().upper()
     admin = db.query(User).filter(User.rol == RolUsuario.admin, User.activo).order_by(User.created_at.asc()).first()
     if admin is None:
@@ -697,6 +705,7 @@ def sincronizar_cliente_desde_contable(
         existente.pais = datos.pais
         existente.whatsapp = datos.whatsapp
         existente.email_contacto = datos.email
+        existente.activo = True
         db.commit()
         db.refresh(existente)
         return _cliente_response(existente, admin, _roles_por_usuario(db, [existente]))
