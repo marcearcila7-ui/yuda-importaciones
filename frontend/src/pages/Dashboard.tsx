@@ -8,7 +8,6 @@ import { ArrowLeft, ArrowRight, Check, Images, Package, ShoppingBag, Trash2, X }
 import CargaMasiva from '../components/CargaMasiva/CargaMasiva'
 import AdvertenciaFotos from '../components/AdvertenciaFotos/AdvertenciaFotos'
 import BarraPasos from '../components/BarraPasos/BarraPasos'
-import ClienteEnvio from '../components/ClienteEnvio/ClienteEnvio'
 import ExportarCotizacion from '../components/ExportarCotizacion/ExportarCotizacion'
 import GenerarPedidos from '../components/GenerarPedidos/GenerarPedidos'
 import MetricasVendedoras from '../components/MetricasVendedoras'
@@ -136,8 +135,14 @@ function Dashboard() {
     () => (location.state as { clienteOrigenId?: string } | null)?.clienteOrigenId ?? null,
   )
   const volverAlOrigen = () => {
+    // Prioriza el cliente de la cotización que se está cerrando (siempre
+    // presente si se llegó hasta "Terminar", ya que una cotización libre no
+    // puede pasar de ahí) sobre el de dónde se entró: así "Terminar" lleva a
+    // ver la cotización recién hecha en la ficha del cliente, no solo cuando
+    // se entró por el atajo desde ahí.
+    const clienteId = sesionActual?.cliente_id ?? clienteOrigenId
     volverAlInicio()
-    if (clienteOrigenId) navigate(`/clientes/${clienteOrigenId}`)
+    if (clienteId) navigate(`/clientes/${clienteId}`)
   }
   // Pantalla del asistente de cotización en la que está parada la vendedora.
   // Cada paso es una pantalla propia: se avanza y se vuelve, nunca se ve todo junto.
@@ -179,7 +184,7 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionActual?.id])
 
-  // Mismo problema, con el envío al cliente por el portal: ClienteEnvio
+  // Mismo problema, con el envío al cliente por el portal: ExportarCotizacion
   // maneja su propio estado y no le avisaba a nadie más cuando cambiaba. Si
   // "Terminar" mirara sesionActual.enviada_cliente directo, se quedaría con
   // el valor de cuando se entró a esta cotización -si la vendedora volvía al
@@ -530,26 +535,17 @@ function Dashboard() {
             </SectionCard>
           )}
 
-          {/* PANTALLA 3: el documento del cliente y el envío a su portal */}
+          {/* PANTALLA 3: revisar el documento, elegir columnas y enviarlo al
+              cliente, todo en un solo paso (antes eran dos tarjetas sueltas:
+              exportar por un lado, cliente y envío por otro). */}
           {pasoVista === 3 && (
-            <>
-              <ExportarCotizacion
-                sesion_id={sesionActual.id}
-                nombre_cliente={sesionActual.nombre_cliente}
-              />
-
-              {esStaffVentas && (
-                <SectionCard titulo={t('envio.titulo')}>
-                  <ClienteEnvio
-                    sesionId={sesionActual.id}
-                    clienteIdInicial={sesionActual.cliente_id ?? null}
-                    enviadaInicial={sesionActual.enviada_cliente ?? false}
-                    nombreClienteSesion={sesionActual.nombre_cliente}
-                    onEstadoCambiado={setEnvioCliente}
-                  />
-                </SectionCard>
-              )}
-            </>
+            <ExportarCotizacion
+              sesion_id={sesionActual.id}
+              nombre_cliente={sesionActual.nombre_cliente}
+              clienteIdInicial={sesionActual.cliente_id ?? null}
+              enviadaInicial={sesionActual.enviada_cliente ?? false}
+              onEstadoCambiado={setEnvioCliente}
+            />
           )}
 
           {/* PANTALLA 4: pedidos a proveedores */}
