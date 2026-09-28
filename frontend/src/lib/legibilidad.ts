@@ -9,6 +9,10 @@ export const CAMPOS_OBLIGATORIOS: Array<{ clave: keyof OCRResultado; i18n: strin
   { clave: 'cbm_directo', i18n: 'cbm' },
   { clave: 'cantidad_minima', i18n: 'mqt' },
   { clave: 'supplier_nombre', i18n: 'proveedor' },
+  // Sin esto, el pedido a proveedor no tiene cómo distinguir esta tienda de
+  // otra: el archivo generado cae en un genérico "SN" y nadie sabe a cuál
+  // stand del mercado corresponde. Se exige acá, antes de llegar a generar.
+  { clave: 'supplier_numero', i18n: 'nStand' },
 ]
 
 export interface Legibilidad {

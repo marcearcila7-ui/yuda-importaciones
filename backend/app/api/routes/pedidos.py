@@ -243,6 +243,23 @@ def generar_pedidos(
         if traducciones:
             db.commit()
 
+    # f.-1. Sin número de stand, el archivo de este proveedor cae en un genérico
+    # "SN" y nadie puede saber a qué puesto del mercado corresponde. El frontend
+    # ya lo exige antes de confirmar la revisión, así que esto solo debería
+    # dispararse con ítems viejos de antes de ese cambio; se avisa mas no se
+    # excluye, porque perder el ítem del pedido es peor que un nombre de
+    # archivo poco claro.
+    sin_stand = {
+        (getattr(item, "supplier_nombre", None) or "Sin proveedor")
+        for item in items_validos
+        if not getattr(item, "supplier_numero", None)
+    }
+    for proveedor in sorted(sin_stand):
+        warnings.append(
+            f"El proveedor «{proveedor}» no tiene número de stand: el archivo de su pedido "
+            "no va a distinguirse de otro sin ese dato. Complétalo en la foto y vuelve a generar."
+        )
+
     # f. Agrupar por proveedor
     grupos = agrupar_items_por_supplier(items_validos)
 

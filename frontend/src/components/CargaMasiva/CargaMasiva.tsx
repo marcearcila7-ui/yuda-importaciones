@@ -850,8 +850,13 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
               {/* Datos que la foto necesita para poder procesarse (* = obligatorio) */}
               <div className="grid grid-cols-2 gap-2">
-                <CampoLote ancho="col-span-2" label={t('ocr.proveedor')} valor={r.datos.supplier_nombre} requerido alerta={faltaSet.has('proveedor')}
+                <CampoLote label={t('ocr.proveedor')} valor={r.datos.supplier_nombre} requerido alerta={faltaSet.has('proveedor')}
                   onChange={(v) => actualizarTexto(r.id, 'supplier_nombre', v)} />
+                {/* Sin esto el pedido a proveedor no distingue esta tienda de otra
+                    (cae en un genérico "SN"): por eso es obligatorio y visible
+                    de entrada, no escondido en "Ver más" como antes. */}
+                <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero} requerido alerta={faltaSet.has('nStand')}
+                  onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
                 <CampoLote ancho="col-span-2" multilinea label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
                   onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
                 <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number" requerido alerta={faltaSet.has('precioRMB')}
@@ -962,8 +967,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
 
               {expandidos.has(r.id) && (
                 <div className="grid grid-cols-2 gap-2 rounded-lg bg-white p-2">
-                  <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero}
-                    onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
                   <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionEn')} valor={r.datos.descripcion_en}
                     onChange={(v) => actualizarTexto(r.id, 'descripcion_en', v)} />
                   <CampoLote ancho="col-span-2" multilinea label={t('ocr.descripcionZh')} valor={r.datos.descripcion_zh}
