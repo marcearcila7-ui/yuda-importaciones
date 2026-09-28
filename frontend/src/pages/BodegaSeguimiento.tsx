@@ -206,10 +206,10 @@ function BodegaSeguimiento() {
                     <button
                       type="button"
                       onClick={() => navigate(`/cotizacion/${p.sesion_id}`, { state: { tab: 'cubicaje' } })}
-                      className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                      className="flex items-center gap-1.5 font-semibold text-white"
+                      style={{ minHeight: 32, borderRadius: 8, padding: '0 12px', fontSize: 12, backgroundColor: 'var(--yuda-primary)' }}
                     >
-                      <MessageCircle size={13} /> {t('bodegaSeguimiento.abrirChat')}
+                      <MessageCircle size={14} /> {t('bodegaSeguimiento.abrirChat')}
                     </button>
                   </div>
                 </div>
