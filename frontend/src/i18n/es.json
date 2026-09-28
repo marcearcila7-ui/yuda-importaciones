@@ -1205,6 +1205,7 @@
     "sinPedidos": "Todavía no has enviado ningún pedido a bodega.",
     "ordenesRevisadas": "{{n}} de {{total}} órdenes revisadas",
     "mensajesNuevos": "{{n}} mensajes nuevos de bodega en el chat de esta cotización",
+    "abrirChat": "Abrir chat",
     "asignadoA": "Asignado a {{nombre}}",
     "sinAsignar": "Sin asignar",
     "reasignarA": "Reasignar a…",

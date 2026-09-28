@@ -196,12 +196,22 @@ function BodegaSeguimiento() {
                       </span>
                     )}
                   </button>
-                  <span
-                    className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                    style={{ backgroundColor: badge.bg, color: badge.fg }}
-                  >
-                    {badge.icon} {t(`bodegaSeguimiento.estado.${p.estado_envio}`)}
-                  </span>
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    <span
+                      className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: badge.bg, color: badge.fg }}
+                    >
+                      {badge.icon} {t(`bodegaSeguimiento.estado.${p.estado_envio}`)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/cotizacion/${p.sesion_id}`, { state: { tab: 'cubicaje' } })}
+                      className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                      style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                    >
+                      <MessageCircle size={13} /> {t('bodegaSeguimiento.abrirChat')}
+                    </button>
+                  </div>
                 </div>
 
                 {p.cubicaje_ultimo_mensaje && (

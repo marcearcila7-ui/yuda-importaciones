@@ -1205,6 +1205,7 @@
     "sinPedidos": "You haven't sent any order to the warehouse yet.",
     "ordenesRevisadas": "{{n}} of {{total}} orders reviewed",
     "mensajesNuevos": "{{n}} new messages from the warehouse in this quotation's chat",
+    "abrirChat": "Open chat",
     "asignadoA": "Assigned to {{nombre}}",
     "sinAsignar": "Unassigned",
     "reasignarA": "Reassign to…",

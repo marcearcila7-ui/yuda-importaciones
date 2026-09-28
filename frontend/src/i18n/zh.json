@@ -1208,6 +1208,7 @@
     "sinPedidos": "你还没有发送任何订单到仓库。",
     "ordenesRevisadas": "已检查 {{n}} / {{total}} 个订单",
     "mensajesNuevos": "这个报价的聊天里有 {{n}} 条来自仓库的新消息",
+    "abrirChat": "打开聊天",
     "asignadoA": "已分配给 {{nombre}}",
     "sinAsignar": "未分配",
     "reasignarA": "重新分配给…",
