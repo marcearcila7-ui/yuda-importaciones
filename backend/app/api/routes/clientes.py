@@ -306,12 +306,14 @@ def cotizaciones_del_cliente(
     """Cotizaciones vinculadas a un cliente, con la etapa real de envío de
     cada una (para que la vendedora las pueda clasificar sin adivinar)."""
     _cliente_autorizado(db, cliente_id, usuario)
-    sesiones = (
-        db.query(Sesion)
-        .filter(Sesion.cliente_id == cliente_id)
-        .order_by(Sesion.created_at.desc())
-        .all()
-    )
+    query = db.query(Sesion).filter(Sesion.cliente_id == cliente_id)
+    if usuario.rol.value == "vendedora":
+        # Cotizaciones de una gestión anterior a que el cliente se haya
+        # desactivado y vuelto a activar: no deben aparecer mezcladas con el
+        # trabajo actual. Admin sí las ve todas (puede revisar el historial
+        # completo si hace falta).
+        query = query.filter(Sesion.archivada_en.is_(None))
+    sesiones = query.order_by(Sesion.created_at.desc()).all()
     sesion_ids = [s.id for s in sesiones]
     seguimientos = (
         {
@@ -699,6 +701,7 @@ def sincronizar_cliente_desde_contable(
 
     existente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
     if existente:
+        se_reactiva = not existente.activo
         if datos.nombre:
             existente.nombre = datos.nombre
         existente.telefono = datos.telefono
@@ -706,6 +709,18 @@ def sincronizar_cliente_desde_contable(
         existente.whatsapp = datos.whatsapp
         existente.email_contacto = datos.email
         existente.activo = True
+        if se_reactiva:
+            # Estaba desactivado (se había "borrado" antes) y ahora Contable
+            # avisa de él de nuevo: sus cotizaciones de la gestión anterior se
+            # archivan, para que quien lo reciba ahora (puede ser una
+            # vendedora distinta) no se encuentre mezclado el chat de
+            # cubicaje, las revisiones de bodega y las cotizaciones de antes
+            # con su propio trabajo. Nada se borra -sigue en la base como
+            # respaldo- solo deja de aparecer en las listas activas.
+            ahora = datetime.now(timezone.utc)
+            db.query(Sesion).filter(
+                Sesion.cliente_id == existente.id, Sesion.archivada_en.is_(None)
+            ).update({"archivada_en": ahora})
         db.commit()
         db.refresh(existente)
         return _cliente_response(existente, admin, _roles_por_usuario(db, [existente]))
@@ -843,7 +858,16 @@ def reactivar_cliente_desde_contable(
     cliente = db.query(Cliente).filter(Cliente.sigla == sigla).first()
     if cliente is None:
         return
+    se_reactiva = not cliente.activo
     cliente.activo = True
+    if se_reactiva:
+        # Mismo criterio que sincronizar_cliente_desde_contable: al reactivar,
+        # las cotizaciones de la gestión anterior a la desactivación quedan
+        # archivadas (no borradas), para no mezclarlas con el trabajo actual.
+        ahora = datetime.now(timezone.utc)
+        db.query(Sesion).filter(
+            Sesion.cliente_id == cliente.id, Sesion.archivada_en.is_(None)
+        ).update({"archivada_en": ahora})
     db.commit()
 
 

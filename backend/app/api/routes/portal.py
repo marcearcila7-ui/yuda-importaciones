@@ -76,6 +76,7 @@ def _sesion_del_cliente(db: Session, sesion_id: str, cliente: Cliente) -> Sesion
             Sesion.id == sesion_id,
             Sesion.cliente_id == cliente.id,
             Sesion.enviada_cliente.is_(True),
+            Sesion.archivada_en.is_(None),
         )
         .first()
     )
@@ -226,7 +227,13 @@ def mis_cotizaciones(
     """Cotizaciones que la vendedora envió a este cliente"""
     sesiones = (
         db.query(Sesion)
-        .filter(Sesion.cliente_id == cliente.id, Sesion.enviada_cliente.is_(True))
+        .filter(
+            Sesion.cliente_id == cliente.id,
+            Sesion.enviada_cliente.is_(True),
+            # De una gestión anterior a que el cliente se haya desactivado y
+            # vuelto a activar: no deben seguir apareciendo en su portal.
+            Sesion.archivada_en.is_(None),
+        )
         .order_by(Sesion.created_at.desc())
         .all()
     )

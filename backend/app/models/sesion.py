@@ -71,4 +71,12 @@ class Sesion(Base):
     # pedido. Bodega la compara contra el pedido confirmado antes de despachar.
     orden_compra_url: Mapped[str | None] = mapped_column(String, nullable=True)
     orden_compra_nombre: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Se marca sola cuando un cliente que había sido desactivado se vuelve a
+    # activar (ver sincronizar_cliente_desde_contable): todas las cotizaciones
+    # que ya tenía en ese momento quedan archivadas, para que quien reciba el
+    # cliente "de nuevo" no se encuentre con historial de una gestión anterior
+    # (chats, revisiones de bodega) mezclado con la suya. Sigue existiendo
+    # como respaldo -no se borra nada- solo deja de aparecer en las listas
+    # normales de la vendedora, bodega y el portal del cliente.
+    archivada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

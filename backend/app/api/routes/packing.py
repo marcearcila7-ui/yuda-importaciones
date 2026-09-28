@@ -190,7 +190,11 @@ def listar_sesiones(
             or_(
                 and_(Sesion.cliente_id.is_(None), Sesion.user_id == usuario.id),
                 Sesion.cliente_id.in_(clientes_propios_o_compartidos),
-            )
+            ),
+            # Cotizaciones de una gestión anterior a que el cliente se haya
+            # desactivado y vuelto a activar (ver sincronizar_cliente_desde_
+            # contable): no deben aparecer mezcladas con el trabajo actual.
+            Sesion.archivada_en.is_(None),
         )
     query = query.order_by(Sesion.created_at.desc())
     if limit is not None:

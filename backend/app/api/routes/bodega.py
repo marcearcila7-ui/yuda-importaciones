@@ -177,7 +177,13 @@ def listar_pedidos_bodega(
         .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
         .outerjoin(User, User.id == Sesion.user_id)
         .join(Cliente, Cliente.id == Sesion.cliente_id)
-        .filter(SeguimientoPedido.bodega_archivado_en.is_(None), Cliente.activo.is_(True))
+        .filter(
+            SeguimientoPedido.bodega_archivado_en.is_(None),
+            Cliente.activo.is_(True),
+            # De una gestión anterior a que el cliente se haya desactivado y
+            # vuelto a activar: no debe mezclarse con el trabajo actual.
+            Sesion.archivada_en.is_(None),
+        )
     )
     if vista in ("sin_asignar", "asignados"):
         query = query.filter(SeguimientoPedido.estado == "proveedor_recibio")

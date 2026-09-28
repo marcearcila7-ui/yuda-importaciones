@@ -440,7 +440,12 @@ def bodega_resumen(
     query = (
         db.query(Sesion, SeguimientoPedido)
         .join(SeguimientoPedido, SeguimientoPedido.sesion_id == Sesion.id)
-        .filter(SeguimientoPedido.estado.in_(ESTADOS_ENVIO[ESTADOS_ENVIO.index("proveedor_recibio"):]))
+        .filter(
+            SeguimientoPedido.estado.in_(ESTADOS_ENVIO[ESTADOS_ENVIO.index("proveedor_recibio"):]),
+            # De una gestión anterior a que el cliente se haya desactivado y
+            # vuelto a activar: no debe mezclarse con el trabajo actual.
+            Sesion.archivada_en.is_(None),
+        )
     )
     if usuario.rol.value == "vendedora":
         # Estas sesiones siempre tienen cliente (una libre no puede llegar a
