@@ -197,6 +197,8 @@
     "noLegibleImagenSin": "The image can't be read clearly.",
     "noLegibleFaltan": "These fields were not detected: {{campos}}.",
     "noLegibleInstruccion": "Retake the photo with good lighting, no glare or overexposure, in focus and with the full sign visible.",
+    "datosIncompletosTitulo": "Some data is missing",
+    "datosIncompletosInstruccion": "The photo looks fine, that field just wasn't there. Type it in below, or if it's not visible on the sign, retake the photo focusing on that part.",
     "volverATomar": "Retake photo",
     "motivos": {
       "borrosa": "blurry",

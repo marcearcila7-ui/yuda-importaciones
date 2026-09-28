@@ -197,6 +197,8 @@
     "noLegibleImagenSin": "La imagen no se puede leer con claridad.",
     "noLegibleFaltan": "No se detectaron estos datos: {{campos}}.",
     "noLegibleInstruccion": "Vuelve a tomar la foto con buena luz, sin reflejos ni sobreexposición, enfocada y con el cartel completo visible.",
+    "datosIncompletosTitulo": "Faltan algunos datos",
+    "datosIncompletosInstruccion": "La foto se ve bien, solo faltó ese dato. Escríbelo abajo a mano, o si no está visible en el cartel, toma la foto de nuevo enfocando esa parte.",
     "volverATomar": "Volver a tomar",
     "motivos": {
       "borrosa": "borrosa",

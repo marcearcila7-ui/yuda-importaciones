@@ -81,7 +81,7 @@ function reducir(file: File, maxLado: number): Promise<File> {
 // directo: el decode no dispara ni onload ni onerror. Por eso se pasa antes
 // por heic2any (WASM de libheif), que sí la decodifica, y de ahí el resultado
 // entra al mismo pipeline de `reducir` de siempre.
-function esHeic(file: File): boolean {
+export function esHeic(file: File): boolean {
   return (
     file.type === 'image/heic' ||
     file.type === 'image/heif' ||
@@ -92,9 +92,9 @@ function esHeic(file: File): boolean {
 // Si heic2any no termina en este tiempo (celular viejo, poca memoria), se
 // sube el HEIC tal cual: el backend igual la convierte a JPEG al recibirla,
 // solo que llega más pesada. Mejor eso que quedarse colgada.
-const TIMEOUT_HEIC_MS = 15_000
+export const TIMEOUT_HEIC_MS = 15_000
 
-async function decodificarHeic(file: File): Promise<File> {
+export async function decodificarHeic(file: File): Promise<File> {
   const heic2any = (await import('heic2any')).default
   const resultado = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 })
   const blob = Array.isArray(resultado) ? resultado[0] : resultado

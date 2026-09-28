@@ -24,6 +24,14 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
   const sinSaldo = claveMotivo === 'sin_saldo'
   const esErrorSistema = claveMotivo === 'error_sistema' || sinSaldo
 
+  // "No legible" (imagenIlegible) es cuando el modelo mismo dice que la foto
+  // está borrosa/oscura/etc: ahí sí hay que volver a tomarla. Pero si la foto
+  // se leyó bien y solo faltó UN dato puntual (ej. el mínimo de cajas no
+  // estaba en el cartel), decirle "foto no legible, vuelve a tomarla" es
+  // mentira y manda a repetir un viaje al mercado que no hace falta: ese dato
+  // se puede completar a mano abajo.
+  const soloFaltanDatos = !esErrorSistema && !imagenIlegible && faltantes.length > 0
+
   // Lista de datos faltantes traducida
   const camposFaltantes = faltantes.map((k) => t(`ocr.${k}`)).join(', ')
 
@@ -41,7 +49,15 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
         <AlertTriangle size={compacta ? 16 : 20} style={{ color: 'var(--yuda-error)', flexShrink: 0, marginTop: 1 }} />
         <div className="flex flex-col gap-1">
           <p className="font-semibold" style={{ color: 'var(--yuda-error-dark)', fontSize: compacta ? 13 : 15 }}>
-            {t(sinSaldo ? 'ocr.sinSaldoTitulo' : esErrorSistema ? 'ocr.errorSistemaTitulo' : 'ocr.noLegibleTitulo')}
+            {t(
+              sinSaldo
+                ? 'ocr.sinSaldoTitulo'
+                : esErrorSistema
+                  ? 'ocr.errorSistemaTitulo'
+                  : soloFaltanDatos
+                    ? 'ocr.datosIncompletosTitulo'
+                    : 'ocr.noLegibleTitulo',
+            )}
           </p>
 
           {esErrorSistema && (
@@ -65,7 +81,9 @@ function AlertaNoLegible({ legibilidad, compacta = false }: Props) {
           )}
 
           {!compacta && !esErrorSistema && (
-            <p style={{ color: '#7F1D1D', fontSize: 13 }}>{t('ocr.noLegibleInstruccion')}</p>
+            <p style={{ color: '#7F1D1D', fontSize: 13 }}>
+              {t(soloFaltanDatos ? 'ocr.datosIncompletosInstruccion' : 'ocr.noLegibleInstruccion')}
+            </p>
           )}
         </div>
       </div>

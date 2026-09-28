@@ -612,10 +612,10 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 style={{ borderColor: 'var(--yuda-border)' }}
               >
                 {sinVista.has(f.id) ? (
-                  // Las fotos de iPhone (HEIC) el navegador no las sabe dibujar, asi
-                  // que la miniatura salia como imagen rota. Se suben igual y el
-                  // backend las convierte: aca solo hay que decirlo en vez de
-                  // mostrar un icono roto que parece un error.
+                  // Las de iPhone (HEIC) ya se decodifican a JPEG al elegirlas
+                  // (agregarSeleccion en loteStore), así que esto solo se ve si esa
+                  // conversión falló de verdad (celular con poca memoria, formato
+                  // raro). Se sube igual, solo no hay miniatura para esta foto.
                   <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-center" style={{ backgroundColor: 'var(--yuda-primary-soft)' }}>
                     <ImageIcon size={22} style={{ color: 'var(--yuda-primary)' }} />
                     <span className="w-full truncate text-xs font-medium" style={{ color: 'var(--yuda-accent)' }}>

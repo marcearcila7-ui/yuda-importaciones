@@ -16,7 +16,7 @@ import {
   subirFotoLote,
   type LoteEstadoResp,
 } from '../api/lotes'
-import { comprimirImagen, comprimirFotoDetalle } from '../lib/comprimirImagen'
+import { comprimirImagen, comprimirFotoDetalle, decodificarHeic, esHeic, TIMEOUT_HEIC_MS } from '../lib/comprimirImagen'
 import { causaDelFallo, type CausaFallo } from '../lib/causaFallo'
 import type { OCRResultado, TipoFotoExtra } from '../types/ocr'
 
@@ -75,7 +75,7 @@ interface LoteState {
   motivoFallo: string | null
   // Fotos que quedaron sin procesar al cortarse el lote
   sinProcesar: number
-  agregarSeleccion: (sesionId: string, files: File[]) => void
+  agregarSeleccion: (sesionId: string, files: File[]) => Promise<void>
   quitarSeleccion: (id: string) => void
   cancelarSeleccion: () => void
   procesarSeleccion: () => Promise<void>
@@ -218,13 +218,32 @@ export const useLoteStore = create<LoteState>((set, get) => {
     ...ESTADO_INICIAL,
 
     // Acumula fotos en la lista de selección (sin subir ni procesar todavía).
-    agregarSeleccion: (sesionId, files) => {
+    // Las de iPhone (HEIC) el navegador no las sabe dibujar en un <img>, así que
+    // se decodifican a JPEG de una vez con heic2any: la miniatura se ve siempre,
+    // no solo un ícono con el nombre del archivo. El archivo ya decodificado
+    // también queda como el que se sube después, así no se decodifica dos veces.
+    agregarSeleccion: async (sesionId, files) => {
       if (files.length === 0) return
-      const nuevas: FotoStaged[] = files.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-      }))
+      const nuevas: FotoStaged[] = await Promise.all(
+        files.map(async (file) => {
+          let usable = file
+          if (esHeic(file)) {
+            try {
+              usable = await Promise.race([
+                decodificarHeic(file),
+                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout heic')), TIMEOUT_HEIC_MS)),
+              ])
+            } catch {
+              usable = file
+            }
+          }
+          return {
+            id: crypto.randomUUID(),
+            file: usable,
+            preview: URL.createObjectURL(usable),
+          }
+        }),
+      )
       set((s) => ({
         fase: 'seleccion',
         sesionId: s.sesionId ?? sesionId,
