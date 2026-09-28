@@ -132,6 +132,7 @@
     "confirmarEliminarCotizacion": "确定删除 {{cliente}} 的报价单？其产品和已生成的供应商订单都会被删除；如果已发送给客户，也会从其门户中消失。此操作无法撤销。",
     "cotizacionEliminada": "报价单已删除",
     "errorEliminarCotizacion": "无法删除该报价单",
+    "clienteNoDisponible": "系统中找不到该客户，请联系管理员。",
     "opcionExistente": "已有的客户",
     "opcionExistenteAyuda": "从已创建的客户中选择一位，继续为他工作。",
     "opcionExistenteVacio": "您还没有创建任何客户。",

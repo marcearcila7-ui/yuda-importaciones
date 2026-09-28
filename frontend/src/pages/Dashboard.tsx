@@ -122,6 +122,7 @@ function Dashboard() {
     sesionActual,
     items,
     sesiones,
+    error,
     cargarItems,
     seleccionarSesion,
     cargarSesiones,
@@ -199,6 +200,39 @@ function Dashboard() {
     if (!sesionActual) return
     setEnvioCliente({ clienteId: sesionActual.cliente_id ?? null, enviada: sesionActual.enviada_cliente ?? false })
   }, [sesionActual?.id])
+
+  // Si Marcela desactiva o reasigna el cliente de esta cotización MIENTRAS la
+  // vendedora la tiene abierta, nada se lo avisaba: la pantalla se quedaba
+  // tal cual, como si el cliente siguiera ahí, hasta que ella hiciera algo
+  // que disparara una petición y le devolviera un 403 sin explicación. Ahora
+  // se revisa solo, cada rato y al volver a la pestaña, reusando cargarItems
+  // (ya gated por exigir_acceso_sesion): si el acceso se perdió, se avisa
+  // clarito y se cierra la cotización sola, en vez de dejarla trabajando
+  // sobre un cliente que ya "desapareció" para ella.
+  useEffect(() => {
+    if (!sesionActual || usuario?.rol !== 'vendedora') return
+    const revisar = () => cargarItems()
+    const id = setInterval(revisar, 20000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') revisar()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sesionActual?.id, usuario?.rol])
+
+  useEffect(() => {
+    if (error === 'Sin permisos sobre esta cotización') {
+      toast.error(t('dashboard.clienteNoDisponible'), { duration: 10000 })
+      volverAlInicio()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error])
 
   // "cliente_id" de envioCliente (en vivo), no el de sesionActual (que puede
   // quedar desactualizado): una cotización libre no tiene a quién enviarle

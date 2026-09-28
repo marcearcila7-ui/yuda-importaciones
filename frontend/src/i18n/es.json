@@ -132,6 +132,7 @@
     "confirmarEliminarCotizacion": "¿Eliminar la cotización de {{cliente}}? Se borran sus productos y los pedidos generados, y si ya se la enviaste también desaparecerá de su portal. Esta acción no se puede deshacer.",
     "cotizacionEliminada": "Cotización eliminada",
     "errorEliminarCotizacion": "No se pudo eliminar la cotización",
+    "clienteNoDisponible": "Este cliente no se puede ubicar en el sistema, consulta con tu administrador.",
     "opcionExistente": "Un cliente que ya tengo",
     "opcionExistenteAyuda": "Elige uno de tus clientes y sigue trabajando con él.",
     "opcionExistenteVacio": "Todavía no tienes clientes asignados.",
