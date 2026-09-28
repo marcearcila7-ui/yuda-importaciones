@@ -8,6 +8,7 @@ import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
 import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
+import { pareceTelefono } from '../../lib/numeroStand'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
@@ -855,8 +856,18 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
                 {/* Sin esto el pedido a proveedor no distingue esta tienda de otra
                     (cae en un genérico "SN"): por eso es obligatorio y visible
                     de entrada, no escondido en "Ver más" como antes. */}
-                <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero} requerido alerta={faltaSet.has('nStand')}
-                  onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
+                <div>
+                  <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero} requerido alerta={faltaSet.has('nStand')}
+                    onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
+                  {/* El OCR usa el teléfono de la tarjeta como reemplazo cuando la
+                      foto no tenía cartel de tienda: se avisa para que no se
+                      confunda con un stand real (ver prompt en ocr_service.py). */}
+                  {pareceTelefono(r.datos.supplier_numero) && (
+                    <p className="mt-1 text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
+                      {t('ocr.pareceTelefono')}
+                    </p>
+                  )}
+                </div>
                 <CampoLote ancho="col-span-2" multilinea label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
                   onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
                 <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number" requerido alerta={faltaSet.has('precioRMB')}

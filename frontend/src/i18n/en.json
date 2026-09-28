@@ -172,6 +172,7 @@
     "confianzaBaja": "Low confidence",
     "proveedor": "Store",
     "nStand": "Booth No.",
+    "pareceTelefono": "This number looks like a phone, not a booth number: the photo must have had only a business card, no store sign. If the supplier does have a real booth number, correct it here.",
     "precioRMB": "Price RMB",
     "unidPorCaja": "Units per carton",
     "largoCm": "Length cm",

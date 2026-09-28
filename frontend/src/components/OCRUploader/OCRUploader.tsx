@@ -7,6 +7,7 @@ import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
 import { enfocarNumero } from '../../lib/dom'
 import { CAMPOS_OBLIGATORIOS, evaluarLegibilidad } from '../../lib/legibilidad'
+import { pareceTelefono } from '../../lib/numeroStand'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
@@ -259,6 +260,14 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
+                {/* El OCR usa el teléfono de la tarjeta como reemplazo cuando la
+                    foto no tenía cartel de tienda: se avisa para que no se
+                    confunda con un stand real (ver prompt en ocr_service.py). */}
+                {clave === 'supplier_numero' && pareceTelefono(form.supplier_numero) && (
+                  <span className="text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
+                    {t('ocr.pareceTelefono')}
+                  </span>
+                )}
               </label>
             ))}
             {CAMPOS_NUMERO.map(({ clave, i18n }) => (
