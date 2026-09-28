@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import axios from 'axios'
-import { CheckCircle2, ClipboardList, Package, Truck, UserCircle2, Warehouse } from 'lucide-react'
+import { CheckCircle2, ClipboardList, MessageCircle, Package, Truck, UserCircle2, Warehouse } from 'lucide-react'
 import {
   asignarPedidoBodega,
   getBodegaResumen,
@@ -167,18 +167,34 @@ function BodegaSeguimiento() {
         <div className="flex flex-col gap-3">
           {pedidosFiltrados.map((p) => {
             const badge = BADGE_ESTADO[p.estado_envio] ?? BADGE_ESTADO.proveedor_recibio
+            const hayMensajesNuevos = p.cubicaje_mensajes_sin_leer > 0
             return (
-              <div key={p.sesion_id} className="rounded-xl border p-4" style={{ borderColor: 'var(--yuda-border)' }}>
+              <div
+                key={p.sesion_id}
+                className="rounded-xl border p-4"
+                style={{ borderColor: hayMensajesNuevos ? 'var(--yuda-primary)' : 'var(--yuda-border)' }}
+              >
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => navigate(`/cotizacion/${p.sesion_id}`)}
-                    className="text-left"
+                    className="flex items-center gap-2 text-left"
                   >
-                    <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>{p.cliente_nombre}</p>
-                    <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {p.numero} · {new Date(p.fecha).toLocaleDateString(locale)}
-                    </p>
+                    <div>
+                      <p className="font-semibold" style={{ color: 'var(--yuda-accent)' }}>{p.cliente_nombre}</p>
+                      <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {p.numero} · {new Date(p.fecha).toLocaleDateString(locale)}
+                      </p>
+                    </div>
+                    {hayMensajesNuevos && (
+                      <span
+                        className="flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold text-white"
+                        style={{ backgroundColor: 'var(--yuda-primary)' }}
+                        title={t('bodegaSeguimiento.mensajesNuevos', { n: p.cubicaje_mensajes_sin_leer })}
+                      >
+                        <MessageCircle size={12} /> {p.cubicaje_mensajes_sin_leer}
+                      </span>
+                    )}
                   </button>
                   <span
                     className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
@@ -187,6 +203,19 @@ function BodegaSeguimiento() {
                     {badge.icon} {t(`bodegaSeguimiento.estado.${p.estado_envio}`)}
                   </span>
                 </div>
+
+                {p.cubicaje_ultimo_mensaje && (
+                  <p
+                    className="mb-2 truncate text-xs"
+                    style={{
+                      color: hayMensajesNuevos ? 'var(--yuda-text)' : 'var(--yuda-text-secondary)',
+                      fontWeight: hayMensajesNuevos ? 600 : 400,
+                    }}
+                  >
+                    <MessageCircle size={12} className="mr-1 inline-block align-text-bottom" />
+                    {p.cubicaje_ultimo_mensaje}
+                  </p>
+                )}
 
                 {p.total_ordenes > 0 && (
                   <p className="mb-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>

@@ -19,6 +19,7 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 // dejar a quien la lee adivinando dónde mirar.
 const TAB_POR_TIPO: Record<string, string> = {
   cubicaje_bodega: 'cubicaje',
+  cubicaje_vendedora: 'cubicaje',
   despacho_aprobado: 'seguimiento',
   envio_vendedora: 'seguimiento',
   listo_para_envio: 'seguimiento',
@@ -28,6 +29,38 @@ const TAB_POR_TIPO: Record<string, string> = {
   pedido_regenerado_tras_revision: 'gestion',
   pedido_cliente: 'gestion',
   pedido_confirmado: 'gestion',
+}
+
+// Con varios chats de cubicaje activos a la vez (varios clientes, o varios
+// mensajes seguidos del mismo), la lista se llenaba de avisos casi
+// idénticos, uno por mensaje. Se agrupan los que sean consecutivos, del
+// mismo tipo de cubicaje y de la misma cotización, en un solo renglón -el
+// resto de tipos de aviso no se toca.
+const TIPOS_CUBICAJE = new Set(['cubicaje_bodega', 'cubicaje_vendedora'])
+
+interface GrupoNotificacion {
+  clave: string
+  principal: Notificacion
+  todas: Notificacion[]
+}
+
+function agruparCubicaje(items: Notificacion[]): GrupoNotificacion[] {
+  const grupos: GrupoNotificacion[] = []
+  for (const n of items) {
+    const anterior = grupos[grupos.length - 1]
+    const esCubicaje = TIPOS_CUBICAJE.has(n.tipo)
+    if (
+      anterior &&
+      esCubicaje &&
+      TIPOS_CUBICAJE.has(anterior.principal.tipo) &&
+      anterior.principal.sesion_id === n.sesion_id
+    ) {
+      anterior.todas.push(n)
+    } else {
+      grupos.push({ clave: n.id, principal: n, todas: [n] })
+    }
+  }
+  return grupos
 }
 
 // Campana de avisos para Marcela: muestra las cotizaciones listas para cargar BL.
@@ -77,15 +110,18 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
   const noLeidas = items.filter((n) => !n.leida).length
   const locale = LOCALES[i18n.language] || 'es-ES'
 
-  // Al tocar un aviso: lo marca leído y lleva directo a la pestaña de la
-  // cotización que describe (según el tipo de aviso), no solo a la ficha en
-  // general -así no hay que adivinar dónde mirar.
-  const leerUna = async (n: Notificacion) => {
+  // Al tocar un aviso (o un grupo de varios del mismo chat): marca leídos
+  // todos los que agrupe y lleva directo a la pestaña de la cotización que
+  // describe (según el tipo de aviso), no solo a la ficha en general -así no
+  // hay que adivinar dónde mirar.
+  const leerGrupo = async (grupo: GrupoNotificacion) => {
     setAbierto(false)
-    if (!n.leida) {
-      setItems((xs) => xs.map((x) => (x.id === n.id ? { ...x, leida: true } : x)))
-      marcarLeida(n.id).catch(() => cargar())
+    const idsSinLeer = grupo.todas.filter((x) => !x.leida).map((x) => x.id)
+    if (idsSinLeer.length > 0) {
+      setItems((xs) => xs.map((x) => (idsSinLeer.includes(x.id) ? { ...x, leida: true } : x)))
+      Promise.all(idsSinLeer.map((id) => marcarLeida(id))).catch(() => cargar())
     }
+    const n = grupo.principal
     if (n.sesion_id) {
       const tab = TAB_POR_TIPO[n.tipo]
       navigate(`/cotizacion/${n.sesion_id}`, tab ? { state: { tab } } : undefined)
@@ -101,10 +137,11 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
     }
   }
 
-  const eliminarUna = (e: React.MouseEvent, id: string) => {
+  const eliminarGrupo = (e: React.MouseEvent, grupo: GrupoNotificacion) => {
     e.stopPropagation()
-    setItems((xs) => xs.filter((x) => x.id !== id))
-    eliminarNotificacion(id).catch(() => cargar())
+    const ids = grupo.todas.map((x) => x.id)
+    setItems((xs) => xs.filter((x) => !ids.includes(x.id)))
+    Promise.all(ids.map((id) => eliminarNotificacion(id))).catch(() => cargar())
   }
 
   const eliminarTodas = async () => {
@@ -178,45 +215,51 @@ function NotificacionesBell({ posicion = 'arriba' }: { posicion?: 'arriba' | 'ab
                 {t('notif.sinAvisos')}
               </p>
             ) : (
-              items.map((n) => (
-                <div
-                  key={n.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => leerUna(n)}
-                  onKeyDown={(e) => e.key === 'Enter' && leerUna(n)}
-                  className="flex w-full cursor-pointer items-start gap-2 border-b border-gray-50 px-4 py-3 text-left"
-                  style={{ backgroundColor: n.leida ? 'var(--yuda-white)' : 'var(--yuda-primary-soft)' }}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      {!n.leida && (
-                        <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-primary)' }} />
-                      )}
-                      <span className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
-                        {n.titulo}
-                      </span>
-                    </div>
-                    {n.mensaje && (
-                      <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                        {n.mensaje}
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
-                      {new Date(n.created_at).toLocaleString(locale)}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => eliminarUna(e, n.id)}
-                    aria-label={t('notif.eliminar')}
-                    className="flex-shrink-0 rounded p-1"
-                    style={{ color: 'var(--yuda-text-secondary)' }}
+              agruparCubicaje(items).map((grupo) => {
+                const n = grupo.principal
+                const leidoGrupo = grupo.todas.every((x) => x.leida)
+                const titulo =
+                  grupo.todas.length > 1 ? t('notif.mensajesAgrupados', { n: grupo.todas.length }) : n.titulo
+                return (
+                  <div
+                    key={grupo.clave}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => leerGrupo(grupo)}
+                    onKeyDown={(e) => e.key === 'Enter' && leerGrupo(grupo)}
+                    className="flex w-full cursor-pointer items-start gap-2 border-b border-gray-50 px-4 py-3 text-left"
+                    style={{ backgroundColor: leidoGrupo ? 'var(--yuda-white)' : 'var(--yuda-primary-soft)' }}
                   >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        {!leidoGrupo && (
+                          <span className="h-2 w-2 flex-shrink-0 rounded-full" style={{ backgroundColor: 'var(--yuda-primary)' }} />
+                        )}
+                        <span className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                          {titulo}
+                        </span>
+                      </div>
+                      {n.mensaje && (
+                        <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                          {n.mensaje}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                        {new Date(n.created_at).toLocaleString(locale)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => eliminarGrupo(e, grupo)}
+                      aria-label={t('notif.eliminar')}
+                      className="flex-shrink-0 rounded p-1"
+                      style={{ color: 'var(--yuda-text-secondary)' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )
+              })
             )}
           </div>
         </div>

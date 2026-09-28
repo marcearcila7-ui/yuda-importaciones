@@ -49,4 +49,7 @@ export interface PedidoBodegaSeguimiento {
   bodega_asignado_a_id: string | null
   bodega_asignado_a_nombre: string | null
   actividad_reciente: ActividadBodega[]
+  cubicaje_mensajes_sin_leer: number
+  cubicaje_ultimo_mensaje: string | null
+  cubicaje_ultimo_mensaje_en: string | null
 }

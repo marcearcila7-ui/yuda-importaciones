@@ -979,7 +979,8 @@
     "sinAvisos": "No tienes avisos",
     "eliminar": "Eliminar aviso",
     "eliminarTodas": "Eliminar todas",
-    "confirmarEliminarTodas": "¿Eliminar todos los avisos? Esta acción no se puede deshacer."
+    "confirmarEliminarTodas": "¿Eliminar todos los avisos? Esta acción no se puede deshacer.",
+    "mensajesAgrupados": "{{n}} mensajes nuevos en este chat"
   },
   "gestionPedido": {
     "titulo": "Pedido del cliente",
@@ -1203,6 +1204,7 @@
     "errorCargar": "No se pudo cargar el seguimiento de bodega",
     "sinPedidos": "Todavía no has enviado ningún pedido a bodega.",
     "ordenesRevisadas": "{{n}} de {{total}} órdenes revisadas",
+    "mensajesNuevos": "{{n}} mensajes nuevos de bodega en el chat de esta cotización",
     "asignadoA": "Asignado a {{nombre}}",
     "sinAsignar": "Sin asignar",
     "reasignarA": "Reasignar a…",

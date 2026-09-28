@@ -65,6 +65,13 @@ class PedidoBodegaSeguimientoResumen(BaseModel):
     bodega_asignado_a_id: str | None = None
     bodega_asignado_a_nombre: str | None = None
     actividad_reciente: list[ActividadBodegaResponse] = []
+    # Chat de cubicaje de esta cotización: para que la vendedora vea de un
+    # vistazo en cuál cliente hay mensajes nuevos sin tener que abrir cada
+    # cotización una por una (con 4+ clientes activos a la vez, se pierde de
+    # vista fácil cuál necesita respuesta).
+    cubicaje_mensajes_sin_leer: int = 0
+    cubicaje_ultimo_mensaje: str | None = None
+    cubicaje_ultimo_mensaje_en: datetime | None = None
 
 
 class BodegaPedidoDetalle(BaseModel):

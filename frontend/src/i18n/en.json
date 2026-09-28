@@ -979,7 +979,8 @@
     "sinAvisos": "No notifications",
     "eliminar": "Delete alert",
     "eliminarTodas": "Delete all",
-    "confirmarEliminarTodas": "Delete all alerts? This cannot be undone."
+    "confirmarEliminarTodas": "Delete all alerts? This cannot be undone.",
+    "mensajesAgrupados": "{{n}} new messages in this chat"
   },
   "gestionPedido": {
     "titulo": "Client's order",
@@ -1203,6 +1204,7 @@
     "errorCargar": "Could not load warehouse tracking",
     "sinPedidos": "You haven't sent any order to the warehouse yet.",
     "ordenesRevisadas": "{{n}} of {{total}} orders reviewed",
+    "mensajesNuevos": "{{n}} new messages from the warehouse in this quotation's chat",
     "asignadoA": "Assigned to {{nombre}}",
     "sinAsignar": "Unassigned",
     "reasignarA": "Reassign to…",

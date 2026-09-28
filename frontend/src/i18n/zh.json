@@ -982,7 +982,8 @@
     "sinAvisos": "暂无通知",
     "eliminar": "删除通知",
     "eliminarTodas": "全部删除",
-    "confirmarEliminarTodas": "删除所有通知?此操作无法撤销。"
+    "confirmarEliminarTodas": "删除所有通知?此操作无法撤销。",
+    "mensajesAgrupados": "这个聊天里有 {{n}} 条新消息"
   },
   "gestionPedido": {
     "titulo": "客户订单",
@@ -1206,6 +1207,7 @@
     "errorCargar": "无法加载仓库跟踪信息",
     "sinPedidos": "你还没有发送任何订单到仓库。",
     "ordenesRevisadas": "已检查 {{n}} / {{total}} 个订单",
+    "mensajesNuevos": "这个报价的聊天里有 {{n}} 条来自仓库的新消息",
     "asignadoA": "已分配给 {{nombre}}",
     "sinAsignar": "未分配",
     "reasignarA": "重新分配给…",

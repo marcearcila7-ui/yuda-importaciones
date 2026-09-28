@@ -18,6 +18,7 @@ from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteVendedora
+from app.models.cubicaje import TIPO_REPORTE, CubicajeMensaje, CubicajeVisto
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
@@ -470,10 +471,50 @@ def bodega_resumen(
                 )
             )
 
+    # Chat de cubicaje: cuántos mensajes de bodega quedaron sin leer y cuál
+    # fue el último, por cotización. "Sin leer" = después de la última vez
+    # que esta vendedora tuvo ese chat abierto (CubicajeVisto); si nunca lo
+    # abrió, todos los mensajes de bodega cuentan. Se arma en Python a partir
+    # de una sola consulta (no una por sesión) porque con varios clientes
+    # activos a la vez esto se pide junto con todo lo demás del panel.
+    vistos_por_sesion = {
+        v.sesion_id: v.visto_en
+        for v in db.query(CubicajeVisto).filter(
+            CubicajeVisto.usuario_id == usuario.id, CubicajeVisto.sesion_id.in_(sesion_ids)
+        )
+    }
+    no_leidos_por_sesion: dict[str, int] = {}
+    ultimo_mensaje_por_sesion: dict[str, CubicajeMensaje] = {}
+    mensajes = (
+        db.query(CubicajeMensaje)
+        .filter(CubicajeMensaje.sesion_id.in_(sesion_ids))
+        .order_by(CubicajeMensaje.created_at.asc())
+        .all()
+    )
+    for m in mensajes:
+        ultimo_mensaje_por_sesion[m.sesion_id] = m  # el último al terminar el for (va en orden ascendente)
+        if m.autor_id == usuario.id:
+            continue  # lo que ella misma escribió no cuenta como "sin leer" para ella
+        visto_en = vistos_por_sesion.get(m.sesion_id)
+        if visto_en is None or m.created_at > visto_en:
+            no_leidos_por_sesion[m.sesion_id] = no_leidos_por_sesion.get(m.sesion_id, 0) + 1
+
+    def _preview(m: CubicajeMensaje | None) -> str | None:
+        if m is None:
+            return None
+        if m.mensaje:
+            return m.mensaje
+        if m.tipo == TIPO_REPORTE:
+            return "Bodega actualizó el cubicaje"
+        if m.adjuntos:
+            return "Envió un archivo adjunto"
+        return None
+
     resultado: list[PedidoBodegaSeguimientoResumen] = []
     for sesion, seg in filas:
         ordenes = ordenes_por_sesion.get(sesion.id, [])
         asignado = asignados_por_id.get(seg.bodega_asignado_a_id) if seg.bodega_asignado_a_id else None
+        ultimo_mensaje = ultimo_mensaje_por_sesion.get(sesion.id)
         resultado.append(
             PedidoBodegaSeguimientoResumen(
                 sesion_id=sesion.id,
@@ -486,8 +527,16 @@ def bodega_resumen(
                 bodega_asignado_a_id=seg.bodega_asignado_a_id,
                 bodega_asignado_a_nombre=asignado.nombre if asignado else None,
                 actividad_reciente=actividad_por_sesion.get(sesion.id, []),
+                cubicaje_mensajes_sin_leer=no_leidos_por_sesion.get(sesion.id, 0),
+                cubicaje_ultimo_mensaje=_preview(ultimo_mensaje),
+                cubicaje_ultimo_mensaje_en=ultimo_mensaje.created_at if ultimo_mensaje else None,
             )
         )
+
+    # Los que tienen mensajes sin leer suben arriba; sort() es estable, así
+    # que dentro de cada grupo (con y sin mensajes nuevos) se conserva el
+    # orden por actividad reciente que ya traía `filas`.
+    resultado.sort(key=lambda r: r.cubicaje_mensajes_sin_leer == 0)
     return resultado
 
 
