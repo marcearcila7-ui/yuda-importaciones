@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { Check, FileText, Package, ShoppingBag, Users } from 'lucide-react'
 import { usePackingStore } from '../../store/packingStore'
 import { useAuthStore } from '../../store/authStore'
-import { enfocarNumero } from '../../lib/dom'
 import { getClientes } from '../../api/clientes'
 import { getConfiguracion } from '../../api/admin'
 import SelectorCliente from '../SelectorCliente/SelectorCliente'
@@ -88,6 +87,8 @@ function SesionSelector() {
   const [tipoCotizacion, setTipoCotizacion] = useState<TipoCotizacion | null>(null)
   const [modo, setModo] = useState<Modo | null>(null)
   const [nombreLibre, setNombreLibre] = useState('')
+  // El tipo de cambio lo controla Marcela para todo el sistema (pantalla de
+  // Admin > Configuración), no se edita acá: solo se lee para usarlo al crear.
   const [tipoCambio, setTipoCambio] = useState('6.7')
   const [aviso, setAviso] = useState<string | null>(null)
 
@@ -120,8 +121,6 @@ function SesionSelector() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const clienteElegido = clientes.find((c) => c.id === clienteSel) ?? null
-
   const elegirModo = (m: Modo) => {
     setModo(m)
     setAviso(null)
@@ -135,33 +134,38 @@ function SesionSelector() {
     setAviso(null)
   }
 
-  const handleCrear = async () => {
-    const tc = Number(tipoCambio) || 6.7
+  // Modo libre: todavía hace falta un botón (no hay "cliente" que tocar), así
+  // que se confirma escribiendo el nombre y presionando crear.
+  const handleCrearLibre = async () => {
     if (!tipoCotizacion) {
       setAviso(t('dashboard.avisoQueCotizar'))
       return
     }
-    if (!modo) {
-      setAviso(t('dashboard.avisoElegirOpcion'))
+    if (!nombreLibre.trim()) {
+      setAviso(t('dashboard.avisoNombre'))
       return
     }
-    if (modo === 'libre') {
-      if (!nombreLibre.trim()) {
-        setAviso(t('dashboard.avisoNombre'))
-        return
-      }
-      setAviso(null)
-      await crearSesion(nombreLibre.trim(), tc, null, tipoCotizacion)
-      setNombreLibre('')
-    } else {
-      if (!clienteSel) {
-        setAviso(t('dashboard.avisoElegirCliente'))
-        return
-      }
-      setAviso(null)
-      await crearSesion(clienteElegido?.nombre ?? '', tc, clienteSel, tipoCotizacion)
+    setAviso(null)
+    const tc = Number(tipoCambio) || 6.7
+    await crearSesion(nombreLibre.trim(), tc, null, tipoCotizacion)
+    setNombreLibre('')
+  }
+
+  // Modo cliente existente: un clic sobre el cliente ya crea la cotización, sin
+  // paso de confirmación aparte (antes hacía falta además tocar "Nueva
+  // cotización"). El tipo de cambio ya viene cargado desde la configuración
+  // de Marcela, así que no hay nada más que confirmar.
+  const crearConCliente = async (id: string) => {
+    if (isLoading) return
+    if (!tipoCotizacion) {
+      setAviso(t('dashboard.avisoQueCotizar'))
+      return
     }
-    setTipoCambio('6.7')
+    setClienteSel(id)
+    setAviso(null)
+    const cliente = clientes.find((c) => c.id === id)
+    const tc = Number(tipoCambio) || 6.7
+    await crearSesion(cliente?.nombre ?? '', tc, id, tipoCotizacion)
   }
 
   return (
@@ -261,14 +265,27 @@ function SesionSelector() {
               )}
             </div>
           ) : (
-            <SelectorCliente
-              clientes={clientes}
-              valor={clienteSel}
-              onElegir={(id) => {
-                setClienteSel(id)
-                setAviso(null)
-              }}
-            />
+            <>
+              <p className="mb-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                {t('dashboard.tocaClienteParaCrear')}
+              </p>
+              <SelectorCliente
+                clientes={clientes}
+                valor={clienteSel}
+                onElegir={(id) => {
+                  if (!id) {
+                    setClienteSel('')
+                    return
+                  }
+                  crearConCliente(id)
+                }}
+              />
+              {isLoading && (
+                <p className="mt-2 text-sm font-medium" style={{ color: 'var(--yuda-primary)' }}>
+                  {t('dashboard.creando')}
+                </p>
+              )}
+            </>
           )}
         </Paso>
       )}
@@ -290,31 +307,16 @@ function SesionSelector() {
               style={inputStyle}
               className={`${inputClase} min-h-[48px]`}
             />
-          </div>
-        </Paso>
-      )}
-
-      {/* PASO 3: tipo de cambio y crear. Solo aparece con el paso 1 resuelto. */}
-      {modo && (
-        <Paso titulo={t('dashboard.pasoCrear')}>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <label className="flex flex-col gap-1 text-sm sm:w-44" style={{ color: 'var(--yuda-text-secondary)' }}>
-              {t('dashboard.tipoCambio')}
-              <input
-                type="number"
-                step="0.01"
-                value={tipoCambio}
-                onChange={(e) => setTipoCambio(e.target.value)}
-                onFocus={enfocarNumero}
-                style={inputStyle}
-                className={`${inputClase} min-h-[48px] w-full`}
-              />
-            </label>
+            {/* El tipo de cambio lo controla Marcela para todo el sistema (Admin >
+                Configuración): acá solo se muestra, no se edita. */}
+            <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+              {t('dashboard.tipoCambioFijo', { tc: tipoCambio })}
+            </p>
             <button
               type="button"
-              onClick={handleCrear}
+              onClick={handleCrearLibre}
               disabled={isLoading}
-              className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:min-h-[48px] sm:w-auto"
+              className="min-h-[52px] w-full font-semibold text-white disabled:opacity-60 sm:w-auto"
               style={{ backgroundColor: 'var(--yuda-primary)', borderRadius: 8, padding: '0 20px', fontSize: 16 }}
             >
               {isLoading ? t('dashboard.creando') : t('dashboard.nuevaCotizacion')}

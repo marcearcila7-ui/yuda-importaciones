@@ -33,6 +33,7 @@ from app.schemas.packing import (
     SesionResponse,
     SesionUpdate,
 )
+from app.services.configuracion_service import obtener_tipo_cambio_actual
 from app.services.cotizacion_service import (
     generar_cotizacion_excel,
     generar_cotizacion_pdf,
@@ -221,10 +222,13 @@ def crear_sesion(
         # justo antes de generar el pedido, y era un paso más que "no leía").
         marca_embarque = cliente.sigla
 
+    # El tipo de cambio lo controla Marcela para todo el sistema (Admin >
+    # Configuración): se ignora lo que venga en el cuerpo de la petición para
+    # que una vendedora no pueda cotizar con una tasa distinta a la oficial.
     sesion = Sesion(
         nombre_cliente=nombre,
         fecha=datetime.now().date(),
-        tipo_cambio_usd=datos.tipo_cambio_usd,
+        tipo_cambio_usd=obtener_tipo_cambio_actual(db),
         tipo_cotizacion=datos.tipo_cotizacion,
         user_id=usuario.id,
         cliente_id=datos.cliente_id,

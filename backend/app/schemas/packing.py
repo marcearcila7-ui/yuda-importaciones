@@ -127,6 +127,9 @@ class SesionCreate(BaseModel):
     """Datos para crear una sesión de cotización"""
 
     nombre_cliente: str
+    # Se acepta por compatibilidad con clientes viejos, pero el endpoint la
+    # ignora: el tipo de cambio real siempre sale de Admin > Configuración
+    # (ver obtener_tipo_cambio_actual), nunca del cuerpo de la petición.
     tipo_cambio_usd: float = 6.7
     # "productos" (default) o "bolsos": cambia qué datos pide el OCR.
     tipo_cotizacion: str = "productos"
