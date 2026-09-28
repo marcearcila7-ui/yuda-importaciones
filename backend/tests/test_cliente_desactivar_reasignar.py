@@ -146,3 +146,38 @@ def test_bodega_no_ve_pedidos_de_cliente_inactivo(
     r = client.get("/api/v1/bodega/pedidos?vista=sin_asignar", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200, r.text
     assert sesion.id not in [p["sesion_id"] for p in r.json()]
+
+
+def test_bodega_pierde_acceso_al_detalle_si_cliente_se_desactiva(
+    db, client, crear_usuario, crear_cliente, crear_sesion, token_staff
+):
+    """Bodega puede trabajar el pedido de cualquier vendedora, pero si Marcela
+    desactiva al cliente mientras bodega tiene el detalle abierto, debe
+    perder el acceso igual que la vendedora -no seguir viendo ni actualizando
+    un pedido de un cliente que ya no existe en el sistema."""
+    admin = crear_usuario("admin10@test.com", rol=RolUsuario.admin)
+    vendedora = crear_usuario("v10@test.com", rol=RolUsuario.vendedora)
+    bodega = crear_usuario("bodega10@test.com", rol=RolUsuario.bodega)
+    cliente = crear_cliente("c10@test.com", vendedora.id)
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    db.add(SeguimientoPedido(sesion_id=sesion.id, estado="proveedor_recibio"))
+    db.commit()
+
+    token_bodega = token_staff("bodega10@test.com")
+    r = client.get(f"/api/v1/bodega/pedidos/{sesion.id}", headers={"Authorization": f"Bearer {token_bodega}"})
+    assert r.status_code == 200, r.text
+    r = client.get(f"/api/v1/bodega/pedidos/{sesion.id}/cotizacion", headers={"Authorization": f"Bearer {token_bodega}"})
+    assert r.status_code == 200, r.text
+
+    token_admin = token_staff("admin10@test.com")
+    r = client.delete(f"/api/v1/clientes/{cliente.id}", headers={"Authorization": f"Bearer {token_admin}"})
+    assert r.status_code == 204, r.text
+
+    r = client.get(f"/api/v1/bodega/pedidos/{sesion.id}", headers={"Authorization": f"Bearer {token_bodega}"})
+    assert r.status_code == 403, r.text
+    r = client.get(f"/api/v1/bodega/pedidos/{sesion.id}/cotizacion", headers={"Authorization": f"Bearer {token_bodega}"})
+    assert r.status_code == 403, r.text
+
+    # Admin sigue viendo todo, cliente inactivo o no.
+    r = client.get(f"/api/v1/bodega/pedidos/{sesion.id}", headers={"Authorization": f"Bearer {token_admin}"})
+    assert r.status_code == 200, r.text

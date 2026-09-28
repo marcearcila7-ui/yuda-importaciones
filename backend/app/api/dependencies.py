@@ -109,7 +109,7 @@ def vendedora_tiene_acceso_cliente(db: Session, cliente_id: str, vendedora_id: s
 
 
 def exigir_acceso_sesion(db: Session, sesion: Sesion, usuario: User) -> None:
-    """Lanza 403 si una vendedora no puede gestionar esta cotización.
+    """Lanza 403 si una vendedora o bodega no puede gestionar esta cotización.
 
     Punto único para este chequeo: antes vivía duplicado (con la misma
     lógica, pero sin enterarse de clientes compartidos) en clientes.py,
@@ -123,7 +123,19 @@ def exigir_acceso_sesion(db: Session, sesion: Sesion, usuario: User) -> None:
     Si Marcela reasigna el cliente a otra vendedora, o lo desactiva, la
     vendedora anterior pierde el acceso a esa cotización aunque la haya
     hecho ella: así "desaparece del sistema" de verdad, no a medias.
+
+    Bodega puede trabajar el pedido de cualquier vendedora (no hay "dueña"
+    de ese lado), pero si el cliente se desactiva o se reasigna, el pedido
+    debe desaparecer para bodega tal como para la vendedora: no debe quedar
+    viendo ni actualizando un pedido de un cliente que ya no existe en el
+    sistema, ni siquiera el chat de cubicaje.
     """
+    if usuario.rol.value == "bodega":
+        if sesion.cliente_id is not None:
+            cliente = db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
+            if cliente is None or not cliente.activo:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Sin permisos sobre esta cotización")
+        return
     if usuario.rol.value != "vendedora":
         return
     if sesion.cliente_id is None:

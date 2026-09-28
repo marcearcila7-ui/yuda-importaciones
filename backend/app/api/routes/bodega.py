@@ -326,6 +326,7 @@ def detalle_pedido_bodega(
     sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
     if sesion is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cotización no encontrada")
+    exigir_acceso_sesion(db, sesion, usuario)
 
     items = db.query(Item).filter(Item.sesion_id == sesion_id).order_by(Item.orden.asc()).all()
     portal_items: list[PortalItem] = []
