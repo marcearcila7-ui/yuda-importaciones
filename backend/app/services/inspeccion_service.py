@@ -111,6 +111,30 @@ def construir_inspeccion_sesion(db: Session, sesion: Sesion) -> InspeccionSesion
     )
 
 
+def aplicar_fecha_recibo_masiva(db: Session, sesion: Sesion, fecha_recibo: str) -> None:
+    """Pone la misma fecha de recibo en TODOS los ítems de la sesión de una
+    sola vez (para cuando todo el pedido llegó el mismo día). A propósito NO
+    toca actualizado_en/actualizado_por_id: eso significa "bodega ya revisó
+    este producto" (cantidades, medidas, fotos), y poner solo la fecha no es
+    una revisión -si lo tocara, cada producto se vería con el visto bueno
+    verde sin que bodega hubiera revisado nada más que la fecha."""
+    items = db.query(Item).filter(Item.sesion_id == sesion.id).all()
+    item_ids = [i.id for i in items]
+    existentes = {
+        i.item_id: i
+        for i in db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)).all()
+    } if item_ids else {}
+
+    for item in items:
+        insp = existentes.get(item.id)
+        if insp is None:
+            insp = ItemInspeccionBodega(item_id=item.id)
+            db.add(insp)
+        insp.fecha_recibo = fecha_recibo
+
+    db.commit()
+
+
 def guardar_inspeccion(
     db: Session, sesion: Sesion, datos: GuardarInspeccionInput, usuario: User
 ) -> list[dict]:

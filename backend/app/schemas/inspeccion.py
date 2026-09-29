@@ -124,3 +124,7 @@ class InspeccionItemInput(BaseModel):
 class GuardarInspeccionInput(BaseModel):
     shipping_mark: str | None = None
     items: list[InspeccionItemInput]
+
+
+class FechaRecibidaMasivaInput(BaseModel):
+    fecha_recibo: str

@@ -32,14 +32,19 @@ from app.schemas.bodega import (
     UsuarioBodegaBasico,
 )
 from app.schemas.cubicaje import SobranteListaItem
-from app.schemas.inspeccion import GuardarInspeccionInput, InspeccionSesionResponse
+from app.schemas.inspeccion import FechaRecibidaMasivaInput, GuardarInspeccionInput, InspeccionSesionResponse
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cotizacion_service import _calcular
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
-from app.services.inspeccion_service import _MAPEO_CAMPOS, construir_inspeccion_sesion, guardar_inspeccion
+from app.services.inspeccion_service import (
+    _MAPEO_CAMPOS,
+    aplicar_fecha_recibo_masiva,
+    construir_inspeccion_sesion,
+    guardar_inspeccion,
+)
 from app.services.notificacion_service import (
     avisar_cubicaje_a_vendedora,
     avisar_inspeccion_actualizada,
@@ -759,6 +764,22 @@ def guardar_cotizacion_inspeccion(
 
     db.commit()
 
+    return construir_inspeccion_sesion(db, sesion)
+
+
+@router.put("/pedidos/{sesion_id}/cotizacion/fecha-recibo-masiva", response_model=InspeccionSesionResponse)
+def guardar_fecha_recibo_masiva(
+    sesion_id: str,
+    datos: FechaRecibidaMasivaInput,
+    usuario: User = Depends(require_roles("admin", "bodega")),
+    db: Session = Depends(get_db),
+) -> InspeccionSesionResponse:
+    """Pone la misma fecha de recibo en todos los productos de la cotización de
+    una sola vez (para cuando todo el pedido llegó el mismo día). A propósito
+    NO marca los productos como revisados -eso sigue siendo solo de guardar la
+    inspección producto por producto."""
+    sesion = _sesion_o_404(db, sesion_id)
+    aplicar_fecha_recibo_masiva(db, sesion, datos.fecha_recibo)
     return construir_inspeccion_sesion(db, sesion)
 
 
