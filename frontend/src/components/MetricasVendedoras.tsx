@@ -38,6 +38,10 @@ function MetricasVendedoras() {
   const totalItems = conActividad.reduce((a, f) => a + f.total_items, 0)
   const totalRmb = conActividad.reduce((a, f) => a + f.total_rmb, 0)
   const totalUsd = conActividad.reduce((a, f) => a + f.total_usd, 0)
+  // Lo REALMENTE pedido al proveedor (cantidades de la orden generada), no lo
+  // cotizado: no todo lo que se cotiza se termina comprando.
+  const totalRmbOrdenes = conActividad.reduce((a, f) => a + f.total_rmb_ordenes, 0)
+  const totalUsdOrdenes = conActividad.reduce((a, f) => a + f.total_usd_ordenes, 0)
 
   return (
     <section className="card">
@@ -59,6 +63,8 @@ function MetricasVendedoras() {
                 <th className="px-3 py-2 text-right font-semibold">{t('historial.items')}</th>
                 <th className="px-3 py-2 text-right font-semibold">{t('historial.totalRmb')}</th>
                 <th className="px-3 py-2 text-right font-semibold">{t('historial.totalUsd')}</th>
+                <th className="px-3 py-2 text-right font-semibold">{t('metricas.rmbPedido')}</th>
+                <th className="px-3 py-2 text-right font-semibold">{t('metricas.usdPedido')}</th>
               </tr>
             </thead>
             <tbody>
@@ -89,6 +95,8 @@ function MetricasVendedoras() {
                   <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>{f.total_items}</td>
                   <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>¥ {fmt(f.total_rmb)}</td>
                   <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>$ {fmt(f.total_usd)}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>¥ {fmt(f.total_rmb_ordenes)}</td>
+                  <td className="px-3 py-2 text-right" style={{ color: 'var(--yuda-accent)' }}>$ {fmt(f.total_usd_ordenes)}</td>
                 </tr>
               ))}
               <tr style={{ borderTop: '2px solid var(--yuda-primary)' }}>
@@ -97,6 +105,8 @@ function MetricasVendedoras() {
                 <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>{totalItems}</td>
                 <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>¥ {fmt(totalRmb)}</td>
                 <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>$ {fmt(totalUsd)}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>¥ {fmt(totalRmbOrdenes)}</td>
+                <td className="px-3 py-2 text-right font-bold" style={{ color: 'var(--yuda-primary)' }}>$ {fmt(totalUsdOrdenes)}</td>
               </tr>
             </tbody>
           </table>

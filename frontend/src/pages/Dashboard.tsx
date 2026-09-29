@@ -430,6 +430,11 @@ function Dashboard() {
             <DatoDelMes etiqueta={t('metricas.pedidosGenerados')} valor={metricas.total_pedidos_mes} />
             <DatoDelMes etiqueta={t('metricas.totalYuan')} valor={`¥ ${fmt(metricas.total_rmb_mes)}`} />
             <DatoDelMes etiqueta={t('metricas.totalUSD')} valor={`$ ${fmt(metricas.total_usd_mes)}`} />
+            {/* No todo lo que se cotiza se termina comprando: el cliente
+                puede quitar productos desde su portal antes de confirmar.
+                Esto es lo que de verdad se le pidió al proveedor. */}
+            <DatoDelMes etiqueta={t('metricas.totalYuanOrdenes')} valor={`¥ ${fmt(metricas.total_rmb_ordenes_mes)}`} />
+            <DatoDelMes etiqueta={t('metricas.totalUsdOrdenes')} valor={`$ ${fmt(metricas.total_usd_ordenes_mes)}`} />
           </div>
         </section>
       )}

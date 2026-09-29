@@ -17,7 +17,7 @@ from app.models.cubicaje import CubicajeMensaje
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.notificacion import Notificacion
-from app.models.pedido import PedidoGenerado
+from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
@@ -381,14 +381,43 @@ def metricas(
     proveedores = {(i.supplier_nombre, i.supplier_numero) for i in items}
 
     # Pedidos generados este mes
-    total_pedidos_mes = (
+    pedidos_mes = (
         db.query(PedidoGenerado)
         .filter(
             PedidoGenerado.fecha_generacion >= inicio_mes,
             PedidoGenerado.fecha_generacion < fin_mes,
         )
-        .count()
+        .all()
     )
+    total_pedidos_mes = len(pedidos_mes)
+
+    # Valor REALMENTE pedido al proveedor (no todo lo cotizado termina
+    # comprándose: el cliente puede quitar productos desde su portal antes de
+    # confirmar). Se calcula con las cantidades que quedaron en la orden
+    # generada (PedidoGeneradoItem.cantidad_pedida), no con las CTNS de la
+    # cotización.
+    pedido_ids_mes = [p.id for p in pedidos_mes]
+    lineas_pedidas = (
+        db.query(PedidoGeneradoItem).filter(PedidoGeneradoItem.pedido_generado_id.in_(pedido_ids_mes)).all()
+        if pedido_ids_mes
+        else []
+    )
+    items_pedidos_por_id = (
+        {
+            i.id: i
+            for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas_pedidas])).all()
+        }
+        if lineas_pedidas
+        else {}
+    )
+    total_rmb_ordenes_mes = sum(
+        (items_pedidos_por_id[l.item_id].price_rmb or 0)
+        * (items_pedidos_por_id[l.item_id].qty_por_ctn or 0)
+        * (l.cantidad_pedida or 0)
+        for l in lineas_pedidas
+        if l.item_id in items_pedidos_por_id
+    )
+    total_usd_ordenes_mes = round(total_rmb_ordenes_mes / tipo_cambio, 2) if tipo_cambio else 0.0
 
     # Panorama de bodega/despacho (no depende del mes: es la cola de HOY).
     pedidos_esperando_bodega = (
@@ -410,6 +439,8 @@ def metricas(
         "total_sesiones_mes": len(sesiones_mes),
         "total_rmb_mes": total_rmb_mes,
         "total_usd_mes": total_usd_mes,
+        "total_rmb_ordenes_mes": round(total_rmb_ordenes_mes, 2),
+        "total_usd_ordenes_mes": total_usd_ordenes_mes,
         "total_items_mes": len(items),
         "total_pedidos_mes": total_pedidos_mes,
         "proveedores_unicos_mes": len(proveedores),
@@ -461,10 +492,56 @@ def metricas_vendedoras(
             total_rmb += sesion_rmb
             if s.tipo_cambio_usd:
                 total_usd += sesion_rmb / s.tipo_cambio_usd
+
+        # Valor REALMENTE pedido al proveedor (no todo lo cotizado termina
+        # comprándose: el cliente puede quitar productos desde su portal antes
+        # de confirmar). Con las cantidades de la orden ya generada
+        # (PedidoGeneradoItem.cantidad_pedida), no las CTNS de la cotización.
+        sesion_ids = [s.id for s in sesiones]
+        tipo_cambio_por_sesion = {s.id: s.tipo_cambio_usd for s in sesiones}
+        pedidos = (
+            db.query(PedidoGenerado)
+            .filter(
+                PedidoGenerado.sesion_id.in_(sesion_ids),
+                PedidoGenerado.fecha_generacion >= inicio_mes,
+                PedidoGenerado.fecha_generacion < fin_mes,
+            )
+            .all()
+            if sesion_ids
+            else []
+        )
+        pedido_por_id = {p.id: p for p in pedidos}
+        lineas = (
+            db.query(PedidoGeneradoItem)
+            .filter(PedidoGeneradoItem.pedido_generado_id.in_(list(pedido_por_id)))
+            .all()
+            if pedido_por_id
+            else []
+        )
+        items_ordenados = (
+            {i.id: i for i in db.query(Item).filter(Item.id.in_([l.item_id for l in lineas])).all()}
+            if lineas
+            else {}
+        )
+        total_rmb_ordenes = 0.0
+        total_usd_ordenes = 0.0
+        for l in lineas:
+            item = items_ordenados.get(l.item_id)
+            if item is None:
+                continue
+            rmb_linea = (item.price_rmb or 0) * (item.qty_por_ctn or 0) * (l.cantidad_pedida or 0)
+            total_rmb_ordenes += rmb_linea
+            pedido = pedido_por_id[l.pedido_generado_id]
+            tc = tipo_cambio_por_sesion.get(pedido.sesion_id)
+            if tc:
+                total_usd_ordenes += rmb_linea / tc
+
         resultado.append(
             {
                 "user_id": v.id,
                 "nombre": v.nombre,
+                "total_rmb_ordenes": round(total_rmb_ordenes, 2),
+                "total_usd_ordenes": round(total_usd_ordenes, 2),
                 "total_sesiones": len(sesiones),
                 "total_items": total_items,
                 "total_rmb": round(total_rmb, 2),
