@@ -12,7 +12,7 @@ from app.core.archivo_valida import es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
 from app.database import get_db
 from app.models.cliente import Cliente
-from app.models.cubicaje import RESULTADO_SOBRA, TIPO_REPORTE, CubicajeMensaje
+from app.models.cubicaje import RESULTADO_SOBRA, TIPO_NOTA, TIPO_REPORTE, CubicajeMensaje
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
@@ -41,6 +41,7 @@ from app.services.excel_service import generar_csv_pedido, generar_formato_pedid
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
 from app.services.inspeccion_service import _MAPEO_CAMPOS, construir_inspeccion_sesion, guardar_inspeccion
 from app.services.notificacion_service import (
+    avisar_cubicaje_a_vendedora,
     avisar_inspeccion_actualizada,
     avisar_orden_actualizada_bodega,
 )
@@ -723,7 +724,7 @@ def guardar_cotizacion_inspeccion(
     reales, medidas, descripciones, confirmación de referencia). Nunca toca
     el Item original: el cliente no ve nada de esto, solo la vendedora."""
     sesion = _sesion_o_404(db, sesion_id)
-    guardar_inspeccion(db, sesion, datos, usuario)
+    avisos = guardar_inspeccion(db, sesion, datos, usuario)
     registrar_actividad_bodega(db, sesion_id, usuario.id, "inspeccion_actualizada", "Corrigió la cotización del cliente")
 
     # La "Cajas" que bodega corrige acá ES el conteo real de lo que llegó: se
@@ -739,6 +740,23 @@ def guardar_cotizacion_inspeccion(
     avisar_inspeccion_actualizada(
         db, sesion.id, _numero(sesion), cliente.nombre if cliente else sesion.nombre_cliente, sesion.user_id
     )
+
+    # Bodega acaba de marcar "hay que devolver" o "no llegó" en algún producto:
+    # se avisa por el chat de cubicaje del pedido, aparte de la notificación de
+    # la campanita, porque ese chat es lo que la vendedora ya revisa por pedido.
+    _TEXTOS_AVISO = {
+        "devolver": "↩️ Hay que devolver al proveedor: {referencia} - {descripcion}",
+        "no_llego": "⚠️ No llegó: {referencia} - {descripcion}",
+    }
+    for aviso in avisos:
+        texto = _TEXTOS_AVISO[aviso["tipo"]].format(
+            referencia=aviso["referencia"], descripcion=aviso["descripcion"]
+        )
+        db.add(CubicajeMensaje(sesion_id=sesion_id, tipo=TIPO_NOTA, autor_id=usuario.id, mensaje=texto))
+        avisar_cubicaje_a_vendedora(
+            db, sesion_id, _numero(sesion), cliente.nombre if cliente else sesion.nombre_cliente, sesion.user_id, texto
+        )
+
     db.commit()
 
     return construir_inspeccion_sesion(db, sesion)

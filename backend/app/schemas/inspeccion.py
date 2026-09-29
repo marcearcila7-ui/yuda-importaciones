@@ -68,6 +68,8 @@ class InspeccionItemResponse(BaseModel):
     # aparte, una lista vacía no distingue "nada que reportar" de "nunca lo
     # miró".
     sin_cajas_extra: bool = False
+    debe_devolver: bool = False
+    no_llego: bool = False
     fotos: list[str] = []
     video_url: str | None = None
     actualizado_en: datetime | None = None
@@ -115,6 +117,8 @@ class InspeccionItemInput(BaseModel):
     referencia_coincide: bool | None = None
     cajas_extra: list[CajaExtra] | None = None
     sin_cajas_extra: bool = False
+    debe_devolver: bool = False
+    no_llego: bool = False
 
 
 class GuardarInspeccionInput(BaseModel):

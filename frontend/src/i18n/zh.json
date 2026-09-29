@@ -1011,6 +1011,8 @@
     "previewFotoEvidencia": "仓库证据照片",
     "previewSinFoto": "无照片",
     "previewCajasExtra": "+ {{n}} 箱不同规格",
+    "debeDevolver": "退货",
+    "noLlego": "未到货",
     "fechaTentativaValor": "预计日期：{{fecha}}",
     "fechaTentativaSinAsignar": "+ 添加该店铺的预计日期",
     "fechaTentativaGuardada": "日期已保存并通知客户",

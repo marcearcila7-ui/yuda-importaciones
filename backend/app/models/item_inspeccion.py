@@ -74,6 +74,13 @@ class ItemInspeccionBodega(Base):
     # de "todavía no lo revisó".
     sin_cajas_extra: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # Bodega marca esto al inspeccionar físicamente el producto. Al pasar de
+    # False a True se avisa solo por el chat de cubicaje del pedido (ver
+    # guardar_inspeccion/guardar_cotizacion_inspeccion), para que la vendedora
+    # se entere sin tener que revisar cotización por cotización.
+    debe_devolver: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    no_llego: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     actualizado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     actualizado_por_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("users.id"), nullable=True

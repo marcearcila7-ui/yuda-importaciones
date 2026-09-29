@@ -42,6 +42,8 @@ export interface InspeccionItem {
   referencia_coincide: boolean | null
   cajas_extra: CajaExtra[]
   sin_cajas_extra: boolean
+  debe_devolver: boolean
+  no_llego: boolean
   fotos: string[]
   video_url: string | null
 }

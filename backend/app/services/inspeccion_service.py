@@ -63,6 +63,8 @@ def _item_response(item: Item, insp: ItemInspeccionBodega | None, actualizado_po
         referencia_coincide=insp.referencia_coincide if insp else None,
         cajas_extra=(insp.cajas_extra if insp and insp.cajas_extra else []),
         sin_cajas_extra=insp.sin_cajas_extra if insp else False,
+        debe_devolver=insp.debe_devolver if insp else False,
+        no_llego=insp.no_llego if insp else False,
         fotos=(insp.fotos if insp and insp.fotos else []),
         video_url=insp.video_url if insp else None,
         actualizado_en=insp.actualizado_en if insp else None,
@@ -109,7 +111,13 @@ def construir_inspeccion_sesion(db: Session, sesion: Sesion) -> InspeccionSesion
     )
 
 
-def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInput, usuario: User) -> None:
+def guardar_inspeccion(
+    db: Session, sesion: Sesion, datos: GuardarInspeccionInput, usuario: User
+) -> list[dict]:
+    """Guarda las correcciones de bodega y devuelve los avisos nuevos a mandar
+    por el chat de cubicaje: uno por cada producto que en ESTE guardado pasó de
+    no marcado a marcado como "hay que devolver" o "no llegó" (si ya venía
+    marcado de un guardado anterior, no se repite el aviso)."""
     if datos.shipping_mark is not None:
         sesion.shipping_mark_bodega = datos.shipping_mark or None
 
@@ -123,6 +131,7 @@ def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInpu
     }
 
     ahora = datetime.now(timezone.utc)
+    avisos: list[dict] = []
     for entrada in datos.items:
         if entrada.item_id not in validos:
             continue
@@ -132,6 +141,9 @@ def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInpu
             db.add(insp)
             existentes[entrada.item_id] = insp
 
+        devolver_antes = insp.debe_devolver
+        no_llego_antes = insp.no_llego
+
         for clave, _campo_item, campo_insp in _MAPEO_CAMPOS:
             setattr(insp, campo_insp, getattr(entrada, clave))
         insp.referencia_coincide = entrada.referencia_coincide
@@ -139,7 +151,17 @@ def guardar_inspeccion(db: Session, sesion: Sesion, datos: GuardarInspeccionInpu
             [c.model_dump() for c in entrada.cajas_extra] if entrada.cajas_extra else None
         )
         insp.sin_cajas_extra = entrada.sin_cajas_extra
+        insp.debe_devolver = entrada.debe_devolver
+        insp.no_llego = entrada.no_llego
         insp.actualizado_en = ahora
         insp.actualizado_por_id = usuario.id
 
+        referencia = entrada.referencia or entrada.codigo or entrada.item_id
+        descripcion = entrada.descripcion_es or entrada.descripcion_en or referencia
+        if entrada.debe_devolver and not devolver_antes:
+            avisos.append({"tipo": "devolver", "referencia": referencia, "descripcion": descripcion})
+        if entrada.no_llego and not no_llego_antes:
+            avisos.append({"tipo": "no_llego", "referencia": referencia, "descripcion": descripcion})
+
     db.commit()
+    return avisos

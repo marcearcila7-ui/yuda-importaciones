@@ -1008,6 +1008,8 @@
     "previewFotoEvidencia": "Warehouse evidence",
     "previewSinFoto": "No photo",
     "previewCajasExtra": "+ {{n}} box(es) outside the standard",
+    "debeDevolver": "Return",
+    "noLlego": "Missing",
     "fechaTentativaValor": "Estimated date: {{fecha}}",
     "fechaTentativaSinAsignar": "+ Add this store's estimated date",
     "fechaTentativaGuardada": "Date saved and the client was notified",

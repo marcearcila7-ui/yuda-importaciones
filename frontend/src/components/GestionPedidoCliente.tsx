@@ -490,8 +490,24 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                         const fotoCotizada = it.foto_url || it.foto_final_url
                         return (
                           <div key={it.item_id} className="flex flex-col gap-2 border-b pb-3 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>
-                            <p className="text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
+                            <p className="flex flex-wrap items-center gap-2 text-sm font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                               {referencia ? `${referencia} · ` : ''}{descripcion || '—'}
+                              {it.debe_devolver && (
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                  style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}
+                                >
+                                  {t('gestionPedido.debeDevolver')}
+                                </span>
+                              )}
+                              {it.no_llego && (
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-xs font-semibold"
+                                  style={{ backgroundColor: 'var(--yuda-error-soft)', color: 'var(--yuda-error)' }}
+                                >
+                                  {t('gestionPedido.noLlego')}
+                                </span>
+                              )}
                             </p>
                             <p className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                               {t('gestionPedido.previewCajas', { cajas: cajasReales ?? '—', uds: udsCaja ?? '—' })}

@@ -1008,6 +1008,8 @@
     "previewFotoEvidencia": "Evidencia de bodega",
     "previewSinFoto": "Sin foto",
     "previewCajasExtra": "+ {{n}} caja(s) fuera de lo uniforme",
+    "debeDevolver": "Devolver",
+    "noLlego": "No llegó",
     "fechaTentativaValor": "Fecha estimada: {{fecha}}",
     "fechaTentativaSinAsignar": "+ Agregar fecha estimada de esta tienda",
     "fechaTentativaGuardada": "Fecha guardada y avisada al cliente",
