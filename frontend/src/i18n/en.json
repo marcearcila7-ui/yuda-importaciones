@@ -663,7 +663,6 @@
     "importarContableAyuda": "Brings into the quotation app the clients that already exist in Yuda Contable, so salespeople can quote them. Only name, country and phone; no balances or transactions. The ones you already have here are marked and can't be brought in again.",
     "errorPreviewContable": "Could not load the list from Yuda Contable",
     "contableSinNombre": "(no name on record)",
-    "contableYaImportado": "Already here",
     "confirmarImportarContable": "Bring in {{n}} clients from Yuda Contable? They'll have no salesperson assigned; you assign that afterward.",
     "importar": "Import",
     "importando": "Importing…",
@@ -758,7 +757,8 @@
     "verHistorialEnvio": "View shipping history and manual editing",
     "pendientesTitulo": "Imported from Yuda Contable, unassigned ({{n}})",
     "pendientesAyuda": "These came in bulk from the Yuda Contable import. Assign a sales rep to move them into the real client list.",
-    "asignarA": "Assign to..."
+    "asignarA": "Assign to...",
+    "abrir": "Open"
   },
   "colaboracion": {
     "errorCargar": "Could not load the client's information",

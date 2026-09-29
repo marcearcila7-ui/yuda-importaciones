@@ -663,7 +663,6 @@
     "importarContableAyuda": "Trae hacia el cotizador los clientes que ya existen en Yuda Contable, para que las vendedoras puedan cotizarles. Solo trae nombre, país y teléfono; nada de saldos ni movimientos. Los que ya tienes acá quedan marcados y no se pueden volver a traer.",
     "errorPreviewContable": "No se pudo cargar la lista de Yuda Contable",
     "contableSinNombre": "(sin nombre registrado)",
-    "contableYaImportado": "Ya está",
     "confirmarImportarContable": "¿Traer {{n}} clientes de Yuda Contable? Quedan sin vendedora asignada; se la asignas después.",
     "importar": "Importar",
     "importando": "Importando…",
@@ -758,7 +757,8 @@
     "verHistorialEnvio": "Ver historial y edición manual del envío",
     "pendientesTitulo": "Importados de Yuda Contable sin asignar ({{n}})",
     "pendientesAyuda": "Entraron en bloque al importar el listado de Yuda Contable. Asígnales una vendedora para que pasen a la lista de clientes de verdad.",
-    "asignarA": "Asignar a..."
+    "asignarA": "Asignar a...",
+    "abrir": "Abrir"
   },
   "colaboracion": {
     "errorCargar": "No se pudo cargar la información del cliente",

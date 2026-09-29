@@ -666,7 +666,6 @@
     "importarContableAyuda": "把 Yuda Contable 中已有的客户带到报价系统里，方便销售员给他们报价。只带姓名、国家和电话，不带任何余额或往来记录。已经在这里的客户会标出来，不能重复导入。",
     "errorPreviewContable": "无法加载 Yuda Contable 的客户列表",
     "contableSinNombre": "（未登记姓名）",
-    "contableYaImportado": "已导入",
     "confirmarImportarContable": "确定导入 {{n}} 个 Yuda Contable 的客户吗？导入后暂无销售员负责，之后再分配。",
     "importar": "导入",
     "importando": "导入中…",
@@ -761,7 +760,8 @@
     "verHistorialEnvio": "查看发货历史和手动编辑",
     "pendientesTitulo": "从 Yuda Contable 导入,未分配 ({{n}})",
     "pendientesAyuda": "这些是批量从 Yuda Contable 导入的。分配销售后会进入正式客户列表。",
-    "asignarA": "分配给..."
+    "asignarA": "分配给...",
+    "abrir": "打开"
   },
   "colaboracion": {
     "errorCargar": "无法加载客户信息",

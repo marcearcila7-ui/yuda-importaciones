@@ -1321,10 +1321,29 @@ ${t('clientes.email')}: ${c.email}`
                       {r.nombre || t('clientes.contableSinNombre')}
                       {r.pais && <span style={{ color: 'var(--yuda-text-secondary)' }}> · {r.pais}</span>}
                     </span>
-                    {r.ya_existe ? (
-                      <span className="flex-shrink-0 text-xs font-semibold" style={{ color: 'var(--yuda-text-secondary)' }}>
-                        {t('clientes.contableYaImportado')}
-                      </span>
+                    {r.ya_existe && r.cliente_id_existente ? (
+                      <div className="flex flex-shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/clientes/${r.cliente_id_existente}`)}
+                          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold"
+                          style={{ backgroundColor: 'var(--yuda-primary-soft)', color: 'var(--yuda-primary)' }}
+                        >
+                          {t('clientes.abrir')}
+                        </button>
+                        <select
+                          disabled={asignandoPendiente[r.cliente_id_existente]}
+                          value=""
+                          onChange={(e) => e.target.value && asignarPendiente(r.cliente_id_existente as string, e.target.value)}
+                          className="min-h-[32px] rounded-lg border px-2 text-xs focus:outline-none"
+                          style={{ borderColor: 'var(--yuda-border)', color: 'var(--yuda-text)' }}
+                        >
+                          <option value="">{t('clientes.asignarA')}</option>
+                          {vendedoras.map((v) => (
+                            <option key={v.user_id} value={v.user_id}>{v.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
                     ) : (
                       <button
                         type="button"
