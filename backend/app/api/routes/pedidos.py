@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import exigir_acceso_sesion, exigir_roles, get_current_user
+from app.core.archivo_valida import detectar_tipo_documento
 from app.database import get_db
 from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteVendedora
@@ -739,11 +740,37 @@ def obtener_cotizacion_inspeccion(
     return construir_inspeccion_sesion(db, sesion)
 
 
-_TIPOS_ARCHIVO_PEDIDO = {
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ("archivo_xlsx_url", subir_excel),
-    "application/pdf": ("archivo_pdf_url", subir_pdf),
-    "text/csv": ("archivo_csv_url", subir_csv),
+_XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+# Extensión primero, no content-type: mismo criterio que subir_adjunto_
+# seguimiento (clientes.py). Al volver a guardar un .xlsx (Excel de Mac,
+# Numbers exportando, etc.) el navegador no siempre manda el content-type
+# "correcto" -a veces sale "application/octet-stream", "application/zip" o
+# vacío- y con el chequeo estricto de antes ese archivo se rechazaba con un
+# mensaje que ni siquiera se veía, dando la sensación de que "no cargó nada".
+# Los valores son solo el nombre del campo a actualizar (no la función de
+# subida): esa se resuelve por su nombre en reemplazar_archivo_pedido_generado
+# para que los tests puedan reemplazarla con monkeypatch.
+_REEMPLAZO_EXT = {
+    ".xlsx": "archivo_xlsx_url",
+    ".pdf": "archivo_pdf_url",
+    ".csv": "archivo_csv_url",
 }
+# Respaldo por content-type, solo si el nombre no trae una extensión reconocida.
+_REEMPLAZO_CONTENT_TYPE = {
+    _XLSX_MIME: "archivo_xlsx_url",
+    "application/pdf": "archivo_pdf_url",
+    "text/csv": "archivo_csv_url",
+}
+
+
+def _campo_archivo_pedido(content_type: str | None, filename: str | None) -> str | None:
+    nombre = (filename or "").lower()
+    punto = nombre.rfind(".")
+    extension = nombre[punto:] if punto != -1 else ""
+    if extension in _REEMPLAZO_EXT:
+        return _REEMPLAZO_EXT[extension]
+    return _REEMPLAZO_CONTENT_TYPE.get(content_type or "")
 
 
 @router.post("/generados/{pedido_generado_id}/reemplazar-archivo", response_model=PedidoGeneradoResponse)
@@ -769,16 +796,34 @@ async def reemplazar_archivo_pedido_generado(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Pedido no encontrado")
     sesion = _obtener_sesion(db, pedido.sesion_id, usuario)
 
-    info = _TIPOS_ARCHIVO_PEDIDO.get(archivo.content_type or "")
-    if info is None:
+    campo_url = _campo_archivo_pedido(archivo.content_type, archivo.filename)
+    if campo_url is None:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos Excel (.xlsx), PDF o CSV"
         )
-    campo_url, subir = info
+    subir = {
+        "archivo_xlsx_url": subir_excel,
+        "archivo_pdf_url": subir_pdf,
+        "archivo_csv_url": subir_csv,
+    }[campo_url]
 
     contenido = await archivo.read()
     if len(contenido) > 25 * 1024 * 1024:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "El archivo no debe superar 25MB")
+
+    # Valida el contenido REAL (magic bytes), no solo el nombre/content-type
+    # declarados (falsificables). El CSV es texto plano sin firma binaria, así
+    # que solo se descarta si trae bytes nulos (señal de que en realidad es
+    # un binario disfrazado de .csv) -mismo criterio que subir_adjunto_
+    # seguimiento.
+    if campo_url in ("archivo_xlsx_url", "archivo_pdf_url") and detectar_tipo_documento(contenido) is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos Excel (.xlsx), PDF o CSV"
+        )
+    if campo_url == "archivo_csv_url" and b"\x00" in contenido[:4096]:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Solo se permiten archivos Excel (.xlsx), PDF o CSV"
+        )
 
     nombre_archivo = f"pedidos/{pedido.id}/manual_{uuid.uuid4().hex}_{archivo.filename or 'archivo'}"
     # subir_* es síncrono (storage3): sin el hilo aparte, esta subida bloqueaba
