@@ -381,7 +381,9 @@
     "titulo": "客户订单",
     "recibidoEl": "接收于 {{fecha}}",
     "cajas": "{{n}} 箱",
-    "sinCantidad": "无数量",
+    "excluido": "已排除",
+    "excluidoAyuda": "客户没有为这个产品填写数量：不会包含在给供应商的订单中。",
+    "avisoExcluidos": "客户没有包含 {{n}} 件产品，这些产品不会进入给供应商的订单。",
     "notas": "客户备注",
     "sinPedido": "客户尚未从门户提交订单。"
   },

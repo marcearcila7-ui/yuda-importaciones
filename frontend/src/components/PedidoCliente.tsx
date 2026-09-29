@@ -65,6 +65,12 @@ function PedidoCliente({
     timeStyle: 'short',
   })
 
+  // Cuántos productos el cliente terminó excluyendo (cantidad en 0 o nula):
+  // no todo lo que se cotiza se termina comprando, y antes esto había que
+  // notarlo leyendo fila por fila -un vistazo rápido no dejaba claro cuántos
+  // se iban a quedar por fuera del pedido al proveedor.
+  const excluidos = items.filter((it) => (it.cantidad_solicitada ?? 0) <= 0).length
+
   return (
     <div className="rounded-xl border" style={{ borderColor: '#C7CBF7', backgroundColor: '#F5F6FE' }}>
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5" style={{ borderColor: '#E0E2FA' }}>
@@ -74,18 +80,39 @@ function PedidoCliente({
         <span className="text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('pedidoCliente.recibidoEl', { fecha })}</span>
       </div>
 
+      {excluidos > 0 && (
+        <p className="px-4 pt-2 text-xs font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
+          {t('pedidoCliente.avisoExcluidos', { n: excluidos })}
+        </p>
+      )}
+
       <div className="flex flex-col divide-y" style={{ borderColor: 'var(--yuda-border)' }}>
         {items.map((it) => {
           const cajas = it.cantidad_solicitada ?? 0
+          const excluido = cajas <= 0
           return (
             <div key={it.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
-              <span className="min-w-0 flex-1" style={{ color: 'var(--yuda-accent)' }}>{descripcion(it)}</span>
-              {cajas > 0 ? (
+              <span
+                className="min-w-0 flex-1"
+                style={{
+                  color: excluido ? 'var(--yuda-text-secondary)' : 'var(--yuda-accent)',
+                  textDecoration: excluido ? 'line-through' : 'none',
+                }}
+              >
+                {descripcion(it)}
+              </span>
+              {!excluido ? (
                 <span className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ backgroundColor: 'var(--yuda-primary)' }}>
                   {t('pedidoCliente.cajas', { n: cajas })}
                 </span>
               ) : (
-                <span className="flex-shrink-0 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>{t('pedidoCliente.sinCantidad')}</span>
+                <span
+                  className="flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold"
+                  style={{ backgroundColor: 'var(--yuda-warning-soft)', color: 'var(--yuda-warning-dark)' }}
+                  title={t('pedidoCliente.excluidoAyuda')}
+                >
+                  {t('pedidoCliente.excluido')}
+                </span>
               )}
             </div>
           )

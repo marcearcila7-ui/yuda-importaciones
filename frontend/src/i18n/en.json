@@ -378,7 +378,9 @@
     "titulo": "Client's order",
     "recibidoEl": "Received on {{fecha}}",
     "cajas": "{{n}} boxes",
-    "sinCantidad": "No quantity",
+    "excluido": "Excluded",
+    "excluidoAyuda": "The client left no quantity for this product: it won't be included in the supplier order.",
+    "avisoExcluidos": "{{n}} product(s) the client didn't include in their order won't go into the supplier order.",
     "notas": "Client's notes",
     "sinPedido": "The client has not submitted an order from the portal yet."
   },

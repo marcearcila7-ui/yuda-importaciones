@@ -378,7 +378,9 @@
     "titulo": "Pedido del cliente",
     "recibidoEl": "Recibido el {{fecha}}",
     "cajas": "{{n}} cajas",
-    "sinCantidad": "Sin cantidad",
+    "excluido": "Excluido",
+    "excluidoAyuda": "El cliente no dejó cantidad para este producto: no se incluirá en el pedido al proveedor.",
+    "avisoExcluidos": "{{n}} producto(s) que el cliente no incluyó en su pedido, no entrarán a la orden al proveedor.",
     "notas": "Notas del cliente",
     "sinPedido": "El cliente aún no ha enviado su pedido desde el portal."
   },
