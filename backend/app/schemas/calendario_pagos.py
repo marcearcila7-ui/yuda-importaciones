@@ -1,5 +1,4 @@
 from datetime import date, datetime
-from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -8,7 +7,7 @@ class PagoInput(BaseModel):
     fecha: date
     tienda: str
     cliente_id: str
-    monto: Decimal
+    monto: float
     estatus: str  # "pagado" | "no_pagado" | "aplazado"
 
 
@@ -18,7 +17,7 @@ class PagoResponse(BaseModel):
     tienda: str
     cliente_id: str
     cliente_sigla: str
-    monto: Decimal
+    monto: float
     estatus: str
     creado_por_id: str
     creado_por_nombre: str
