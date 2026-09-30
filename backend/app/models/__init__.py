@@ -14,6 +14,7 @@ from app.models.pedido_bodega_actividad import PedidoBodegaActividad
 from app.models.cubicaje import CubicajeMensaje, CubicajeVisto
 from app.models.push_subscription import PushSubscription
 from app.models.calendario import CalendarioTarea, CalendarioNotificacion
+from app.models.calendario_pagos import PagoTarea
 
 __all__ = [
     "User",
