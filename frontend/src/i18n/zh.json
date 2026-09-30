@@ -1193,6 +1193,7 @@
     "cancelar": "取消",
     "fotoCompleta": "使用完整照片",
     "muyChico": "框选区域太小。请在产品上标出更大的区域。",
+    "errorCargaFoto": "无法打开这张照片。请关闭后重试，或换一张照片。",
     "guardado": "裁剪已保存",
     "error": "无法保存裁剪",
     "tocaAjustar": "点击调整裁剪",

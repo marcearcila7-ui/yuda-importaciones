@@ -13,6 +13,7 @@ import { usePackingStore } from '../../store/packingStore'
 import { guardarRecorte, guardarRecorteFotoExtra, reemplazarFotoExtra, reemplazarFotoItem } from '../../api/packing'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
 import { enfocarNumero } from '../../lib/dom'
+import { comprimirFotoDetalle, comprimirImagen } from '../../lib/comprimirImagen'
 import type { ItemResponse } from '../../types/packing'
 
 interface PackingListTableProps {
@@ -522,7 +523,11 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     if (!itemRecorte || !sesionActual) return
     setGuardandoRecorte(true)
     try {
-      await reemplazarFotoItem(sesionActual.id, itemRecorte.id, file)
+      // Sin comprimir/normalizar primero, una foto HEIC de iPhone (o con un
+      // content-type vacío/genérico de Android) llegaba tal cual al backend,
+      // que la rechaza por el tipo: parecía que "Guardar" no hacía nada.
+      const comprimida = await comprimirImagen(file)
+      await reemplazarFotoItem(sesionActual.id, itemRecorte.id, comprimida)
       toast.success(t('recorte.reemplazada'))
       setItemRecorte(null)
       onItemActualizado()
@@ -537,7 +542,8 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     if (!extraRecorte || !sesionActual) return
     setGuardandoRecorteExtra(true)
     try {
-      await reemplazarFotoExtra(sesionActual.id, extraRecorte.item.id, extraRecorte.tipo, file)
+      const comprimida = await comprimirFotoDetalle(file)
+      await reemplazarFotoExtra(sesionActual.id, extraRecorte.item.id, extraRecorte.tipo, comprimida)
       toast.success(t('recorte.reemplazada'))
       setExtraRecorte(null)
       onItemActualizado()
@@ -561,7 +567,8 @@ function PackingListTable({ items, onItemActualizado }: PackingListTableProps) {
     setAgregandoExtra(null)
     if (!file || !pedido || !sesionActual) return
     try {
-      await reemplazarFotoExtra(sesionActual.id, pedido.item.id, pedido.tipo, file)
+      const comprimida = await comprimirFotoDetalle(file)
+      await reemplazarFotoExtra(sesionActual.id, pedido.item.id, pedido.tipo, comprimida)
       onItemActualizado()
     } catch {
       toast.error(t('recorte.errorReemplazar'))

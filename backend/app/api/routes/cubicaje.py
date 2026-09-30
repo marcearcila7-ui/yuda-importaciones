@@ -9,6 +9,7 @@ from app.api.dependencies import exigir_acceso_sesion, require_roles
 from app.api.routes.bodega import _ItemInspeccionado, _items_inspeccionados
 from app.core.archivo_valida import detectar_tipo_documento, es_video_valido
 from app.core.imagen_valida import detectar_tipo_imagen
+from app.services.imagen_service import convertir_a_jpeg
 from app.database import get_db
 from app.models.cubicaje import TIPO_NOTA, TIPO_REPORTE, TIPO_RESPUESTA, CubicajeMensaje, CubicajeVisto
 from app.models.seguimiento import SeguimientoPedido
@@ -46,6 +47,10 @@ _ADJ_EXT = {
     ".jpeg": ("imagen", "image/jpeg"),
     ".png": ("imagen", "image/png"),
     ".webp": ("imagen", "image/webp"),
+    # HEIC (fotos de iPhone): se acepta y se convierte a JPEG más abajo, igual
+    # que en el resto de subidas de foto del sistema (ver convertir_a_jpeg).
+    ".heic": ("imagen", "image/heic"),
+    ".heif": ("imagen", "image/heic"),
     ".csv": ("csv", "text/csv"),
     ".xls": ("excel", "application/vnd.ms-excel"),
     ".xlsx": ("excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
@@ -58,6 +63,8 @@ _ADJ_CONTENT_TYPE = {
     "image/jpeg": ("imagen", ".jpg"),
     "image/png": ("imagen", ".png"),
     "image/webp": ("imagen", ".webp"),
+    "image/heic": ("imagen", ".heic"),
+    "image/heif": ("imagen", ".heic"),
     "text/csv": ("csv", ".csv"),
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ("excel", ".xlsx"),
     "video/mp4": ("video", ".mp4"),
@@ -220,8 +227,19 @@ async def subir_adjunto_cubicaje(
 
     # Valida el contenido REAL (magic bytes), no solo el content-type/extensión
     # declarados por el cliente (falsificables).
-    if tipo == "imagen" and detectar_tipo_imagen(contenido) is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+    if tipo == "imagen":
+        tipo_real_imagen = detectar_tipo_imagen(contenido)
+        if tipo_real_imagen is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
+        if tipo_real_imagen == "image/heic":
+            convertida = convertir_a_jpeg(contenido)
+            if convertida is None:
+                raise HTTPException(
+                    status.HTTP_400_BAD_REQUEST, "No se pudo leer la foto del iPhone. Vuelve a intentarlo."
+                )
+            contenido = convertida
+            content_type = "image/jpeg"
+            extension = ".jpg"
     if tipo in ("pdf", "excel") and detectar_tipo_documento(contenido) is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, _ADJ_NO_SOPORTADO)
     if tipo == "video" and not es_video_valido(contenido):

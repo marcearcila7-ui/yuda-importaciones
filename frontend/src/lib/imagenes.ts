@@ -14,3 +14,7 @@ export const ACCEPT_IMAGENES =
 // Timeout de las subidas de foto. Sin él, una subida estancada (pasa seguido con
 // el 4G del mercado) se quedaba colgada para siempre en vez de fallar y poder reintentar.
 export const TIMEOUT_SUBIDA = 120_000
+
+// Para subidas que pueden ser un video (ej. adjuntos del chat de cubicaje,
+// hasta 100MB según el backend): 120s no alcanza con conexión débil.
+export const TIMEOUT_SUBIDA_VIDEO = 300_000

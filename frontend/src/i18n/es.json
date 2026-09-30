@@ -1190,6 +1190,7 @@
     "cancelar": "Cancelar",
     "fotoCompleta": "Usar la foto completa",
     "muyChico": "El recuadro es muy pequeño. Marca un área más grande sobre el producto.",
+    "errorCargaFoto": "No se pudo abrir esta foto. Cierra y vuelve a intentarlo, o reemplázala por otra.",
     "guardado": "Recorte guardado",
     "error": "No se pudo guardar el recorte",
     "tocaAjustar": "Toca para ajustar el recorte",

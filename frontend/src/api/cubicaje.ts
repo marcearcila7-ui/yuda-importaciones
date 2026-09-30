@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { TIMEOUT_SUBIDA_VIDEO } from '../lib/imagenes'
 import type { CubicajeAdjunto, CubicajeDetalle } from '../types/cubicaje'
 
 // El cálculo en vivo del cubicaje del pedido + el hilo completo de reportes,
@@ -35,7 +36,7 @@ export async function subirAdjuntoCubicaje(sesionId: string, archivo: File): Pro
   const { data } = await apiClient.post<CubicajeAdjunto>(
     `/sesiones/${sesionId}/cubicaje/adjunto`,
     form,
-    { headers: { 'Content-Type': 'multipart/form-data' } },
+    { headers: { 'Content-Type': 'multipart/form-data' }, timeout: TIMEOUT_SUBIDA_VIDEO },
   )
   return data
 }

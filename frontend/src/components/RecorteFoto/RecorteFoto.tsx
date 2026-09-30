@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Maximize2, RotateCcw, RotateCw, Upload, X } from 'lucide-react'
+import { AlertTriangle, Check, Maximize2, RotateCcw, RotateCw, Upload, X } from 'lucide-react'
 
 // Lado del cuadro de la vista previa en vivo.
 const LADO_PREVIA = 112
@@ -156,6 +156,13 @@ function RecorteFoto({
     | { tipo: 'esquina'; anclaX: number; anclaY: number }
     | null
   >(null)
+  // Por si la foto guardada de verdad no se puede mostrar (raro ahora que
+  // reemplazar foto normaliza el tipo antes de subir, pero por si acaso):
+  // antes esto se quedaba con el fondo negro para siempre, sin ningún aviso.
+  const [errorCarga, setErrorCarga] = useState(false)
+  useEffect(() => {
+    setErrorCarga(false)
+  }, [fotoUrl])
   // Tamaño real de la foto ORIGINAL (naturalWidth/Height, sin girar).
   const [dimsFoto, setDimsFoto] = useState<{ w: number; h: number } | null>(null)
   // Giro elegido en ESTA sesión de edición. Antes cada click en girar guardaba
@@ -440,15 +447,26 @@ function RecorteFoto({
           className="relative select-none overflow-hidden rounded-lg"
           style={{ touchAction: 'none', cursor: 'crosshair', backgroundColor: '#111', height: '58vh' }}
         >
+          {errorCarga && (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center"
+              style={{ color: 'white' }}
+            >
+              <AlertTriangle size={28} />
+              <p className="text-sm font-medium">{t('recorte.errorCargaFoto')}</p>
+            </div>
+          )}
           <img
             ref={imgRef}
             src={fotoUrl}
             alt=""
             draggable={false}
+            hidden={errorCarga}
             onLoad={(e) => {
               const img = e.currentTarget
               setDimsFoto({ w: img.naturalWidth, h: img.naturalHeight })
             }}
+            onError={() => setErrorCarga(true)}
             style={
               caja
                 ? {
@@ -558,7 +576,7 @@ function RecorteFoto({
             <button
               type="button"
               onClick={guardar}
-              disabled={!hayCambio || guardando}
+              disabled={!hayCambio || guardando || errorCarga}
               className="flex items-center justify-center gap-2 font-semibold text-white disabled:opacity-50"
               style={{ minHeight: 46, borderRadius: 8, padding: '0 20px', backgroundColor: 'var(--yuda-primary)' }}
             >

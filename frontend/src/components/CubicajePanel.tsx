@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { AlertTriangle, Box, CheckCircle2, ChevronDown, ChevronUp, FileText, Paperclip, PackageCheck, Send, Volume2, VolumeX, X } from 'lucide-react'
 import { getCubicaje, marcarCubicajeVisto, responderCubicaje, subirAdjuntoCubicaje } from '../api/cubicaje'
+import { comprimirImagen, esHeic } from '../lib/comprimirImagen'
 import type { CubicajeAdjunto, CubicajeDetalle, CubicajeMensaje } from '../types/cubicaje'
 import { guardarSonidoActivado, reproducirSonidoNotificacion, sonidoActivado } from '../lib/sonidoNotificacion'
 import { useAuthStore } from '../store/authStore'
@@ -148,7 +149,14 @@ function CubicajePanel({ sesionId }: { sesionId: string }) {
     if (!archivo) return
     setSubiendoAdjunto(true)
     try {
-      const adjunto = await subirAdjuntoCubicaje(sesionId, archivo)
+      // El backend del adjunto de cubicaje no sabe de HEIC (a diferencia de
+      // reemplazar foto/OCR): una foto de iPhone se rechazaba de una con
+      // "Solo se permiten fotos JPG, PNG, WEBP". Convertirla acá primero deja
+      // pasar cualquier foto sin que bodega/vendedora tengan que saber por qué
+      // falló ni tener que exportarla a otro formato a mano.
+      const esFoto = archivo.type.startsWith('image/') || esHeic(archivo)
+      const archivoFinal = esFoto ? await comprimirImagen(archivo) : archivo
+      const adjunto = await subirAdjuntoCubicaje(sesionId, archivoFinal)
       setAdjuntosPendientes((a) => [...a, adjunto])
     } catch {
       toast.error(t('cubicaje.errorAdjunto'))

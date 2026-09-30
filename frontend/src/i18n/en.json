@@ -1190,6 +1190,7 @@
     "cancelar": "Cancel",
     "fotoCompleta": "Use the full photo",
     "muyChico": "The box is too small. Mark a larger area over the product.",
+    "errorCargaFoto": "Couldn't open this photo. Close and try again, or replace it with another one.",
     "guardado": "Crop saved",
     "error": "The crop could not be saved",
     "tocaAjustar": "Tap to adjust the crop",
