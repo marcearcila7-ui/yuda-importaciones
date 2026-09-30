@@ -11,6 +11,7 @@ from app.api.routes import (
     admin,
     auth,
     bodega,
+    calendario,
     clientes,
     contenedores,
     cubicaje,
@@ -134,6 +135,7 @@ app.include_router(notificaciones.router, prefix="/api/v1")
 app.include_router(bodega.router, prefix="/api/v1")
 app.include_router(cubicaje.router, prefix="/api/v1")
 app.include_router(push.router, prefix="/api/v1")
+app.include_router(calendario.router, prefix="/api/v1")
 
 
 @app.get("/")

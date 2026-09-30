@@ -61,3 +61,42 @@ def enviar_push(db: Session, usuario_id: str, titulo: str, mensaje: str, sesion_
         # No se hace commit acá: se deja que el commit del flujo que llamó a
         # esto (el que crea la notificación) persista también esta limpieza.
         db.query(PushSubscription).filter(PushSubscription.id.in_(vencidas)).delete(synchronize_session=False)
+
+
+def enviar_push_a_varios(db: Session, usuario_ids: list[str], titulo: str, mensaje: str) -> None:
+    """Igual que enviar_push, pero para varios usuarios a la vez (ej. avisar
+    a todo el staff de una tarea nueva del calendario): una sola consulta de
+    suscripciones en vez de una por usuario."""
+    if not usuario_ids:
+        return
+    vv = _vapid()
+    if vv is None:
+        return
+    subs = db.query(PushSubscription).filter(PushSubscription.usuario_id.in_(usuario_ids)).all()
+    if not subs:
+        return
+
+    payload = json.dumps({"titulo": titulo, "mensaje": mensaje, "sesion_id": None})
+    vencidas: list[str] = []
+    for sub in subs:
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                },
+                data=payload,
+                vapid_private_key=vv,
+                vapid_claims={"sub": settings.VAPID_CLAIMS_EMAIL},
+            )
+        except WebPushException as exc:
+            status = exc.response.status_code if exc.response is not None else None
+            if status in (404, 410):
+                vencidas.append(sub.id)
+            else:
+                logger.warning("Push falló para usuario %s: %s", sub.usuario_id, exc)
+        except Exception as exc:  # nunca debe tumbar el flujo que llamó a esto
+            logger.warning("Push falló para usuario %s: %s", sub.usuario_id, exc)
+
+    if vencidas:
+        db.query(PushSubscription).filter(PushSubscription.id.in_(vencidas)).delete(synchronize_session=False)
