@@ -7,9 +7,17 @@ from pywebpush import WebPushException, webpush
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.database import SessionLocal
 from app.models.push_subscription import PushSubscription
 
 logger = logging.getLogger(__name__)
+
+# Límite duro por envío: sin esto, un proveedor de push lento o caído puede
+# dejar colgado el hilo (y la conexión a la base de datos que tiene abierta)
+# indefinidamente. Con varios usuarios creando/editando tareas del calendario
+# a la vez -cada uno avisándole a todo el staff- este límite es lo que evita
+# que unos pocos envíos lentos frenen a todos los demás.
+_TIMEOUT_PUSH = 5
 
 
 def _vapid() -> Vapid01 | None:
@@ -47,6 +55,7 @@ def enviar_push(db: Session, usuario_id: str, titulo: str, mensaje: str, sesion_
                 data=payload,
                 vapid_private_key=vv,
                 vapid_claims={"sub": settings.VAPID_CLAIMS_EMAIL},
+                timeout=_TIMEOUT_PUSH,
             )
         except WebPushException as exc:
             status = exc.response.status_code if exc.response is not None else None
@@ -88,6 +97,7 @@ def enviar_push_a_varios(db: Session, usuario_ids: list[str], titulo: str, mensa
                 data=payload,
                 vapid_private_key=vv,
                 vapid_claims={"sub": settings.VAPID_CLAIMS_EMAIL},
+                timeout=_TIMEOUT_PUSH,
             )
         except WebPushException as exc:
             status = exc.response.status_code if exc.response is not None else None
@@ -100,3 +110,19 @@ def enviar_push_a_varios(db: Session, usuario_ids: list[str], titulo: str, mensa
 
     if vencidas:
         db.query(PushSubscription).filter(PushSubscription.id.in_(vencidas)).delete(synchronize_session=False)
+
+
+def enviar_push_calendario_en_segundo_plano(usuario_ids: list[str], titulo: str, mensaje: str) -> None:
+    """Envoltorio para usar con BackgroundTasks de FastAPI: crea su propia
+    sesión de base de datos (la del request ya se cerró cuando esto corre) y
+    nunca bloquea la respuesta al usuario. Así, si 50 personas crean/editan
+    tareas del calendario al mismo tiempo -cada una avisándole a todo el
+    staff- el envío de los push no alarga ni una sola de esas respuestas."""
+    db = SessionLocal()
+    try:
+        enviar_push_a_varios(db, usuario_ids, titulo, mensaje)
+        db.commit()
+    except Exception as exc:  # nunca debe tumbar el proceso en background
+        logger.warning("Envío de push en segundo plano falló: %s", exc)
+    finally:
+        db.close()

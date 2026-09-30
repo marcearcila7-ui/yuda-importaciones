@@ -9,7 +9,6 @@ from app.models.calendario import (
     CalendarioTarea,
 )
 from app.models.user import RolUsuario, User
-from app.services.push_service import enviar_push_a_varios
 
 # Feriados oficiales y fechas comerciales importantes de China. Los de fecha
 # fija (1 ene, 1 may, 1 oct) son exactos. Los de calendario lunar (Año Nuevo
@@ -56,11 +55,18 @@ def _staff_activo(db: Session) -> list[User]:
     )
 
 
-def _notificar_staff(db: Session, tarea: CalendarioTarea, tipo_aviso: str, titulo: str, mensaje: str) -> None:
+def _crear_notificaciones_staff(
+    db: Session, tarea: CalendarioTarea, tipo_aviso: str, titulo: str, mensaje: str
+) -> list[str]:
     """Le avisa a TODO el staff (incluido quien creó/editó la tarea): así lo
     pidió Marcela. Cada uno recibe su propio aviso en la campanita de esta
-    app y, si está suscrito, un push -nunca en las notificaciones del
-    cotizador ni de Yuda Logistic."""
+    app -nunca en las notificaciones del cotizador ni de Yuda Logistic.
+
+    Solo crea las filas en la base (rápido, parte de la misma transacción
+    que guarda la tarea). El envío del push en sí se hace aparte, en
+    segundo plano (ver rutas), para que avisarle a todo el staff nunca
+    alargue la respuesta cuando varias personas usan el calendario a la vez.
+    """
     staff = _staff_activo(db)
     for usuario in staff:
         db.add(
@@ -72,10 +78,10 @@ def _notificar_staff(db: Session, tarea: CalendarioTarea, tipo_aviso: str, titul
                 mensaje=mensaje,
             )
         )
-    enviar_push_a_varios(db, [u.id for u in staff], titulo, mensaje)
+    return [u.id for u in staff]
 
 
-def crear_tarea(db: Session, datos, usuario: User) -> CalendarioTarea:
+def crear_tarea(db: Session, datos, usuario: User) -> tuple[CalendarioTarea, list[str], str, str]:
     tarea = CalendarioTarea(
         fecha=datos.fecha,
         tipo=datos.tipo,
@@ -89,14 +95,16 @@ def crear_tarea(db: Session, datos, usuario: User) -> CalendarioTarea:
 
     titulo = f"Nueva tarea: {datos.tipo} · {datos.marca_cliente}"
     mensaje = f"{usuario.nombre} agregó una tarea para el {datos.fecha:%d/%m/%Y}"
-    _notificar_staff(db, tarea, TIPO_TAREA_CREADA, titulo, mensaje)
+    staff_ids = _crear_notificaciones_staff(db, tarea, TIPO_TAREA_CREADA, titulo, mensaje)
 
     db.commit()
     db.refresh(tarea)
-    return tarea
+    return tarea, staff_ids, titulo, mensaje
 
 
-def actualizar_tarea(db: Session, tarea: CalendarioTarea, datos, usuario: User) -> CalendarioTarea:
+def actualizar_tarea(
+    db: Session, tarea: CalendarioTarea, datos, usuario: User
+) -> tuple[CalendarioTarea, list[str], str, str]:
     tarea.fecha = datos.fecha
     tarea.tipo = datos.tipo
     tarea.marca_cliente = datos.marca_cliente
@@ -107,8 +115,8 @@ def actualizar_tarea(db: Session, tarea: CalendarioTarea, datos, usuario: User) 
 
     titulo = f"Tarea editada: {datos.tipo} · {datos.marca_cliente}"
     mensaje = f"{usuario.nombre} editó la tarea del {datos.fecha:%d/%m/%Y}"
-    _notificar_staff(db, tarea, TIPO_TAREA_ACTUALIZADA, titulo, mensaje)
+    staff_ids = _crear_notificaciones_staff(db, tarea, TIPO_TAREA_ACTUALIZADA, titulo, mensaje)
 
     db.commit()
     db.refresh(tarea)
-    return tarea
+    return tarea, staff_ids, titulo, mensaje

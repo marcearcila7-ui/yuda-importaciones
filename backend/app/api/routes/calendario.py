@@ -1,6 +1,6 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import require_roles
@@ -14,6 +14,7 @@ from app.schemas.calendario import (
     TareaResponse,
 )
 from app.services.calendario_service import actualizar_tarea, crear_tarea, feriados_del_anio
+from app.services.push_service import enviar_push_calendario_en_segundo_plano
 
 # Solo admin, vendedora y bodega tienen acceso a este calendario (así lo
 # pidió Marcela; contadora queda afuera a propósito).
@@ -49,21 +50,27 @@ def listar_tareas(
 @router.post("/tareas", response_model=TareaResponse)
 def crear(
     datos: TareaInput,
+    background_tasks: BackgroundTasks,
     usuario: User = Depends(require_roles(*_ROLES_CALENDARIO)),
     db: Session = Depends(get_db),
 ) -> CalendarioTarea:
-    return crear_tarea(db, datos, usuario)
+    tarea, staff_ids, titulo, mensaje = crear_tarea(db, datos, usuario)
+    background_tasks.add_task(enviar_push_calendario_en_segundo_plano, staff_ids, titulo, mensaje)
+    return tarea
 
 
 @router.put("/tareas/{tarea_id}", response_model=TareaResponse)
 def editar(
     tarea_id: str,
     datos: TareaInput,
+    background_tasks: BackgroundTasks,
     usuario: User = Depends(require_roles(*_ROLES_CALENDARIO)),
     db: Session = Depends(get_db),
 ) -> CalendarioTarea:
     tarea = _tarea_o_404(db, tarea_id)
-    return actualizar_tarea(db, tarea, datos, usuario)
+    tarea, staff_ids, titulo, mensaje = actualizar_tarea(db, tarea, datos, usuario)
+    background_tasks.add_task(enviar_push_calendario_en_segundo_plano, staff_ids, titulo, mensaje)
+    return tarea
 
 
 @router.delete("/tareas/{tarea_id}")
