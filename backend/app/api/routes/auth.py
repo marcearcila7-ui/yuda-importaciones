@@ -27,7 +27,7 @@ _MAX_POR_IP = 20
 @router.post("/login", response_model=TokenResponse)
 def login(datos: LoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
     """Valida credenciales y devuelve un JWT junto con los datos del usuario"""
-    if captcha_requerido() and not verificar_captcha(datos.captcha_token):
+    if captcha_requerido(request.headers.get("origin")) and not verificar_captcha(datos.captcha_token):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Falta marcar la casilla de verificación antes de continuar.",

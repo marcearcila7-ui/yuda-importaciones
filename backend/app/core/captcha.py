@@ -5,9 +5,17 @@ import httpx
 _HCAPTCHA_VERIFY_URL = "https://hcaptcha.com/siteverify"
 
 
-def captcha_requerido() -> bool:
-    """En local/tests no hay secret key configurada: no se exige captcha."""
-    return bool(os.environ.get("HCAPTCHA_SECRET_KEY"))
+def captcha_requerido(origin: str | None = None) -> bool:
+    """En local/tests no hay secret key configurada: no se exige captcha.
+
+    Yuda Calendario es de uso interno (mismo staff que ya tiene cuenta, sin
+    formulario público), así que sus orígenes quedan exentos del captcha que
+    sí protege los formularios públicos (cotizador, portal de clientes).
+    """
+    if not os.environ.get("HCAPTCHA_SECRET_KEY"):
+        return False
+    exentos = {o.strip() for o in os.environ.get("CAPTCHA_EXENTO_ORIGINS", "").split(",") if o.strip()}
+    return origin not in exentos
 
 
 def verificar_captcha(token: str | None) -> bool:
