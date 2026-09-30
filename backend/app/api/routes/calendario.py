@@ -13,7 +13,7 @@ from app.schemas.calendario import (
     TareaInput,
     TareaResponse,
 )
-from app.services.calendario_service import actualizar_tarea, crear_tarea, feriados_del_anio
+from app.services.calendario_service import actualizar_tarea, crear_tarea, eliminar_tarea, feriados_del_anio
 from app.services.push_service import enviar_push_calendario_en_segundo_plano
 
 # Solo admin, vendedora y bodega tienen acceso a este calendario (así lo
@@ -76,12 +76,13 @@ def editar(
 @router.delete("/tareas/{tarea_id}")
 def eliminar(
     tarea_id: str,
+    background_tasks: BackgroundTasks,
     usuario: User = Depends(require_roles(*_ROLES_CALENDARIO)),
     db: Session = Depends(get_db),
 ) -> dict:
     tarea = _tarea_o_404(db, tarea_id)
-    db.delete(tarea)
-    db.commit()
+    staff_ids, titulo, mensaje = eliminar_tarea(db, tarea, usuario)
+    background_tasks.add_task(enviar_push_calendario_en_segundo_plano, staff_ids, titulo, mensaje)
     return {"ok": True}
 
 

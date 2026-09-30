@@ -9,6 +9,7 @@ from app.models.calendario import (
     CalendarioTarea,
 )
 from app.models.user import RolUsuario, User
+from app.services.notificacion_service import avisar_calendario_tarea
 
 # Feriados oficiales y fechas comerciales importantes de China. Los de fecha
 # fija (1 ene, 1 may, 1 oct) son exactos. Los de calendario lunar (Año Nuevo
@@ -60,12 +61,16 @@ def _crear_notificaciones_staff(
 ) -> list[str]:
     """Le avisa a TODO el staff (incluido quien creó/editó la tarea): así lo
     pidió Marcela. Cada uno recibe su propio aviso en la campanita de esta
-    app -nunca en las notificaciones del cotizador ni de Yuda Logistic.
+    app, Y TAMBIÉN en la campanita de la app que ya usa a diario (cotizador
+    para vendedoras, Yuda Logistic para bodega) -antes solo llegaba a la
+    campanita propia del calendario, y como casi nadie lo tiene abierto todo
+    el día, nadie se enteraba.
 
     Solo crea las filas en la base (rápido, parte de la misma transacción
     que guarda la tarea). El envío del push en sí se hace aparte, en
     segundo plano (ver rutas), para que avisarle a todo el staff nunca
-    alargue la respuesta cuando varias personas usan el calendario a la vez.
+    alargue la respuesta cuando varias personas usan el calendario a la vez;
+    por eso el aviso compartido se crea con push=False, para no duplicarlo.
     """
     staff = _staff_activo(db)
     for usuario in staff:
@@ -78,7 +83,9 @@ def _crear_notificaciones_staff(
                 mensaje=mensaje,
             )
         )
-    return [u.id for u in staff]
+    staff_ids = [u.id for u in staff]
+    avisar_calendario_tarea(db, staff_ids, titulo, mensaje)
+    return staff_ids
 
 
 def crear_tarea(db: Session, datos, usuario: User) -> tuple[CalendarioTarea, list[str], str, str]:
@@ -120,3 +127,25 @@ def actualizar_tarea(
     db.commit()
     db.refresh(tarea)
     return tarea, staff_ids, titulo, mensaje
+
+
+def eliminar_tarea(db: Session, tarea: CalendarioTarea, usuario: User) -> tuple[list[str], str, str]:
+    """Borra la tarea y avisa al staff. Primero borra sus propias
+    CalendarioNotificacion (si no, el DELETE de la tarea fallaría por la
+    llave foránea de esas notificaciones apuntando a ella) y no intenta
+    crear una nueva ligada a la tarea que ya no va a existir -el aviso de
+    "se eliminó" solo va a la campanita compartida (cotizador/Yuda
+    Logistic), que no depende de que la tarea siga viva."""
+    titulo = f"Tarea eliminada: {tarea.tipo} · {tarea.marca_cliente}"
+    mensaje = f"{usuario.nombre} eliminó la tarea del {tarea.fecha:%d/%m/%Y}"
+
+    db.query(CalendarioNotificacion).filter(CalendarioNotificacion.tarea_id == tarea.id).delete(
+        synchronize_session=False
+    )
+    db.delete(tarea)
+
+    staff_ids = [u.id for u in _staff_activo(db)]
+    avisar_calendario_tarea(db, staff_ids, titulo, mensaje)
+
+    db.commit()
+    return staff_ids, titulo, mensaje

@@ -4,6 +4,7 @@ su propia notificación separada de las demás apps; una edición debe dejar
 registrado quién la editó por última vez, y roles sin acceso no deben poder
 entrar."""
 from app.models.calendario import CalendarioNotificacion
+from app.models.notificacion import TIPO_CALENDARIO_TAREA, Notificacion
 from app.models.user import RolUsuario
 
 
@@ -30,6 +31,42 @@ def test_crear_tarea_avisa_a_todo_el_staff_activo(db, client, crear_usuario, tok
     avisos = db.query(CalendarioNotificacion).filter(CalendarioNotificacion.tarea_id == data["id"]).all()
     destinatarios = {a.usuario_id for a in avisos}
     assert destinatarios == {admin.id, vendedora.id, bodega.id}
+
+    # También debe llegar a la campanita compartida (la que usan a diario en
+    # el cotizador y en Yuda Logistic), sin sesion_id (no es de una cotización).
+    compartidos = (
+        db.query(Notificacion).filter(Notificacion.tipo == TIPO_CALENDARIO_TAREA).all()
+    )
+    assert {n.usuario_id for n in compartidos} == {admin.id, vendedora.id, bodega.id}
+    assert all(n.sesion_id is None for n in compartidos)
+
+
+def test_eliminar_tarea_no_falla_y_avisa_a_todos(db, client, crear_usuario, token_staff):
+    admin = crear_usuario("cal-admin4@test.com", rol=RolUsuario.admin, nombre="Marcela")
+    vendedora = crear_usuario("cal-v4@test.com", rol=RolUsuario.vendedora, nombre="Vendedora Cuatro")
+    bodega = crear_usuario("cal-b4@test.com", rol=RolUsuario.bodega, nombre="Bodega Cuatro")
+
+    tok = token_staff("cal-v4@test.com")
+    r = client.post(
+        "/api/v1/calendario/tareas",
+        json={"fecha": "2026-10-07", "tipo": "recibe", "marca_cliente": "DEF", "descripcion": None},
+        headers={"Authorization": f"Bearer {tok}"},
+    )
+    tarea_id = r.json()["id"]
+
+    # Al crearla ya quedaron CalendarioNotificacion apuntando a esta tarea:
+    # si el borrado no las limpia primero, esto falla por llave foránea.
+    r2 = client.delete(f"/api/v1/calendario/tareas/{tarea_id}", headers={"Authorization": f"Bearer {tok}"})
+    assert r2.status_code == 200, r2.text
+
+    assert db.query(CalendarioNotificacion).filter(CalendarioNotificacion.tarea_id == tarea_id).count() == 0
+
+    avisos_eliminacion = (
+        db.query(Notificacion)
+        .filter(Notificacion.tipo == TIPO_CALENDARIO_TAREA, Notificacion.titulo.ilike("%eliminada%"))
+        .all()
+    )
+    assert {n.usuario_id for n in avisos_eliminacion} == {admin.id, vendedora.id, bodega.id}
 
 
 def test_editar_tarea_registra_quien_edito_y_avisa_de_nuevo(db, client, crear_usuario, token_staff):

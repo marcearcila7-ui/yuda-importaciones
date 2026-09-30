@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.cubicaje import CubicajeVisto
 from app.models.notificacion import (
     TIPO_AVISO_CLIENTE_FALLIDO,
+    TIPO_CALENDARIO_TAREA,
     TIPO_CUBICAJE_BODEGA,
     TIPO_CUBICAJE_VENDEDORA,
     TIPO_DESPACHO_APROBADO,
@@ -25,7 +26,7 @@ from app.services.push_service import enviar_push
 def _crear(
     db: Session,
     usuario_id: str,
-    sesion_id: str,
+    sesion_id: str | None,
     tipo: str,
     titulo: str,
     mensaje: str,
@@ -507,3 +508,18 @@ def avisar_inspeccion_actualizada(
             f"Bodega guardó correcciones de inspección en la cotización {numero} "
             f"({cliente}): cantidades reales, medidas o evidencia. Revísalas.",
         )
+
+
+def avisar_calendario_tarea(db: Session, usuario_ids: list[str], titulo: str, mensaje: str) -> None:
+    """Le avisa a cada usuario en la campanita de la app que ya usa a diario
+    (cotizador para vendedoras, Yuda Logistic para bodega) que se creó,
+    editó o eliminó una tarea en Yuda Calendario. No lleva sesion_id: no es
+    de una cotización, así que al tocarla no navega a ningún lado en
+    particular, solo se marca como leída.
+
+    push=False a propósito: el envío del push en sí ya lo hace Calendario
+    por su cuenta, en segundo plano (ver enviar_push_calendario_en_segundo_
+    plano) -esto solo agrega la entrada en la campanita compartida para que
+    también se vea ahí, sin mandar el push por duplicado."""
+    for usuario_id in usuario_ids:
+        _crear(db, usuario_id, None, TIPO_CALENDARIO_TAREA, titulo, mensaje, push=False)

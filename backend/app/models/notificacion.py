@@ -39,6 +39,11 @@ TIPO_CUBICAJE_VENDEDORA = "cubicaje_vendedora"
 # sin configurar, o el cliente sin teléfono/correo): aviso para cada admin,
 # porque antes esto solo quedaba en el log del servidor y nadie se enteraba.
 TIPO_AVISO_CLIENTE_FALLIDO = "aviso_cliente_fallido"
+# Se creó, editó o eliminó una tarea del calendario de bodega (Yuda
+# Calendario): aviso para que vendedoras y bodega lo vean también en la
+# campanita de la app que ya usan a diario, sin tener que abrir el
+# calendario aparte. No lleva sesion_id (no es de una cotización).
+TIPO_CALENDARIO_TAREA = "calendario_tarea"
 
 
 class Notificacion(Base):
