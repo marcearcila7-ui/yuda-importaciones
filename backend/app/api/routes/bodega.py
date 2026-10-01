@@ -37,6 +37,7 @@ from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cotizacion_service import _calcular
+from app.services.cubicaje_service import generar_reporte_automatico
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
 from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
 from app.services.inspeccion_service import (
@@ -483,7 +484,7 @@ def listar_ordenes_bodega(
 
 
 def _completar_orden(
-    db: Session, sesion: Sesion, orden: PedidoGenerado, lineas: list[PedidoGeneradoItem]
+    db: Session, sesion: Sesion, orden: PedidoGenerado, lineas: list[PedidoGeneradoItem], usuario_id: str
 ) -> None:
     """Ya se conoce la cantidad recibida de TODOS los ítems de esta orden:
     regenera el mismo archivo (Excel/PDF/CSV) con las cantidades reales,
@@ -534,10 +535,20 @@ def _completar_orden(
     avisar_orden_actualizada_bodega(
         db, sesion.id, _numero(sesion), sesion.nombre_cliente, sesion.user_id, orden.supplier
     )
+
+    # Si esta orden era la última que faltaba por revisar, bodega ya terminó
+    # TODO el pedido: de una vez se le avisa a la vendedora con el cubicaje,
+    # sin que nadie tenga que entrar aparte al panel a mandarlo a mano.
+    todas = db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion.id).all()
+    if all(o.revisado_en_bodega_at is not None for o in todas):
+        generar_reporte_automatico(db, sesion, _numero(sesion), usuario_id)
+
     db.commit()
 
 
-def _sincronizar_cantidad_recibida(db: Session, sesion: Sesion, item_id: str, cantidad: int) -> None:
+def _sincronizar_cantidad_recibida(
+    db: Session, sesion: Sesion, item_id: str, cantidad: int, usuario_id: str
+) -> None:
     """Cuando bodega corrige "Cajas" en la cotización (pestaña Cotización),
     ese YA es el conteo real de lo que llegó: se refleja directo en la línea
     del pedido a la tienda correspondiente, para que "Órdenes" no vuelva a
@@ -566,7 +577,7 @@ def _sincronizar_cantidad_recibida(db: Session, sesion: Sesion, item_id: str, ca
     )
     if all(l.cantidad_recibida is not None for l in lineas):
         try:
-            _completar_orden(db, sesion, orden, lineas)
+            _completar_orden(db, sesion, orden, lineas, usuario_id)
         except Exception:
             db.rollback()
             logger.exception(
@@ -632,7 +643,7 @@ def guardar_orden_real(
     # la vendedora más que ayudarla.
     if all(linea.cantidad_recibida is not None for linea in lineas):
         try:
-            _completar_orden(db, sesion, orden, lineas)
+            _completar_orden(db, sesion, orden, lineas, usuario.id)
         except Exception:
             db.rollback()
             logger.exception(
@@ -737,7 +748,7 @@ def guardar_cotizacion_inspeccion(
     # número dos veces (antes había que volver a escribirlo en "Órdenes").
     for entrada in datos.items:
         if entrada.cajas is not None:
-            _sincronizar_cantidad_recibida(db, sesion, entrada.item_id, entrada.cajas)
+            _sincronizar_cantidad_recibida(db, sesion, entrada.item_id, entrada.cajas, usuario.id)
 
     cliente = (
         db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first() if sesion.cliente_id else None

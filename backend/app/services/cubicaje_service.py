@@ -5,8 +5,10 @@ un número que mande el cliente- para que el historial de reportes quede
 siempre consistente con los datos reales del pedido en ese momento."""
 from sqlalchemy.orm import Session
 
+from app.models.cubicaje import TIPO_REPORTE, CubicajeMensaje
 from app.models.sesion import Sesion
 from app.services.inspeccion_service import construir_inspeccion_sesion
+from app.services.notificacion_service import avisar_cubicaje_a_vendedora
 
 # Rango típico de un contenedor: varía según la mercancía, pero 68-72 m3 es
 # la referencia que usa bodega para decidir si un pedido cabe completo, sobra
@@ -58,3 +60,56 @@ def determinar_resultado(cbm: float) -> str:
     if cbm < LIMITE_MIN_CBM:
         return RESULTADO_FALTA
     return RESULTADO_AJUSTADO if cbm <= LIMITE_MAX_CBM else RESULTADO_SOBRA
+
+
+def _resumen_texto_automatico(resultado: str, cbm: float) -> str:
+    if resultado == RESULTADO_FALTA:
+        return f"faltan {round(LIMITE_MAX_CBM - cbm, 4)} m³ para completar el contenedor ({cbm} m³ calculados)"
+    if resultado == RESULTADO_SOBRA:
+        return (
+            f"el pedido no cabe completo en el contenedor ({cbm} m³ calculados); "
+            "falta que bodega indique qué producto y cuántas cajas se quedan afuera"
+        )
+    return f"cubicaje ajustado: {cbm} m³ calculados"
+
+
+def generar_reporte_automatico(
+    db: Session, sesion: Sesion, numero: str, usuario_id: str
+) -> CubicajeMensaje | None:
+    """Apenas bodega termina de revisar TODAS las órdenes de un pedido, le
+    avisa sola a la vendedora con el cálculo de cubicaje -antes esto
+    dependía de que alguien entrara aparte al panel de cubicaje y lo mandara
+    a mano, y si nadie lo hacía, la vendedora nunca se enteraba.
+
+    Para "ajustado" y "falta" no hace falta que bodega decida nada más, así
+    que el reporte sale completo. Para "sobra" (no cabe) igual se le avisa a
+    la vendedora de una vez, pero sin inventar qué producto o cuántas cajas
+    se dejan afuera -eso bodega lo agrega después a mano en el mismo chat.
+
+    No duplica: si ya existe un reporte para esta sesión (automático o
+    manual), no manda uno nuevo."""
+    ya_existe = (
+        db.query(CubicajeMensaje)
+        .filter(CubicajeMensaje.sesion_id == sesion.id, CubicajeMensaje.tipo == TIPO_REPORTE)
+        .first()
+    )
+    if ya_existe is not None:
+        return None
+
+    cbm, _referencias = calcular_cbm_pedido(db, sesion)
+    resultado = determinar_resultado(cbm)
+    espacio_restante = round(LIMITE_MAX_CBM - cbm, 4) if resultado == RESULTADO_FALTA else None
+
+    mensaje = CubicajeMensaje(
+        sesion_id=sesion.id,
+        tipo=TIPO_REPORTE,
+        autor_id=usuario_id,
+        cbm_calculado=cbm,
+        resultado=resultado,
+        espacio_restante_cbm=espacio_restante,
+    )
+    db.add(mensaje)
+    avisar_cubicaje_a_vendedora(
+        db, sesion.id, numero, sesion.nombre_cliente, sesion.user_id, _resumen_texto_automatico(resultado, cbm)
+    )
+    return mensaje
