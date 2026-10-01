@@ -44,6 +44,12 @@ function GenerarPedidos({
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
   const [marcaActual, setMarcaActual] = useState(shippingMark ?? '')
+  // Mientras el cliente no haya confirmado sus cantidades, "Generar Pedidos"
+  // queda deshabilitado hasta que la vendedora marque este checkbox a
+  // propósito -antes esto se protegía con un popup de confirmación, pero era
+  // muy fácil pasarlo de largo sin darse cuenta de que se estaba generando
+  // con cantidades sin confirmar.
+  const [generarConCotizadas, setGenerarConCotizadas] = useState(false)
 
   useEffect(() => {
     setMarcaActual(shippingMark ?? '')
@@ -76,16 +82,14 @@ function GenerarPedidos({
   }, [sesion_id])
 
   const handleGenerar = async (usarCantidadesCliente = false) => {
-    let mensajeConfirm: string
+    // Cuando el cliente ya confirmó, igual se pide una última confirmación
+    // antes de generar. Cuando NO ha confirmado, el checkbox "Generar con las
+    // cantidades cotizadas" ya es esa confirmación explícita -no hace falta
+    // además un popup preguntando lo mismo.
     if (usarCantidadesCliente) {
-      mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
-    } else if (!permitirCantidadesCliente) {
-      // Botón normal (CTNS internas) cuando el cliente todavía no envió su pedido: advierte.
-      mensajeConfirm = t('pedidos.confirmarSinPedido', { cliente: nombre_cliente })
-    } else {
-      mensajeConfirm = t('pedidos.confirmar', { cliente: nombre_cliente })
+      const mensajeConfirm = t('pedidos.confirmarCliente', { cliente: nombre_cliente })
+      if (!(await confirmar(mensajeConfirm))) return
     }
-    if (!(await confirmar(mensajeConfirm))) return
 
     setError(null)
     setGenerando(usarCantidadesCliente ? 'cliente' : 'normal')
@@ -170,8 +174,24 @@ function GenerarPedidos({
             </p>
           </div>
         ) : (
-          <div className="flex flex-col gap-1">
-            <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(false)} disabled={generando !== false}>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-start gap-2 text-sm" style={{ color: 'var(--yuda-text)' }}>
+              <input
+                type="checkbox"
+                checked={generarConCotizadas}
+                onChange={(e) => setGenerarConCotizadas(e.target.checked)}
+                className="mt-0.5 flex-shrink-0"
+                style={{ width: 18, height: 18 }}
+              />
+              {t('pedidos.generarConCotizadas')}
+            </label>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => handleGenerar(false)}
+              disabled={generando !== false || !generarConCotizadas}
+            >
               {generando === 'normal' ? (
                 t('pedidos.generando')
               ) : (
