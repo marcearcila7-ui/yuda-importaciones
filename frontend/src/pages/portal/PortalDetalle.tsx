@@ -440,6 +440,183 @@ function PortalDetalle() {
             </p>
           </div>
 
+          {/* Aprobación de la inspección: va primero que todo lo demás (antes
+              de "Mi pedido") a propósito -quedaba al final de la página,
+              después de toda la lista de productos, y el cliente tenía que
+              bajar mucho para encontrar dónde aprobar. */}
+          {detalle.seguimiento.estado === 'en_bodega' && (() => {
+            const aprobado = !!detalle.seguimiento.cliente_aprobo_despacho_at
+            const limite = detalle.seguimiento.aprobacion_limite_at
+            const vencido = !!limite && new Date(limite).getTime() < Date.now()
+            const locale = LOCALES[i18n.language] || 'es-ES'
+            const fechaLimite = limite
+              ? new Date(limite).toLocaleString(locale, {
+                  day: 'numeric',
+                  month: 'long',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : null
+            const itemsConInspeccion = detalle.items.filter((i) => i.inspeccion_bodega)
+            const todosSeleccionados =
+              itemsConInspeccion.length > 0 && itemsConInspeccion.every((i) => aprobadosItems.has(i.item_id))
+            const seleccionarTodos = () =>
+              setAprobadosItems(todosSeleccionados ? new Set() : new Set(itemsConInspeccion.map((i) => i.item_id)))
+
+            return (
+              <div
+                className="card"
+                style={{
+                  backgroundColor: aprobado
+                    ? 'var(--yuda-success-soft)'
+                    : vencido
+                      ? 'var(--yuda-warning-soft)'
+                      : 'var(--yuda-primary-soft)',
+                }}
+              >
+                {aprobado ? (
+                  <p
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: 'var(--yuda-success-dark)' }}
+                  >
+                    <CheckCircle2 size={18} /> {t('portal.despachoYaAprobado')}
+                  </p>
+                ) : (
+                  <>
+                    <p
+                      className="mb-1 flex items-center gap-2 text-sm font-semibold"
+                      style={{ color: vencido ? 'var(--yuda-warning-dark)' : 'var(--yuda-primary)' }}
+                    >
+                      <Truck size={18} /> {t('portal.aprobarDespachoTitulo')}
+                    </p>
+                    <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text)' }}>
+                      {t('portal.aprobarDespachoAyuda')}
+                    </p>
+                    {fechaLimite && !vencido && (
+                      <p
+                        className="mb-3 flex items-center gap-2 text-xs font-medium"
+                        style={{ color: 'var(--yuda-text-secondary)' }}
+                      >
+                        <Clock size={14} /> {t('portal.plazoHasta', { fecha: fechaLimite })}
+                      </p>
+                    )}
+                    {vencido && (
+                      <p
+                        className="mb-3 flex items-center gap-2 text-xs font-medium"
+                        style={{ color: 'var(--yuda-warning-dark)' }}
+                      >
+                        <AlertTriangle size={14} /> {t('portal.plazoVencido')}
+                      </p>
+                    )}
+
+                    {!vencido && itemsConInspeccion.length > 0 && (
+                      <>
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-xs font-semibold" style={{ color: 'var(--yuda-text-secondary)' }}>
+                            {t('portal.aprobarProgreso', { n: aprobadosItems.size, total: itemsConInspeccion.length })}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={seleccionarTodos}
+                            className="text-xs font-semibold"
+                            style={{ color: 'var(--yuda-primary)' }}
+                          >
+                            {todosSeleccionados ? t('portal.deseleccionarTodos') : t('portal.seleccionarTodos')}
+                          </button>
+                        </div>
+                        <div className="mb-3 flex flex-col gap-3">
+                          {itemsConInspeccion.map((item) => {
+                            const media = mediaDeItem(item)
+                            const marcado = aprobadosItems.has(item.item_id)
+                            return (
+                              <div
+                                key={item.item_id}
+                                className="rounded-lg border bg-white p-3"
+                                style={{ borderColor: marcado ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
+                              >
+                                <label className="flex items-start gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={marcado}
+                                    onChange={() => alternarAprobadoItem(item.item_id)}
+                                    className="mt-1 flex-shrink-0"
+                                    style={{ width: 18, height: 18 }}
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    {item.referencia && (
+                                      <p className="text-xs font-semibold" style={{ color: 'var(--yuda-primary)' }}>
+                                        {item.referencia}
+                                      </p>
+                                    )}
+                                    <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
+                                      {descripcion(item, i18n.language) || '—'}
+                                    </p>
+                                  </div>
+                                </label>
+                                {media.length > 0 && (
+                                  <div className="mb-2 mt-2 flex flex-wrap gap-2">
+                                    {media.map((m, i) =>
+                                      m.tipo === 'foto' ? (
+                                        <button
+                                          key={m.url}
+                                          type="button"
+                                          onClick={() => setVisor({ itemId: item.item_id, indice: i })}
+                                        >
+                                          <img
+                                            src={m.url}
+                                            alt=""
+                                            style={{ width: 56, height: 56 }}
+                                            className="rounded-lg object-cover"
+                                          />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          key={m.url}
+                                          type="button"
+                                          onClick={() => setVisor({ itemId: item.item_id, indice: i })}
+                                          style={{ width: 56, height: 56, backgroundColor: 'var(--yuda-bg)' }}
+                                          className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                                          aria-label={t('portal.inspeccionVerVideo')}
+                                        >
+                                          <PlayCircle size={22} color="var(--yuda-primary)" />
+                                        </button>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
+                                <textarea
+                                  value={observacionesItems[item.item_id] ?? ''}
+                                  onChange={(e) =>
+                                    setObservacionesItems((o) => ({ ...o, [item.item_id]: e.target.value }))
+                                  }
+                                  placeholder={t('portal.observacionPlaceholder')}
+                                  rows={2}
+                                  className="w-full resize-y rounded-lg border px-2 py-1.5 text-sm focus:border-[var(--yuda-primary)] focus:outline-none"
+                                  style={{ borderColor: 'var(--yuda-border)' }}
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={aprobarDespacho}
+                      disabled={aprobando || vencido || !todosSeleccionados}
+                      className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-50"
+                      style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
+                    >
+                      <CheckCircle2 size={16} />{' '}
+                      {aprobando ? t('portal.aprobando') : t('portal.aprobarDespachoBoton')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Descargas */}
           <div className="card flex flex-col gap-3 sm:flex-row">
             <button
@@ -748,179 +925,6 @@ function PortalDetalle() {
             <h2 className="mb-4" style={{ fontWeight: 700, fontSize: 18, color: 'var(--yuda-accent)' }}>
               {t('portal.seguimiento')}
             </h2>
-
-            {detalle.seguimiento.estado === 'en_bodega' && (() => {
-              const aprobado = !!detalle.seguimiento.cliente_aprobo_despacho_at
-              const limite = detalle.seguimiento.aprobacion_limite_at
-              const vencido = !!limite && new Date(limite).getTime() < Date.now()
-              const locale = LOCALES[i18n.language] || 'es-ES'
-              const fechaLimite = limite
-                ? new Date(limite).toLocaleString(locale, {
-                    day: 'numeric',
-                    month: 'long',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : null
-              const itemsConInspeccion = detalle.items.filter((i) => i.inspeccion_bodega)
-              const todosSeleccionados =
-                itemsConInspeccion.length > 0 && itemsConInspeccion.every((i) => aprobadosItems.has(i.item_id))
-              const seleccionarTodos = () =>
-                setAprobadosItems(todosSeleccionados ? new Set() : new Set(itemsConInspeccion.map((i) => i.item_id)))
-
-              return (
-                <div
-                  className="mb-4 rounded-xl p-4"
-                  style={{
-                    backgroundColor: aprobado
-                      ? 'var(--yuda-success-soft)'
-                      : vencido
-                        ? 'var(--yuda-warning-soft)'
-                        : 'var(--yuda-primary-soft)',
-                  }}
-                >
-                  {aprobado ? (
-                    <p
-                      className="flex items-center gap-2 text-sm font-semibold"
-                      style={{ color: 'var(--yuda-success-dark)' }}
-                    >
-                      <CheckCircle2 size={18} /> {t('portal.despachoYaAprobado')}
-                    </p>
-                  ) : (
-                    <>
-                      <p
-                        className="mb-1 flex items-center gap-2 text-sm font-semibold"
-                        style={{ color: vencido ? 'var(--yuda-warning-dark)' : 'var(--yuda-primary)' }}
-                      >
-                        <Truck size={18} /> {t('portal.aprobarDespachoTitulo')}
-                      </p>
-                      <p className="mb-3 text-sm" style={{ color: 'var(--yuda-text)' }}>
-                        {t('portal.aprobarDespachoAyuda')}
-                      </p>
-                      {fechaLimite && !vencido && (
-                        <p
-                          className="mb-3 flex items-center gap-2 text-xs font-medium"
-                          style={{ color: 'var(--yuda-text-secondary)' }}
-                        >
-                          <Clock size={14} /> {t('portal.plazoHasta', { fecha: fechaLimite })}
-                        </p>
-                      )}
-                      {vencido && (
-                        <p
-                          className="mb-3 flex items-center gap-2 text-xs font-medium"
-                          style={{ color: 'var(--yuda-warning-dark)' }}
-                        >
-                          <AlertTriangle size={14} /> {t('portal.plazoVencido')}
-                        </p>
-                      )}
-
-                      {!vencido && itemsConInspeccion.length > 0 && (
-                        <>
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-xs font-semibold" style={{ color: 'var(--yuda-text-secondary)' }}>
-                              {t('portal.aprobarProgreso', { n: aprobadosItems.size, total: itemsConInspeccion.length })}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={seleccionarTodos}
-                              className="text-xs font-semibold"
-                              style={{ color: 'var(--yuda-primary)' }}
-                            >
-                              {todosSeleccionados ? t('portal.deseleccionarTodos') : t('portal.seleccionarTodos')}
-                            </button>
-                          </div>
-                          <div className="mb-3 flex flex-col gap-3">
-                            {itemsConInspeccion.map((item) => {
-                              const media = mediaDeItem(item)
-                              const marcado = aprobadosItems.has(item.item_id)
-                              return (
-                                <div
-                                  key={item.item_id}
-                                  className="rounded-lg border bg-white p-3"
-                                  style={{ borderColor: marcado ? 'var(--yuda-success)' : 'var(--yuda-border)' }}
-                                >
-                                  <label className="flex items-start gap-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={marcado}
-                                      onChange={() => alternarAprobadoItem(item.item_id)}
-                                      className="mt-1 flex-shrink-0"
-                                      style={{ width: 18, height: 18 }}
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                      {item.referencia && (
-                                        <p className="text-xs font-semibold" style={{ color: 'var(--yuda-primary)' }}>
-                                          {item.referencia}
-                                        </p>
-                                      )}
-                                      <p className="text-sm font-medium" style={{ color: 'var(--yuda-accent)' }}>
-                                        {descripcion(item, i18n.language) || '—'}
-                                      </p>
-                                    </div>
-                                  </label>
-                                  {media.length > 0 && (
-                                    <div className="mb-2 mt-2 flex flex-wrap gap-2">
-                                      {media.map((m, i) =>
-                                        m.tipo === 'foto' ? (
-                                          <button
-                                            key={m.url}
-                                            type="button"
-                                            onClick={() => setVisor({ itemId: item.item_id, indice: i })}
-                                          >
-                                            <img
-                                              src={m.url}
-                                              alt=""
-                                              style={{ width: 56, height: 56 }}
-                                              className="rounded-lg object-cover"
-                                            />
-                                          </button>
-                                        ) : (
-                                          <button
-                                            key={m.url}
-                                            type="button"
-                                            onClick={() => setVisor({ itemId: item.item_id, indice: i })}
-                                            style={{ width: 56, height: 56, backgroundColor: 'var(--yuda-bg)' }}
-                                            className="flex flex-shrink-0 items-center justify-center rounded-lg"
-                                            aria-label={t('portal.inspeccionVerVideo')}
-                                          >
-                                            <PlayCircle size={22} color="var(--yuda-primary)" />
-                                          </button>
-                                        ),
-                                      )}
-                                    </div>
-                                  )}
-                                  <textarea
-                                    value={observacionesItems[item.item_id] ?? ''}
-                                    onChange={(e) =>
-                                      setObservacionesItems((o) => ({ ...o, [item.item_id]: e.target.value }))
-                                    }
-                                    placeholder={t('portal.observacionPlaceholder')}
-                                    rows={2}
-                                    className="w-full resize-y rounded-lg border px-2 py-1.5 text-sm focus:border-[var(--yuda-primary)] focus:outline-none"
-                                    style={{ borderColor: 'var(--yuda-border)' }}
-                                  />
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={aprobarDespacho}
-                        disabled={aprobando || vencido || !todosSeleccionados}
-                        className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg font-semibold text-white disabled:opacity-50"
-                        style={{ backgroundColor: 'var(--yuda-primary)', fontSize: 15 }}
-                      >
-                        <CheckCircle2 size={16} />{' '}
-                        {aprobando ? t('portal.aprobando') : t('portal.aprobarDespachoBoton')}
-                      </button>
-                    </>
-                  )}
-                </div>
-              )
-            })()}
 
             {/* Fecha estimada que dio cada proveedor. Es por proveedor, no
                 una sola para todo el pedido: si se reparte entre varios,

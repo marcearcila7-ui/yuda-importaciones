@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, FileSpreadsheet, FileText, Ship } from 'lucide-react'
+import { ExternalLink, FileSpreadsheet, FileText, PlayCircle, Ship, X } from 'lucide-react'
 import { ESTADOS_ENVIO } from '../../types/seguimiento'
 import type { Seguimiento } from '../../types/seguimiento'
 
@@ -8,6 +9,10 @@ const LOCALES: Record<string, string> = { es: 'es-ES', en: 'en-US', zh: 'zh-CN' 
 function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
   const { t, i18n } = useTranslation()
   const locale = LOCALES[i18n.language] || 'es-ES'
+  // Foto/video de un hito: se ven en la misma página (sin abrir pestaña),
+  // igual que el visor de evidencia de la inspección. Los documentos
+  // (pdf/excel/csv) sí siguen abriendo aparte -eso es lo esperable para ellos.
+  const [visor, setVisor] = useState<{ url: string; tipo: 'imagen' | 'video' } | null>(null)
 
   const fmtFecha = (s?: string | null) => {
     if (!s) return null
@@ -174,14 +179,29 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {hito.adjuntos.map((a, ai) =>
                         a.tipo === 'imagen' ? (
-                          <a key={`${a.url}-${ai}`} href={a.url} target="_blank" rel="noreferrer">
+                          <button
+                            key={`${a.url}-${ai}`}
+                            type="button"
+                            onClick={() => setVisor({ url: a.url, tipo: 'imagen' })}
+                          >
                             <img
                               src={a.url}
                               alt={a.nombre || ''}
                               className="rounded-lg border object-cover"
                               style={{ width: 64, height: 64, borderColor: 'var(--yuda-border)' }}
                             />
-                          </a>
+                          </button>
+                        ) : a.tipo === 'video' ? (
+                          <button
+                            key={`${a.url}-${ai}`}
+                            type="button"
+                            onClick={() => setVisor({ url: a.url, tipo: 'video' })}
+                            className="flex items-center justify-center rounded-lg border"
+                            style={{ width: 64, height: 64, borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-bg)' }}
+                            aria-label={a.nombre || t('envio.archivo')}
+                          >
+                            <PlayCircle size={26} color="var(--yuda-primary)" />
+                          </button>
                         ) : (
                           <a
                             key={`${a.url}-${ai}`}
@@ -208,6 +228,31 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
           })}
         </div>
       </div>
+
+      {visor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setVisor(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setVisor(null)}
+            aria-label={t('portal.cerrar')}
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white"
+          >
+            <X size={22} />
+          </button>
+          <div onClick={(e) => e.stopPropagation()}>
+            {visor.tipo === 'imagen' ? (
+              <img src={visor.url} alt="" className="max-h-[80vh] max-w-full rounded-lg object-contain" />
+            ) : (
+              <video src={visor.url} controls autoPlay className="max-h-[80vh] max-w-full rounded-lg" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
