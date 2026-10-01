@@ -128,6 +128,13 @@ def actualizar_usuario(
         objetivo.rol = RolUsuario(cambios["rol"])
     if "activo" in cambios:
         objetivo.activo = cambios["activo"]
+        if cambios["activo"] is False:
+            # get_current_user ya rechaza cualquier token de un usuario
+            # inactivo, así que esto no es lo único que lo bloquea -pero
+            # Marcela pidió que desactivar use el mismo mecanismo explícito
+            # de "cerrar sesión" que reset_password, por consistencia entre
+            # las dos formas de sacar a alguien del sistema.
+            objetivo.token_version = (objetivo.token_version or 0) + 1
 
     db.commit()
     db.refresh(objetivo)
@@ -294,6 +301,7 @@ def desactivar_vendedoras_excepto(
     )
     for v in afectadas:
         v.activo = False
+        v.token_version = (v.token_version or 0) + 1
     db.commit()
     return {"desactivadas": len(afectadas)}
 

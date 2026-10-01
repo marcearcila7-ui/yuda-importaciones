@@ -200,3 +200,20 @@ def test_reset_password_revoca_token_viejo(client, crear_usuario, crear_sesion, 
     r = client.post(LOGIN, json={"email": "v@y.com", "password": "NuevaClave1"})
     assert r.status_code == 200
     assert client.get("/api/v1/sesiones", headers=_h(r.json()["access_token"])).status_code == 200
+
+
+def test_desactivar_usuario_tambien_sube_token_version(db, client, crear_usuario, token_staff):
+    """Desactivar un usuario debe usar el mismo mecanismo de revocación que
+    reset_password (token_version), no solo el chequeo de activo -pedido
+    explícito de Marcela para que las dos formas de sacar a alguien del
+    sistema se comporten igual."""
+    crear_usuario("a2@y.com", RolUsuario.admin)
+    v = crear_usuario("v2@y.com", RolUsuario.vendedora)
+    version_inicial = v.token_version
+
+    ha = _h(token_staff("a2@y.com"))
+    r = client.patch(f"/api/v1/admin/usuarios/{v.id}", headers=ha, json={"activo": False})
+    assert r.status_code == 200, r.text
+
+    db.refresh(v)
+    assert v.token_version == version_inicial + 1
