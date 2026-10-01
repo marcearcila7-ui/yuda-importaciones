@@ -10,15 +10,18 @@ from app.api.dependencies import get_current_user, require_roles
 from app.core.config import settings
 from app.core.security import hash_password
 from app.database import get_db
+from app.models.calendario import CalendarioNotificacion, CalendarioTarea
+from app.models.calendario_pagos import PagoTarea
 from app.models.cliente import Cliente
 from app.models.cliente_vendedora import ClienteActividad, ClienteVendedora
 from app.models.configuracion import Configuracion
-from app.models.cubicaje import CubicajeMensaje
+from app.models.cubicaje import CubicajeMensaje, CubicajeVisto
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.notificacion import Notificacion
 from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.pedido_bodega_actividad import PedidoBodegaActividad
+from app.models.push_subscription import PushSubscription
 from app.models.seguimiento import ESTADOS_ENVIO, SeguimientoPedido
 from app.models.sesion import Sesion
 from app.models.tienda import PedidoTienda
@@ -240,6 +243,32 @@ def eliminar_usuario(
     db.query(ClienteActividad).filter(ClienteActividad.usuario_id == usuario_id).delete(synchronize_session=False)
     db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.usuario_id == usuario_id).delete(synchronize_session=False)
     db.query(CubicajeMensaje).filter(CubicajeMensaje.autor_id == usuario_id).delete(synchronize_session=False)
+    db.query(CubicajeVisto).filter(CubicajeVisto.usuario_id == usuario_id).delete(synchronize_session=False)
+    db.query(PedidoGenerado).filter(PedidoGenerado.generado_por_id == usuario_id).update(
+        {PedidoGenerado.generado_por_id: None}, synchronize_session=False
+    )
+
+    # Calendario de bodega y calendario de pagos: tableros compartidos, no
+    # "de un dueño" -las tareas que este usuario creó o editó se conservan
+    # (el nombre ya quedó guardado aparte como texto), solo se suelta el id.
+    db.query(CalendarioTarea).filter(CalendarioTarea.creado_por_id == usuario_id).update(
+        {CalendarioTarea.creado_por_id: None}, synchronize_session=False
+    )
+    db.query(CalendarioTarea).filter(CalendarioTarea.actualizado_por_id == usuario_id).update(
+        {CalendarioTarea.actualizado_por_id: None}, synchronize_session=False
+    )
+    db.query(CalendarioNotificacion).filter(CalendarioNotificacion.usuario_id == usuario_id).delete(
+        synchronize_session=False
+    )
+    db.query(PagoTarea).filter(PagoTarea.creado_por_id == usuario_id).update(
+        {PagoTarea.creado_por_id: None}, synchronize_session=False
+    )
+    db.query(PagoTarea).filter(PagoTarea.actualizado_por_id == usuario_id).update(
+        {PagoTarea.actualizado_por_id: None}, synchronize_session=False
+    )
+
+    # Suscripciones a push: personales de este usuario, sin sentido sin él.
+    db.query(PushSubscription).filter(PushSubscription.usuario_id == usuario_id).delete(synchronize_session=False)
 
     # Notificaciones propias: no son "historial" del negocio, solo avisos
     # internos para este usuario — se borran junto con él.

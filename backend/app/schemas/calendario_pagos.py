@@ -19,7 +19,7 @@ class PagoResponse(BaseModel):
     cliente_sigla: str
     monto: float
     estatus: str
-    creado_por_id: str
+    creado_por_id: str | None = None
     creado_por_nombre: str
     creado_en: datetime
     actualizado_por_id: str | None = None

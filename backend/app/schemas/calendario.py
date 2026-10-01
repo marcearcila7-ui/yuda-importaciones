@@ -16,7 +16,7 @@ class TareaResponse(BaseModel):
     tipo: str
     marca_cliente: str
     descripcion: str | None = None
-    creado_por_id: str
+    creado_por_id: str | None = None
     creado_por_nombre: str
     creado_en: datetime
     actualizado_por_id: str | None = None
