@@ -50,3 +50,35 @@ def test_vendedora_no_puede_tocar_el_estado_de_cuenta_de_su_cliente(
 
     r = client.delete(f"/api/v1/clientes/{cliente.id}/estado-cuenta-oficial", headers=h)
     assert r.status_code == 403, r.text
+
+
+def test_vendedora_tampoco_lo_ve_al_abrir_un_cliente_suelto(
+    client, crear_usuario, crear_cliente, token_staff, db
+):
+    """La lista de clientes ya estaba cubierta; abrir UN cliente va por otra
+    ruta y tiene que esconderlo igual."""
+    vendedora = crear_usuario("ec3@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("clienteec3@test.com", vendedora.id)
+    cliente.estado_cuenta_oficial_url = "https://storage/pedidos/estado-cuenta-oficial/y.pdf"
+    db.commit()
+
+    r = client.get(f"/api/v1/clientes/{cliente.id}", headers=_headers(token_staff("ec3@test.com")))
+    assert r.status_code == 200, r.text
+    assert r.json()["estado_cuenta_oficial_url"] is None
+
+    crear_usuario("ec3admin@test.com", rol=RolUsuario.admin)
+    r = client.get(f"/api/v1/clientes/{cliente.id}", headers=_headers(token_staff("ec3admin@test.com")))
+    assert r.json()["estado_cuenta_oficial_url"] == "https://storage/pedidos/estado-cuenta-oficial/y.pdf"
+
+
+def test_vendedora_no_ve_saldos_ni_movimientos_de_su_cliente(
+    client, crear_usuario, crear_cliente, token_staff
+):
+    """Compras, comisión, abonos y saldo son del área contable, no de ventas."""
+    vendedora = crear_usuario("ec4@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("clienteec4@test.com", vendedora.id)
+    h = _headers(token_staff("ec4@test.com"))
+
+    assert client.get(f"/api/v1/clientes/{cliente.id}/cuenta", headers=h).status_code == 403
+    assert client.post(f"/api/v1/clientes/{cliente.id}/cuenta/excel", headers=h).status_code == 403
+    assert client.post(f"/api/v1/clientes/{cliente.id}/cuenta/pdf", headers=h).status_code == 403
