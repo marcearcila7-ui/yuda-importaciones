@@ -167,10 +167,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   const devolverABodega = async () => {
     setDevolviendoABodega(true)
     try {
-      await reenviarABodega(sesion.id)
+      const donde = await reenviarABodega(sesion.id)
       const s = await getSeguimiento(sesion.id)
       setSeguimiento(s)
-      toast.success(t('gestionPedido.devueltoABodega'))
+      toast.success(
+        donde ? t('gestionPedido.devueltoABodegaEn', { donde }) : t('gestionPedido.devueltoABodega'),
+      )
       onActualizar?.()
     } catch (err) {
       const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null

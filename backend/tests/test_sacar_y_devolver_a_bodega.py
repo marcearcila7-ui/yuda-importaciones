@@ -107,3 +107,65 @@ def test_la_vendedora_y_bodega_no_pueden_devolverlo(
     for correo in ("sb4v@test.com", "sb4b@test.com"):
         r = client.post(f"/api/v1/bodega/pedidos/{sesion.id}/reenviar", headers=_h(token_staff(correo)))
         assert r.status_code == 403, (correo, r.text)
+
+
+def test_dice_en_que_pestana_de_bodega_quedo(
+    client, crear_usuario, crear_cliente, crear_sesion, token_staff, db
+):
+    """Las pestañas de bodega filtran por etapa, así que un pedido puede estar
+    en la cola y no verse en la que uno mira. El sistema tiene que decir en
+    cuál está, en vez de dejar a Marcela buscándolo a ciegas."""
+    from datetime import datetime, timezone
+
+    vendedora = crear_usuario("sb5v@test.com", rol=RolUsuario.vendedora)
+    bodeguero = crear_usuario("sb5b@test.com", rol=RolUsuario.bodega, nombre="Juan David Rua")
+    crear_usuario("sb5a@test.com", rol=RolUsuario.admin)
+    cliente = crear_cliente("sb5c@test.com", vendedora.id)
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    db.add(SeguimientoPedido(
+        sesion_id=sesion.id,
+        estado="proveedor_recibio",
+        bodega_asignado_a_id=bodeguero.id,
+        bodega_archivado_en=datetime.now(timezone.utc),
+    ))
+    db.commit()
+
+    h = _h(token_staff("sb5a@test.com"))
+    r = client.post(f"/api/v1/bodega/pedidos/{sesion.id}/reenviar", headers=h)
+    assert r.status_code == 200, r.text
+    # Ya lo tenía tomado alguien: NO cae en "Sin asignar", que es justo donde
+    # Marcela lo estuvo buscando.
+    assert "Asignados" in r.json()["donde"]
+    assert "Juan David Rua" in r.json()["donde"]
+
+    # Y si ya estaba en la cola, el rechazo también dice dónde.
+    r = client.post(f"/api/v1/bodega/pedidos/{sesion.id}/reenviar", headers=h)
+    assert r.status_code == 409, r.text
+    assert "Asignados" in r.json()["detail"]
+
+
+def test_dice_cuando_el_pedido_no_cae_en_ninguna_pestana(
+    client, crear_usuario, crear_cliente, crear_sesion, token_staff, db
+):
+    """Un cliente desactivado saca el pedido de las cinco pestañas sin decir
+    nada. Es el peor caso para buscarlo, así que hay que nombrarlo."""
+    from datetime import datetime, timezone
+
+    from app.models.cliente import Cliente
+
+    vendedora = crear_usuario("sb6v@test.com", rol=RolUsuario.vendedora)
+    crear_usuario("sb6a@test.com", rol=RolUsuario.admin)
+    cliente = crear_cliente("sb6c@test.com", vendedora.id)
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    db.add(SeguimientoPedido(
+        sesion_id=sesion.id, estado="proveedor_recibio",
+        bodega_archivado_en=datetime.now(timezone.utc),
+    ))
+    db.query(Cliente).filter(Cliente.id == cliente.id).update({"activo": False})
+    db.commit()
+
+    r = client.post(
+        f"/api/v1/bodega/pedidos/{sesion.id}/reenviar", headers=_h(token_staff("sb6a@test.com"))
+    )
+    assert r.status_code == 200, r.text
+    assert "desactivado" in r.json()["donde"]
