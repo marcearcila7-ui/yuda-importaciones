@@ -1239,7 +1239,8 @@
     "filtroAsignadoLabel": "Assigned to",
     "filtroTodos": "All",
     "sinResultados": "No orders match this filter.",
-    "sinPedidosAdmin": "Nobody has sent an order to the warehouse yet."
+    "sinPedidosAdmin": "Nobody has sent an order to the warehouse yet.",
+    "proveedor_recibio": "Awaiting arrival"
   },
   "cubicaje": {
     "titulo": "This order's cubic volume",

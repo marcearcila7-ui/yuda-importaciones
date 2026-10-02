@@ -1239,7 +1239,8 @@
     "filtroAsignadoLabel": "Asignado a",
     "filtroTodos": "Todos",
     "sinResultados": "No hay pedidos que coincidan con el filtro.",
-    "sinPedidosAdmin": "Todavía nadie ha enviado un pedido a bodega."
+    "sinPedidosAdmin": "Todavía nadie ha enviado un pedido a bodega.",
+    "proveedor_recibio": "Pendiente de recibir"
   },
   "cubicaje": {
     "titulo": "Cubicaje de este pedido",
