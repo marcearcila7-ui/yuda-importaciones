@@ -137,6 +137,38 @@ function generarPassword(): string {
   return Array.from(arr, (n) => abc[n % abc.length]).join('') + '*'
 }
 
+// Botoncito de copiar al lado de un dato suelto. Antes había un solo botón
+// "Copiar datos" que se llevaba el link, el correo y la clave juntos en un
+// mismo texto, y confundía: casi siempre lo que se quiere es pegar UNA cosa.
+// Ahora cada dato tiene el suyo y copia solo ese dato, sin títulos ni etiquetas.
+function BotonCopiar({ texto, titulo }: { texto: string; titulo: string }) {
+  const { t } = useTranslation()
+  const [copiado, setCopiado] = useState(false)
+
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2000)
+    } catch {
+      toast.error(t('clientes.errorCopiar'))
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copiar}
+      title={titulo}
+      aria-label={titulo}
+      className="inline-flex flex-shrink-0 items-center justify-center rounded align-middle"
+      style={{ width: 28, height: 28, color: copiado ? 'var(--yuda-success)' : 'var(--yuda-primary)' }}
+    >
+      {copiado ? <Check size={15} /> : <Copy size={15} />}
+    </button>
+  )
+}
+
 const inputStyle: CSSProperties = { fontSize: 16 }
 const inputClase =
   'w-full rounded-lg border border-gray-200 px-3 py-2 min-h-[44px] focus:border-[var(--yuda-primary)] focus:outline-none'
@@ -504,21 +536,6 @@ function Clientes() {
     }
   }
 
-  // Copia el acceso del cliente (link + correo, y la clave si se acaba de generar)
-  const copiarCredenciales = async (c: Cliente) => {
-    const pass = nuevasPass[c.id]
-    let texto = `YUDA Importaciones: acceso a tu portal
-${t('clientes.portalLink')}: ${portalUrl}
-${t('clientes.email')}: ${c.email}`
-    if (pass) texto += `\n${t('clientes.password')}: ${pass}`
-    try {
-      await navigator.clipboard.writeText(texto)
-      toast.success(t('clientes.copiado'))
-    } catch {
-      toast.error(t('clientes.errorCopiar'))
-    }
-  }
-
   // Restablecer: como la contraseña actual no se puede ver (está encriptada),
   // genera una NUEVA y la revela en la ficha del cliente para reenviarla.
   const resetear = async (c: Cliente) => {
@@ -848,34 +865,23 @@ ${t('clientes.email')}: ${c.email}`
           </h2>
           <dl className="grid gap-2 text-sm sm:grid-cols-[130px_1fr]">
             <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.portalLink')}</dt>
-            <dd className="break-all">
+            <dd className="flex items-start gap-1 break-all">
               <a href={portalUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--yuda-primary)' }}>
                 {portalUrl}
               </a>
+              <BotonCopiar texto={portalUrl} titulo={t('clientes.copiarLink')} />
             </dd>
             <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.email')}</dt>
-            <dd className="break-all" style={{ color: 'var(--yuda-accent)' }}>{c.email}</dd>
+            <dd className="flex items-start gap-1 break-all" style={{ color: 'var(--yuda-accent)' }}>
+              {c.email}
+              <BotonCopiar texto={c.email} titulo={t('clientes.copiarEmail')} />
+            </dd>
             <dt style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.password')}</dt>
             <dd>
               {nuevasPass[c.id] ? (
-                <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-1">
                   <span style={{ fontFamily: 'monospace', color: 'var(--yuda-accent)' }}>{nuevasPass[c.id]}</span>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(nuevasPass[c.id])
-                        toast.success(t('clientes.copiado'))
-                      } catch {
-                        toast.error(t('clientes.errorCopiar'))
-                      }
-                    }}
-                    title={t('clientes.copiarSoloPassword')}
-                    className="inline-flex items-center justify-center rounded"
-                    style={{ width: 24, height: 24, color: 'var(--yuda-primary)' }}
-                  >
-                    <Copy size={14} />
-                  </button>
+                  <BotonCopiar texto={nuevasPass[c.id]} titulo={t('clientes.copiarSoloPassword')} />
                 </span>
               ) : (
                 <span style={{ color: 'var(--yuda-text-secondary)' }}>{t('clientes.passwordOculta')}</span>
@@ -898,14 +904,6 @@ ${t('clientes.email')}: ${c.email}`
               style={{ color: 'var(--yuda-primary)' }}
             >
               <KeyRound size={16} /> {t('clientes.resetPassword')}
-            </button>
-            <button
-              type="button"
-              onClick={() => copiarCredenciales(c)}
-              className="flex min-h-[42px] items-center gap-2 rounded-lg border border-gray-200 px-4 text-sm font-semibold"
-              style={{ color: 'var(--yuda-success)' }}
-            >
-              <Copy size={16} /> {t('clientes.copiar')}
             </button>
           </div>
         </div>
