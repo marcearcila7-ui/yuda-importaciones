@@ -6,10 +6,13 @@ from io import BytesIO, StringIO
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.drawing.image import Image as XLImage
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter, range_boundaries
+from openpyxl.utils.units import pixels_to_EMU
 
-from app.services.imagen_service import descargar_imagen, descargar_imagenes
+from app.services.imagen_service import descargar_imagen, descargar_imagenes, fotos_de
 
 # Plantilla literal del formato de pedido al proveedor (FORMATO PEDIDO de YUDA)
 PLANTILLA_PEDIDO = os.path.join(
@@ -45,6 +48,25 @@ TIPOS_FOTO_EXTRA_EXCEL = ["interior", "herrajes", "riata", "exterior"]
 ENCABEZADOS_MAS_FOTOS = ["FOTO 2", "FOTO 3", "FOTO 4"]
 ANCHOS_MAS_FOTOS = [12, 12, 12]
 TIPOS_MAS_FOTOS_EXCEL = ["extra1", "extra2", "extra3"]
+
+
+def anclar_imagen(ws, buf, col_idx0: int, row_idx0: int, x_off_px: float, y_off_px: float, lado_px: float) -> None:
+    """Coloca una imagen en un punto exacto DENTRO de una celda (columna y
+    fila, más un desplazamiento en píxeles), en vez de que openpyxl la
+    alinee sola a la esquina de la celda. Así la foto principal y las fotos
+    extra de un producto caben juntas en la misma columna "Foto", sin
+    agregar columnas nuevas al final."""
+    img = XLImage(buf)
+    escala = lado_px / max(img.width, img.height)
+    img.width = round(img.width * escala)
+    img.height = round(img.height * escala)
+    marcador = AnchorMarker(
+        col=col_idx0, colOff=pixels_to_EMU(x_off_px),
+        row=row_idx0, rowOff=pixels_to_EMU(y_off_px),
+    )
+    tamano = XDRPositiveSize2D(pixels_to_EMU(img.width), pixels_to_EMU(img.height))
+    img.anchor = OneCellAnchor(_from=marcador, ext=tamano)
+    ws.add_image(img)
 
 
 def _encajar(img: XLImage, lado_max: int) -> None:
@@ -288,6 +310,15 @@ PED_FILA_TOTALES = 18
 PED_FOTO_PX = 300  # lado de la imagen dentro de la celda
 PED_ALTO_FILA = 232  # puntos (~310 px): la foto entra completa y sobra aire
 PED_ANCHO_FOTO = 45  # ancho de la columna B en caracteres (~320 px)
+
+# Cuando el producto tiene fotos extra (más ángulos, o el detalle de un bolso),
+# van TODAS en la misma columna, en una cuadrícula de 2 por fila -mismo criterio
+# que la cotización del cliente. Antes el proveedor solo veía la foto principal
+# y las demás no llegaban a ninguna parte. A 150 px entran dos a lo ancho de la
+# columna B sin tocar el ITEM NO, y la fila crece hacia abajo, que no le quita
+# espacio a nadie. Con una sola foto no se toca nada: queda grande como siempre.
+PED_FOTO_GRID_PX = 150
+PED_GAP_GRID_PX = 8
 PED_ANCHO_ITEM = 24  # ancho de la columna C (ITEM NO), para escribir a mano
 
 
@@ -384,25 +415,43 @@ def generar_formato_pedido(
         f = PED_FILA0 + idx
         ws.row_dimensions[f].height = PED_ALTO_FILA
         ws.cell(row=f, column=1, value=idx + 1)  # A: NO
-        # B: PHOTO — la final (limpia) si existe; si no, la de datos como respaldo.
-        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        if foto_doc:
+        # B: PHOTO — la principal y las extra, de cada una el recorte si existe.
+        urls_foto = fotos_de(item)
+        if len(urls_foto) > 1:
+            # Cuadrícula de 2 por fila: la fila crece hacia abajo lo necesario.
+            lado = PED_FOTO_GRID_PX
+            paso = lado + PED_GAP_GRID_PX
+            filas_grid = -(-len(urls_foto) // 2)  # redondeo hacia arriba
+            # Nunca MÁS BAJA que una fila normal: en la celda de al lado se
+            # escribe el ITEM NO a mano sobre el impreso y necesita su aire.
+            ws.row_dimensions[f].height = max(PED_ALTO_FILA, filas_grid * paso * 0.75 + 6)
+        else:
+            lado = PED_FOTO_PX
+            paso = 0
+        for i_foto, url_foto in enumerate(urls_foto):
             # Imagen ya descargada (bytes) si está en cache; si no, se baja al momento.
-            cache = fotos.get(foto_doc)
+            cache = fotos.get(url_foto)
             buf = (
                 BytesIO(cache) if cache is not None
-                else descargar_imagen(foto_doc, lado_px=PED_FOTO_PX * 3)
+                else descargar_imagen(url_foto, lado_px=lado * 3)
             )
-            if buf is not None:
-                try:
+            if buf is None:
+                continue
+            try:
+                if len(urls_foto) == 1:
                     img = XLImage(buf)
                     # Se respeta la proporción de la foto: nada de estirarla.
-                    escala = PED_FOTO_PX / max(img.width, img.height)
-                    img.width = round(img.width * escala)
-                    img.height = round(img.height * escala)
+                    _encajar(img, PED_FOTO_PX)
                     ws.add_image(img, f"B{f}")
-                except Exception:
-                    pass
+                else:
+                    anclar_imagen(
+                        ws, buf, 1, f - 1,
+                        x_off_px=6 + (i_foto % 2) * paso,
+                        y_off_px=4 + (i_foto // 2) * paso,
+                        lado_px=lado,
+                    )
+            except Exception:
+                pass
         # C: ITEM NO — lo rellenan a mano; queda centrado y con salto de línea.
         celda_item = ws.cell(row=f, column=3, value=getattr(item, "item_no", None))
         celda_item.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)

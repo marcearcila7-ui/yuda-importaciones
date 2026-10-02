@@ -8,7 +8,7 @@ from datetime import date
 
 from weasyprint import HTML
 
-from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
+from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes, fotos_de
 
 PED_CSS = """
 @page { size: A4 landscape; margin: 0.8cm; }
@@ -24,9 +24,14 @@ table.items td { padding: 3px; border: 1px solid #999; text-align: center; verti
 table.items tbody tr { page-break-inside: avoid; break-inside: avoid; }
 table.items td.desc { text-align: left; }
 /* La foto es la referencia de lo que se pidió: va grande y completa (contain,
-   sin recortar), y su celda manda el ancho de la columna. */
+   sin recortar), y su celda manda el ancho de la columna. Si el producto tiene
+   fotos extra van todas ahí mismo, en una cuadrícula de 2 por fila (mismo
+   criterio que la cotización del cliente); con una sola foto se ve igual que
+   siempre, grande. */
 table.items td.foto { width: 175px; }
 table.items td.foto img { width: 165px; height: 165px; object-fit: contain; }
+table.items td.foto .varias { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+table.items td.foto .varias img { width: 80px; height: 80px; }
 /* ITEM NO se rellena a mano sobre el impreso: necesita ancho propio. */
 table.items td.item, table.items th.item { width: 90px; }
 table.items td.desc .zh { display: block; }
@@ -123,11 +128,16 @@ def html_pedido(
         _es = item.descripcion_es or item.descripcion_en or ""
         _zh = item.descripcion_zh or ""
         desc = _es + (f'<span class="zh">{_zh}</span>' if _zh else "")
-        # Foto final (limpia) si existe; si no, la de datos como respaldo.
-        # Se usa la imagen YA descargada e incrustada (data URI); sin red al renderizar.
-        _foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        _data = fotos.get(_foto_doc) if _foto_doc else None
-        foto = f'<img src="{_data}" />' if _data else ""
+        # La principal y las extra, de cada una el recorte si existe. Se usan las
+        # imágenes YA descargadas e incrustadas (data URI); sin red al renderizar.
+        _datos = [d for d in (fotos.get(u) for u in fotos_de(item)) if d]
+        if len(_datos) > 1:
+            _imgs = "".join(f'<img src="{d}" />' for d in _datos)
+            foto = f'<div class="varias">{_imgs}</div>'
+        elif _datos:
+            foto = f'<img src="{_datos[0]}" />'
+        else:
+            foto = ""
         filas.append(
             f"<tr>"
             f"<td>{n}</td>"

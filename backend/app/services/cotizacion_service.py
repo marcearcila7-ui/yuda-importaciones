@@ -13,7 +13,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.page import PageMargins
 from openpyxl.utils.units import pixels_to_EMU
-from app.services.imagen_service import CALIDAD_JPEG
+from app.services.excel_service import anclar_imagen
+from app.services.imagen_service import CALIDAD_JPEG, fotos_de
 from app.services.pdf_service import render_pdf
 
 from app.models.sesion import Sesion
@@ -294,35 +295,6 @@ def _descargar_imagen(url: str):
         return None
 
 
-def _fotos_extra_ordenadas(item) -> list[str]:
-    """URLs de las fotos extra de un ítem (más ángulos, o detalle de bolso),
-    en orden estable. El recorte a mano si existe; si no, la original."""
-    originales = getattr(item, "fotos_extra", None) or {}
-    finales = getattr(item, "fotos_extra_final", None) or {}
-    claves = sorted(set(originales) | set(finales))
-    urls = [finales.get(k) or originales.get(k) for k in claves]
-    return [u for u in urls if u]
-
-
-def _anclar_imagen(ws, buf, col_idx0: int, row_idx0: int, x_off_px: float, y_off_px: float, lado_px: float) -> None:
-    """Coloca una imagen en un punto exacto DENTRO de una celda (columna y
-    fila, más un desplazamiento en píxeles), en vez de que openpyxl la
-    alinee sola a la esquina de la celda. Así la foto principal y las fotos
-    extra de un producto caben juntas en la misma columna "Foto", sin
-    agregar columnas nuevas al final."""
-    img = XLImage(buf)
-    escala = lado_px / max(img.width, img.height)
-    img.width = round(img.width * escala)
-    img.height = round(img.height * escala)
-    marcador = AnchorMarker(
-        col=col_idx0, colOff=pixels_to_EMU(x_off_px),
-        row=row_idx0, rowOff=pixels_to_EMU(y_off_px),
-    )
-    tamano = XDRPositiveSize2D(pixels_to_EMU(img.width), pixels_to_EMU(img.height))
-    img.anchor = OneCellAnchor(_from=marcador, ext=tamano)
-    ws.add_image(img)
-
-
 def generar_cotizacion_excel(
     items: list, sesion: Sesion, idioma: str, tipo_cambio: float, columnas: list[str] | None = None,
 ) -> bytes:
@@ -447,9 +419,7 @@ def generar_cotizacion_excel(
         # fila, la columna "Foto" se volvía tan ancha que apretaba a todas
         # las demás columnas de la tabla. En cuadrícula la columna se queda
         # angosta y lo que crece es el alto de la fila, que no molesta a nadie.
-        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        urls_extra = _fotos_extra_ordenadas(item)[:4]
-        urls_fotos_fila = ([foto_doc] if foto_doc else []) + urls_extra
+        urls_fotos_fila = fotos_de(item)
         filas_foto = max(1, -(-len(urls_fotos_fila) // 2))  # redondeo hacia arriba
         ws.row_dimensions[fila].height = filas_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE) * 0.75 + 4
 
@@ -459,7 +429,7 @@ def generar_cotizacion_excel(
                 continue
             col_foto, fila_foto = i % 2, i // 2
             try:
-                _anclar_imagen(
+                anclar_imagen(
                     ws, buf_foto, col_foto_idx0, fila - 1,
                     x_off_px=6 + col_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE),
                     y_off_px=4 + fila_foto * (LADO_FOTO_CLIENTE + GAP_FOTO_CLIENTE),
@@ -578,14 +548,12 @@ def generar_cotizacion_pdf(
     for n, item in enumerate(items, start=1):
         calc = _calcular(item, tipo_cambio)
         gw_total = round((item.gw or 0) * (item.ctns or 0), 2)
-        foto_doc = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
-        foto_principal = f'<img src="{foto_doc}" />' if foto_doc else ""
-        # Fotos extra (más ángulos que pidió el cliente, o detalle del bolso):
-        # AL LADO de la principal y del mismo tamaño -no minúsculas debajo-,
-        # en la MISMA celda de la columna "Foto" (no columnas nuevas al final).
-        urls_extra = _fotos_extra_ordenadas(item)[:4]
-        extra_html = "".join(f'<img src="{u}" />' for u in urls_extra)
-        foto = f'<div class="fotos-fila">{foto_principal}{extra_html}</div>'
+        # La principal y las fotos extra (más ángulos que pidió el cliente, o
+        # detalle del bolso): AL LADO una de otra y del mismo tamaño -no
+        # minúsculas debajo-, en la MISMA celda de la columna "Foto" (no
+        # columnas nuevas al final).
+        imgs = "".join(f'<img src="{u}" />' for u in fotos_de(item))
+        foto = f'<div class="fotos-fila">{imgs}</div>'
         alt = ' class="alt"' if n % 2 == 0 else ""
         celdas_por_clave = {
             "numero": f"<td>{n}</td>",

@@ -20,6 +20,23 @@ LADO_MAX_HEIC = 2576
 logger = logging.getLogger(__name__)
 
 
+def fotos_de(item, maximo_extra: int = 4) -> list[str]:
+    """Las fotos de un producto en el orden en que se muestran: primero la
+    principal y después las extra (más ángulos, o el detalle de un bolso).
+
+    De cada una se prefiere el recorte a mano si existe; si no, la original.
+    `maximo_extra` acota cuántas extra entran, para que un producto con
+    muchas fotos no desarme el documento.
+    """
+    principal = getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)
+    originales = getattr(item, "fotos_extra", None) or {}
+    finales = getattr(item, "fotos_extra_final", None) or {}
+    claves = sorted(set(originales) | set(finales))
+    extra = [finales.get(k) or originales.get(k) for k in claves]
+    urls = ([principal] if principal else []) + [u for u in extra if u][:maximo_extra]
+    return urls
+
+
 def descargar_imagen(url: str, lado_px: int | None = None):
     """Descarga una imagen y la normaliza a JPEG. Opcionalmente la achica a un
     cuadro de lado_px (mantiene proporción) para no inflar el archivo de salida.

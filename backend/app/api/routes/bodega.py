@@ -39,7 +39,7 @@ from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.cotizacion_service import _calcular
 from app.services.cubicaje_service import generar_reporte_automatico
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
-from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes
+from app.services.imagen_service import bytes_a_data_uri, convertir_a_jpeg, descargar_imagenes, fotos_de
 from app.services.inspeccion_service import (
     _MAPEO_CAMPOS,
     aplicar_fecha_recibo_masiva,
@@ -502,9 +502,7 @@ def _completar_orden(
     fecha_hoy = date.today()
     supplier_nombre = items_reales[0].supplier_nombre
 
-    urls_fotos = [
-        (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
-    ]
+    urls_fotos = [url for i in items_reales for url in fotos_de(i)]
     fotos_bytes = descargar_imagenes(urls_fotos, lado_px=900)
     fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
 

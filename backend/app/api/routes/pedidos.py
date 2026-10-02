@@ -43,7 +43,7 @@ from app.services.excel_service import (
     generar_formato_pedido,
 )
 from app.services.actividad_bodega_service import registrar_actividad_bodega
-from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes
+from app.services.imagen_service import bytes_a_data_uri, descargar_imagenes, fotos_de
 from app.services.inspeccion_service import construir_inspeccion_sesion
 from app.services.notificacion_service import avisar_pedido_regenerado_tras_revision
 from app.services.pdf_service import html_pedido, render_pdf
@@ -253,10 +253,9 @@ def generar_pedidos(
     # f.2. Descargar TODAS las fotos una sola vez y en paralelo (antes se bajaban
     # dos veces —Excel y PDF— y de forma secuencial, lo que hacía muy lenta y a
     # veces colgaba la generación). Se reutilizan como bytes (Excel) y data URI (PDF).
-    urls_fotos = [
-        (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None))
-        for i in items_validos
-    ]
+    # Todas las fotos de cada producto, no solo la principal: el proveedor
+    # necesita ver los mismos ángulos que vio el cliente en su cotización.
+    urls_fotos = [url for i in items_validos for url in fotos_de(i)]
     # 900 px de lado: la foto va grande en el Excel y en el PDF (es LA referencia
     # de lo que se pidió), así que se baja al triple del tamaño en que se muestra
     # (300 px) para que se vea nítida también impresa, no solo en pantalla.
