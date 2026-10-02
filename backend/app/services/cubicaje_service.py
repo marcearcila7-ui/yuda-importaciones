@@ -107,6 +107,7 @@ def generar_reporte_automatico(
         cbm_calculado=cbm,
         resultado=resultado,
         espacio_restante_cbm=espacio_restante,
+        automatico=True,
     )
     db.add(mensaje)
     avisar_cubicaje_a_vendedora(

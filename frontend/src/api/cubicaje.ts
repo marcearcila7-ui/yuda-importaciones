@@ -40,3 +40,13 @@ export async function subirAdjuntoCubicaje(sesionId: string, archivo: File): Pro
   )
   return data
 }
+
+// El numerito de la pestaña "Cubicaje": solo el conteo, sin traerse el hilo
+// entero. Se consulta cada pocos segundos desde una pantalla que todavía no
+// abrió el chat.
+export async function contarCubicajeNoLeidos(sesionId: string): Promise<number> {
+  const { data } = await apiClient.get<{ no_leidos: number }>(
+    `/sesiones/${sesionId}/cubicaje/no-leidos`,
+  )
+  return data.no_leidos
+}

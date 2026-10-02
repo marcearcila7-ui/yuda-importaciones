@@ -188,9 +188,12 @@ def guardar_inspeccion(
         sesion.shipping_mark_bodega = datos.shipping_mark or None
 
     item_ids = [d.item_id for d in datos.items]
-    validos = {
-        i.id for i in db.query(Item.id).filter(Item.sesion_id == sesion.id, Item.id.in_(item_ids)).all()
+    # Los Item completos (no solo sus ids): hace falta la foto para adjuntarla
+    # al aviso de "no llegó" / "hay que devolver".
+    items_por_id = {
+        i.id: i for i in db.query(Item).filter(Item.sesion_id == sesion.id, Item.id.in_(item_ids)).all()
     }
+    validos = set(items_por_id)
     existentes = {
         i.item_id: i
         for i in db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)).all()
@@ -224,10 +227,14 @@ def guardar_inspeccion(
 
         referencia = entrada.referencia or entrada.codigo or entrada.item_id
         descripcion = entrada.descripcion_es or entrada.descripcion_en or referencia
+        # La foto con la que se cotizó: el aviso la lleva adjunta para que la
+        # vendedora vea de cuál producto se trata sin ir a buscarlo.
+        item = items_por_id.get(entrada.item_id)
+        foto = (getattr(item, "foto_final_url", None) or getattr(item, "foto_url", None)) if item else None
         if entrada.debe_devolver and not devolver_antes:
-            avisos.append({"tipo": "devolver", "referencia": referencia, "descripcion": descripcion})
+            avisos.append({"tipo": "devolver", "referencia": referencia, "descripcion": descripcion, "foto": foto})
         if entrada.no_llego and not no_llego_antes:
-            avisos.append({"tipo": "no_llego", "referencia": referencia, "descripcion": descripcion})
+            avisos.append({"tipo": "no_llego", "referencia": referencia, "descripcion": descripcion, "foto": foto})
 
     db.commit()
     return avisos

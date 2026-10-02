@@ -32,7 +32,9 @@ def _montar(db, crear_usuario, crear_cliente, crear_sesion, sufijo: str):
         pedido_generado_id=pedido.id, item_id=item.id, cantidad_pedida=3, cantidad_recibida=2,
     ))
     db.add(ItemInspeccionBodega(item_id=item.id, ctns=2, no_llego=True, fotos=["https://x/f.jpg"]))
-    db.add(CubicajeMensaje(sesion_id=sesion.id, tipo=TIPO_REPORTE, mensaje="reporte", autor_id=vendedora.id))
+    db.add(CubicajeMensaje(
+        sesion_id=sesion.id, tipo=TIPO_REPORTE, mensaje="reporte", autor_id=vendedora.id, automatico=True,
+    ))
     sesion.shipping_mark_bodega = "ZZZ"
     db.commit()
     return sesion, item, pedido

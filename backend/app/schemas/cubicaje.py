@@ -55,6 +55,16 @@ class CubicajeDetalle(BaseModel):
     mensajes: list[CubicajeMensajeResponse]
     vendedora_nombre: str | None = None
     bodega_asignado_a_nombre: str | None = None
+    # Mensajes del otro lado que esta persona todavía no ha visto. Es lo que
+    # se pinta como numerito en la pestaña "Cubicaje" de las dos apps.
+    no_leidos: int = 0
+
+
+class CubicajeNoLeidos(BaseModel):
+    """Solo el contador, para pintar el numerito de la pestaña sin tener que
+    traerse todo el hilo en cada consulta."""
+
+    no_leidos: int
 
 
 class CubicajeReporteInput(BaseModel):

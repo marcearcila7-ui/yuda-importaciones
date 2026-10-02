@@ -37,4 +37,6 @@ export interface CubicajeDetalle {
   // bodega que tiene asignado el pedido (null si nadie lo ha tomado).
   vendedora_nombre: string | null
   bodega_asignado_a_nombre: string | null
+  // Mensajes del otro lado que esta persona todavía no ha visto.
+  no_leidos?: number
 }

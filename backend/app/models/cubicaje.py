@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, JSON, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -38,6 +38,13 @@ class CubicajeMensaje(Base):
     autor_id: Mapped[str | None] = mapped_column(String, ForeignKey("users.id"), nullable=True)
 
     mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Lo escribió el sistema, no una persona (el aviso de "no llegó"/"hay que
+    # devolver" y el reporte automático de cubicaje). Hace falta para poder
+    # reiniciar una revisión: se borra lo que puso el sistema por esa
+    # revisión y la conversación de verdad se conserva. También evita que al
+    # volver a marcar un producto se publique un segundo aviso idéntico.
+    automatico: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
 
     # Solo se llenan en tipo="reporte": lo que el sistema calculó en ese
     # momento (nunca lo escribe el usuario, evita que quede desactualizado).

@@ -11,6 +11,7 @@ import SeguimientoEditor from '../components/SeguimientoEditor'
 import SeguimientoTimeline from '../components/portal/SeguimientoTimeline'
 import { exportarCotizacionExcel, exportarCotizacionPDF, exportarFacturaExcel, exportarFacturaPDF, getItems, getSesiones } from '../api/packing'
 import { getContenedores } from '../api/contenedores'
+import { contarCubicajeNoLeidos } from '../api/cubicaje'
 import { getCliente, getSeguimiento } from '../api/clientes'
 import { useAuthStore } from '../store/authStore'
 import type { ItemResponse, Sesion } from '../types/packing'
@@ -99,6 +100,34 @@ function CotizacionDetalle() {
     (tabDesdeAviso as 'gestion' | 'cotizacion' | 'seguimiento' | 'cubicaje') ??
       (rol === 'admin' || rol === 'vendedora' ? 'gestion' : 'cotizacion'),
   )
+
+  // Numerito de mensajes sin leer en la pestaña "Cubicaje". Se consulta cada
+  // 8 segundos (mismo ritmo que el resto del sistema) y al volver a la
+  // pestaña del navegador. Se pone en cero solo: estando en Cubicaje, el chat
+  // marca "visto" cada pocos segundos mientras está abierto.
+  const [cubicajeNoLeidos, setCubicajeNoLeidos] = useState(0)
+
+  useEffect(() => {
+    if (!id) return
+    let vivo = true
+    const consultar = () => {
+      contarCubicajeNoLeidos(id)
+        .then((n) => { if (vivo) setCubicajeNoLeidos(n) })
+        .catch(() => undefined)
+    }
+    consultar()
+    const reloj = setInterval(consultar, 8000)
+    const alVolver = () => { if (!document.hidden) consultar() }
+    document.addEventListener('visibilitychange', alVolver)
+    window.addEventListener('focus', consultar)
+    return () => {
+      vivo = false
+      clearInterval(reloj)
+      document.removeEventListener('visibilitychange', alVolver)
+      window.removeEventListener('focus', consultar)
+    }
+  }, [id, tab])
+
   const [recargarTick, setRecargarTick] = useState(0)
   const recargar = () => setRecargarTick((n) => n + 1)
 
@@ -275,6 +304,14 @@ function CotizacionDetalle() {
                   }}
                 >
                   {t(`detalle.tab.${tabId}`)}
+                  {tabId === 'cubicaje' && cubicajeNoLeidos > 0 && (
+                    <span
+                      className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-bold text-white"
+                      style={{ height: 18, backgroundColor: 'var(--yuda-error)' }}
+                    >
+                      {cubicajeNoLeidos > 9 ? '9+' : cubicajeNoLeidos}
+                    </span>
+                  )}
                 </button>
               ))}
           </div>

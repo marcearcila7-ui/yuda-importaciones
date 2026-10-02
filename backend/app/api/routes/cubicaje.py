@@ -18,6 +18,7 @@ from app.models.user import User
 from app.schemas.cubicaje import (
     AdjuntoCubicaje,
     CubicajeDetalle,
+    CubicajeNoLeidos,
     CubicajeMensajeResponse,
     CubicajeNotaInput,
     CubicajeReporteInput,
@@ -296,6 +297,42 @@ def _mensaje_response(m: CubicajeMensaje, autores: dict[str, User]) -> CubicajeM
     )
 
 
+def _no_leidos(db: Session, sesion_id: str, usuario: User) -> int:
+    """Cuántos mensajes de ESTE pedido no ha visto todavía esta persona.
+
+    No cuentan los propios: lo que uno mismo escribió no es un mensaje por
+    leer. "Visto" es la última vez que tuvo el chat abierto y en foco (ver
+    marcar_cubicaje_visto); si nunca lo abrió, todo lo del otro lado cuenta.
+    """
+    visto = (
+        db.query(CubicajeVisto.visto_en)
+        .filter(CubicajeVisto.sesion_id == sesion_id, CubicajeVisto.usuario_id == usuario.id)
+        .scalar()
+    )
+    consulta = db.query(CubicajeMensaje).filter(
+        CubicajeMensaje.sesion_id == sesion_id,
+        # autor_id None son los que genera el sistema en nombre del cliente:
+        # esos sí hay que leerlos, por eso no se comparan con "distinto de mí".
+        (CubicajeMensaje.autor_id.is_(None)) | (CubicajeMensaje.autor_id != usuario.id),
+    )
+    if visto is not None:
+        consulta = consulta.filter(CubicajeMensaje.created_at > visto)
+    return consulta.count()
+
+
+@router.get("/sesiones/{sesion_id}/cubicaje/no-leidos", response_model=CubicajeNoLeidos)
+def contar_cubicaje_no_leidos(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "vendedora", "bodega")),
+    db: Session = Depends(get_db),
+) -> CubicajeNoLeidos:
+    """El numerito de la pestaña "Cubicaje". Va aparte del hilo completo
+    porque se consulta cada pocos segundos desde una pantalla que todavía no
+    abrió el chat: traerse todos los mensajes para contarlos sería absurdo."""
+    _sesion_o_404(db, sesion_id, usuario)
+    return CubicajeNoLeidos(no_leidos=_no_leidos(db, sesion_id, usuario))
+
+
 @router.get("/sesiones/{sesion_id}/cubicaje", response_model=CubicajeDetalle)
 def obtener_cubicaje(
     sesion_id: str,
@@ -339,6 +376,7 @@ def obtener_cubicaje(
         mensajes=[_mensaje_response(m, autores) for m in filas],
         vendedora_nombre=vendedora.nombre if vendedora else None,
         bodega_asignado_a_nombre=asignado.nombre if asignado else None,
+        no_leidos=_no_leidos(db, sesion_id, usuario),
     )
 
 

@@ -766,7 +766,15 @@ def guardar_cotizacion_inspeccion(
         texto = _TEXTOS_AVISO[aviso["tipo"]].format(
             referencia=aviso["referencia"], descripcion=aviso["descripcion"]
         )
-        db.add(CubicajeMensaje(sesion_id=sesion_id, tipo=TIPO_NOTA, autor_id=usuario.id, mensaje=texto))
+        foto = aviso.get("foto")
+        db.add(CubicajeMensaje(
+            sesion_id=sesion_id,
+            tipo=TIPO_NOTA,
+            autor_id=usuario.id,
+            mensaje=texto,
+            automatico=True,
+            adjuntos=[{"url": foto, "nombre": aviso["referencia"], "tipo": "imagen"}] if foto else None,
+        ))
         avisar_cubicaje_a_vendedora(
             db, sesion_id, _numero(sesion), cliente.nombre if cliente else sesion.nombre_cliente, sesion.user_id, texto
         )
@@ -944,10 +952,13 @@ def reiniciar_inspeccion(
         )
     ).update({"cantidad_recibida": None}, synchronize_session=False)
 
-    # El reporte automático de cubicaje se borra para que se vuelva a disparar
-    # cuando bodega termine de nuevo (es idempotente: si queda, no se repite).
+    # Del chat se borra SOLO lo que escribió el sistema por esta revisión: el
+    # reporte automático de cubicaje y los avisos de "no llegó"/"hay que
+    # devolver". Lo que se escribieron bodega y la vendedora se conserva: es
+    # una conversación, no un dato de la revisión. Si no se borraran, al
+    # volver a marcar un producto quedaría un segundo aviso idéntico.
     db.query(CubicajeMensaje).filter(
-        CubicajeMensaje.sesion_id == sesion_id, CubicajeMensaje.tipo == TIPO_REPORTE
+        CubicajeMensaje.sesion_id == sesion_id, CubicajeMensaje.automatico.is_(True)
     ).delete(synchronize_session=False)
 
     sesion.shipping_mark_bodega = None
