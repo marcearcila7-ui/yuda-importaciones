@@ -912,8 +912,10 @@ ${t('clientes.email')}: ${c.email}`
 
         {/* Estado de cuenta EN VIVO de Yuda Contable: solo si el cliente
             tiene sigla vinculada. Es el mismo PDF que genera esa app, al
-            momento -no algo que Marcela suba a mano. */}
-        {c.sigla && (
+            momento -no algo que Marcela suba a mano. SOLO Marcela: el estado
+            de cuenta es información sensible del cliente y la vendedora no lo
+            ve, no lo descarga y no lo manda nunca. */}
+        {esAdmin && c.sigla && (
           <div className="card flex flex-col gap-3">
             <h2 className="flex items-center gap-2" style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
               <FileText size={18} /> {t('clientes.estadoCuentaContableTitulo')}
@@ -935,8 +937,10 @@ ${t('clientes.email')}: ${c.email}`
         )}
 
         {/* Estado de cuenta oficial de Yuda Contable: documento puntual que
-            Marcela sube a mano. Respaldo para clientes sin sigla (sin
-            conexión en vivo posible). */}
+            Marcela sube a mano para que el cliente lo vea en su portal.
+            Respaldo para clientes sin sigla (sin conexión en vivo posible).
+            Solo Marcela, por lo mismo que el de arriba. */}
+        {esAdmin && (
         <div className="card flex flex-col gap-3">
           <h2 style={{ fontWeight: 700, fontSize: 16, color: 'var(--yuda-accent)' }}>
             {t('clientes.estadoCuentaOficialTitulo')}
@@ -999,6 +1003,7 @@ ${t('clientes.email')}: ${c.email}`
             />
           </label>
         </div>
+        )}
         </>
         )}
 

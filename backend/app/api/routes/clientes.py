@@ -120,8 +120,16 @@ def _cliente_response(
     """Convierte el cliente a su forma pública. La sigla NO se oculta: es solo
     el código con el que se marcan las cajas (nada financiero), y la
     vendedora/bodega también lo necesitan para saber cómo llega marcada la
-    caja del cliente."""
+    caja del cliente.
+
+    El estado de cuenta SÍ se oculta: la vendedora nunca lo ve, no lo descarga
+    y no lo manda al portal. Eso es solo de Marcela y del área contable. Iba
+    en la respuesta de cada cliente, así que la vendedora recibía el enlace
+    al documento aunque no viera el botón."""
     resp = ClienteResponse.model_validate(cliente)
+    if usuario.rol.value not in ("admin", "contadora"):
+        resp.estado_cuenta_oficial_url = None
+        resp.estado_cuenta_oficial_actualizado_en = None
     rol_dueno = (roles_por_usuario or {}).get(cliente.vendedora_id)
     resp.pendiente_asignacion = cliente.origen == ORIGEN_IMPORTADO_CONTABLE and rol_dueno == "admin"
     return resp
@@ -898,13 +906,14 @@ def reset_password_cliente(
 async def subir_estado_cuenta_oficial(
     cliente_id: str,
     archivo: UploadFile,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> ClienteResponse:
-    """Marcela (o la vendedora dueña) sube el estado de cuenta real de Yuda
-    Contable -PDF o una foto/captura- para que el cliente lo vea en su
-    portal. No hay conexión en vivo entre las dos apps: esto reemplaza el
-    documento anterior si ya había uno subido."""
+    """SOLO Marcela sube el estado de cuenta real de Yuda Contable -PDF o una
+    foto/captura- para que el cliente lo vea en su portal. No hay conexión en
+    vivo entre las dos apps: esto reemplaza el documento anterior si ya había
+    uno subido. La vendedora nunca manda esto: es información sensible del
+    cliente y se gestiona desde Yuda Contable."""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
 
     nombre_original = archivo.filename or ""
@@ -955,10 +964,11 @@ async def subir_estado_cuenta_oficial(
 @router.delete("/clientes/{cliente_id}/estado-cuenta-oficial", response_model=ClienteResponse)
 def quitar_estado_cuenta_oficial(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ) -> ClienteResponse:
-    """Quita el estado de cuenta oficial (ej. se subió el archivo equivocado)."""
+    """Quita el estado de cuenta oficial (ej. se subió el archivo
+    equivocado). Solo Marcela, igual que subirlo."""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     url_anterior = cliente.estado_cuenta_oficial_url
     cliente.estado_cuenta_oficial_url = None
@@ -973,11 +983,12 @@ def quitar_estado_cuenta_oficial(
 @router.get("/clientes/{cliente_id}/estado-cuenta-contable/pdf")
 def descargar_estado_cuenta_contable(
     cliente_id: str,
-    usuario: User = Depends(require_roles("admin", "vendedora")),
+    usuario: User = Depends(require_roles("admin", "contadora")),
     db: Session = Depends(get_db),
 ) -> Response:
     """El PDF oficial del estado de cuenta de Yuda Contable, en vivo (no el
-    que Marcela sube a mano). 404 si el cliente no tiene sigla vinculada."""
+    que Marcela sube a mano). 404 si el cliente no tiene sigla vinculada.
+    Mismos roles que el resto de la contabilidad: la vendedora no entra."""
     cliente = _cliente_autorizado(db, cliente_id, usuario)
     if not cliente.sigla:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Este cliente no tiene sigla de Yuda Contable")
