@@ -897,16 +897,16 @@ def _sobrante_items_resumen(db: Session, sesion_id: str) -> list[SobranteListaIt
 @router.post("/pedidos/{sesion_id}/cotizacion/reiniciar", response_model=InspeccionSesionResponse)
 def reiniciar_inspeccion(
     sesion_id: str,
-    usuario: User = Depends(require_roles("admin")),
+    usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
 ) -> InspeccionSesionResponse:
     """Deja la revisión de bodega como si nunca hubiera empezado.
 
-    Solo Marcela. Sirve cuando bodega contó mal de arriba abajo y rehacerlo
-    campo por campo es peor que empezar de nuevo, o cuando hay que repetir el
-    proceso completo (por ejemplo para grabar un tutorial). Borra las
-    correcciones, las fotos y videos que subió bodega, el reporte de cubicaje
-    y la marca de "orden revisada" de cada tienda.
+    La puede usar bodega sobre su propio trabajo, no solo Marcela: si contó
+    mal desde el primer producto, tener que pedirle a otra persona que lo
+    reinicie es fricción sobre algo que es suyo. Borra las correcciones, las
+    fotos y videos que subió bodega, el reporte de cubicaje y la marca de
+    "orden revisada" de cada tienda.
 
     NO toca la cotización del cliente (los Item originales) ni los archivos
     del pedido al proveedor: eso es lo que se vuelve a revisar. Tampoco se

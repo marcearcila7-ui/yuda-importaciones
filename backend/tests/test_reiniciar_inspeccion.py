@@ -71,15 +71,34 @@ def test_reiniciar_deja_la_revision_como_al_principio(
     assert db.query(Item).filter(Item.id == item.id).first() is not None
 
 
-def test_bodega_no_puede_reiniciar_la_revision(
+def test_bodega_puede_reiniciar_su_propia_revision(
     client, crear_usuario, crear_cliente, crear_sesion, token_staff, db
 ):
-    sesion, _, _ = _montar(db, crear_usuario, crear_cliente, crear_sesion, "2")
+    """Es su trabajo: si contó mal desde el primero, lo reinicia sin pedirle
+    permiso a nadie."""
+    from app.models.item_inspeccion import ItemInspeccionBodega
+
+    sesion, item, _ = _montar(db, crear_usuario, crear_cliente, crear_sesion, "2")
     crear_usuario("ri2bod@test.com", rol=RolUsuario.bodega)
 
     r = client.post(
         f"/api/v1/bodega/pedidos/{sesion.id}/cotizacion/reiniciar",
         headers={"Authorization": f"Bearer {token_staff('ri2bod@test.com')}"},
+    )
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    assert db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id == item.id).count() == 0
+
+
+def test_la_vendedora_no_puede_reiniciar_la_revision(
+    client, crear_usuario, crear_cliente, crear_sesion, token_staff, db
+):
+    """Reiniciar es de quien revisa (bodega) o de Marcela, no de ventas."""
+    sesion, _, _ = _montar(db, crear_usuario, crear_cliente, crear_sesion, "4")
+
+    r = client.post(
+        f"/api/v1/bodega/pedidos/{sesion.id}/cotizacion/reiniciar",
+        headers={"Authorization": f"Bearer {token_staff('ri4v@test.com')}"},
     )
     assert r.status_code == 403, r.text
 
