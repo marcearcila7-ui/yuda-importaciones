@@ -328,18 +328,41 @@ function SeguimientoEditor({ sesionId }: { sesionId: string }) {
           </>
         ) : (
           <>
-            <select
-              value={estado}
-              onChange={(e) => setEstado(e.target.value)}
-              style={inputStyle}
-              className={inputClase}
-            >
-              {opcionesEstado.map((k) => (
-                <option key={k} value={k}>
-                  {t(`seguimiento.estados.${k}`)}
-                </option>
-              ))}
-            </select>
+            {/* La etapa la elige a mano SOLO Marcela, y únicamente para lo que
+                depende de la naviera (tránsito, destino, entregado). Las tres
+                primeras las pone el sistema solo: al enviar la cotización,
+                cuando el cliente confirma, y al avisar a bodega. Darle a la
+                vendedora un desplegable para moverlas era dejar que el
+                seguimiento dijera una cosa mientras la operación iba por otra
+                (y ya pasó: se podía marcar "en bodega" saltándose la revisión,
+                y el pedido quedaba atascado). Ella sigue editando lo que el
+                sistema NO puede saber: fecha, nota, adjuntos y novedades. */}
+            {esAdmin ? (
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+                style={inputStyle}
+                className={inputClase}
+              >
+                {opcionesEstado.map((k) => (
+                  <option key={k} value={k}>
+                    {t(`seguimiento.estados.${k}`)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <>
+                <div
+                  className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium"
+                  style={{ borderColor: 'var(--yuda-border)', backgroundColor: 'var(--yuda-white)', color: 'var(--yuda-accent)', minHeight: 44 }}
+                >
+                  {t(`seguimiento.estados.${estado}`)}
+                </div>
+                <p className="mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                  {t('envio.etapaAutomatica')}
+                </p>
+              </>
+            )}
             {esAdmin && esTransito && (
               <p className="mt-2 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                 {t('envio.avisaAlClienteAutomatico')}

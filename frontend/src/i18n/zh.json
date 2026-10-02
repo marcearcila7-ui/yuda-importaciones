@@ -837,7 +837,8 @@
     "errorAdjunto": "无法添加文件",
     "archivo": "文件",
     "historialTitulo": "订单历史",
-    "quitarAdjunto": "移除附件"
+    "quitarAdjunto": "移除附件",
+    "etapaAutomatica": "阶段由系统自动标记：发送报价时、客户确认时，以及你通知仓库时。在这里你可以填写实际日期、备注，以及客户会看到的文件。"
   },
   "seguimiento": {
     "estados": {

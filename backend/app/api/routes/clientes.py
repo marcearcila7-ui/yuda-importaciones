@@ -1169,12 +1169,35 @@ def actualizar_seguimiento(
 ) -> SeguimientoResponse:
     """Crea o actualiza el seguimiento del envío de una cotización.
 
-    La vendedora gestiona las etapas hasta que el proveedor recibe el pedido.
+    La VENDEDORA ya no elige la etapa: las tres primeras las pone el sistema
+    solo (al enviar la cotización, cuando el cliente confirma, y al avisar a
+    bodega), así que ofrecerle además un desplegable para moverlas a mano solo
+    servía para que el seguimiento dijera una cosa mientras la operación iba
+    por otra. Ella sigue editando lo que el sistema NO puede saber: la fecha
+    real, la nota, los adjuntos y las novedades.
+
     Bodega recibe el pedido confirmado y la orden de compra, los compara y solo
     puede marcar "en bodega" (mercancía recibida y lista para el envío). Cuando
     el contenedor está en camino (naviera, tracking, BL, ETA y las etapas de
     tránsito en adelante) la información es exclusiva de Marcela.
     """
+    return _guardar_seguimiento(
+        db, sesion_id, datos, usuario,
+        cambia_etapa=usuario.rol.value != "vendedora",
+    )
+
+
+def _guardar_seguimiento(
+    db: Session,
+    sesion_id: str,
+    datos: SeguimientoUpdate,
+    usuario: User,
+    *,
+    cambia_etapa: bool,
+) -> SeguimientoResponse:
+    """El guardado de verdad. `cambia_etapa=False` deja la etapa como está y
+    solo guarda lo demás. Lo llaman la ruta de arriba y "avisar a bodega"
+    (que SÍ mueve la etapa, pero lo hace el sistema, no la persona)."""
     sesion = _sesion_autorizada(db, sesion_id, usuario)
     es_vendedora = usuario.rol.value == "vendedora"
     es_bodega = usuario.rol.value == "bodega"
@@ -1185,6 +1208,12 @@ def actualizar_seguimiento(
         db.add(seg)
 
     estado_anterior = seg.estado
+
+    # Sin permiso para mover la etapa, lo que venga en el cuerpo se ignora: se
+    # guarda la etapa que ya tenía. Todo lo de abajo sigue leyendo datos.estado,
+    # así que con esto no se dispara ningún aviso ni ninguna transición.
+    if not cambia_etapa:
+        datos = datos.model_copy(update={"estado": estado_anterior})
 
     # La vendedora no puede mover ni tocar el envío una vez está en tránsito.
     if es_vendedora:

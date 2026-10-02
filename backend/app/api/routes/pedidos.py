@@ -910,14 +910,18 @@ def enviar_a_bodega(
 
     # Reusa la lógica ya existente de cambio de estado (notificaciones al
     # cliente, avisos internos, bitácora) en vez de duplicarla acá.
-    from app.api.routes.clientes import actualizar_seguimiento as _actualizar_seguimiento, _seguimiento_response
+    from app.api.routes.clientes import _guardar_seguimiento, _seguimiento_response
     from app.schemas.seguimiento import SeguimientoUpdate
 
-    _actualizar_seguimiento(
+    # cambia_etapa=True aunque quien pulsa sea la vendedora: acá la etapa la
+    # mueve el SISTEMA como consecuencia de avisar a bodega, no una persona
+    # eligiéndola de un desplegable (ver actualizar_seguimiento).
+    _guardar_seguimiento(
+        db,
         sesion_id,
         SeguimientoUpdate(estado="proveedor_recibio", novedades=seg.novedades if seg else None),
         usuario,
-        db,
+        cambia_etapa=True,
     )
 
     # _actualizar_seguimiento ya devuelve la respuesta armada (Pydantic, de

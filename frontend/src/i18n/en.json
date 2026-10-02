@@ -834,7 +834,8 @@
     "errorAdjunto": "Could not attach the file",
     "archivo": "File",
     "historialTitulo": "Order history",
-    "quitarAdjunto": "Remove attachment"
+    "quitarAdjunto": "Remove attachment",
+    "etapaAutomatica": "The stage is set by the system on its own: when the quote is sent, when the client confirms, and when you notify the warehouse. Here you can fill in the real date, a note and the files the client will see."
   },
   "seguimiento": {
     "estados": {

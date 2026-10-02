@@ -834,7 +834,8 @@
     "errorAdjunto": "No se pudo adjuntar el archivo",
     "archivo": "Archivo",
     "historialTitulo": "Historial del pedido",
-    "quitarAdjunto": "Quitar adjunto"
+    "quitarAdjunto": "Quitar adjunto",
+    "etapaAutomatica": "La etapa la marca el sistema solo: al enviar la cotización, cuando el cliente confirma, y cuando le avisas a bodega. Acá puedes completar la fecha real, una nota y los archivos que verá el cliente."
   },
   "seguimiento": {
     "estados": {
