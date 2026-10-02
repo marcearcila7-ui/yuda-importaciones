@@ -778,10 +778,15 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                     {t('gestionPedido.avisadoPor', { nombre: seguimiento.enviado_a_bodega_por_nombre })}
                   </p>
                 )}
-                {/* Bodega lo sacó de su cola: solo Marcela puede devolvérselo,
-                    y solo en este caso. Fuera de acá el botón no existe, para
-                    que nadie le anuncie dos veces el mismo trabajo. */}
-                {esAdmin && bodegaLoSaco && (
+                {/* Devolver el pedido a la cola de bodega. Solo Marcela.
+                    Cuando el sistema SABE que bodega lo sacó, se explica en
+                    grande; si no lo sabe, igual queda el enlace a mano, porque
+                    esconderlo deja a Marcela sin salida cuando bodega dice que
+                    no lo tiene. Duplicar es imposible en los dos casos: esto
+                    no crea un pedido nuevo, solo le quita la marca de
+                    archivado al que ya existe, y si el pedido ya está en la
+                    cola el backend lo rechaza y lo dice. */}
+                {esAdmin && (bodegaLoSaco ? (
                   <div className="mt-2 rounded-lg p-3" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
                     <p className="text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
                       {t('gestionPedido.bodegaLoSacoTitulo')}
@@ -800,7 +805,18 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                       {devolviendoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.devolverABodega')}
                     </button>
                   </div>
-                )}
+                ) : (
+                  <button
+                    type="button"
+                    onClick={devolverABodega}
+                    disabled={devolviendoABodega}
+                    className="mt-1 flex items-center gap-1.5 self-start text-xs font-medium underline-offset-2 hover:underline disabled:opacity-60"
+                    style={{ color: 'var(--yuda-text-secondary)' }}
+                  >
+                    <Warehouse size={13} />{' '}
+                    {devolviendoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.bodegaNoLoTiene')}
+                  </button>
+                ))}
               </div>
             )}
           </Paso>

@@ -1049,7 +1049,8 @@
     "bodegaLoSacoTitulo": "Bodega sacó este pedido de su cola",
     "bodegaLoSacoAyuda": "Mientras esté así, bodega no lo ve y el cliente volvió a ver solo lo que gestionó la vendedora, sin la inspección. Lo que bodega ya había revisado no se perdió.",
     "devolverABodega": "Devolver a bodega",
-    "devueltoABodega": "El pedido volvió a la cola de bodega"
+    "devueltoABodega": "El pedido volvió a la cola de bodega",
+    "bodegaNoLoTiene": "¿Bodega dice que no lo tiene? Volver a enviárselo"
   },
   "comun": {
     "confirmar": "Confirmar",

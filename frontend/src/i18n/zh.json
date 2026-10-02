@@ -1052,7 +1052,8 @@
     "bodegaLoSacoTitulo": "仓库已把这个订单移出队列",
     "bodegaLoSacoAyuda": "保持这个状态时，仓库看不到它，客户那边也只会看到销售人员处理的部分，没有验货环节。仓库之前已经检查过的内容不会丢失。",
     "devolverABodega": "重新发送到仓库",
-    "devueltoABodega": "订单已回到仓库队列"
+    "devueltoABodega": "订单已回到仓库队列",
+    "bodegaNoLoTiene": "仓库说没有收到？重新发送给他们"
   },
   "comun": {
     "confirmar": "确认",

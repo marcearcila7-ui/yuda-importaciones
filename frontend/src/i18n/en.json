@@ -1049,7 +1049,8 @@
     "bodegaLoSacoTitulo": "The warehouse took this order out of its queue",
     "bodegaLoSacoAyuda": "While it stays like this, the warehouse doesn't see it and the client is back to seeing only what the sales rep handled, without the inspection. Whatever the warehouse had already reviewed was not lost.",
     "devolverABodega": "Send back to the warehouse",
-    "devueltoABodega": "The order is back in the warehouse queue"
+    "devueltoABodega": "The order is back in the warehouse queue",
+    "bodegaNoLoTiene": "Warehouse says they don't have it? Send it again"
   },
   "comun": {
     "confirmar": "Confirm",
