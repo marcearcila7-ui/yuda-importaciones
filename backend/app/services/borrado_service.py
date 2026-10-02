@@ -12,7 +12,7 @@ eso está desactivar al cliente.
 from sqlalchemy.orm import Session
 
 from app.models.cuenta import MovimientoCuenta
-from app.models.cubicaje import CubicajeMensaje
+from app.models.cubicaje import CubicajeMensaje, CubicajeVisto
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
 from app.models.lote import LoteItem, LoteOCR
@@ -88,8 +88,16 @@ def borrar_sesiones(db: Session, sesion_ids: list[str]) -> list[tuple[str, list[
     ]
 
     # Primero lo que depende de la cotización (FK), después la cotización.
+    # El ORDEN de aquí abajo es lo único que hace que esto funcione: cada
+    # tabla tiene que salir ANTES que la fila a la que apunta. Si se mueve
+    # una línea de lugar, borrar deja de funcionar en producción (y los tests
+    # no lo ven, porque sus cotizaciones de prueba no tienen chat ni lote).
     borrar = lambda consulta: consulta.delete(synchronize_session=False)  # noqa: E731
     borrar(db.query(CubicajeMensaje).filter(CubicajeMensaje.sesion_id.in_(sesion_ids)))
+    # Quién tenía el chat de cubicaje abierto. Es una tabla chiquita que no se
+    # ve en ninguna pantalla, y le faltaba: cualquier cotización cuyo chat
+    # alguien hubiera abierto alguna vez NO se podía borrar.
+    borrar(db.query(CubicajeVisto).filter(CubicajeVisto.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoBodegaActividad).filter(PedidoBodegaActividad.sesion_id.in_(sesion_ids)))
     if item_ids:
         borrar(db.query(ItemInspeccionBodega).filter(ItemInspeccionBodega.item_id.in_(item_ids)))
@@ -100,13 +108,17 @@ def borrar_sesiones(db: Session, sesion_ids: list[str]) -> list[tuple[str, list[
         borrar(db.query(PedidoGeneradoItem).filter(PedidoGeneradoItem.item_id.in_(item_ids)))
     if pedido_generado_ids:
         borrar(db.query(PedidoGeneradoItem).filter(PedidoGeneradoItem.pedido_generado_id.in_(pedido_generado_ids)))
+    # Las fotos del lote de OCR apuntan al ítem que se creó a partir de cada
+    # una (LoteItem.item_id, ver packing.py al agregar al packing list), así
+    # que el lote tiene que salir ANTES que los ítems. Estaba al revés: toda
+    # cotización armada con OCR -o sea, todas- fallaba al borrarse.
+    if lote_ids:
+        borrar(db.query(LoteItem).filter(LoteItem.lote_id.in_(lote_ids)))
+        borrar(db.query(LoteOCR).filter(LoteOCR.sesion_id.in_(sesion_ids)))
     borrar(db.query(Item).filter(Item.sesion_id.in_(sesion_ids)))
     borrar(db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id.in_(sesion_ids)))
     borrar(db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id.in_(sesion_ids)))
     borrar(db.query(Notificacion).filter(Notificacion.sesion_id.in_(sesion_ids)))
-    if lote_ids:
-        borrar(db.query(LoteItem).filter(LoteItem.lote_id.in_(lote_ids)))
-        borrar(db.query(LoteOCR).filter(LoteOCR.sesion_id.in_(sesion_ids)))
     borrar(db.query(Sesion).filter(Sesion.id.in_(sesion_ids)))
 
     return [("fotos", fotos_urls), ("pedidos", pedidos_urls)]

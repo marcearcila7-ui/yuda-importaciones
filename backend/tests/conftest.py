@@ -12,7 +12,7 @@ os.environ.setdefault("CORS_ORIGINS", "http://localhost:3000")
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy import create_engine, event  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
@@ -34,6 +34,18 @@ _engine = create_engine(
     poolclass=StaticPool,
 )
 _Session = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+
+
+# SQLite ignora las llaves foráneas si no se le pide lo contrario, y Postgres
+# (producción) no las ignora nunca. Sin este pragma los tests pasaban en verde
+# mientras borrar una cotización o un usuario reventaba en producción por una
+# tabla que nadie había acordado de limpiar. Ahora el orden del borrado en
+# cascada se valida acá.
+@event.listens_for(_engine, "connect")
+def _activar_foreign_keys(conexion, _registro):
+    cursor = conexion.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 PASS = "Clave1234!"
 
