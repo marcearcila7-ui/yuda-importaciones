@@ -1148,22 +1148,22 @@ ${t('clientes.email')}: ${c.email}`
                           </div>
                           <ChevronRight size={18} style={{ color: 'var(--yuda-text-secondary)', flexShrink: 0 }} />
                         </button>
-                        {/* Solo Marcela: una cotización de un cliente real no se
-                            borra suelta, eso es cosa de desactivar al cliente. */}
-                        {esAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              eliminarCotizacion(s, c.id)
-                            }}
-                            title={t('clientes.eliminarCotizacion')}
-                            className="flex flex-shrink-0 items-center justify-center rounded-lg"
-                            style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
+                        {/* También la vendedora: las cotizaciones de prueba o
+                            repetidas de sus propios clientes las borra ella.
+                            El backend solo frena las que ya tienen abonos o
+                            cobros registrados en la cuenta del cliente. */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            eliminarCotizacion(s, c.id)
+                          }}
+                          title={t('clientes.eliminarCotizacion')}
+                          className="flex flex-shrink-0 items-center justify-center rounded-lg"
+                          style={{ width: 44, height: 44, color: 'var(--yuda-error)' }}
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     )
                   })}

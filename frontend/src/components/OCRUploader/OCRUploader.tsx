@@ -7,7 +7,6 @@ import { subirFotoOCR } from '../../api/ocr'
 import { comprimirImagen } from '../../lib/comprimirImagen'
 import { enfocarNumero } from '../../lib/dom'
 import { CAMPOS_OBLIGATORIOS, evaluarLegibilidad } from '../../lib/legibilidad'
-import { pareceTelefono } from '../../lib/numeroStand'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import type { OCRResponse, OCRResultado } from '../../types/ocr'
@@ -38,7 +37,6 @@ const REQUERIDOS = new Set(CAMPOS_OBLIGATORIOS.map((c) => c.i18n))
 // Campos de texto editables
 const CAMPOS_TEXTO: Array<{ clave: keyof OCRResultado; i18n: string }> = [
   { clave: 'supplier_nombre', i18n: 'proveedor' },
-  { clave: 'supplier_numero', i18n: 'nStand' },
   { clave: 'colores', i18n: 'colores' },
   { clave: 'descripcion_zh', i18n: 'descripcionZh' },
 ]
@@ -260,14 +258,6 @@ function OCRUploader({ onItemConfirmado }: OCRUploaderProps) {
                   style={{ ...inputStyle, borderColor: faltaSet.has(i18n) ? 'var(--yuda-error)' : undefined }}
                   className={`${inputClase} min-h-[48px] sm:min-h-0`}
                 />
-                {/* El OCR usa el teléfono de la tarjeta como reemplazo cuando la
-                    foto no tenía cartel de tienda: se avisa para que no se
-                    confunda con un stand real (ver prompt en ocr_service.py). */}
-                {clave === 'supplier_numero' && pareceTelefono(form.supplier_numero) && (
-                  <span className="text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
-                    {t('ocr.pareceTelefono')}
-                  </span>
-                )}
               </label>
             ))}
             {CAMPOS_NUMERO.map(({ clave, i18n }) => (

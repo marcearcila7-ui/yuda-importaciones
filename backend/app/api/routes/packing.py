@@ -96,9 +96,15 @@ async def _leer_y_validar_foto(foto: UploadFile) -> tuple[bytes, str]:
     return imagen_bytes, tipo_real
 
 
-def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse:
-    """Arma un ItemResponse combinando los campos crudos con los calculados"""
-    calculados = calcular_campos_item(item, tipo_cambio_usd)
+def _construir_item_response(item: Item, sesion: Sesion) -> ItemResponse:
+    """Arma un ItemResponse combinando los campos crudos con los calculados.
+
+    `marca` no se lee del ítem: la marca es SIEMPRE la sigla del cliente, que
+    ya viene heredada de Yuda Contable en `sesion.shipping_mark`. Antes era
+    una columna que la vendedora escribía a mano fila por fila (y la escribía
+    distinta en cada una). El campo del ítem queda solo para no perder lo que
+    ya estaba escrito en cotizaciones viejas sin cliente asociado."""
+    calculados = calcular_campos_item(item, sesion.tipo_cambio_usd)
     return ItemResponse(
         id=item.id,
         sesion_id=item.sesion_id,
@@ -107,7 +113,7 @@ def _construir_item_response(item: Item, tipo_cambio_usd: float) -> ItemResponse
         supplier_nombre=item.supplier_nombre,
         supplier_numero=item.supplier_numero,
         item_no=item.item_no,
-        marca=item.marca,
+        marca=sesion.shipping_mark or item.marca,
         fecha_recibo=item.fecha_recibo,
         descripcion_es=item.descripcion_es,
         descripcion_en=item.descripcion_en,
@@ -252,21 +258,16 @@ def eliminar_sesion(
 ) -> dict:
     """Elimina una cotización con sus ítems, pedidos y seguimiento.
 
-    La vendedora solo puede borrar cotizaciones libres (sin cliente
-    asociado); si tiene un cliente, borrarla es cosa de Marcela -el cliente
-    es quien se desactiva (con todo su historial de respaldo), no se le
-    puede ir borrando cotizaciones sueltas por fuera de eso. Admin puede
-    borrar cualquiera. Si ya estaba enviada, también desaparece del portal
-    del cliente (el portal solo muestra las cotizaciones que existen). Se
-    bloquea si tiene contabilidad registrada."""
+    La vendedora puede borrar las cotizaciones a las que ya tiene acceso: las
+    libres y las de sus propios clientes (antes solo las libres, y le quedaba
+    pidiéndole a Marcela que borrara cada cotización de prueba o repetida).
+    `_obtener_sesion` es el que cuida que sea suya. Admin puede borrar
+    cualquiera. Si ya estaba enviada, también desaparece del portal del
+    cliente (el portal solo muestra las cotizaciones que existen). Lo único
+    que no se deja borrar a nadie es una cotización con contabilidad
+    registrada: ahí sí hay plata de por medio."""
     exigir_roles(usuario, "admin", "vendedora")
-    sesion = _obtener_sesion(db, sesion_id, usuario)
-    if usuario.rol.value == "vendedora" and sesion.cliente_id is not None:
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Solo puedes borrar cotizaciones libres. Si esta ya no debería existir, pide que "
-            "Marcela desactive al cliente.",
-        )
+    _obtener_sesion(db, sesion_id, usuario)
 
     if tiene_movimientos_sesion(db, sesion_id):
         raise HTTPException(
@@ -300,7 +301,7 @@ def listar_items(
         .order_by(Item.orden.asc())
         .all()
     )
-    return [_construir_item_response(item, sesion.tipo_cambio_usd) for item in items]
+    return [_construir_item_response(item, sesion) for item in items]
 
 
 @router.post(
@@ -349,7 +350,7 @@ def crear_item(
 
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 @router.patch("/sesiones/{sesion_id}", response_model=SesionResponse)
@@ -422,7 +423,7 @@ def actualizar_item(
         setattr(item, clave, valor)
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 @router.post("/sesiones/{sesion_id}/items/{item_id}/recorte", response_model=ItemResponse)
@@ -457,7 +458,7 @@ async def guardar_recorte(
         item.foto_final_url = None
         db.commit()
         db.refresh(item)
-        return _construir_item_response(item, sesion.tipo_cambio_usd)
+        return _construir_item_response(item, sesion)
 
     recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
     if datos.recuadro is not None and recuadro is None:
@@ -495,7 +496,7 @@ async def guardar_recorte(
     item.foto_final_url = url
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 # Tipos válidos de foto de detalle: los del bolso, más 3 genéricas ("extra1/2/3")
@@ -550,7 +551,7 @@ async def guardar_recorte_foto_extra(
         item.fotos_extra_final = fotos_extra_final
         db.commit()
         db.refresh(item)
-        return _construir_item_response(item, sesion.tipo_cambio_usd)
+        return _construir_item_response(item, sesion)
 
     recuadro = recuadro_valido(datos.recuadro) if datos.recuadro is not None else None
     if datos.recuadro is not None and recuadro is None:
@@ -583,7 +584,7 @@ async def guardar_recorte_foto_extra(
     item.fotos_extra_final = fotos_extra_final
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 @router.post("/sesiones/{sesion_id}/items/{item_id}/foto", response_model=ItemResponse)
@@ -620,7 +621,7 @@ async def reemplazar_foto_item(
     item.foto_final_url = None
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 @router.post(
@@ -666,7 +667,7 @@ async def reemplazar_foto_extra(
     item.fotos_extra_final = fotos_extra_final
     db.commit()
     db.refresh(item)
-    return _construir_item_response(item, sesion.tipo_cambio_usd)
+    return _construir_item_response(item, sesion)
 
 
 @router.delete("/sesiones/{sesion_id}/items/{item_id}")

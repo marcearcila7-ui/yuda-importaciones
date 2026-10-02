@@ -84,7 +84,7 @@ def render_pdf(html: str) -> bytes:
 
 
 def html_pedido(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    supplier_nombre: str, items: list, fecha: date,
     fotos: dict | None = None, shipping_mark: str | None = None,
 ) -> str:
     """Arma el HTML del Formato Pedido del proveedor (réplica fiel, con fotos).
@@ -198,11 +198,11 @@ def html_pedido(
 
 
 def generar_pedido_pdf(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    supplier_nombre: str, items: list, fecha: date,
     fotos: dict | None = None,
 ) -> bytes:
     """PDF del Formato Pedido de un proveedor (arma el HTML y lo renderiza)."""
-    return render_pdf(html_pedido(supplier_nombre, supplier_numero, items, fecha, fotos))
+    return render_pdf(html_pedido(supplier_nombre, items, fecha, fotos))
 
 
 def generar_packing_list_pdf(

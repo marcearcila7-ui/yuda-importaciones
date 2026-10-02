@@ -260,12 +260,16 @@ def generar_packing_list_excel(
 
 
 def agrupar_items_por_supplier(items: list) -> dict:
-    """Agrupa ítems por proveedor (nombre + número), ordenado por clave alfabética"""
+    """Agrupa ítems por tienda, ordenado por clave alfabética.
+
+    Antes la clave era "nombre + número de stand", pero el número de stand ES
+    la tienda (ya va en supplier_nombre): tenerlo aparte solo lograba que una
+    misma tienda se partiera en dos pedidos cuando el OCR le sacaba, por
+    ejemplo, el teléfono de una tarjeta a unos ítems y a otros no.
+    """
     grupos: dict[str, list] = {}
     for item in items:
-        nombre = getattr(item, "supplier_nombre", None) or "Sin_Proveedor"
-        numero = getattr(item, "supplier_numero", None) or "SN"
-        clave = f"{nombre}_{numero}"
+        clave = getattr(item, "supplier_nombre", None) or "Sin_Proveedor"
         grupos.setdefault(clave, []).append(item)
     # Devolver ordenado alfabéticamente por clave; el orden interno se conserva
     return {clave: grupos[clave] for clave in sorted(grupos)}
@@ -336,7 +340,7 @@ def _expandir_pedido(ws, faltan: int) -> None:
 
 
 def generar_formato_pedido(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    supplier_nombre: str, items: list, fecha: date,
     fotos: dict | None = None, shipping_mark: str | None = None,
 ) -> bytes:
     """Rellena la plantilla literal FORMATO PEDIDO con los productos del proveedor.
@@ -432,7 +436,7 @@ def generar_formato_pedido(
 
 
 def generar_csv_pedido(
-    supplier_nombre: str, supplier_numero: str, items: list, fecha: date,
+    supplier_nombre: str, items: list, fecha: date,
     con_cantidad_recibida: bool = False,
 ) -> bytes:
     """Versión en CSV del mismo pedido que arma `generar_formato_pedido`, para
@@ -446,7 +450,7 @@ def generar_csv_pedido(
     """
     buffer = StringIO()
     writer = csv.writer(buffer)
-    writer.writerow([f"Proveedor: {supplier_nombre} ({supplier_numero})", "", f"Fecha: {fecha.isoformat()}"])
+    writer.writerow([f"Proveedor: {supplier_nombre}", "", f"Fecha: {fecha.isoformat()}"])
     writer.writerow([])
 
     encabezados = ["Item No", "Descripción", "中文", "Cajas pedidas", "Unid. por caja", "Precio RMB"]

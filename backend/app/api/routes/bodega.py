@@ -501,7 +501,6 @@ def _completar_orden(
     ]
     fecha_hoy = date.today()
     supplier_nombre = items_reales[0].supplier_nombre
-    supplier_numero = items_reales[0].supplier_numero
 
     urls_fotos = [
         (getattr(i, "foto_final_url", None) or getattr(i, "foto_url", None)) for i in items_reales
@@ -510,16 +509,16 @@ def _completar_orden(
     fotos_datauri = {url: bytes_a_data_uri(b) for url, b in fotos_bytes.items()}
 
     excel_bytes = generar_formato_pedido(
-        supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+        supplier_nombre, items_reales, fecha_hoy,
         fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
     )
     html = html_pedido(
-        supplier_nombre, supplier_numero, items_reales, fecha_hoy,
+        supplier_nombre, items_reales, fecha_hoy,
         fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
     )
     pdf_bytes = render_pdf(html)
     csv_bytes = generar_csv_pedido(
-        supplier_nombre, supplier_numero, items_reales, fecha_hoy, con_cantidad_recibida=True
+        supplier_nombre, items_reales, fecha_hoy, con_cantidad_recibida=True
     )
 
     # orden.supplier puede traer "código / nombre de la tienda" tal como lo

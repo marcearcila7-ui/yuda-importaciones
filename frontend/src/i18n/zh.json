@@ -175,8 +175,6 @@
     "confianzaMedia": "中等可信度",
     "confianzaBaja": "低可信度",
     "proveedor": "店铺",
-    "nStand": "摊位号",
-    "pareceTelefono": "这个号码看起来像电话号码，不是摊位号：这张照片可能只拍到了名片，没有店铺招牌。如果这个供应商确实有摊位号，请在此更正。",
     "precioRMB": "价格 (人民币)",
     "unidPorCaja": "每箱数量",
     "largoCm": "长 cm",
@@ -256,7 +254,6 @@
     "fotosExtraTitulo": "包包细节照片",
     "cols": {
       "supplier_nombre": "供应商",
-      "supplier_numero": "摊位号",
       "foto_url": "照片",
       "referencia": "客户编号",
       "item_no": "货号",

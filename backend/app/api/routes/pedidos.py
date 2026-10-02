@@ -244,23 +244,6 @@ def generar_pedidos(
         if traducciones:
             db.commit()
 
-    # f.-1. Sin número de stand, el archivo de este proveedor cae en un genérico
-    # "SN" y nadie puede saber a qué puesto del mercado corresponde. El frontend
-    # ya lo exige antes de confirmar la revisión, así que esto solo debería
-    # dispararse con ítems viejos de antes de ese cambio; se avisa mas no se
-    # excluye, porque perder el ítem del pedido es peor que un nombre de
-    # archivo poco claro.
-    sin_stand = {
-        (getattr(item, "supplier_nombre", None) or "Sin proveedor")
-        for item in items_validos
-        if not getattr(item, "supplier_numero", None)
-    }
-    for proveedor in sorted(sin_stand):
-        warnings.append(
-            f"El proveedor «{proveedor}» no tiene número de stand: el archivo de su pedido "
-            "no va a distinguirse de otro sin ese dato. Complétalo en la foto y vuelve a generar."
-        )
-
     # f. Agrupar por proveedor
     grupos = agrupar_items_por_supplier(items_validos)
 
@@ -293,12 +276,12 @@ def generar_pedidos(
         grupo = grupos[clave]
         primero = grupo[0]
         excels[clave] = generar_formato_pedido(
-            primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
+            primero.supplier_nombre, grupo, fecha_hoy,
             fotos=fotos_bytes, shipping_mark=sesion.shipping_mark,
         )
         htmls.append(
             html_pedido(
-                primero.supplier_nombre, primero.supplier_numero, grupo, fecha_hoy,
+                primero.supplier_nombre, grupo, fecha_hoy,
                 fotos=fotos_datauri, shipping_mark=sesion.shipping_mark,
             )
         )
@@ -321,7 +304,7 @@ def generar_pedidos(
     # CSV: liviano, se genera al vuelo (no como Excel/PDF que sí valen la pena
     # paralelizar). Es fundamental que todo pedido tenga esta versión también.
     csvs: dict[str, bytes] = {
-        clave: generar_csv_pedido(grupos[clave][0].supplier_nombre, grupos[clave][0].supplier_numero, grupos[clave], fecha_hoy)
+        clave: generar_csv_pedido(grupos[clave][0].supplier_nombre, grupos[clave], fecha_hoy)
         for clave in claves
     }
 
@@ -603,7 +586,7 @@ def listar_pedidos(
         insp = inspecciones.get(item.id)
         if insp is None or not insp.actualizado_por_id or not insp.actualizado_en:
             continue
-        clave = f"{item.supplier_nombre or 'Sin_Proveedor'}_{item.supplier_numero or 'SN'}"
+        clave = item.supplier_nombre or 'Sin_Proveedor'
         if clave not in fecha_por_clave or insp.actualizado_en > fecha_por_clave[clave]:
             fecha_por_clave[clave] = insp.actualizado_en
             revisor_id_por_clave[clave] = insp.actualizado_por_id

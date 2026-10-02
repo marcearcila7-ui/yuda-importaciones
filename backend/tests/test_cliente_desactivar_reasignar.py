@@ -98,13 +98,27 @@ def test_vendedora_pierde_acceso_a_cotizacion_si_cliente_se_desactiva(
     assert r.status_code == 403, r.text
 
 
-def test_vendedora_no_puede_borrar_cotizacion_de_cliente(
+def test_vendedora_si_puede_borrar_cotizacion_de_su_cliente(
     client, crear_usuario, crear_cliente, crear_sesion, token_staff
 ):
     vendedora = crear_usuario("v6@test.com", rol=RolUsuario.vendedora)
     cliente = crear_cliente("c6@test.com", vendedora.id)
     sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
     token = token_staff("v6@test.com")
+
+    r = client.delete(f"/api/v1/sesiones/{sesion.id}", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200, r.text
+
+
+def test_vendedora_no_puede_borrar_cotizacion_de_otra(
+    client, crear_usuario, crear_cliente, crear_sesion, token_staff
+):
+    """Poder borrar las suyas no la deja tocar las de otra vendedora."""
+    otra = crear_usuario("v6b@test.com", rol=RolUsuario.vendedora)
+    crear_usuario("v6c@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("c6b@test.com", otra.id)
+    sesion = crear_sesion(otra.id, cliente.id, con_item=True)
+    token = token_staff("v6c@test.com")
 
     r = client.delete(f"/api/v1/sesiones/{sesion.id}", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 403, r.text

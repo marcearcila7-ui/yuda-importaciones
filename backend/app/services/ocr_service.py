@@ -88,7 +88,6 @@ El JSON debe tener exactamente estas claves:
   "material": "material principal que ves (plástico, metal, vidrio, cerámica, tela, madera, silicona, papel...) o null",
   "uso": "categoría o uso del producto (cocina, hogar, juguete, oficina, baño, decoración, mascotas...) o null",
   "supplier_nombre": "nombre o CÓDIGO de la tienda/proveedor (string o null)",
-  "supplier_numero": "número de stand o booth, o teléfono de la tarjeta (string o null)",
   "price_rmb": número decimal del PRECIO unitario en yuan/RMB o null,
   "qty_por_ctn": número entero de piezas por caja o null,
   "largo_cm": null (SIEMPRE null),
@@ -157,7 +156,7 @@ MUY IMPORTANTE — los datos vienen escritos a mano, con letra irregular, abrevi
   - español/inglés: "TIENDA", "TIENDA:", "BOOTH", "BOOTH NO.", "STAND", "SHOP", "STALL"
   - chino: "摊位", "攤位", "商位", "展位", "店铺", "铺号", "档口"
   - o directamente un CÓDIGO de stand tipo "F1-10968", "G3-17951", "Fr-2406"
-  Va SIEMPRE en supplier_nombre (aunque sea un código), NUNCA en supplier_numero. Si en el tablero NO hay TIENDA pero hay una TARJETA DE VISITA del proveedor, usa el nombre de la tarjeta (ej: "CHIBAO" / "驰豹") para supplier_nombre y el teléfono para supplier_numero (en las tarjetas chinas el teléfono viene rotulado "电话", "手机" o "TEL").
+  Va SIEMPRE en supplier_nombre (aunque sea un código). Si en el tablero NO hay TIENDA pero hay una TARJETA DE VISITA del proveedor, usa el nombre de la tarjeta (ej: "CHIBAO" / "驰豹") para supplier_nombre. NUNCA pongas ahí un teléfono.
 
 • Puede haber otros rótulos: "DESCRIPCION" (texto libre del producto; en inglés "DESCRIPTION" / "ITEM", en chino "品名", "名称", "产品"), "TAMAÑO"/medidas (ej "20x10x9"; en inglés "SIZE", en chino "尺寸", "规格"), "LOGO", colores/variantes (ej "PLATA/TIRA/CADENA"; en inglés "COLOR", en chino "颜色", "色"). Usa la descripción y los colores si ayudan, pero NO pongas las medidas en largo/ancho/alto.
 

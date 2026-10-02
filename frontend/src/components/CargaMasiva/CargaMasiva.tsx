@@ -8,7 +8,6 @@ import { useLoteStore } from '../../store/loteStore'
 import { confirmar } from '../../store/confirmStore'
 import { ACCEPT_IMAGENES } from '../../lib/imagenes'
 import { evaluarLegibilidad } from '../../lib/legibilidad'
-import { pareceTelefono } from '../../lib/numeroStand'
 import AlertaNoLegible from '../AlertaNoLegible/AlertaNoLegible'
 import AvisoDosMinimos from '../AvisoDosMinimos/AvisoDosMinimos'
 import RecorteFoto from '../RecorteFoto/RecorteFoto'
@@ -442,7 +441,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
       const item: ItemCreate = {
         lote_item_id: r.id,
         supplier_nombre: d.supplier_nombre ?? undefined,
-        supplier_numero: d.supplier_numero ?? undefined,
         foto_url: r.foto_url,
         // El recorte automatico al producto: es lo que se incrusta en los
         // documentos. Si no se pudo recortar, queda vacio y se usa la foto entera.
@@ -853,21 +851,6 @@ function CargaMasiva({ onTerminado }: { onTerminado?: () => void }) {
               <div className="grid grid-cols-2 gap-2">
                 <CampoLote label={t('ocr.proveedor')} valor={r.datos.supplier_nombre} requerido alerta={faltaSet.has('proveedor')}
                   onChange={(v) => actualizarTexto(r.id, 'supplier_nombre', v)} />
-                {/* Sin esto el pedido a proveedor no distingue esta tienda de otra
-                    (cae en un genérico "SN"): por eso es obligatorio y visible
-                    de entrada, no escondido en "Ver más" como antes. */}
-                <div>
-                  <CampoLote label={t('ocr.nStand')} valor={r.datos.supplier_numero} requerido alerta={faltaSet.has('nStand')}
-                    onChange={(v) => actualizarTexto(r.id, 'supplier_numero', v)} />
-                  {/* El OCR usa el teléfono de la tarjeta como reemplazo cuando la
-                      foto no tenía cartel de tienda: se avisa para que no se
-                      confunda con un stand real (ver prompt en ocr_service.py). */}
-                  {pareceTelefono(r.datos.supplier_numero) && (
-                    <p className="mt-1 text-xs" style={{ color: 'var(--yuda-warning-dark)' }}>
-                      {t('ocr.pareceTelefono')}
-                    </p>
-                  )}
-                </div>
                 <CampoLote ancho="col-span-2" multilinea label={t('packing.fDescripcion')} valor={r.datos.descripcion_es}
                   onChange={(v) => actualizarTexto(r.id, 'descripcion_es', v)} />
                 <CampoLote label={t('ocr.precioRMB')} valor={r.datos.price_rmb} tipo="number" requerido alerta={faltaSet.has('precioRMB')}

@@ -415,7 +415,7 @@ def metricas(
     tipo_cambio = float(registro_tc.valor) if registro_tc else settings.TIPO_CAMBIO_USD
 
     total_usd_mes = round(total_rmb_mes / tipo_cambio, 2) if tipo_cambio else 0.0
-    proveedores = {(i.supplier_nombre, i.supplier_numero) for i in items}
+    proveedores = {i.supplier_nombre for i in items}
 
     # Pedidos generados este mes
     pedidos_mes = (
@@ -884,7 +884,7 @@ def historial_sesiones(
         total_items = len(items)
         total_rmb = sum((i.price_rmb or 0) * (i.qty_por_ctn or 0) * (i.ctns or 0) for i in items)
         total_usd = round(total_rmb / sesion.tipo_cambio_usd, 4) if sesion.tipo_cambio_usd else 0.0
-        proveedores = {(i.supplier_nombre, i.supplier_numero) for i in items}
+        proveedores = {i.supplier_nombre for i in items}
         tiene_pedidos = (
             db.query(PedidoGenerado.id)
             .filter(PedidoGenerado.sesion_id == sesion.id)

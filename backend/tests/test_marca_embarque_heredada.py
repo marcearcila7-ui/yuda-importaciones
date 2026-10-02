@@ -44,3 +44,25 @@ def test_vincular_cliente_hereda_marca_de_la_sigla(
     )
     assert r.status_code == 200, r.text
     assert r.json()["shipping_mark"] == "XYZ"
+
+
+def test_marca_del_item_es_la_sigla_del_cliente(
+    client, crear_usuario, crear_cliente, crear_sesion, token_staff, db
+):
+    """La columna MARCA del packing list no se escribe a mano: sale de la
+    sigla del cliente, aunque el ítem traiga otra cosa escrita de antes."""
+    from app.models.item import Item
+
+    vendedora = crear_usuario("marca3@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("clientemarca3@test.com", vendedora.id, nombre="Cliente Tres")
+    cliente.sigla = "KAES"
+    db.commit()
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    sesion.shipping_mark = cliente.sigla
+    db.query(Item).filter(Item.sesion_id == sesion.id).update({"marca": "escrita a mano"})
+    db.commit()
+
+    token = token_staff("marca3@test.com")
+    r = client.get(f"/api/v1/sesiones/{sesion.id}/items", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200, r.text
+    assert [i["marca"] for i in r.json()] == ["KAES"]

@@ -24,10 +24,10 @@ export interface InspeccionItem {
   // lado a lado contra `fotos` (la evidencia real que subió bodega).
   foto_url: string | null
   foto_final_url: string | null
-  // Tienda/proveedor de este producto: PedidoGenerado.supplier se arma como
-  // `${supplier_nombre}_${supplier_numero}` (ver agrupar_items_por_supplier
-  // en el backend), así que hacen falta los dos para reconstruir esa misma
-  // clave y agrupar los productos bajo la orden a la que pertenecen.
+  // Tienda de este producto: PedidoGenerado.supplier ES supplier_nombre (ver
+  // agrupar_items_por_supplier en el backend), así se agrupan los productos
+  // bajo la orden a la que pertenecen. supplier_numero quedó solo para leer
+  // cotizaciones viejas, de cuando la clave era "tienda_stand".
   supplier_nombre: string | null
   supplier_numero: string | null
   referencia: CampoInspeccion

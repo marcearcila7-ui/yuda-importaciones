@@ -431,11 +431,19 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 // == PedidoGenerado.supplier): sin este cruce, la vista
                 // previa mostraba todos los productos sueltos arriba sin
                 // decir a cuál orden pertenecía cada uno.
+                // La clave de agrupación es la tienda (supplier_nombre). Se
+                // acepta también el formato viejo "tienda_stand" para que las
+                // cotizaciones generadas antes de quitar el N° Stand sigan
+                // mostrando sus productos agrupados.
                 const itemsDeEstaOrden =
                   previewAbierto && previewInspeccion
-                    ? previewInspeccion.items.filter(
-                        (it) => `${it.supplier_nombre || 'Sin_Proveedor'}_${it.supplier_numero || 'SN'}` === pg.supplier,
-                      )
+                    ? previewInspeccion.items.filter((it) => {
+                        const tienda = it.supplier_nombre || 'Sin_Proveedor'
+                        return (
+                          tienda === pg.supplier ||
+                          `${tienda}_${it.supplier_numero || 'SN'}` === pg.supplier
+                        )
+                      })
                     : []
                 return (
               <div key={pg.id} className="flex flex-col gap-1.5 border-b pb-2 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--yuda-border)' }}>

@@ -172,8 +172,6 @@
     "confianzaMedia": "Confianza media",
     "confianzaBaja": "Confianza baja",
     "proveedor": "Tienda",
-    "nStand": "N° Stand",
-    "pareceTelefono": "Este número parece un teléfono, no un stand: la foto debía tener solo una tarjeta de presentación, sin cartel de tienda. Si el proveedor sí tiene un número de stand real, corrígelo aquí.",
     "precioRMB": "Precio RMB",
     "unidPorCaja": "Unid. por caja",
     "largoCm": "Largo cm",
@@ -253,7 +251,6 @@
     "fotosExtraTitulo": "Fotos de detalle del bolso",
     "cols": {
       "supplier_nombre": "PROVEEDOR",
-      "supplier_numero": "N° STAND",
       "foto_url": "FOTO",
       "referencia": "REF. CLIENTE",
       "item_no": "N° ÍTEM",

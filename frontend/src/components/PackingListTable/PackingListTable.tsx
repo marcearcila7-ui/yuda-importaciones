@@ -22,7 +22,7 @@ interface PackingListTableProps {
   onItemActualizado: () => void
 }
 
-type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'photo' | 'unit' | 'fotos-extra'
+type Kind = 'text-edit' | 'num-edit' | 'ro-num' | 'ro-text' | 'photo' | 'unit' | 'fotos-extra'
 
 interface ColMeta {
   campo?: keyof ItemResponse
@@ -38,13 +38,15 @@ const inputStyle: CSSProperties = { fontSize: 16 }
 // Definición de columnas en el orden exacto del Packing List (Tarea 4)
 const COLUMNAS: Array<{ id: string; header: string; meta: ColMeta }> = [
   { id: 'supplier_nombre', header: 'SUPPLIER', meta: { campo: 'supplier_nombre', kind: 'text-edit', width: 160, stickyLeft: 0 } },
-  { id: 'supplier_numero', header: 'N° STAND', meta: { campo: 'supplier_numero', kind: 'text-edit', width: 100 } },
   { id: 'foto_url', header: 'PHOTO', meta: { campo: 'foto_url', kind: 'photo', width: 136 } },
   // Referencia que ve el cliente en su cotización. La asigna el sistema, no se edita.
   { id: 'referencia', header: 'REF. CLIENTE', meta: { campo: 'referencia', kind: 'ro-num', width: 110 } },
   { id: 'item_no', header: 'ITEM NO', meta: { campo: 'item_no', kind: 'text-edit', width: 110 } },
-  // Los pide el formato de la agencia de carga; el OCR no los puede sacar del cartel
-  { id: 'marca', header: 'MARCA', meta: { campo: 'marca', kind: 'text-edit', width: 110 } },
+  // La marca es la sigla del cliente, que ya viene de Yuda Contable: se
+  // muestra pero no se escribe (antes se tecleaba fila por fila y salía
+  // distinta en cada una). La fecha de recibo sí la pide a mano la agencia
+  // de carga; el OCR no la puede sacar del cartel.
+  { id: 'marca', header: 'MARCA', meta: { campo: 'marca', kind: 'ro-text', width: 110 } },
   { id: 'fecha_recibo', header: 'FECHA RECIBO', meta: { campo: 'fecha_recibo', kind: 'text-edit', width: 120 } },
   { id: 'descripcion_es', header: 'ESPAÑOL', meta: { campo: 'descripcion_es', kind: 'text-edit', width: 200, stickyLeft: 160 } },
   { id: 'descripcion_en', header: 'ENGLISH', meta: { campo: 'descripcion_en', kind: 'text-edit', width: 200 } },
@@ -279,7 +281,7 @@ function CeldaSoloLectura({
   const valor = item[meta.campo as keyof ItemResponse]
   return (
     <div
-      className="px-1 py-1 text-right"
+      className={meta.kind === 'ro-text' ? 'px-1 py-1 text-left' : 'px-1 py-1 text-right'}
       style={meta.usd ? { color: 'var(--yuda-error)' } : undefined}
     >
       {valor == null ? '—' : String(valor)}
