@@ -1045,7 +1045,11 @@
     "confirmarReemplazarRevisado": "Bodega ya contó la orden a «{{tienda}}». Si reemplazas el archivo, ese conteo se borra y bodega tendrá que volver a contarla; se le avisará. ¿Continuar?",
     "archivoReemplazadoAvisado": "Archivo reemplazado. Se avisó que bodega debe volver a contar esta orden.",
     "errorDescargarLoQueLlego": "No se pudo descargar el archivo",
-    "errorGuardarCantidades": "No se pudieron guardar las cantidades. No se generó el pedido."
+    "errorGuardarCantidades": "No se pudieron guardar las cantidades. No se generó el pedido.",
+    "bodegaLoSacoTitulo": "Bodega sacó este pedido de su cola",
+    "bodegaLoSacoAyuda": "Mientras esté así, bodega no lo ve y el cliente volvió a ver solo lo que gestionó la vendedora, sin la inspección. Lo que bodega ya había revisado no se perdió.",
+    "devolverABodega": "Devolver a bodega",
+    "devueltoABodega": "El pedido volvió a la cola de bodega"
   },
   "comun": {
     "confirmar": "Confirmar",

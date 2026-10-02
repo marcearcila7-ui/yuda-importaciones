@@ -316,16 +316,67 @@ def archivar_pedido_bodega(
     usuario: User = Depends(require_roles("admin", "bodega")),
     db: Session = Depends(get_db),
 ) -> dict:
-    """Saca un pedido de la cola de bodega (no borra nada del sistema: la
-    cotización, el seguimiento y todo lo demás siguen intactos). Sirve para
-    que la lista no se llene de trabajo ya resuelto hace tiempo."""
+    """Saca un pedido de la cola de bodega. No borra nada: la cotización, lo
+    que bodega ya revisó y el seguimiento siguen intactos.
+
+    Si el pedido ya había llegado a "en bodega", además se DESHACE ese paso:
+    vuelve a "proveedor recibió" y se le quita al cliente el plazo para
+    aprobar el despacho. Si no, quedaba incoherente: bodega lo sacaba de su
+    cola pero el cliente seguía viendo la inspección y esperando aprobarla.
+    El pedido queda como lo dejó la vendedora.
+
+    Un pedido que ya salió de bodega (en tránsito en adelante) no se puede
+    sacar: eso ya es historia de algo que viajó."""
     seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
     if seg is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Este pedido todavía no tiene seguimiento")
+
+    if ESTADOS_ENVIO.index(seg.estado) > ESTADOS_ENVIO.index("en_bodega"):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este pedido ya salió de bodega y está en camino: no se puede sacar de la cola.",
+        )
+
+    if seg.estado == "en_bodega":
+        seg.estado = "proveedor_recibio"
+        seg.aprobacion_limite_at = None
+        seg.cliente_aprobo_despacho_at = None
+
     seg.bodega_archivado_en = datetime.now(timezone.utc)
     registrar_actividad_bodega(db, sesion_id, usuario.id, "archivado", "Se sacó de la cola de bodega")
     db.commit()
     return {"detail": "Pedido archivado"}
+
+
+@router.post("/pedidos/{sesion_id}/reenviar")
+def reenviar_a_bodega(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Vuelve a poner en la cola de bodega un pedido que bodega había sacado.
+
+    Solo Marcela, y SOLO si de verdad está fuera de la cola: si no, pulsarlo
+    por error volvería a avisarle a bodega de un pedido que ya tiene, y
+    terminarían con el mismo trabajo anunciado dos veces. Por eso esto no
+    crea nada nuevo: solo le quita la marca de archivado al seguimiento que
+    ya existe, así que no hay forma de que salga duplicado.
+
+    Lo que bodega ya había revisado se conserva: esto es "devolvérselo", no
+    "empezar de cero" (para eso está reiniciar_inspeccion)."""
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Este pedido todavía no tiene seguimiento")
+    if seg.bodega_archivado_en is None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este pedido ya está en la cola de bodega; no hace falta volver a enviarlo.",
+        )
+
+    seg.bodega_archivado_en = None
+    registrar_actividad_bodega(db, sesion_id, usuario.id, "enviado", "Devuelto a la cola de bodega")
+    db.commit()
+    return {"detail": "Pedido devuelto a bodega"}
 
 
 @router.get("/pedidos/{sesion_id}", response_model=BodegaPedidoDetalle)

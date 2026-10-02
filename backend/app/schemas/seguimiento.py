@@ -83,5 +83,9 @@ class SeguimientoResponse(BaseModel):
     # Para que Marcela (super admin) vea quién avisó a bodega, no solo que
     # "ya se hizo". None si nunca se avisó o es de antes de este cambio.
     enviado_a_bodega_por_nombre: str | None = None
+    # Cuándo bodega sacó este pedido de su cola. Mientras tenga valor, el
+    # pedido NO está en bodega: es lo que habilita el botón de volver a
+    # enviárselo (ver reenviar_a_bodega) y lo que evita mandarlo dos veces.
+    bodega_archivado_en: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)

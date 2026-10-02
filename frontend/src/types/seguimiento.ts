@@ -93,6 +93,9 @@ export interface Seguimiento {
   // Para que Marcela (super admin) vea quién avisó a bodega, no solo que
   // "ya se hizo". None si nunca se avisó o es de antes de este cambio.
   enviado_a_bodega_por_nombre?: string | null
+  // Cuándo bodega sacó este pedido de su cola. Mientras tenga valor, el
+  // pedido NO está en bodega: es lo que habilita el botón de devolvérselo.
+  bodega_archivado_en?: string | null
 }
 
 export interface SeguimientoUpdate {

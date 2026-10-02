@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore'
 import {
   actualizarFechaTentativa,
   enviarABodegaGuiado,
+  reenviarABodega,
   exportarInspeccionExcel,
   exportarInspeccionPdf,
   getCotizacionInspeccion,
@@ -158,6 +159,27 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
   // Le avisa a bodega que ya puede revisar este pedido: mueve el seguimiento a
   // "proveedor_recibio" (donde Yuda Logistic lo recoge), y de una vez lo
   // asigna a alguien de bodega si se eligió a quién.
+  // Bodega sacó este pedido de su cola. Solo entonces tiene sentido
+  // devolvérselo: si no, pulsarlo le anunciaría dos veces el mismo trabajo.
+  const [devolviendoABodega, setDevolviendoABodega] = useState(false)
+  const bodegaLoSaco = !!seguimiento?.bodega_archivado_en
+
+  const devolverABodega = async () => {
+    setDevolviendoABodega(true)
+    try {
+      await reenviarABodega(sesion.id)
+      const s = await getSeguimiento(sesion.id)
+      setSeguimiento(s)
+      toast.success(t('gestionPedido.devueltoABodega'))
+      onActualizar?.()
+    } catch (err) {
+      const detalle = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      toast.error(typeof detalle === 'string' ? detalle : t('gestionPedido.error'))
+    } finally {
+      setDevolviendoABodega(false)
+    }
+  }
+
   const enviarABodega = async () => {
     setEnviandoABodega(true)
     try {
@@ -755,6 +777,29 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                   <p className="pl-6 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
                     {t('gestionPedido.avisadoPor', { nombre: seguimiento.enviado_a_bodega_por_nombre })}
                   </p>
+                )}
+                {/* Bodega lo sacó de su cola: solo Marcela puede devolvérselo,
+                    y solo en este caso. Fuera de acá el botón no existe, para
+                    que nadie le anuncie dos veces el mismo trabajo. */}
+                {esAdmin && bodegaLoSaco && (
+                  <div className="mt-2 rounded-lg p-3" style={{ backgroundColor: 'var(--yuda-warning-soft)' }}>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--yuda-warning-dark)' }}>
+                      {t('gestionPedido.bodegaLoSacoTitulo')}
+                    </p>
+                    <p className="mt-0.5 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+                      {t('gestionPedido.bodegaLoSacoAyuda')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={devolverABodega}
+                      disabled={devolviendoABodega}
+                      className="mt-2 flex min-h-[40px] items-center gap-2 rounded-lg px-4 text-sm font-semibold text-white disabled:opacity-60"
+                      style={{ backgroundColor: 'var(--yuda-primary)' }}
+                    >
+                      <Warehouse size={15} />{' '}
+                      {devolviendoABodega ? t('gestionPedido.enviandoABodega') : t('gestionPedido.devolverABodega')}
+                    </button>
+                  </div>
                 )}
               </div>
             )}

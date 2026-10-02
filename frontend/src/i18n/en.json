@@ -1045,7 +1045,11 @@
     "confirmarReemplazarRevisado": "The warehouse already counted the order to «{{tienda}}». Replacing the file clears that count and the warehouse will have to count it again; they'll be notified. Continue?",
     "archivoReemplazadoAvisado": "File replaced. The warehouse was notified it needs to count this order again.",
     "errorDescargarLoQueLlego": "Could not download the file",
-    "errorGuardarCantidades": "The quantities could not be saved. The order was not generated."
+    "errorGuardarCantidades": "The quantities could not be saved. The order was not generated.",
+    "bodegaLoSacoTitulo": "The warehouse took this order out of its queue",
+    "bodegaLoSacoAyuda": "While it stays like this, the warehouse doesn't see it and the client is back to seeing only what the sales rep handled, without the inspection. Whatever the warehouse had already reviewed was not lost.",
+    "devolverABodega": "Send back to the warehouse",
+    "devueltoABodega": "The order is back in the warehouse queue"
   },
   "comun": {
     "confirmar": "Confirm",

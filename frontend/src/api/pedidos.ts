@@ -94,6 +94,13 @@ export async function enviarABodegaGuiado(
   return data
 }
 
+// Devuelve a la cola de bodega un pedido que bodega había sacado (solo
+// Marcela). No crea nada nuevo: le quita la marca de archivado al seguimiento
+// que ya existe, así que no puede salir duplicado.
+export async function reenviarABodega(sesion_id: string): Promise<void> {
+  await apiClient.post(`/bodega/pedidos/${sesion_id}/reenviar`)
+}
+
 // Panel de control: todo lo que se ha enviado a bodega, sin importar el
 // cliente. Admin ve todas; la vendedora solo las suyas.
 export async function getBodegaResumen(): Promise<PedidoBodegaSeguimiento[]> {

@@ -1048,7 +1048,11 @@
     "confirmarReemplazarRevisado": "仓库已经清点了向«{{tienda}}»的订单。替换文件会清除该清点记录，仓库需要重新清点；系统会通知他们。是否继续？",
     "archivoReemplazadoAvisado": "文件已替换。已通知仓库需要重新清点此订单。",
     "errorDescargarLoQueLlego": "无法下载文件",
-    "errorGuardarCantidades": "数量保存失败，订单未生成。"
+    "errorGuardarCantidades": "数量保存失败，订单未生成。",
+    "bodegaLoSacoTitulo": "仓库已把这个订单移出队列",
+    "bodegaLoSacoAyuda": "保持这个状态时，仓库看不到它，客户那边也只会看到销售人员处理的部分，没有验货环节。仓库之前已经检查过的内容不会丢失。",
+    "devolverABodega": "重新发送到仓库",
+    "devueltoABodega": "订单已回到仓库队列"
   },
   "comun": {
     "confirmar": "确认",
