@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Download, FileText, UserCheck } from 'lucide-react'
+import { AlertTriangle, Download, FileText, RefreshCw, UserCheck } from 'lucide-react'
 import { descargarZip, generarPedidos, getPedidos } from '../../api/pedidos'
 import { confirmar } from '../../store/confirmStore'
 import Button from '../ui/Button'
@@ -41,6 +41,12 @@ function GenerarPedidos({
   // enlace chico para volver a generar, solo si de verdad hace falta corregir
   // algo (ej. se editaron las cantidades). Se vuelve a ocultar tras generar.
   const [mostrarRegenerar, setMostrarRegenerar] = useState(false)
+  // Los archivos ya generados se armaron con unas cajas que ya no son las de
+  // hoy (lo normal: se generó el pedido y DESPUÉS el cliente mandó sus
+  // cantidades desde el portal). Mientras esto sea true NO se muestran los
+  // botones de descarga: se mostraba un Excel viejo como si fuera el bueno, y
+  // esa es la copia que terminaba yéndose al proveedor.
+  const [desactualizado, setDesactualizado] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [descargandoZip, setDescargandoZip] = useState(false)
   const [marcaActual, setMarcaActual] = useState(shippingMark ?? '')
@@ -64,6 +70,7 @@ function GenerarPedidos({
     getPedidos(sesion_id)
       .then((lista) => {
         if (lista.length === 0) return
+        setDesactualizado(lista.some((p) => p.cantidades_desactualizadas))
         setResultado({
           pedidos: lista.map((p) => ({
             supplier: p.supplier,
@@ -97,6 +104,7 @@ function GenerarPedidos({
       const data = await generarPedidos(sesion_id, usarCantidadesCliente)
       setResultado(data)
       setMostrarRegenerar(false)
+      setDesactualizado(false)
       onGenerado?.()
     } catch (err) {
       let mensaje = t('pedidos.errorGenerar')
@@ -157,7 +165,22 @@ function GenerarPedidos({
           las CTNS internas (confundía a las vendedoras sobre cuál usar). El botón
           de CTNS internas queda solo para cuando el cliente TODAVÍA no ha
           contestado desde su portal. */}
-      {!resultado || mostrarRegenerar ? (
+      {/* Si lo generado ya no cuadra con las cajas de hoy, lo primero que se
+          ve es por qué, y abajo el botón para volver a generar. Los archivos
+          viejos no se muestran: bajarlos sería mandarle al proveedor unas
+          cantidades que el cliente ya cambió. */}
+      {desactualizado && !mostrarRegenerar && (
+        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--yuda-warning-soft)', border: '1px solid var(--yuda-warning)' }}>
+          <p className="flex items-center gap-2 text-sm font-bold" style={{ color: 'var(--yuda-warning-dark)' }}>
+            <AlertTriangle size={16} /> {t('pedidos.desactualizadoTitulo')}
+          </p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--yuda-warning-dark)' }}>
+            {t('pedidos.desactualizadoAyuda')}
+          </p>
+        </div>
+      )}
+
+      {!resultado || mostrarRegenerar || desactualizado ? (
         permitirCantidadesCliente ? (
           <div className="flex flex-col gap-1">
             <Button variant="primary" size="lg" fullWidth onClick={() => handleGenerar(true)} disabled={generando !== false}>
@@ -165,7 +188,8 @@ function GenerarPedidos({
                 t('pedidos.generando')
               ) : (
                 <>
-                  <UserCheck size={18} /> {t('pedidos.generarCliente')}
+                  {desactualizado ? <RefreshCw size={18} /> : <UserCheck size={18} />}{' '}
+                  {desactualizado ? t('pedidos.regenerarBoton') : t('pedidos.generarCliente')}
                 </>
               )}
             </Button>
@@ -212,10 +236,10 @@ function GenerarPedidos({
         <button
           type="button"
           onClick={() => setMostrarRegenerar(true)}
-          className="self-start text-sm font-medium underline"
-          style={{ color: 'var(--yuda-text-secondary)' }}
+          className="flex min-h-[40px] items-center justify-center gap-2 self-start rounded-lg border px-4 text-sm font-semibold"
+          style={{ borderColor: 'var(--yuda-primary)', color: 'var(--yuda-primary)' }}
         >
-          {t('pedidos.regenerar')}
+          <RefreshCw size={15} /> {t('pedidos.regenerarBoton')}
         </button>
       )}
 
@@ -233,8 +257,8 @@ function GenerarPedidos({
         </div>
       )}
 
-      {/* SECCIÓN C — Resultado */}
-      {resultado && (
+      {/* SECCIÓN C — Resultado. Solo si lo generado está al día: ver arriba. */}
+      {resultado && !desactualizado && (
         <div className="flex flex-col gap-3">
           <p className="font-bold" style={{ color: 'var(--yuda-accent)' }}>{t('pedidos.generados')}</p>
           {resultado.pedidos.map((pedido) => (

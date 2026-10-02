@@ -256,6 +256,12 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
     }
   }
 
+  // Un pedido cuyas cajas ya no son las de hoy NO cuenta como generado: sus
+  // archivos llevan cantidades viejas. Hasta que se regenere, ni se anuncia
+  // como hecho, ni se muestran sus archivos, ni se puede avisar a bodega
+  // (bodega recibiría la orden equivocada para contar).
+  const pedidosAlDia = pedidosGenerados.filter((pg) => !pg.cantidades_desactualizadas)
+
   return (
     <div className="rounded-xl border" style={{ borderColor: '#C7CBF7', backgroundColor: '#F5F6FE' }}>
       {/* Encabezado + estado */}
@@ -365,7 +371,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
           {confirmado && (
             <p className="mb-2 flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--yuda-success-dark)' }}>
               <CheckCircle2 size={16} />{' '}
-              {pedidosGenerados.length > 0 ? t('gestionPedido.pedidoYaGenerado') : t('gestionPedido.confirmadoOk')}
+              {pedidosAlDia.length > 0 ? t('gestionPedido.pedidoYaGenerado') : t('gestionPedido.confirmadoOk')}
             </p>
           )}
           <GenerarPedidos
@@ -376,7 +382,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             onGenerado={() => getPedidos(sesion.id).then(setPedidosGenerados).catch(() => undefined)}
           />
 
-          {pedidosGenerados.length > 0 && (
+          {pedidosAlDia.length > 0 && (
             <div className="mt-3 flex flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--yuda-border)' }}>
               <p className="text-xs font-semibold" style={{ color: 'var(--yuda-accent)' }}>
                 {t('gestionPedido.ordenesTitulo')}
@@ -385,7 +391,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
               {/* Un solo documento para toda la cotización (no por tienda):
                   el packing list con las correcciones de bodega ya
                   fusionadas -mismo formato que ve el cliente. */}
-              {pedidosGenerados.some((pg) => pg.revisado_en_bodega_at) && (
+              {pedidosAlDia.some((pg) => pg.revisado_en_bodega_at) && (
                 <div className="mb-1 flex flex-wrap items-center gap-3 rounded-lg p-2" style={{ backgroundColor: 'var(--yuda-success-soft)' }}>
                   <span className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: 'var(--yuda-success-dark)' }}>
                     <CheckCircle2 size={14} /> {t('gestionPedido.verLoQueLlego')}
@@ -426,7 +432,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                 </div>
               )}
 
-              {pedidosGenerados.map((pg) => {
+              {pedidosAlDia.map((pg) => {
                 // Cada producto pertenece a una tienda (Item.supplier_nombre
                 // == PedidoGenerado.supplier): sin este cruce, la vista
                 // previa mostraba todos los productos sueltos arriba sin
@@ -675,9 +681,9 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             permitirCantidadesCliente) -antes este paso se quedaba bloqueado
             en ese caso aunque ya hubiera pedidos generados. */}
         {seguimiento && (
-          <Paso n={3} titulo={t('gestionPedido.paso3Titulo')} bloqueado={pedidosGenerados.length === 0}>
+          <Paso n={3} titulo={t('gestionPedido.paso3Titulo')} bloqueado={pedidosAlDia.length === 0}>
             {seguimiento.estado === 'cotizacion_enviada' || seguimiento.estado === 'pedido_confirmado' ? (
-              pedidosGenerados.length === 0 ? (
+              pedidosAlDia.length === 0 ? (
                 // El backend ya rechaza avisar a bodega sin pedidos generados;
                 // esto lo deja claro en la UI ANTES de que lo intente, en vez
                 // de dejarla hacer clic y recibir un error después.

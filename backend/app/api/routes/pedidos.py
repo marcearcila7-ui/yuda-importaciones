@@ -555,7 +555,7 @@ def listar_pedidos(
     quién generó cada uno y quién fue el último en corregir algo de esa
     tienda al inspeccionar -Marcela (super admin) necesita ver esto de un
     vistazo, no solo que "ya se hizo"."""
-    _obtener_sesion(db, sesion_id, usuario)
+    sesion = _obtener_sesion(db, sesion_id, usuario)
     pedidos = (
         db.query(PedidoGenerado)
         .filter(PedidoGenerado.sesion_id == sesion_id)
@@ -567,6 +567,29 @@ def listar_pedidos(
 
     items = db.query(Item).filter(Item.sesion_id == sesion_id).all()
     item_ids = [i.id for i in items]
+
+    # ¿Los archivos de cada tienda siguen cuadrando con las cajas de hoy? Se
+    # compara lo que quedó escrito en el archivo (PedidoGeneradoItem) contra
+    # la cantidad que manda hoy: la del cliente si ya la envió desde el
+    # portal, y si no la cotizada. Si el cliente mandó sus cantidades DESPUÉS
+    # de generar, acá es donde se nota.
+    cajas_hoy = {
+        i.id: ((i.cantidad_solicitada or 0) if sesion.pedido_recibido_at else (i.ctns or 0))
+        for i in items
+    }
+    lineas_por_pedido: dict[str, list[PedidoGeneradoItem]] = {}
+    if pedidos:
+        for linea in db.query(PedidoGeneradoItem).filter(
+            PedidoGeneradoItem.pedido_generado_id.in_([p.id for p in pedidos])
+        ):
+            lineas_por_pedido.setdefault(linea.pedido_generado_id, []).append(linea)
+
+    def _desactualizado(pedido: PedidoGenerado) -> bool:
+        lineas = lineas_por_pedido.get(pedido.id)
+        if not lineas:  # pedidos de antes de que se guardaran las líneas
+            return False
+        return any(linea.cantidad_pedida != cajas_hoy.get(linea.item_id) for linea in lineas)
+
     inspecciones = (
         {
             i.item_id: i
@@ -614,6 +637,7 @@ def listar_pedidos(
                 fecha_tentativa_entrega=p.fecha_tentativa_entrega,
                 generado_por_nombre=generador.nombre if generador else None,
                 revisado_por_nombre=revisor.nombre if revisor else None,
+                cantidades_desactualizadas=_desactualizado(p),
             )
         )
     return resultado

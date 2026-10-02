@@ -309,7 +309,7 @@
     "generar": "Generate Orders",
     "generando": "Generating orders...",
     "generarConCotizadas": "Generate with the quoted quantities",
-    "generarCliente": "Generate the store orders",
+    "generarCliente": "Confirm quantities and generate store orders",
     "confirmarCliente": "Generate the store orders? The system will create one order per store with the quantities {{cliente}} requested.",
     "advertencias": "Warnings:",
     "generados": "Generated orders:",
@@ -321,8 +321,10 @@
     "errorGenerar": "Could not generate the orders",
     "errorZip": "Could not download the ZIP",
     "ayudaGenerar": "Ask the store for the boxes you loaded in the products table (CTNS column).",
-    "ayudaGenerarCliente": "The system detects which store each product belongs to and creates one order per store, no need to sort them by hand. They're generated with the quantities the client requested; you can edit them above before generating if anything changed at the last minute.",
-    "regenerar": "If you already corrected the quantities above (in «Edit quantities»), generate the order again here"
+    "ayudaGenerarCliente": "The system looks at which store each product belongs to and creates a SEPARATE order per store; no need to build them by hand. It uses the quantities above, so check them first. The files to download appear as soon as you generate.",
+    "regenerarBoton": "Change quantities and generate again",
+    "desactualizadoTitulo": "The existing orders are no good: the quantities changed",
+    "desactualizadoAyuda": "The files generated earlier carry different boxes than the ones above now (the client sent their quantities after they were generated). Check the quantities above and generate again: until then they are not shown for download, so you don't send the supplier the wrong order."
   },
   "historial": {
     "titulo": "Quotation history",

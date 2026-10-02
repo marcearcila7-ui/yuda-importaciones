@@ -312,7 +312,7 @@
     "generar": "生成订单",
     "generando": "正在生成订单...",
     "generarConCotizadas": "按报价数量生成",
-    "generarCliente": "生成向店铺下单的订单",
+    "generarCliente": "确认数量并生成给店铺的订单",
     "confirmarCliente": "生成向各店铺下单的订单吗？系统会按 {{cliente}} 要求的数量为每家店铺创建一个订单。",
     "advertencias": "提示：",
     "generados": "已生成的订单：",
@@ -324,8 +324,10 @@
     "errorGenerar": "无法生成订单",
     "errorZip": "无法下载 ZIP",
     "ayudaGenerar": "向店铺申请您在产品表（CTNS列）中录入的箱数。",
-    "ayudaGenerarCliente": "系统会自动识别每个产品属于哪家店铺，并为每家店铺生成一个订单，不需要手动整理。订单按客户要求的数量生成；如果最后有变动，可以在上面先编辑数量再生成。",
-    "regenerar": "如果您已经在上面的«编辑数量»中修改了数量，请在这里重新生成订单"
+    "ayudaGenerarCliente": "系统会判断每个产品属于哪家店铺，并为每家店铺单独生成一张订单，不用手工整理。它使用上面的数量，所以请先核对。生成后下载文件会立即出现。",
+    "regenerarBoton": "修改数量并重新生成",
+    "desactualizadoTitulo": "现有订单已失效：数量有变动",
+    "desactualizadoAyuda": "之前生成的文件里的箱数和上面现在的不一样（客户是在生成之后才发来数量的）。请核对上面的数量后重新生成；在此之前不显示下载按钮，以免把错误的订单发给供应商。"
   },
   "historial": {
     "titulo": "报价历史记录",

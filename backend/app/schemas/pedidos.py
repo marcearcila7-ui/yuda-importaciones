@@ -39,6 +39,11 @@ class PedidoGeneradoResponse(BaseModel):
     # no solo que "ya se hizo". None si el pedido es de antes de este cambio.
     generado_por_nombre: str | None = None
     revisado_por_nombre: str | None = None
+    # True si las cajas con las que se armaron estos archivos ya no son las
+    # que están hoy en la cotización (típico: se generó el pedido y DESPUÉS
+    # el cliente mandó sus cantidades desde el portal). Sin esto la vendedora
+    # bajaba un Excel viejo creyendo que era el bueno.
+    cantidades_desactualizadas: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

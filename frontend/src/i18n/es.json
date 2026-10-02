@@ -309,7 +309,7 @@
     "generar": "Generar Pedidos",
     "generando": "Generando pedidos...",
     "generarConCotizadas": "Generar con las cantidades cotizadas",
-    "generarCliente": "Generar pedido a las tiendas",
+    "generarCliente": "Confirmar cantidades y generar pedido para tiendas",
     "confirmarCliente": "¿Generar las órdenes de pedido a las tiendas? El sistema va a crear una orden por cada tienda con las cantidades que {{cliente}} pidió.",
     "advertencias": "Advertencias:",
     "generados": "Pedidos generados:",
@@ -321,8 +321,10 @@
     "errorGenerar": "No se pudieron generar los pedidos",
     "errorZip": "No se pudo descargar el ZIP",
     "ayudaGenerar": "Pide a la tienda las cajas que cargaste tú en la tabla de productos (columna CTNS).",
-    "ayudaGenerarCliente": "El sistema detecta a qué tienda pertenece cada producto y crea una orden por tienda; no hay que armarlas a mano. Se generan con las cantidades que el cliente pidió, y puedes editarlas arriba antes de generar si hay algún cambio de último momento.",
-    "regenerar": "Si ya corrigiste las cantidades arriba (en «Editar cantidades»), genera el pedido de nuevo aquí"
+    "ayudaGenerarCliente": "El sistema mira a qué tienda pertenece cada producto y crea una orden SEPARADA por cada tienda; no hay que armarlas a mano. Usa las cantidades de arriba, así que revísalas antes. Los archivos para descargar aparecen apenas lo generes.",
+    "regenerarBoton": "Cambiar cantidades y volver a generar",
+    "desactualizadoTitulo": "Los pedidos que hay no sirven: las cantidades cambiaron",
+    "desactualizadoAyuda": "Los archivos que se generaron antes llevan otras cajas de las que están arriba ahora (el cliente mandó sus cantidades después de generarlos). Revisa las cantidades arriba y vuelve a generar: hasta entonces no se muestran para descargar, para que no le mandes al proveedor un pedido equivocado."
   },
   "historial": {
     "titulo": "Historial de cotizaciones",

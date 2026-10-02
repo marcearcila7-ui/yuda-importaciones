@@ -29,6 +29,11 @@ export interface PedidoGenerado {
   // "ya se hizo". None en pedidos de antes de este cambio.
   generado_por_nombre?: string | null
   revisado_por_nombre?: string | null
+  // Las cajas con las que se armaron estos archivos ya no son las de hoy:
+  // típicamente se generó el pedido y DESPUÉS el cliente mandó sus cantidades
+  // desde el portal. Mientras esté en true, los archivos no se muestran para
+  // descargar: hay que volver a generarlos.
+  cantidades_desactualizadas?: boolean
 }
 
 export interface ActividadBodega {
