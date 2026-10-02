@@ -1054,7 +1054,8 @@
     "devolverABodega": "重新发送到仓库",
     "devueltoABodega": "订单已回到仓库队列",
     "bodegaNoLoTiene": "仓库说没有收到？重新发送给他们",
-    "devueltoABodegaEn": "已回到仓库队列，可以在「{{donde}}」里找到。"
+    "devueltoABodegaEn": "已回到仓库队列，可以在「{{donde}}」里找到。",
+    "bodegaLoVeEn": "仓库在这里能看到它：{{donde}}"
   },
   "comun": {
     "confirmar": "确认",

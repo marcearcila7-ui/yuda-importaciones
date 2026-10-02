@@ -780,6 +780,15 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                     {t('gestionPedido.avisadoPor', { nombre: seguimiento.enviado_a_bodega_por_nombre })}
                   </p>
                 )}
+                {/* Dónde lo tiene bodega AHORA. Las cinco pestañas de bodega
+                    filtran por etapa, así que "ya le avisaste" no dice dónde
+                    buscarlo, y buscarlo pestaña por pestaña es lo que hay que
+                    evitar. */}
+                {esAdmin && seguimiento.ubicacion_en_bodega && (
+                  <p className="pl-6 text-xs" style={{ color: 'var(--yuda-text-secondary)' }}>
+                    {t('gestionPedido.bodegaLoVeEn', { donde: seguimiento.ubicacion_en_bodega })}
+                  </p>
+                )}
                 {/* Devolver el pedido a la cola de bodega. Solo Marcela.
                     Cuando el sistema SABE que bodega lo sacó, se explica en
                     grande; si no lo sabe, igual queda el enlace a mano, porque

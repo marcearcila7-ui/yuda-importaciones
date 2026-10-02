@@ -1051,7 +1051,8 @@
     "devolverABodega": "Devolver a bodega",
     "devueltoABodega": "El pedido volvió a la cola de bodega",
     "bodegaNoLoTiene": "¿Bodega dice que no lo tiene? Volver a enviárselo",
-    "devueltoABodegaEn": "Volvió a la cola de bodega. Lo encuentran en «{{donde}}»."
+    "devueltoABodegaEn": "Volvió a la cola de bodega. Lo encuentran en «{{donde}}».",
+    "bodegaLoVeEn": "En bodega lo ven en: {{donde}}"
   },
   "comun": {
     "confirmar": "Confirmar",

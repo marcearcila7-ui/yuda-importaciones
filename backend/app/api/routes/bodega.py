@@ -37,6 +37,7 @@ from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.actividad_bodega_service import registrar_actividad_bodega
 from app.services.borrado_service import limpiar_storage
+from app.services.bodega_ubicacion_service import donde_esta_en_bodega
 from app.services.cotizacion_service import _calcular
 from app.services.cubicaje_service import generar_reporte_automatico
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
@@ -310,43 +311,6 @@ def asignar_pedido_bodega(
     )
 
 
-def _donde_esta_en_bodega(db: Session, seg: SeguimientoPedido) -> str:
-    """En cuál de las cinco pestañas de bodega cae este pedido ahora mismo, o
-    por qué no cae en ninguna.
-
-    Las pestañas no son un filtro libre: cada una exige una etapa concreta
-    (ver listar_pedidos), así que un pedido puede estar perfectamente en la
-    cola y aun así no verse en la pestaña que uno está mirando. Y hay dos
-    filtros que lo sacan de TODAS sin decir nada: que el cliente esté
-    desactivado y que la cotización esté archivada. Eso es lo peor de buscar
-    un pedido "perdido", así que se nombra explícitamente."""
-    sesion = db.query(Sesion).filter(Sesion.id == seg.sesion_id).first()
-    if sesion is not None:
-        if sesion.archivada_en is not None:
-            return "ninguna: esta cotización está archivada, por eso bodega no la ve"
-        cliente = (
-            db.query(Cliente).filter(Cliente.id == sesion.cliente_id).first()
-            if sesion.cliente_id
-            else None
-        )
-        if sesion.cliente_id is None:
-            return "ninguna: es una cotización libre, sin cliente asociado"
-        if cliente is None or not cliente.activo:
-            return "ninguna: el cliente está desactivado, por eso bodega no lo ve"
-
-    if seg.cliente_aprobo_despacho_at is not None or seg.estado in ("en_transito", "en_destino", "entregado"):
-        return "Completados"
-    if seg.estado == "en_bodega":
-        return "Pendiente por aprobación del cliente"
-    if seg.estado == "proveedor_recibio":
-        if seg.bodega_asignado_a_id:
-            asignado = db.query(User).filter(User.id == seg.bodega_asignado_a_id).first()
-            return f"Asignados, a nombre de {asignado.nombre}" if asignado else "Asignados"
-        return "Sin asignar"
-    # Antes de "proveedor recibió" el pedido todavía no se le avisó a bodega.
-    return "todavía sin avisar a bodega"
-
-
 @router.post("/pedidos/{sesion_id}/archivar")
 def archivar_pedido_bodega(
     sesion_id: str,
@@ -411,7 +375,7 @@ def reenviar_a_bodega(
         # a Marcela buscándolo a ciegas, que es justo lo que pasó.
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            f"Este pedido ya está en la cola de bodega, en «{_donde_esta_en_bodega(db, seg)}». "
+            f"Este pedido ya está en la cola de bodega, en «{donde_esta_en_bodega(db, seg)}». "
             "No hace falta volver a enviarlo.",
         )
 
@@ -420,7 +384,7 @@ def reenviar_a_bodega(
     db.commit()
     return {
         "detail": "Pedido devuelto a bodega",
-        "donde": _donde_esta_en_bodega(db, seg),
+        "donde": donde_esta_en_bodega(db, seg),
     }
 
 

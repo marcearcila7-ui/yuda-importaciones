@@ -1051,7 +1051,8 @@
     "devolverABodega": "Send back to the warehouse",
     "devueltoABodega": "The order is back in the warehouse queue",
     "bodegaNoLoTiene": "Warehouse says they don't have it? Send it again",
-    "devueltoABodegaEn": "It's back in the warehouse queue. They'll find it under \"{{donde}}\"."
+    "devueltoABodegaEn": "It's back in the warehouse queue. They'll find it under \"{{donde}}\".",
+    "bodegaLoVeEn": "The warehouse sees it under: {{donde}}"
   },
   "comun": {
     "confirmar": "Confirm",

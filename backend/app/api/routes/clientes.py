@@ -66,6 +66,7 @@ from app.schemas.cuenta import (
 from app.schemas.packing import EnviarAConfirmarInput, SesionResponse
 from app.schemas.seguimiento import SeguimientoResponse, SeguimientoUpdate
 from app.services.actividad_bodega_service import registrar_actividad_bodega
+from app.services.bodega_ubicacion_service import donde_esta_en_bodega
 from app.services.cuenta_service import construir_estado_cuenta
 from app.services.notificacion_service import (
     avisar_envio_a_vendedora,
@@ -202,7 +203,12 @@ def _seguimiento_response(db: Session, seg: SeguimientoPedido) -> SeguimientoRes
         else None
     )
     return SeguimientoResponse.model_validate(seg).model_copy(
-        update={"enviado_a_bodega_por_nombre": usuario_envio.nombre if usuario_envio else None}
+        update={
+            "enviado_a_bodega_por_nombre": usuario_envio.nombre if usuario_envio else None,
+            # Que Marcela pueda ver de una dónde lo tiene bodega, sin pulsar
+            # nada y sin ir a buscarlo pestaña por pestaña.
+            "ubicacion_en_bodega": donde_esta_en_bodega(db, seg),
+        }
     )
 
 

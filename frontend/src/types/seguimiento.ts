@@ -96,6 +96,9 @@ export interface Seguimiento {
   // Cuándo bodega sacó este pedido de su cola. Mientras tenga valor, el
   // pedido NO está en bodega: es lo que habilita el botón de devolvérselo.
   bodega_archivado_en?: string | null
+  // En cuál de las pestañas de bodega cae este pedido ahora mismo, o por qué
+  // no cae en ninguna.
+  ubicacion_en_bodega?: string | null
 }
 
 export interface SeguimientoUpdate {

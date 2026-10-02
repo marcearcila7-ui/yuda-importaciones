@@ -87,5 +87,9 @@ class SeguimientoResponse(BaseModel):
     # pedido NO está en bodega: es lo que habilita el botón de volver a
     # enviárselo (ver reenviar_a_bodega) y lo que evita mandarlo dos veces.
     bodega_archivado_en: datetime | None = None
+    # En cuál de las pestañas de bodega cae este pedido ahora mismo, o por qué
+    # no cae en ninguna. Se calcula al servir, no se guarda: depende de la
+    # etapa, de a quién esté asignado y de si el cliente sigue activo.
+    ubicacion_en_bodega: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
