@@ -147,7 +147,7 @@ function VisorEvidencia({
               }
             />
           ) : (
-            <video src={actual.url} controls autoPlay className="max-h-[70vh] max-w-full rounded-lg" />
+            <video src={actual.url} controls autoPlay playsInline className="max-h-[70vh] max-w-full rounded-lg" />
           )}
         </div>
 

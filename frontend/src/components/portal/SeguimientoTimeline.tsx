@@ -248,7 +248,7 @@ function SeguimientoTimeline({ seguimiento }: { seguimiento: Seguimiento }) {
             {visor.tipo === 'imagen' ? (
               <img src={visor.url} alt="" className="max-h-[80vh] max-w-full rounded-lg object-contain" />
             ) : (
-              <video src={visor.url} controls autoPlay className="max-h-[80vh] max-w-full rounded-lg" />
+              <video src={visor.url} controls autoPlay playsInline className="max-h-[80vh] max-w-full rounded-lg" />
             )}
           </div>
         </div>

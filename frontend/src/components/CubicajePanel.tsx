@@ -29,7 +29,7 @@ function AdjuntoMensaje({ adjunto, claro }: { adjunto: CubicajeAdjunto; claro: b
   }
   if (adjunto.tipo === 'video') {
     return (
-      <video src={adjunto.url} controls className="mt-1 max-h-48 rounded-lg" style={{ maxWidth: '100%' }} />
+      <video src={adjunto.url} controls playsInline className="mt-1 max-h-48 rounded-lg" style={{ maxWidth: '100%' }} />
     )
   }
   return (

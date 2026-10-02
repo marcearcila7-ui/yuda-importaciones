@@ -595,7 +595,7 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
                                       </a>
                                     ))}
                                     {it.video_url && (
-                                      <video src={it.video_url} controls style={{ width: 140, height: 140 }} className="rounded-lg border object-cover" />
+                                      <video src={it.video_url} controls playsInline style={{ width: 140, height: 140 }} className="rounded-lg border object-cover" />
                                     )}
                                   </div>
                                 ) : (
