@@ -909,6 +909,34 @@ def _items_inspeccionados(db: Session, sesion_id: str) -> list:
     return filas
 
 
+def _items_originales(db: Session, sesion_id: str) -> list:
+    """La cotización tal como la dejó la vendedora, SIN las correcciones de
+    bodega: es contra esto que bodega contrasta lo que realmente llegó.
+
+    Las cajas son las que se le pidieron a la tienda (no las cotizadas), que
+    es lo que dice el documento que la vendedora mandó. Tampoco van las
+    "cajas extra", que son un hallazgo de la revisión, no del pedido."""
+    items = db.query(Item).filter(Item.sesion_id == sesion_id).order_by(Item.orden.asc()).all()
+    sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
+    cajas_pedidas: dict[str, int] = {}
+    pedido_ids = [
+        pid for (pid,) in db.query(PedidoGenerado.id).filter(PedidoGenerado.sesion_id == sesion_id).all()
+    ]
+    if pedido_ids:
+        for linea in db.query(PedidoGeneradoItem).filter(
+            PedidoGeneradoItem.pedido_generado_id.in_(pedido_ids)
+        ):
+            cajas_pedidas[linea.item_id] = linea.cantidad_pedida
+    return [
+        _ItemInspeccionado(
+            item, None,
+            cajas_pedidas=cajas_pedidas.get(item.id),
+            shipping_mark=sesion.shipping_mark if sesion else None,
+        )
+        for item in items
+    ]
+
+
 def _sobrante_items_resumen(db: Session, sesion_id: str) -> list[SobranteListaItem]:
     """Para la vista "listas_sobrantes": referencia, descripción y cajas de lo
     que quedó sobrando en este pedido (la más reciente por referencia, si se
@@ -1018,6 +1046,51 @@ def reiniciar_inspeccion(
 
     limpiar_storage([("fotos", fotos_bodega), ("pedidos", videos_bodega)])
     return construir_inspeccion_sesion(db, sesion)
+
+
+@router.get("/pedidos/{sesion_id}/cotizacion/exportar-original-excel")
+def exportar_cotizacion_original_excel(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """La cotización SIN las correcciones de bodega, para contrastar contra lo
+    que llegó. A diferencia del formato "con tus correcciones", este está
+    disponible desde el primer momento: es el punto de partida, no el
+    resultado de la revisión."""
+    sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
+    contenido = generar_packing_list_excel(
+        _items_originales(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
+    )
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Original.xlsx"
+    return Response(
+        content=contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
+
+
+@router.get("/pedidos/{sesion_id}/cotizacion/exportar-original-pdf")
+def exportar_cotizacion_original_pdf(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin", "bodega", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Lo mismo que exportar_cotizacion_original_excel, en PDF."""
+    sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
+    contenido = generar_packing_list_pdf(
+        _items_originales(db, sesion_id), sesion.nombre_cliente, sesion.tipo_cambio_usd, sesion.tipo_cotizacion
+    )
+    fecha = datetime.now().strftime("%Y%m%d")
+    nombre_archivo = f"{fecha}_{sesion.nombre_cliente}_Original.pdf"
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_archivo}"'},
+    )
 
 
 @router.get("/pedidos/{sesion_id}/cotizacion/exportar-excel")

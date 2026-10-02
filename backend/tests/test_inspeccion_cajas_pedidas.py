@@ -115,3 +115,37 @@ def test_el_excel_de_correcciones_lleva_las_mismas_cajas_que_la_pantalla(
     db.add(ItemInspeccionBodega(item_id=item.id, ctns=2))
     db.commit()
     assert _items_inspeccionados(db, sesion.id)[0].ctns == 2
+
+
+def test_el_documento_original_ignora_lo_que_corrigio_bodega(
+    crear_usuario, crear_cliente, crear_sesion, db
+):
+    """Es el punto de partida contra el que se contrasta: si trajera las
+    correcciones de bodega, no habría contra qué comparar."""
+    from app.api.routes.bodega import _items_inspeccionados, _items_originales
+    from app.models.item_inspeccion import ItemInspeccionBodega
+
+    vendedora = crear_usuario("orig1@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("clienteorig1@test.com", vendedora.id)
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    sesion.shipping_mark = "SV"
+    item = db.query(Item).filter(Item.sesion_id == sesion.id).first()
+    item.ctns = 1
+    db.commit()
+
+    pedido = PedidoGenerado(sesion_id=sesion.id, supplier="Prov", archivo_xlsx_url="https://x/p.xlsx")
+    db.add(pedido)
+    db.flush()
+    db.add(PedidoGeneradoItem(pedido_generado_id=pedido.id, item_id=item.id, cantidad_pedida=3))
+    db.add(ItemInspeccionBodega(item_id=item.id, ctns=2, descripcion_es="lo corrigió bodega"))
+    db.commit()
+
+    original = _items_originales(db, sesion.id)[0]
+    corregido = _items_inspeccionados(db, sesion.id)[0]
+
+    # El original dice lo que se pidió; el corregido, lo que bodega contó.
+    assert original.ctns == 3
+    assert corregido.ctns == 2
+    assert original.descripcion_es != "lo corrigió bodega"
+    assert corregido.descripcion_es == "lo corrigió bodega"
+    assert original.marca == "SV"
