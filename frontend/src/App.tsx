@@ -8,8 +8,6 @@ import PortalProtectedRoute from './components/portal/PortalProtectedRoute'
 import Clientes from './pages/Clientes'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
-import { useAuthStore } from './store/authStore'
-import { usePortalStore } from './store/portalStore'
 import { lazyConReintento } from './lib/lazyConReintento'
 
 // Páginas de admin y del portal: se cargan bajo demanda (code-splitting) para
@@ -49,14 +47,8 @@ function DestinoPorDefecto() {
 }
 
 function App() {
-  const initFromStorage = useAuthStore((state) => state.initFromStorage)
-  const initPortal = usePortalStore((state) => state.initFromStorage)
-
-  // Restaura las sesiones guardadas al iniciar la app (equipo y portal)
-  useEffect(() => {
-    initFromStorage()
-    initPortal()
-  }, [initFromStorage, initPortal])
+  // Las sesiones guardadas (equipo y portal) ya se restauraron en main.tsx,
+  // antes del primer render.
 
   // Mismo build sirve cotizador.yudaimportaciones.com y
   // usuarios.yudaimportaciones.com (ver DestinoPorDefecto arriba): el
