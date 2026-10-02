@@ -80,3 +80,38 @@ def test_lo_que_corrigio_bodega_sigue_mandando(
     cajas = _campo(construir_inspeccion_sesion(db, sesion), "cajas")
     assert cajas.original == 3
     assert cajas.corregido == 2
+
+
+def test_el_excel_de_correcciones_lleva_las_mismas_cajas_que_la_pantalla(
+    crear_usuario, crear_cliente, crear_sesion, db
+):
+    """El Excel que bodega le devuelve a la vendedora y la pantalla de
+    revisión tienen que decir lo mismo. Son dos caminos de código distintos y
+    ya se desalinearon una vez."""
+    from app.api.routes.bodega import _items_inspeccionados
+    from app.models.item_inspeccion import ItemInspeccionBodega
+
+    vendedora = crear_usuario("insp4@test.com", rol=RolUsuario.vendedora)
+    cliente = crear_cliente("clienteinsp4@test.com", vendedora.id)
+    sesion = crear_sesion(vendedora.id, cliente.id, con_item=True)
+    sesion.shipping_mark = "SV"
+    item = db.query(Item).filter(Item.sesion_id == sesion.id).first()
+    item.ctns = 1   # lo cotizado
+    item.marca = None
+    db.commit()
+
+    pedido = PedidoGenerado(sesion_id=sesion.id, supplier="Prov", archivo_xlsx_url="https://x/p.xlsx")
+    db.add(pedido)
+    db.flush()
+    db.add(PedidoGeneradoItem(pedido_generado_id=pedido.id, item_id=item.id, cantidad_pedida=3))
+    db.commit()
+
+    # Bodega todavía no cuenta: manda lo que se le pidió a la tienda.
+    fila = _items_inspeccionados(db, sesion.id)[0]
+    assert fila.ctns == 3
+    assert fila.marca == "SV"
+
+    # Bodega cuenta 2: su número manda sobre todo lo demás.
+    db.add(ItemInspeccionBodega(item_id=item.id, ctns=2))
+    db.commit()
+    assert _items_inspeccionados(db, sesion.id)[0].ctns == 2

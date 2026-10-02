@@ -809,9 +809,40 @@ class _ItemInspeccionado:
     sobre el Item real, así que el cliente sigue sin ver nada de esto. Es solo
     para que bodega le devuelva a la vendedora el mismo formato, actualizado."""
 
-    def __init__(self, item: Item, insp: ItemInspeccionBodega | None) -> None:
+    def __init__(
+        self,
+        item: Item,
+        insp: ItemInspeccionBodega | None,
+        cajas_pedidas: int | None = None,
+        shipping_mark: str | None = None,
+    ) -> None:
         self._item = item
         self._insp = insp
+        self._cajas_pedidas = cajas_pedidas
+        self._shipping_mark = shipping_mark
+
+    @property
+    def ctns(self):
+        """Las cajas del documento, en orden de prioridad: lo que bodega contó
+        manda; si todavía no contó, las que se le PIDIERON a la tienda (no las
+        cotizadas, que es otro número); y si esa cotización nunca generó orden,
+        lo cotizado, que es lo único que hay.
+
+        Va como propiedad y no por el mapeo de abajo porque el respaldo no es
+        el Item: es la orden que se mandó al proveedor."""
+        if self._insp is not None and self._insp.ctns is not None:
+            return self._insp.ctns
+        if self._cajas_pedidas is not None:
+            return self._cajas_pedidas
+        return self._item.ctns
+
+    @property
+    def marca(self):
+        """Siempre la sigla del cliente, igual que en el cotizador y en la
+        pantalla de revisión; no el campo que se escribía producto por producto."""
+        if self._insp is not None and self._insp.marca:
+            return self._insp.marca
+        return self._shipping_mark or self._item.marca
 
     def __getattr__(self, nombre: str):
         campo_insp = _CAMPO_ITEM_A_INSPECCION.get(nombre)
@@ -844,6 +875,18 @@ class _ItemCajaExtra:
 def _items_inspeccionados(db: Session, sesion_id: str) -> list:
     items = db.query(Item).filter(Item.sesion_id == sesion_id).order_by(Item.orden.asc()).all()
     item_ids = [i.id for i in items]
+    sesion = db.query(Sesion).filter(Sesion.id == sesion_id).first()
+    # Cuántas cajas se le pidieron de verdad a la tienda, por producto: es el
+    # respaldo cuando bodega todavía no ha contado ese producto.
+    cajas_pedidas: dict[str, int] = {}
+    pedido_ids = [
+        pid for (pid,) in db.query(PedidoGenerado.id).filter(PedidoGenerado.sesion_id == sesion_id).all()
+    ]
+    if pedido_ids:
+        for linea in db.query(PedidoGeneradoItem).filter(
+            PedidoGeneradoItem.pedido_generado_id.in_(pedido_ids)
+        ):
+            cajas_pedidas[linea.item_id] = linea.cantidad_pedida
     inspecciones = (
         {
             i.item_id: i
@@ -855,7 +898,11 @@ def _items_inspeccionados(db: Session, sesion_id: str) -> list:
     filas: list = []
     for item in items:
         insp = inspecciones.get(item.id)
-        base = _ItemInspeccionado(item, insp)
+        base = _ItemInspeccionado(
+            item, insp,
+            cajas_pedidas=cajas_pedidas.get(item.id),
+            shipping_mark=sesion.shipping_mark if sesion else None,
+        )
         filas.append(base)
         if insp and insp.cajas_extra:
             filas.extend(_ItemCajaExtra(base, caja) for caja in insp.cajas_extra)
@@ -928,13 +975,17 @@ def reiniciar_inspeccion(
     # Las fotos y videos que subió bodega se borran del storage DESPUÉS de
     # confirmar en la base, igual que al borrar una cotización: si falla el
     # storage, el reinicio ya está hecho y no tiene sentido devolver un error.
-    archivos: list[str | None] = []
+    # Ojo con el bucket: las fotos de bodega van a "fotos" y los videos a
+    # "pedidos" (ver storage_service). Si se mezclan, ruta_desde_url no
+    # reconoce la URL y el archivo queda huérfano sin que nada falle.
+    fotos_bodega: list[str | None] = []
+    videos_bodega: list[str | None] = []
     if item_ids:
         for fotos, video in db.query(
             ItemInspeccionBodega.fotos, ItemInspeccionBodega.video_url
         ).filter(ItemInspeccionBodega.item_id.in_(item_ids)):
-            archivos.extend(fotos or [])
-            archivos.append(video)
+            fotos_bodega.extend(fotos or [])
+            videos_bodega.append(video)
         db.query(ItemInspeccionBodega).filter(
             ItemInspeccionBodega.item_id.in_(item_ids)
         ).delete(synchronize_session=False)
@@ -965,7 +1016,7 @@ def reiniciar_inspeccion(
     registrar_actividad_bodega(db, sesion_id, usuario.id, "inspeccion_actualizada", "Revisión reiniciada")
     db.commit()
 
-    limpiar_storage([("fotos", archivos)])
+    limpiar_storage([("fotos", fotos_bodega), ("pedidos", videos_bodega)])
     return construir_inspeccion_sesion(db, sesion)
 
 
