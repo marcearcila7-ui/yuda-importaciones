@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import axios from 'axios'
 import { CheckCircle2, ChevronDown, ChevronUp, Clock, Eye, FileSpreadsheet, FileText, Package, Pencil, Send, Upload, Warehouse } from 'lucide-react'
 import { getItems } from '../api/packing'
-import { enviarAConfirmar, getSeguimiento } from '../api/clientes'
+import { enviarAConfirmar, getSeguimiento, guardarCantidades } from '../api/clientes'
 import { enfocarNumero } from '../lib/dom'
 import { confirmar } from '../store/confirmStore'
 import { useAuthStore } from '../store/authStore'
@@ -135,6 +135,23 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
       toast.error(t('gestionPedido.error'))
     } finally {
       setEnviando(false)
+    }
+  }
+
+  // Lo que corre justo antes de generar el pedido a las tiendas: deja guardado
+  // lo que la vendedora tiene escrito ARRIBA. El botón dice "Confirmar
+  // cantidades y generar", así que tiene que confirmarlas de verdad: antes solo
+  // se guardaban si además pulsaba "Enviar al cliente para que confirme", que
+  // dice "(opcional)", y el archivo salía con las cantidades viejas.
+  const guardarAntesDeGenerar = async () => {
+    try {
+      const payload = items.map((it) => ({ item_id: it.id, cantidad: Number(cantidades[it.id] || 0) }))
+      await guardarCantidades(sesion.id, payload)
+      setEditandoCantidades(false)
+      return true
+    } catch {
+      toast.error(t('gestionPedido.errorGuardarCantidades'))
+      return false
     }
   }
 
@@ -379,7 +396,11 @@ function GestionPedidoCliente({ sesion, onActualizar }: { sesion: Sesion; onActu
             nombre_cliente={sesion.nombre_cliente}
             permitirCantidadesCliente
             shippingMark={sesion.shipping_mark}
-            onGenerado={() => getPedidos(sesion.id).then(setPedidosGenerados).catch(() => undefined)}
+            antesDeGenerar={guardarAntesDeGenerar}
+            onGenerado={() => {
+              getPedidos(sesion.id).then(setPedidosGenerados).catch(() => undefined)
+              onActualizar?.()
+            }}
           />
 
           {pedidosAlDia.length > 0 && (

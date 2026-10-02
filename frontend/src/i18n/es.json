@@ -1043,7 +1043,8 @@
     "pedidoYaGenerado": "El pedido a la tienda ya se generó.",
     "confirmarReemplazarRevisado": "Bodega ya contó la orden a «{{tienda}}». Si reemplazas el archivo, ese conteo se borra y bodega tendrá que volver a contarla; se le avisará. ¿Continuar?",
     "archivoReemplazadoAvisado": "Archivo reemplazado. Se avisó que bodega debe volver a contar esta orden.",
-    "errorDescargarLoQueLlego": "No se pudo descargar el archivo"
+    "errorDescargarLoQueLlego": "No se pudo descargar el archivo",
+    "errorGuardarCantidades": "No se pudieron guardar las cantidades. No se generó el pedido."
   },
   "comun": {
     "confirmar": "Confirmar",

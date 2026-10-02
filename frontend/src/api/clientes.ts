@@ -190,6 +190,17 @@ export async function enviarAConfirmar(
   return data
 }
 
+// Guarda las cajas de cada producto y nada más (no le pide nada al cliente).
+// Es lo que corre al generar el pedido a las tiendas, para que se use lo que
+// la vendedora tiene en pantalla y no lo último que quedó guardado.
+export async function guardarCantidades(
+  sesion_id: string,
+  items: Array<{ item_id: string; cantidad: number }>,
+): Promise<Sesion> {
+  const { data } = await apiClient.put<Sesion>(`/sesiones/${sesion_id}/cantidades`, { items })
+  return data
+}
+
 // Sube el PDF del BL (solo admin) y devuelve su URL pública
 export async function subirBlPdf(sesion_id: string, archivo: File): Promise<string> {
   const form = new FormData()

@@ -24,6 +24,12 @@ interface GenerarPedidosProps {
   // bodega). Sin este aviso, quedaba desactualizada: mostraba "genera el
   // pedido primero" aunque ya se hubiera generado en esta misma pantalla.
   onGenerado?: () => void
+  // Se ejecuta ANTES de generar. Sirve para que quien muestra las cantidades
+  // (GestionPedidoCliente) guarde primero lo que la vendedora tiene escrito en
+  // pantalla: si no, se generaba con lo último guardado y el archivo salía con
+  // las cantidades viejas aunque ella acabara de corregirlas. Si devuelve
+  // false, no se genera.
+  antesDeGenerar?: () => Promise<boolean>
 }
 
 function GenerarPedidos({
@@ -32,6 +38,7 @@ function GenerarPedidos({
   permitirCantidadesCliente = false,
   shippingMark,
   onGenerado,
+  antesDeGenerar,
 }: GenerarPedidosProps) {
   const { t } = useTranslation()
   const [generando, setGenerando] = useState<false | 'normal' | 'cliente'>(false)
@@ -101,6 +108,11 @@ function GenerarPedidos({
     setError(null)
     setGenerando(usarCantidadesCliente ? 'cliente' : 'normal')
     try {
+      // Primero se guarda lo que está escrito arriba; recién después se genera.
+      if (antesDeGenerar && !(await antesDeGenerar())) {
+        setGenerando(false)
+        return
+      }
       const data = await generarPedidos(sesion_id, usarCantidadesCliente)
       setResultado(data)
       setMostrarRegenerar(false)

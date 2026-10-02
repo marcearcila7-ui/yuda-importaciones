@@ -1112,6 +1112,40 @@ def enviar_a_confirmar(
     return sesion
 
 
+@router.put("/sesiones/{sesion_id}/cantidades", response_model=SesionResponse)
+def guardar_cantidades(
+    sesion_id: str,
+    datos: EnviarAConfirmarInput,
+    usuario: User = Depends(require_roles("admin", "vendedora")),
+    db: Session = Depends(get_db),
+) -> Sesion:
+    """Guarda las cajas de cada producto, y nada más.
+
+    Es lo que hace el botón "Confirmar cantidades y generar pedido para
+    tiendas": antes, lo que la vendedora escribía en pantalla solo se
+    guardaba si además pulsaba "Enviar al cliente para que confirme", que
+    dice "(opcional)" y suena a otra cosa. Resultado: corregía una cantidad,
+    generaba, y el archivo salía con la cantidad vieja del cliente.
+
+    A diferencia de enviar_a_confirmar, esto NO cambia el estado del pedido
+    ni le pide nada al cliente: solo deja escrito lo que se va a pedir.
+    """
+    sesion = _sesion_autorizada(db, sesion_id, usuario)
+    items = {i.id: i for i in db.query(Item).filter(Item.sesion_id == sesion_id).all()}
+    for linea in datos.items:
+        it = items.get(linea.item_id)
+        if it is None:  # un ítem que no es de esta cotización: se ignora
+            continue
+        it.cantidad_solicitada = linea.cantidad if linea.cantidad and linea.cantidad > 0 else None
+    # Si el cliente nunca mandó nada, igual queda registrado que ya hay
+    # cantidades sobre las que trabajar (es lo que habilita generar).
+    if sesion.pedido_recibido_at is None:
+        sesion.pedido_recibido_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(sesion)
+    return sesion
+
+
 @router.get("/sesiones/{sesion_id}/seguimiento", response_model=SeguimientoResponse)
 def obtener_seguimiento(
     sesion_id: str,
