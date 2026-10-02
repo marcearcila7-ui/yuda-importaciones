@@ -257,8 +257,11 @@ function GenerarPedidos({
         </div>
       )}
 
-      {/* SECCIÓN C — Resultado. Solo si lo generado está al día: ver arriba. */}
-      {resultado && !desactualizado && (
+      {/* SECCIÓN C — Resultado. Los archivos solo se ven cuando corresponden a
+          las cajas de ahora: si están desactualizados, o si se pulsó "volver a
+          generar" y todavía no se generó lo nuevo, no se muestra ninguno. Que
+          siguieran ahí era justo la forma de bajar el pedido viejo por error. */}
+      {resultado && !desactualizado && !mostrarRegenerar && (
         <div className="flex flex-col gap-3">
           <p className="font-bold" style={{ color: 'var(--yuda-accent)' }}>{t('pedidos.generados')}</p>
           {resultado.pedidos.map((pedido) => (
