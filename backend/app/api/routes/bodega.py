@@ -36,6 +36,7 @@ from app.schemas.inspeccion import FechaRecibidaMasivaInput, GuardarInspeccionIn
 from app.schemas.portal import PortalItem
 from app.schemas.seguimiento import SeguimientoResponse
 from app.services.actividad_bodega_service import registrar_actividad_bodega
+from app.services.borrado_service import limpiar_storage
 from app.services.cotizacion_service import _calcular
 from app.services.cubicaje_service import generar_reporte_automatico
 from app.services.excel_service import generar_csv_pedido, generar_formato_pedido, generar_packing_list_excel
@@ -883,6 +884,78 @@ def _sobrante_items_resumen(db: Session, sesion_id: str) -> list[SobranteListaIt
         SobranteListaItem(referencia=ref, descripcion=descripciones.get(ref) or ref, cajas=cajas)
         for ref, cajas in mapa.items()
     ]
+
+
+@router.post("/pedidos/{sesion_id}/cotizacion/reiniciar", response_model=InspeccionSesionResponse)
+def reiniciar_inspeccion(
+    sesion_id: str,
+    usuario: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> InspeccionSesionResponse:
+    """Deja la revisión de bodega como si nunca hubiera empezado.
+
+    Solo Marcela. Sirve cuando bodega contó mal de arriba abajo y rehacerlo
+    campo por campo es peor que empezar de nuevo, o cuando hay que repetir el
+    proceso completo (por ejemplo para grabar un tutorial). Borra las
+    correcciones, las fotos y videos que subió bodega, el reporte de cubicaje
+    y la marca de "orden revisada" de cada tienda.
+
+    NO toca la cotización del cliente (los Item originales) ni los archivos
+    del pedido al proveedor: eso es lo que se vuelve a revisar. Tampoco se
+    puede si el envío ya pasó de bodega: ahí la revisión ya es historia de
+    algo que viajó.
+    """
+    sesion = _sesion_o_404(db, sesion_id)
+    exigir_acceso_sesion(db, sesion, usuario)
+
+    seg = db.query(SeguimientoPedido).filter(SeguimientoPedido.sesion_id == sesion_id).first()
+    if seg is not None and ESTADOS_ENVIO.index(seg.estado) > ESTADOS_ENVIO.index("en_bodega"):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Este pedido ya salió de bodega: su revisión no se puede reiniciar.",
+        )
+
+    item_ids = [i for (i,) in db.query(Item.id).filter(Item.sesion_id == sesion_id).all()]
+
+    # Las fotos y videos que subió bodega se borran del storage DESPUÉS de
+    # confirmar en la base, igual que al borrar una cotización: si falla el
+    # storage, el reinicio ya está hecho y no tiene sentido devolver un error.
+    archivos: list[str | None] = []
+    if item_ids:
+        for fotos, video in db.query(
+            ItemInspeccionBodega.fotos, ItemInspeccionBodega.video_url
+        ).filter(ItemInspeccionBodega.item_id.in_(item_ids)):
+            archivos.extend(fotos or [])
+            archivos.append(video)
+        db.query(ItemInspeccionBodega).filter(
+            ItemInspeccionBodega.item_id.in_(item_ids)
+        ).delete(synchronize_session=False)
+
+    # Las órdenes vuelven a estar "sin revisar", y se van los archivos de "lo
+    # que llegó" (se regeneran cuando bodega vuelva a contar).
+    for orden in db.query(PedidoGenerado).filter(PedidoGenerado.sesion_id == sesion_id).all():
+        orden.revisado_en_bodega_at = None
+        orden.archivo_real_xlsx_url = None
+        orden.archivo_real_pdf_url = None
+        orden.archivo_real_csv_url = None
+    db.query(PedidoGeneradoItem).filter(
+        PedidoGeneradoItem.pedido_generado_id.in_(
+            db.query(PedidoGenerado.id).filter(PedidoGenerado.sesion_id == sesion_id)
+        )
+    ).update({"cantidad_recibida": None}, synchronize_session=False)
+
+    # El reporte automático de cubicaje se borra para que se vuelva a disparar
+    # cuando bodega termine de nuevo (es idempotente: si queda, no se repite).
+    db.query(CubicajeMensaje).filter(
+        CubicajeMensaje.sesion_id == sesion_id, CubicajeMensaje.tipo == TIPO_REPORTE
+    ).delete(synchronize_session=False)
+
+    sesion.shipping_mark_bodega = None
+    registrar_actividad_bodega(db, sesion_id, usuario.id, "inspeccion_actualizada", "Revisión reiniciada")
+    db.commit()
+
+    limpiar_storage([("fotos", archivos)])
+    return construir_inspeccion_sesion(db, sesion)
 
 
 @router.get("/pedidos/{sesion_id}/cotizacion/exportar-excel")

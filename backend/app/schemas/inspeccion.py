@@ -37,7 +37,6 @@ class InspeccionItemResponse(BaseModel):
     supplier_numero: str | None = None
 
     referencia: CampoInspeccion
-    codigo: CampoInspeccion
     descripcion_es: CampoInspeccion
     descripcion_en: CampoInspeccion
     descripcion_zh: CampoInspeccion

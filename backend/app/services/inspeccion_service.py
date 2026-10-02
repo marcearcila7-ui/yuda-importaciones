@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.item import Item
 from app.models.item_inspeccion import ItemInspeccionBodega
+from app.models.pedido import PedidoGenerado, PedidoGeneradoItem
 from app.models.sesion import Sesion
 from app.models.user import User
 from app.schemas.inspeccion import (
@@ -18,17 +19,17 @@ from app.schemas.inspeccion import (
 )
 
 # (clave del schema, campo en Item, campo en ItemInspeccionBodega)
+# "codigo" (item_no) ya no va: nadie lo llena y lo que de verdad se valida
+# contra la caja que llega es la referencia.
+# "cajas" y "marca" tampoco salen de acá: ver _item_response.
 _MAPEO_CAMPOS = [
     ("referencia", "referencia", "referencia"),
-    ("codigo", "item_no", "item_no"),
     ("descripcion_es", "descripcion_es", "descripcion_es"),
     ("descripcion_en", "descripcion_en", "descripcion_en"),
     ("descripcion_zh", "descripcion_zh", "descripcion_zh"),
     ("material", "material", "material"),
     ("uso", "uso", "uso"),
-    ("marca", "marca", "marca"),
     ("fecha_recibo", "fecha_recibo", "fecha_recibo"),
-    ("cajas", "ctns", "ctns"),
     ("uds_caja", "qty_por_ctn", "qty_por_ctn"),
     ("precio_rmb", "price_rmb", "price_rmb"),
     ("largo_cm", "largo_cm", "largo_cm"),
@@ -46,12 +47,35 @@ _MAPEO_CAMPOS = [
 ]
 
 
-def _item_response(item: Item, insp: ItemInspeccionBodega | None, actualizado_por: User | None) -> InspeccionItemResponse:
+def _item_response(
+    item: Item,
+    insp: ItemInspeccionBodega | None,
+    actualizado_por: User | None,
+    cajas_pedidas: int | None = None,
+    shipping_mark: str | None = None,
+) -> InspeccionItemResponse:
     campos = {}
     for clave, campo_item, campo_insp in _MAPEO_CAMPOS:
         original = getattr(item, campo_item, None)
         corregido = getattr(insp, campo_insp, None) if insp else None
         campos[clave] = CampoInspeccion(original=original, corregido=corregido)
+
+    # Las cajas contra las que bodega cuenta son las que de verdad se le
+    # PIDIERON a la tienda (lo que quedó escrito en la orden), no las que se
+    # cotizaron. Si el cliente pidió 3 y la cotización decía 1, a bodega le
+    # tienen que llegar 3: antes mostraba 1 y la revisión se hacía contra el
+    # número equivocado. `item.ctns` queda de respaldo para cotizaciones que
+    # nunca generaron orden.
+    campos["cajas"] = CampoInspeccion(
+        original=cajas_pedidas if cajas_pedidas is not None else item.ctns,
+        corregido=insp.ctns if insp else None,
+    )
+    # La marca es siempre la sigla del cliente, heredada de Yuda Contable; no
+    # se escribe producto por producto (mismo criterio que el cotizador).
+    campos["marca"] = CampoInspeccion(
+        original=shipping_mark or item.marca,
+        corregido=insp.marca if insp else None,
+    )
 
     return InspeccionItemResponse(
         item_id=item.id,
@@ -93,8 +117,26 @@ def construir_inspeccion_sesion(db: Session, sesion: Sesion) -> InspeccionSesion
     vendedora = db.query(User).filter(User.id == sesion.user_id).first()
     cliente_nombre = sesion.nombre_cliente
 
+    # Cuántas cajas se le pidieron de verdad a la tienda, por producto. Es
+    # contra esto que bodega cuenta lo que llega (ver _item_response).
+    cajas_pedidas: dict[str, int] = {}
+    pedido_ids = [
+        pid for (pid,) in db.query(PedidoGenerado.id).filter(PedidoGenerado.sesion_id == sesion.id).all()
+    ]
+    if pedido_ids:
+        for linea in db.query(PedidoGeneradoItem).filter(
+            PedidoGeneradoItem.pedido_generado_id.in_(pedido_ids)
+        ):
+            cajas_pedidas[linea.item_id] = linea.cantidad_pedida
+
     items_response = [
-        _item_response(item, inspecciones.get(item.id), actores.get(inspecciones[item.id].actualizado_por_id) if item.id in inspecciones and inspecciones[item.id].actualizado_por_id else None)
+        _item_response(
+            item,
+            inspecciones.get(item.id),
+            actores.get(inspecciones[item.id].actualizado_por_id) if item.id in inspecciones and inspecciones[item.id].actualizado_por_id else None,
+            cajas_pedidas=cajas_pedidas.get(item.id),
+            shipping_mark=sesion.shipping_mark,
+        )
         for item in items
     ]
 
